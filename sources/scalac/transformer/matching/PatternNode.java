@@ -23,6 +23,10 @@ public class PatternNode {
     public Type type;
     public PatternNode or;
     public PatternNode and;
+
+    public Type getType() {
+        return type;
+    }
     
     public case Header(Tree selector, Header next) ;
     public case Body(Tree.ValDef[][] bound, Tree[] guard, Tree[] body);
