@@ -42,7 +42,7 @@ class BitSet(initSize: Int) extends scala.collection.BitSet {
       arr
     }
   }
-  
+
   protected val internal = new ByteArray();
 
   /** size of this bitset in nbytes */
