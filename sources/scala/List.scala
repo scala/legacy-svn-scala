@@ -336,7 +336,7 @@ sealed trait List[+a] extends Seq[a] {
   };
 
   /** Creates a list with all indices in the list. This is
-   *  equivalent to a call to <code>List.range(0, xs.length)</code>. 
+   *  equivalent to a call to <code>List.range(0, xs.length)</code>.
    *
    *  @return a list of all indices in the list.
    */
@@ -362,6 +362,12 @@ sealed trait List[+a] extends Seq[a] {
         val result = current.head; current = current.tail; result
       };
   };
+
+  /** Transform this sequence into a list of all elements.
+  *
+  *  @return  a list which enumerates all elements of this sequence.
+  */
+  override def toList = this;
 
   /** Returns the list without its last element.
    *
