@@ -1,5 +1,5 @@
 //############################################################################
-// Programmation IV - 2002 - Week 11
+// Lisp interpreter
 //############################################################################
 // $Id$
 
@@ -31,17 +31,17 @@ object Lisp {
     def lookup(n: String): Data = lispError("undefined: " + n);
   }
 
-  def asList(x: Data): List[Data] = 
-    if (x is List[Data]) x as List[Data] 
+  def asList(x: Data): List[Data] =
+    if (x is List[Data]) x as List[Data]
     else lispError("malformed list: " + x);
 
-  def asBoolean(x: Data): boolean = 
+  def asBoolean(x: Data): boolean =
     if (x == 0) false else true;
 
-  def asInt(x: Data): int = 
+  def asInt(x: Data): int =
     if (x is int) x as int else lispError("not an integer: " + x);
 
-  def asString(x: Data): String = 
+  def asString(x: Data): String =
     if (x is java.lang.String) x as java.lang.String else lispError("not a string: " + x);
 
   def normalize(x: Data): Data = x match {
@@ -51,15 +51,15 @@ object Lisp {
       normalize('if :: x :: 1 :: y :: Nil)
     case 'def :: (name :: args) :: body :: expr :: Nil =>
       normalize('def :: name :: ('lambda :: args :: body :: Nil) :: expr :: Nil)
-    case 'cond :: ('else :: expr :: Nil) :: rest => 
+    case 'cond :: ('else :: expr :: Nil) :: rest =>
         normalize(expr);
-    case 'cond :: (test :: expr :: Nil) :: rest => 
+    case 'cond :: (test :: expr :: Nil) :: rest =>
 	normalize('if :: test :: expr :: ('cond :: rest) :: Nil)
     case 'cond :: 'else :: expr :: Nil =>
       normalize(expr)
-    case h :: t => 
+    case h :: t =>
       normalize(h) :: asList(normalize(t))
-    case _ => 
+    case _ =>
       x
   }
 
@@ -105,7 +105,7 @@ object Lisp {
   def lisp2string(x: Data): String = x match {
     case Symbol(name) => name
     case Nil => "()"
-    case y :: ys => 
+    case y :: ys =>
       def list2string(xs: List[Data]): String = xs match {
         case List() => ""
         case y :: ys => " " + lisp2string(y) + list2string(ys)
