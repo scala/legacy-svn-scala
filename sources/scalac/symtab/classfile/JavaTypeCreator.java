@@ -100,17 +100,21 @@ public class JavaTypeCreator implements JavaTypeFactory {
     }
 
     public Type classType(String classname) {
+	if (classname.equals("java.lang.Object"))
+	    return objectType();
+	if (classname.equals("java.lang.String"))
+	    return stringType();
         return classType(definitions.getClass(classname));
     }
 
     public Type classType(Symbol clasz) {
         return clasz.staticType();
     }
-    
+
     public Type arrayType(Type elemtpe) {
         return Type.appliedType(ARRAY_TYPE, new Type[]{elemtpe});
     }
-    
+
     public Type methodType(Type[] argtpes, Type restpe, Type[] thrown) {
         Symbol[] args = new Symbol[argtpes.length];
         for (int i = 0; i < args.length; i++) {
@@ -121,12 +125,9 @@ public class JavaTypeCreator implements JavaTypeFactory {
         return new MethodType(args, restpe);
     }
     private Type objToAny(Type tp) {
-	if (tp.isSameAs(OBJECT_TYPE))
-	    return ANY_TYPE;
-	else
-	    return tp;
+	return tp.isSameAs(OBJECT_TYPE) ? ANY_TYPE : tp;
     }
-    
+
     public Type packageType(Name packagename) {
         return null;
     }
