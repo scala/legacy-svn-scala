@@ -25,9 +25,9 @@ class StackProxy[A](s: Stack[A]) extends Stack[A] with SeqProxy[A](s) {
     override def apply(n: Int): A = s.apply(n);
     
     /** Returns the length of this stack.
-	 */
-	override def length: Int = s.length;
-	
+     */
+    override def length: Int = s.length;
+    
     /** Checks if the stack is empty.
      *
      *  @return true, iff there is no element on the stack

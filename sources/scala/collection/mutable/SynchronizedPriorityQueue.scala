@@ -18,19 +18,19 @@ package scala.collection.mutable;
  *  @version 1.0, 03/05/2004
  */
 class SynchronizedPriorityQueue[A <% Ordered[A]] extends PriorityQueue[A] {
-  	
-  	/** Checks if the queue is empty.
+    
+    /** Checks if the queue is empty.
      *
      *  @return true, iff there is no element in the queue.
      */
-  	override def isEmpty: Boolean = synchronized { super.isEmpty; }
-  	
-  	/** Inserts a single element into the priority queue.
+    override def isEmpty: Boolean = synchronized { super.isEmpty; }
+    
+    /** Inserts a single element into the priority queue.
      *
      *  @param  elem        the element to insert
      */
-  	override def +=(elem: A): Unit = synchronized { super.+=(elem); }
-  	
+    override def +=(elem: A): Unit = synchronized { super.+=(elem); }
+    
     /** Adds all elements provided by an <code>Iterable</code> object
      *  into the priority queue.
      *
@@ -50,20 +50,20 @@ class SynchronizedPriorityQueue[A <% Ordered[A]] extends PriorityQueue[A] {
      */
     override def enqueue(elems: A*): Unit = synchronized { super.++=(elems); }
     
-  	/** Returns the element with the highest priority in the queue,
-  	 *  and removes this element from the queue.
+    /** Returns the element with the highest priority in the queue,
+     *  and removes this element from the queue.
      *
      *  @return   the element with the highest priority.
      */
-  	override def dequeue: A = synchronized { super.dequeue; }
+    override def dequeue: A = synchronized { super.dequeue; }
     
     /** Returns the element with the highest priority in the queue,
      *  or throws an error if there is no element contained in the queue.
      *  
      *  @return   the element with the highest priority.
      */
-  	override def max: A = synchronized { super.max; }
-  	
+    override def max: A = synchronized { super.max; }
+    
     /** Removes all elements from the queue. After this operation is completed,
      *  the queue will be empty.
      */
@@ -74,8 +74,8 @@ class SynchronizedPriorityQueue[A <% Ordered[A]] extends PriorityQueue[A] {
      *  
      *  @return  an iterator over all elements sorted in descending order.
      */
-  	override def elements: Iterator[A] = synchronized { super.elements; }
-  	
+    override def elements: Iterator[A] = synchronized { super.elements; }
+    
     /** Checks if two queues are structurally identical.
      *   
      *  @return true, iff both queues contain the same sequence of elements.

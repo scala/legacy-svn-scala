@@ -25,9 +25,9 @@ class QueueProxy[A](q: Queue[A]) extends Queue[A] with SeqProxy[A](q) {
     override def apply(n: Int): A = q.apply(n);
     
     /** Returns the length of this queue.
-	 */
-	override def length: Int = q.length;
-	
+     */
+    override def length: Int = q.length;
+    
     /** Checks if the queue is empty.
      *
      *  @return true, iff there is no element in the queue.
@@ -47,8 +47,8 @@ class QueueProxy[A](q: Queue[A]) extends Queue[A] with SeqProxy[A](q) {
      *  @param  iter        an iterable object
      */
     override def ++=(iter: Iterable[A]): Unit = q ++= iter;
-  	
-  	/** Adds all elements provided by an iterator
+    
+    /** Adds all elements provided by an iterator
      *  at the end of the queue. The elements are prepended in the order they
      *  are given out by the iterator.
      *
