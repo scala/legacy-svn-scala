@@ -81,19 +81,9 @@ public class AttributeParser implements ClassfileConstants {
         switch (attr) {
         // class attributes
             case SCALA_ATTR:
-                in.skip(attrLen);
-                /* not yet
-                Name sourcefile = (Name)pool.readPool(in.nextChar());
-                new UnPickle(
-                    (JavaClassSymbol) sym, in.nextBytes(attrLen - 2), sourcefile);
-                */
-                return;
+                new UnPickle(sym, in.nextBytes(attrLen), Name.fromString(in.path));
+		return;
                 
-            case SOURCEFILE_ATTR:
-                // ((ClassDef)def).sourcefile = (Name)reader.readPool(in.nextChar());
-                in.skip(attrLen);
-                return;
-            
             case INNERCLASSES_ATTR:
                 /* int n = in.nextChar();
                 for (int i = 0; i < n; i++) {
@@ -154,8 +144,11 @@ public class AttributeParser implements ClassfileConstants {
 		    new MetaParser(meta, tvars, sym, type).parse(), 
 		    Symbol.FIRST_ID);
                 return;
+
+	    default:
+		in.skip(attrLen);
+                return;
         }
-        throw new RuntimeException("unknown classfile attribute");
     }
     
     Scope tvars = new Scope();
