@@ -28,7 +28,7 @@ public abstract class Array
     /** @meta method (scala.Int, ?T) scala.Unit;
      */
     public abstract void update(int i, java.lang.Object x);
-	
+
     /** @meta method (scala.Int) ?T;
      */
     public abstract java.lang.Object apply(int i);
