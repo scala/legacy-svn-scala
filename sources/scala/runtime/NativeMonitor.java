@@ -7,7 +7,7 @@
 ** $Id$
 \*                                                                      */
 
-package scala;
+package scala.runtime;
 
 
 public class NativeMonitor  {
