@@ -1554,7 +1554,7 @@ abstract class Syntactic: ParserPhase {
       		    template.duplicate.asInstanceOf[Template])
 	}
     }
-    
+
     /** ClassTemplate ::= [`extends' Constr] {`with' Constr} [TemplateBody]
      */
     def classTemplate(isCaseClass:boolean): Template = {
