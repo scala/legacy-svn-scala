@@ -9,7 +9,7 @@
 package scalac.ast;
 
 import scalac.ast.printer.*;
-import scalac.ApplicationError;
+import scalac.util.Debug;
 import scalac.util.Name;
 import scalac.util.Position;
 import scalac.symtab.Type;
@@ -19,22 +19,22 @@ public class Tree {
 
     public int pos = Position.NOPOS;
     public Type type;
-    
+
 /** empty tree array
  */
     public static final Tree[] EMPTY_ARRAY = new Tree[0];
-    
+
 /** representation for parser errors
  */
     public case Bad();
-   
+
 /** a tree node for the absence of a tree
  */
     public case Empty;
     static { Empty.type = Type.NoType; }
-    
+
 /** class and data declaration
- */ 
+ */
     public case ClassDef(int mods,
                          Name name,
                          TypeDef[] tparams,
@@ -43,15 +43,15 @@ public class Tree {
                          Template impl) {
 	assert name.isTypeName();
     }
-    
+
 /** package declaration
  */
     public case PackageDef(Tree packaged,
                            Template impl) {
 	if (!packaged.isTerm())
-	    throw new ApplicationError("PackageDef expects term as rhs.");
+	    throw unexpected("PackageDef expects term as rhs", packaged);
     }
-    
+
 /** module declaration
  */
     public case ModuleDef(int mods,
@@ -60,7 +60,7 @@ public class Tree {
                           Template impl) {
 	assert !name.isTypeName();
     }
-    
+
 /** var or let declaration
  */
     public case ValDef(int mods,
@@ -69,20 +69,20 @@ public class Tree {
                        Tree rhs) {
 	assert !name.isTypeName();
 	if (!tpe.isType())
-	    throw new ApplicationError("ValDef expects type as tpe; found: " + tpe);
+	    throw unexpected("ValDef expects type as tpe", tpe);
 	if (!rhs.isTerm())
-	    throw new ApplicationError("ValDef expects term as rhs.");
+	    throw unexpected("ValDef expects term as rhs", rhs);
     }
-    
+
 /** val declaration
  */
     public case PatDef(int mods,
                        Tree pat,
                        Tree rhs) {
 	if (!rhs.isTerm())
-	    throw new ApplicationError("PatDef expects term as rhs.");
+	    throw unexpected("PatDef expects term as rhs", rhs);
     }
-    
+
 /** def declaration
  */
     public case DefDef(int mods,
@@ -93,9 +93,9 @@ public class Tree {
                        Tree rhs) {
 	assert !name.isTypeName();
 	if (!tpe.isType())
-	    throw new ApplicationError("DefDef expects type as tpe.");
+	    throw unexpected("DefDef expects type as tpe", tpe);
 	if (!rhs.isTerm())
-	    throw new ApplicationError("DefDef expects term as rhs. Found: " + rhs.getClass());
+	    throw unexpected("DefDef expects term as rhs", rhs);
     }
 
 /** type declaration
@@ -106,14 +106,14 @@ public class Tree {
                         Tree rhs) {
 	assert name.isTypeName();
 	if (!rhs.isType())
-	    throw new ApplicationError("TypeDef expects type as rhs; found: " + rhs);
+	    throw unexpected("TypeDef expects type as rhs", rhs);
     }
 
 /** import declaration
  */
     public case Import(Tree expr, Name[] selectors) {
 	if (!expr.isTerm())
-	    throw new ApplicationError("Import expects term.");
+	    throw unexpected("Import expects term", expr);
     }
 
 /** case declaration
@@ -122,11 +122,11 @@ public class Tree {
                         Tree guard,
                         Tree body) {
 	if (!guard.isTerm())
-	    throw new ApplicationError("CaseDef expects term as guard.");
+	    throw unexpected("CaseDef expects term as guard", guard);
 	if (!body.isTerm())
-	    throw new ApplicationError("CaseDef expects term as body.");
+	    throw unexpected("CaseDef expects term as body", body);
     }
-    
+
 /** instantiation templates
 */
     public case Template(Tree[] parents,
@@ -134,18 +134,18 @@ public class Tree {
 	if (parents != null) {
 	    for (int i = 0; i < parents.length; i++) {
 		if (!parents[i].isTerm())
-		    throw new ApplicationError("Template requires terms as baseClasses.");
+		    throw unexpected("Template requires terms as baseClasses", parents[i]);
 	    }
 	}
     }
- 
+
 /** labelled expression - the symbols in the array (must be Idents!) are those the
     label takes as argument
 */
     public case LabelDef(Tree[] params,Tree rhs) {
 	for (int i = 0;i < params.length; i++) {
 	    if (!(params[i] instanceof Ident))
-		throw new ApplicationError("LabelDef requires Idents");
+		throw unexpected("LabelDef requires Idents", params[i]);
 	}
     }
 
@@ -159,7 +159,7 @@ public class Tree {
 	if (trees != null) {
 	    for (int i = 0; i < trees.length; i++) {
 		if (!trees[i].isTerm())
-		    throw new ApplicationError("Tuple requires terms");
+		    throw unexpected("Tuple requires terms", trees[i]);
 	    }
 	}
     }
@@ -167,25 +167,25 @@ public class Tree {
 /** visitor (a sequence of cases)
  */
     public case Visitor(CaseDef[] cases);
-    
+
 /** an anonymous function
  */
     public case Function(ValDef[] vparams,
                          Tree body) {
 	if (!body.isTerm())
-	    throw new ApplicationError("Function body has to be a term.");
+	    throw unexpected("Function body has to be a term", body);
     }
-    
+
 /** assignment
  */
     public case Assign(Tree lhs,
                        Tree rhs) {
 	if (!lhs.isTerm())
-	    throw new ApplicationError("lhs of Assign has to be a term.");
+	    throw unexpected("lhs of Assign has to be a term", lhs);
 	if (!rhs.isTerm())
-	    throw new ApplicationError("rhs of Assign has to be a term.");
+	    throw unexpected("rhs of Assign has to be a term", rhs);
     }
-    
+
 /** conditional expression
  */
     public case If(Tree cond,
@@ -205,25 +205,25 @@ public class Tree {
     public case Typed(Tree expr,
                       Tree tpe) {
 	if (!expr.isTerm())
-	    throw new ApplicationError("Typed expects term as first argument.");
+	    throw unexpected("Typed expects term as first argument", expr);
 	if (!tpe.isType())
-	    throw new ApplicationError("Typed expects type as second argument.");
+	    throw unexpected("Typed expects type as second argument", tpe);
     }
-    
+
 /** type application
  */
     public case TypeApply(Tree fun,
                           Tree[] args) {
 	if (!fun.isTerm()) {
 	    new TextTreePrinter().print(fun).println().end();//debug
-	    throw new ApplicationError("TypeApply expects term as function.");
+	    throw unexpected("TypeApply expects term as function", fun);
 	}
 	for (int i = 0; i < args.length; i++) {
 	    if (!args[i].isType())
-		throw new ApplicationError("TypeApply expects types as arguments.");
+		throw unexpected("TypeApply expects types as arguments", args[i]);
 	}
     }
-    
+
 /** value application
  */
     public case Apply(Tree fun,
@@ -231,40 +231,40 @@ public class Tree {
 	if (args != null) {
 	    for (int i = 0; i < args.length; i++) {
 		if (!args[i].isTerm())
-		    throw new ApplicationError("Apply expects terms as arguments. Found: " + args[i].getClass());
+		    throw unexpected("Apply expects terms as arguments", args[i]);
 	    }
 	}
     }
-    
+
 /** super reference
  */
     public case Super(Tree tpe) {
 	if (!tpe.isType()) {
-	    throw new ApplicationError("Super expects type.");
+	    throw unexpected("Super expects type", tpe);
 	}
-    }	    
-    
+    }
+
 /** self reference
  */
     public case This(Tree qualifier) {
 	if (!qualifier.isType())
-	    throw new ApplicationError("This expects type.");
+	    throw unexpected("This expects type", qualifier);
     }
-    
+
 /** designator
  */
     public case Select(Tree qualifier,
                        Name selector) {
 	if (!qualifier.isTerm())
-	    throw new ApplicationError("Select expects term.");
+	    throw unexpected("Select expects term", qualifier);
     }
-    
+
 /** identifier
  */
     public case Ident(Name name) {
         assert name != null;
     }
-    
+
 /** literal
  */
     public case Literal(Object value);
@@ -273,7 +273,7 @@ public class Tree {
  */
     public case SingletonType(Tree ref) {
 	if (!ref.isTerm())
-	    throw new ApplicationError("SingletonType expects term.");
+	    throw unexpected("SingletonType expects term", ref);
     }
 
 /** type selection
@@ -281,21 +281,21 @@ public class Tree {
     public case SelectFromType(Tree qualifier,
 			       Name selector) {
 	if (!qualifier.isType())
-	    throw new ApplicationError("SelectFromType expects type.");
+	    throw unexpected("SelectFromType expects type", qualifier);
 	assert selector.isTypeName();
     }
-    
+
 /** function type
  */
     public case FunType(Tree[] argtpes,
                         Tree restpe) {
 	for (int i = 0; i < argtpes.length; i++)
 	    if (!argtpes[i].isType())
-		throw new ApplicationError("FunType requires types as args.");
+		throw unexpected("FunType requires types as args", argtpes[i]);
 	if (!restpe.isType())
-	    throw new ApplicationError("FunType requires type as result.");
+	    throw unexpected("FunType requires type as result", restpe);
     }
-    
+
 /** object type (~ Template)
  */
     public case CompoundType(Tree[] parents,
@@ -304,7 +304,7 @@ public class Tree {
 	    assert parents.length > 0;
 	    for (int i = 0; i < parents.length; i++) {
 		if (!parents[i].isType())
-		    throw new ApplicationError("CompoundType requires types as parents.");
+		    throw unexpected("CompoundType requires types as parents", parents[i]);
 	    }
 	}
     }
@@ -321,7 +321,7 @@ public class Tree {
     public case CovariantType(Tree tpe) {
         assert tpe.isType();
     }
-    
+
     /** Get the type of the node. */
     public Type type() {
         assert type != null : this;
@@ -361,7 +361,7 @@ public class Tree {
      * Set symbol attached to the node, if possible.
      */
     public Tree setSymbol(Symbol sym) {
-        throw new ApplicationError ("no settable symbol for node", this);
+        throw Debug.abort("no settable symbol for node", this);
     }
 
     /**
@@ -380,8 +380,8 @@ public class Tree {
     public boolean definesSymbol() {
 	return false;
     }
-    
-    /** Get string corresponding to this tree 
+
+    /** Get string corresponding to this tree
      *  only implemented for prefix trees, maybe we should generalize this;
      *  the PatternMatch phase needs support for Apply, so this case got added
      */
@@ -414,7 +414,7 @@ public class Tree {
 	    return super.toString();
 	}
     }
-    
+
     public static class ExtBad extends Bad {
         private Symbol symbol;
 
@@ -568,7 +568,7 @@ public class Tree {
             this.symbol = symbol;
             return this;
         }
-	
+
 	public boolean definesSymbol() {
 	    return true;
 	}
@@ -597,7 +597,7 @@ public class Tree {
 
     public static class ExtLabelDef extends LabelDef {
 	private Symbol symbol;
-	
+
 	public ExtLabelDef(Tree[] params,Tree rhs) {
 	    super(params,rhs);
 	}
@@ -755,5 +755,8 @@ public class Tree {
 	    return false;
 	}
     }
-}
 
+    private static Error unexpected(String message, Tree actual) {
+        return Debug.abort(message + "; found", actual);
+    }
+}
