@@ -9,10 +9,10 @@
 
 package scala.collection.immutable;
 
-/** The class <code>BitSet</code>provides an immutable bitset view on a
- *  byte array. Instances can conveniently be created from instances of
- *  <code>mutable.ResizableBitSet</code>.
- * 
+/** The class <code>BitSet</code>provides an immutable bitset view on an
+ *  int array. Instances can conveniently be created from instances of
+ *  <code>mutable.ResizableBitSet</code>. Bit indices are between 0..(size-1) inclusive
+ *
  *  @param <code>n</code> represents the number of relevant bits
  *  @param ba:   array of ints of length <code>n</code>&gt;&gt;&gt;5
  *  @param copy: if yes, then <code>ba</code> is copied and updates will
@@ -37,7 +37,7 @@ class BitSet(n:Int, ba: Array[Int], copy: Boolean) extends collection.BitSet {
   def this(rbs: mutable.BitSet) = {
     this(rbs.size, rbs.toArray, false);
   }
-  
+
   /** returns true if bit i is set
    *
    * @param i
