@@ -49,7 +49,7 @@ trait Seq[+A] with PartialFunction[Int, A] with Iterable[A] with Similarity {
      */
     override def toString() = {
         val iter = elements;
-        var res = "Seq(";
+        var res = stringPrefix + "(";
         if (iter.hasNext) {
             res = res + iter.next;
             while (iter.hasNext)
@@ -57,5 +57,8 @@ trait Seq[+A] with PartialFunction[Int, A] with Iterable[A] with Similarity {
         }
         res + ")"
     }
-
+	
+	/** Defines the prefix of the string representation.
+	 */
+	protected def stringPrefix: String = "Seq";
 }
