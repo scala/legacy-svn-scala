@@ -20,10 +20,10 @@ package scala.collection.mutable;
  *  @version 1.0, 21/07/2003
  */
 class ImmutableMapAdaptor[A, B, C <: scala.collection.immutable.Map[A, B, C]]
-		(m: C) extends Map[A, B] {
-	
-	protected var imap = m;
-	
+        (m: C) extends Map[A, B] {
+    
+    protected var imap = m;
+    
     def size: Int = imap.size;
     
     def get(key: A): Option[B] = imap.get(key);
