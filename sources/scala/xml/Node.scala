@@ -18,9 +18,9 @@ object Node {
   val NoAttributes: immutable.TreeMap[String,String] = 
     immutable.TreeMap.Empty[String,String];
 
-  /** the constant empty attribute map */
-  val EmptyNamespace: Int = 0;
-  
+  /** the empty namespace */
+  val EmptyNamespace: Namespace = new Namespace("");
+
 }
 /** Trait for representing XML using nodes of a labelled tree.
  *  This trait contains an implementation of a subset of XPath for navigation.
