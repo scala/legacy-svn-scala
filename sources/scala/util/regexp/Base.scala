@@ -36,7 +36,7 @@ trait Base {
       it.hasNext
     }
   }
-
+  
   case class  Star(r: regexp)   extends RegExp {
     final val isNullable = true;
   }
@@ -51,5 +51,11 @@ trait Base {
     final val isNullable = r1.isNullable;
     def r = r1;
   }
+
+  final def mkSequ(rs: regexp*): RegExp = 
+    if(!rs.elements.hasNext)
+      Eps
+    else 
+      Sequ(rs:_*);
 
 }
