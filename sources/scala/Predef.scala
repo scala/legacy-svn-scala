@@ -39,12 +39,9 @@ object Predef {
     }
 
     def error(message: String): All = throw new Error(message);
-    
+
     def exit: scala.Unit = java.lang.System.exit(0);
-    
-    def synchronized[A](obj: AnyRef)(def body: A): A = 
-      scala.runtime.NativeMonitor.synchronised(obj, body);
-    
+
     def assert(assertion: Boolean): Unit = {
     	if (!assertion)
     		throw new Error("assertion failed");
@@ -53,7 +50,7 @@ object Predef {
     	if (!assertion)
     		throw new Error("assertion failed: " + message);
     }
-    
+
     type Pair[+p, +q] = Tuple2[p, q];
     def Pair[a, b](x: a, y: b) = Tuple2(x, y);
 
