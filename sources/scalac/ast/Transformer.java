@@ -26,29 +26,29 @@ public class Transformer extends Phase {
     /** the tree factory
      */
     public final TreeFactory make;
-    
+
     /** a factory for copying trees; the attribution is preserved
      *  or translated according to the TreeCopyFactory; trees are
      *  only copied if new tree introduces changes
      */
     public final TreeCopyFactory copy;
-    
+
     /** a tree generator
      */
     public final TreeGen gen;
-    
+
     /** various constructors
      */
     public Transformer(Global global, PhaseDescriptor descr) {
         this(global, descr, global.make, new LazyTreeFactory(global.make));
     }
-    
+
     public Transformer(Global global,
                        PhaseDescriptor descr,
                        TreeFactory make) {
         this(global, descr, make, new LazyTreeFactory(make));
     }
-    
+
     public Transformer(Global global,
                        PhaseDescriptor descr,
                        TreeFactory make,
@@ -58,7 +58,7 @@ public class Transformer extends Phase {
         this.copy = copy;
         this.gen = global.treeGen;
     }
-    
+
     public void apply() {
         super.apply();
     }
@@ -66,7 +66,7 @@ public class Transformer extends Phase {
     public void apply(Unit unit) {
         unit.body = transform(unit.body);
     }
-    
+
     public Tree[] transform(Tree[] ts) {
         for (int i = 0; i < ts.length; i++) {
             Tree t = transform(ts[i]);
@@ -81,7 +81,7 @@ public class Transformer extends Phase {
         }
         return ts;
     }
-    
+
     public Tree[][] transform(Tree[][] ts) {
         for (int i = 0; i < ts.length; i++) {
             Tree[] t = transform(ts[i]);
@@ -96,7 +96,7 @@ public class Transformer extends Phase {
         }
         return ts;
     }
-    
+
     public ValDef[][] transform(ValDef[][] ts) {
         for (int i = 0; i < ts.length; i++) {
             ValDef[] t = transform(ts[i]);
@@ -111,7 +111,7 @@ public class Transformer extends Phase {
         }
         return ts;
     }
-    
+
     public ValDef[] transform(ValDef[] ts) {
         for (int i = 0; i < ts.length; i++) {
             Tree t = transform(ts[i]);
@@ -126,7 +126,7 @@ public class Transformer extends Phase {
         }
         return ts;
     }
-    
+
     public TypeDef[] transform(TypeDef[] ts) {
         for (int i = 0; i < ts.length; i++) {
             Tree t = transform(ts[i]);
@@ -141,7 +141,7 @@ public class Transformer extends Phase {
         }
         return ts;
     }
-    
+
     public CaseDef[] transform(CaseDef[] ts) {
         for (int i = 0; i < ts.length; i++) {
             Tree t = transform(ts[i]);
@@ -156,11 +156,11 @@ public class Transformer extends Phase {
         }
         return ts;
     }
-    
+
     public Template transform(Template tree) {
         return (Template)transform((Tree)tree);
     }
-    
+
     public Tree transform(Tree tree) {
         if (tree == null)
             return null;
@@ -302,7 +302,7 @@ public class Transformer extends Phase {
 				      transform(ref));
 	case SelectFromType(Tree qualifier, Name selector):
 	    return copy.SelectFromType(tree,
-				       transform(qualifier), 
+				       transform(qualifier),
 				       selector);
 	case FunType(Tree[] argtpes, Tree restpe):
 	    return copy.FunType(tree,
@@ -317,14 +317,14 @@ public class Transformer extends Phase {
 				    transform(tpe),
 				    transform(args));
 	case CovariantType(Tree tpe):
-	    return copy.CovariantType(tree, 
+	    return copy.CovariantType(tree,
 				      transform(tpe));
 	default:
 	    return tree;
         }
     }
     /* a full pattern-matching statement:
-    
+
         switch (tree) {
         case PackageDef(Tree packaged, Template impl):
 
@@ -337,7 +337,7 @@ public class Transformer extends Phase {
 
 	case PatDef(int mods, Tree pat, Tree rhs):
 
-	case DefDef(int mods, Name name, TypeDef[] tparams, ValDef[][] vparams, 
+	case DefDef(int mods, Name name, TypeDef[] tparams, ValDef[][] vparams,
 	            Tree tpe, Tree rhs):
 
 	case TypeDef(int mods, Name name, TypeDef[] tparams, Tree rhs):
@@ -392,5 +392,5 @@ public class Transformer extends Phase {
 	    return tree;
         }
     */
-   
+
 }
