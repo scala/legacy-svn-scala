@@ -29,9 +29,12 @@ class TreeSymbols {
     }
 
     public boolean contains(Symbol sym) {
-	return syms.contains(sym);
+	boolean res = syms.contains(sym); 
+	if (!res && sym.isModuleClass())
+	    res = contains(sym.module());
+	return  res;
     }
-    
+
     protected void traverse(Tree[] members) {
 	for(int i = 0; i< members.length; i++)
 	    traverse(members[i]);

@@ -1591,7 +1591,5 @@ public class HTMLGenerator {
 		return sym.moduleClass().lookup(Name.fromString(label).toTermName());
 	    }    
 	}
-    }    
-
-    //########################################################################    
+    }
 }
