@@ -11,6 +11,9 @@ package scala;
 
 
 /** A trait for totally ordered data.
+ *
+ *  @author  Martin Odersky
+ *  @version 1.0, 23/04/2004
  */
 trait Ordered[+a] {
 
@@ -21,7 +24,7 @@ trait Ordered[+a] {
    *  <code>x &gt; 0</code>    iff    <code>this &gt; that</code>
    */
   def compareTo [b >: a <% Ordered[b]](that: b): int;
-
+  
   def <  [b >: a <% Ordered[b]](that: b): boolean = (this compareTo that) <  0;
 
   def >  [b >: a <% Ordered[b]](that: b): boolean = (this compareTo that) >  0;
@@ -30,4 +33,3 @@ trait Ordered[+a] {
 
   def >= [b >: a <% Ordered[b]](that: b): boolean = (this compareTo that) >= 0;
 }
-
