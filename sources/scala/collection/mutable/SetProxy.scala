@@ -7,33 +7,34 @@
 ** $Id$
 \*                                                                      */
 
-package scala.collection;
+package scala.collection.mutable;
 
 
-/** This is a simple wrapper class for <code>scala.collection.Set</code>.
+/** This is a simple wrapper class for <code>scala.collection.mutable.Set</code>.
  *  It is most useful for assembling customized set abstractions
  *  dynamically using object composition and forwarding.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 21/07/2003
  */
-class SetWrapper[A](set: Set[A]) extends Set[A] {
+class SetProxy[A](set: Set[A]) extends Set[A]
+                               with scala.collection.SetProxy[A](set) {
 
-    def size: Int = set.size;
+    def +=(elem: A): Unit = set.+=(elem);
     
-    override def isEmpty: Boolean = set.isEmpty;
+    override def incl(elems: A*): Unit = set.incl(elems);
     
-    def contains(elem: A): Boolean = set.contains(elem);
+    override def incl(that: Iterable[A]): Unit = set.incl(that);
     
-    override def subsetOf(that: Set[A]): Boolean = set.subsetOf(that);
-
-    override def foreach(f: A => Unit): Unit = set.foreach(f);
+    def -=(elem: A): Unit = set.-=(elem);
     
-    override def exists(p: A => Boolean): Boolean = set.exists(p);
+    override def excl(elems: A*): Unit = set.excl(elems);
     
-    override def toList: List[A] = set.toList;
+    override def excl(that: Iterable[A]): Unit = set.excl(that);
     
-    override def toString() = set.toString();
+    override def intersect(that: Set[A]): Unit = set.intersect(that);
     
-    def elements: Iterator[A] = set.elements;
+    def clear: Unit = set.clear;
+    
+    override def filter(p: A => Boolean): Unit =  set.filter(p);
 }
