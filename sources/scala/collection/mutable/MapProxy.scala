@@ -21,16 +21,20 @@ class MapProxy[A, B](m: Map[A, B]) extends Map[A, B]
                                    with scala.collection.MapProxy[A, B](m) {
     
     def update(key: A, value: B): Unit = m.update(key, value);
+
+    override def ++=(map: Iterable[Pair[A, B]]): Unit = m ++= map;
     
-    def -=(key: A): Unit = m.-=(key);
+    override def ++=(it: Iterator[Pair[A, B]]): Unit = m ++= it;
     
-    override def incl(mappings: Pair[A, B]*): Unit = m.incl(mappings);
+    override def incl(mappings: Pair[A, B]*): Unit = m ++= mappings;
     
-    override def incl(map: Iterable[Pair[A, B]]): Unit = m.incl(map);
+    def -=(key: A): Unit = m -= key;
     
-    override def excl(keys: A*): Unit = m.excl(keys);
+    override def --=(keys: Iterable[A]): Unit = m --= keys;
     
-    override def excl(keys: Iterable[A]): Unit = m.excl(keys);
+    override def --=(it: Iterator[A]): Unit = m --= it;
+    
+    override def excl(keys: A*): Unit = m --= keys;
     
     override def clear: Unit = m.clear;
     
@@ -41,4 +45,8 @@ class MapProxy[A, B](m: Map[A, B]) extends Map[A, B]
     override def toString() = m.toString();
     
     override def mappingToString(p: Pair[A, B]) = m.mappingToString(p);
+
+    override def <<(cmd: Message[Pair[A, B]]): Unit = m << cmd;
+    
+    override def clone(): Map[A, B] = new MapProxy(m.clone());
 }
