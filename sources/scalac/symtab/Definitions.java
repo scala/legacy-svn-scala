@@ -124,7 +124,7 @@ public class Definitions {
     public final Type   BOOLEAN_TYPE;
     public final Symbol UNIT_CLASS;
     public final Type   UNIT_TYPE;
-    
+
     /** the array class
      */
     public final Symbol ARRAY_CLASS;
