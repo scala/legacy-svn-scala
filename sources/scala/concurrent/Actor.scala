@@ -8,7 +8,7 @@ abstract class Actor extends Thread() {
   
   def send(msg: Message): unit = 
     mb.send(msg);
-  
+
   def receive[a](f: PartialFunction[Message, a]): a = 
     mb.receive(f);
   
