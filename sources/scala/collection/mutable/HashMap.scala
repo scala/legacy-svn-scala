@@ -17,7 +17,9 @@ package scala.collection.mutable;
 class HashMap[A, B] extends scala.collection.mutable.Map[A, B]
                     with HashTable[A]
                     with DefaultMapModel[A, B] {
-                    
+    
+    def -=(key: A): Unit = removeEntry(key);
+    
     protected def entryKey(e: Entry) = e.key;
     
     override def clear = {
