@@ -70,13 +70,15 @@ object List {
       val Pair(fs, ss) = unzip(tail);
       Pair(f :: fs, s :: ss)
   }
-  
-  /** Converts an array into a list.
-   *  @param arr the array to convert
-   *  @returns a list that contains the same elements than <code>arr</code>
-   *           in the same order
+
+  /** Converts an iterator to a list
+   *  @param it the iterator to convert
+   *  @returns a list that contains the elements returned by successive
+   *  calls to <code>it.next</code>
    */
-  def fromArray[a](arr: Array[a]): List[a] = fromArray(arr, 0, arr.length);
+  def fromIterator[a](it: Iterator[a]): List[a] = 
+    if (it.hasNext) it.next :: fromIterator(it);
+    else Nil;
   
   /** Converts a range of an array into a list.
    *  @param arr the array to convert
@@ -112,7 +114,7 @@ object List {
       start = end;
       end = str.indexOf(separator, end);
     }
-	res.reverse
+    res.reverse
   }
 }
 
