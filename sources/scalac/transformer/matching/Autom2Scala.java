@@ -21,218 +21,146 @@ public class Autom2Scala  {
 
     protected boolean optimize = true;
 
-      static final Name HASNEXT = Name.fromString("hasnext");
-      static final Name CURRENT_ELEM = Name.fromString("cur");
+    static final Name HASNEXT = Name.fromString("hasnext");
+    static final Name CURRENT_ELEM = Name.fromString("cur");
+    
+    final int FAIL = -1;
+    
+    DetWordAutom dfa;
+    protected CodeFactory cf;
+
+    Definitions defs;// cf.defs only for convenience
+    TreeGen     gen; // cf.gen  only for convenience
+
+    /** owner of the pattern matching expression */
+    protected Symbol owner;
+
+    /** symbol of the matcher fun */
+    Symbol funSym;
+
+    /** symbol of the iterator ( scala.SequenceIterator ) */
+    Symbol iterSym;
+
+    /** symbol of the switching result ( scala.Int ) */
+    Symbol resultSym;
+
+    /** symbol of the state variable ( scala.Int ) */
+    Symbol stateSym;
+
+    /** symbol of variable holding current label */      
+    Symbol curSym;
+
+    /** symbol of boolean variable that indicates we have not reached end of sequence */      
+    Symbol hasnSym;
+
+    protected Type elementType;
+
+    public int pos;
+
+    String funSymName;
+
+    Symbol newFunSym( String prefix ) {
+        return new TermSymbol( pos, 
+                               cf.fresh.newName( prefix ), 
+                               owner,
+                               Modifiers.FINAL );
+    }
+
+    Symbol newParam( String prefix ) {
+        return new TermSymbol( pos, 
+                               cf.fresh.newName( prefix ), 
+                               funSym, 
+                               Modifiers.PARAM );
+    }
       
-      final int FAIL = -1;
-
-      DetWordAutom dfa;
-      protected CodeFactory cf;
-
-    //Vector freeVars;
-    //Vector mdefs;
-
-      Definitions defs;
-      TreeGen     gen;
-
-      /** owner of the pattern matching expression */
-      protected Symbol owner;
-
-      /** symbol of the matcher fun */
-      Symbol funSym;
-
-      /** symbol of the iterator ( scala.SequenceIterator ) */
-      Symbol iterSym;
-
-      /** symbol of the switching result ( scala.Int ) */
-      Symbol resultSym;
-
-      /** symbol of the state variable ( scala.Int ) */
-      Symbol stateSym;
-
-      protected Type elementType;
-
-      public int pos;
-
-      String funSymName;
-
-      Symbol newFunSym( String prefix ) {
-	  return new TermSymbol( pos, 
-				 cf.fresh.newName( prefix ), 
-				 owner,
-				 Modifiers.FINAL );
-      }
-
-      Symbol newParam( String prefix ) {
-	  return new TermSymbol( /*Kinds.VAL, */
-                                   pos, 
-                                   cf.fresh.newName( prefix ), 
-                                   funSym, 
-                                   Modifiers.PARAM );
-      }
-      
-      Type funRetType() {
-            switch( funSym.type() ) {
-            case MethodType( _, Type retType ):
-                  return retType;
-            }
-            throw new RuntimeException();
-      }
+    Type funRetType() {
+        switch( funSym.type() ) {
+        case MethodType( _, Type retType ):
+            return retType;
+        }
+        throw new RuntimeException();
+    }
 
 
-      Tree callFun( Tree[] args ) {
-            return gen.mkApply_V(gen.Ident(pos, funSym), args);
-      }
+    Tree callFun( Tree[] args ) {
+        return gen.mkApply_V(gen.Ident(pos, funSym), args);
+    }
             
 
-      /** init funSym, iterSym, stateSym, resultSym + allocate mdefs.
-       *  a subclass overriding initializeSyms may change these 
-       *   (esp. funSym)
-       */
-      protected void initializeSyms() {
-            if( funSymName == null )
-                  funSymName = "matcher";            
-            // the function that does the matching
+    /** init funSym, iterSym, stateSym, resultSym
+     *  a subclass overriding initializeSyms may change these 
+     *   (esp. funSym)
+     */
+    protected void initializeSyms() {
+        if( funSymName == null )
+            funSymName = "matcher";            
+        // the function that does the matching
 
-            this.funSym = newFunSym( funSymName );
+        this.funSym = newFunSym( funSymName );
             
-            this.iterSym = newParam("iter")
-                  .setType( cf._seqIterType( elementType ) ) ;
+        this.iterSym = newParam("iter")
+            .setType( cf._seqIterType( elementType ) ) ;
             
-            this.stateSym = newParam("q")
-                  .setType( defs.INT_TYPE() ) ;
+        this.stateSym = newParam("q")
+            .setType( defs.INT_TYPE() ) ;
             
-            this.resultSym = new TermSymbol( pos,
-					     cf.fresh.newName("swRes"),
-					     owner,
-					     0 )
-                  .setType( defs.INT_TYPE() ) ;
+        this.resultSym = new TermSymbol( pos,
+                                         cf.fresh.newName("swRes"),
+                                         owner,
+                                         0 )
+            .setType( defs.INT_TYPE() ) ;
             
-            this.funSym
-                  .setType( new Type.MethodType( new Symbol[] { 
-                        iterSym, stateSym },  defs.INT_TYPE() ));
+        this.funSym
+            .setType( new Type.MethodType( new Symbol[] { 
+                iterSym, stateSym },  defs.INT_TYPE() ));
             
-            this.curSym = new TermSymbol( pos, 
-                                          CURRENT_ELEM, 
-                                          funSym,
-                                          0)
-                  .setType( elementType );
+        this.curSym = new TermSymbol( pos, 
+                                      CURRENT_ELEM, 
+                                      funSym,
+                                      0)
+            .setType( elementType );
 
-            this.hasnSym = new TermSymbol( pos, 
-					   HASNEXT, 
-					   funSym,
-					   0)
-                  .setType( defs.BOOLEAN_TYPE() );
+        this.hasnSym = new TermSymbol( pos, 
+                                       HASNEXT, 
+                                       funSym,
+                                       0)
+            .setType( defs.BOOLEAN_TYPE() );
 
-      }
+    }
       
 
-      public Autom2Scala( DetWordAutom dfa, 
-                          Type elementType,
-                          Symbol owner,
-                          CodeFactory cf ) {
-            this.dfa = dfa;
-            this.elementType = elementType;
-            this.defs = cf.defs;
-            this.gen = cf.gen;
-            this.owner = owner;
-            this.pos = Position.FIRSTPOS;
-            this.cf = cf;
-            this.am = new AlgebraicMatcher( cf.unit );
-            //this.mdefs = new Vector();
-                                  
-            //this.freeVars = new Vector();
-      }      
-      
-      public Tree theDefDef;
+    public Autom2Scala( DetWordAutom dfa, 
+                        Type elementType,
+                        Symbol owner,
+                        CodeFactory cf ) {
+        this.dfa = dfa;
+        this.elementType = elementType;
+        this.defs = cf.defs;
+        this.gen = cf.gen;
+        this.owner = owner;
+        this.pos = Position.FIRSTPOS;
+        this.cf = cf;
+        this.am = new AlgebraicMatcher( cf.unit );                                  
+    }      
 
-      Symbol curSym;
-      Symbol hasnSym;
-
-    // overridden in XXTracerInScala
+    // overridden in RightTracerInScala
     Tree loadCurrentElem( Tree body ) {
-	return gen.mkBlock( new Tree[] { 
-	    cf.gen.ValDef( this.hasnSym, 
-			   cf._hasNext( _iter() ) ),
-	    cf.gen.ValDef( this.curSym, 
-			   gen.If( gen.Ident( pos, hasnSym ),//cf._hasNext( _iter() ),
-				   cf._next( _iter() ),
-				   gen.mkDefaultValue(cf.pos,curSym.type()))),
-						 //cf.ignoreValue( curSym.type() )
-						     
-	    body });
+        return gen.mkBlock( new Tree[] { 
+            cf.gen.ValDef( this.hasnSym, 
+                           cf._hasNext( _iter() ) ),
+            cf.gen.ValDef( this.curSym, 
+                           gen.If( gen.Ident( pos, hasnSym ),
+                                   cf._next( _iter() ),
+                                   gen.mkDefaultValue(cf.pos,curSym.type()))),
+            
+            body });
     }      
     
     Tree currentElem() {
-	return gen.Ident(Position.FIRSTPOS, curSym);
+        return gen.Ident( Position.FIRSTPOS, curSym );
     }
       
     Tree currentMatches( Label label ) {
-        return _cur_eq( _iter(), label );
-    }
-      
-      //
-      // translation of automata to scala code
-      //
-
-
-      /** creates an int variable
-       */
-      Tree _intvar( Symbol sym, Tree init ) {
-	  return gen.ValDef( sym, init );
-      }
-
-      /** `<switchResult>'
-       */
-      public Tree _swres() { return gen.Ident( pos, resultSym );}
-
-      /** `<state>'
-       */
-      public Tree _state() { return gen.Ident( pos, stateSym ); }
-
-      /** code to reference the iterator
-       */
-      Tree _iter() {         
-          return gen.Ident( pos, iterSym );  
-      }
-
-    Tree stateWrap(int i) {
-        if( dfa.isSink( i ))
-            return run_finished( i ); // state won't change! optimization
-        else
-            return gen.If( cf.Negate( gen.Ident( pos, hasnSym )),//cf._not_hasNext( _iter() ), 
-                           run_finished( i ),
-                           code_state_NEW( i ));
-    }
-    
-    /** body of the matcherDefFun
-     */
-      
-    public Tree code_body_NEW() {
-	int[] tags = new int[dfa.nstates];
-	Tree[] bodies = new Tree[dfa.nstates];
-	for( int i = 0; i<dfa.nstates; i++ ) {
-	    tags[ i ]   = i;
-            bodies[ i ] = stateWrap( i );
-	}
-	if( optimize ) 
-	    return loadCurrentElem( gen.Switch( _state(),
-                                                tags,
-                                                bodies,
-                                                code_fail(), // cannot happen
-                                                funRetType()));
-				    
-	Tree res = code_fail();
-	for( int i = dfa.nstates-2; i>= 0; i-- )
-	    res = gen.If( cf.Equals( _state(), gen.mkIntLit( cf.pos, i )), 
-			  bodies[ i ] , 
-			  res );
-	
-	return loadCurrentElem( res );
-	
-    }
-
-    private Tree _cur_eq( Tree iter, Label label ) {
         switch( label ) {
         case TreeLabel( Tree pat ):
             return _cur_match( pat );
@@ -241,76 +169,125 @@ public class Autom2Scala  {
         }
         throw new ApplicationError("expected either algebraic or simple label:"+label);
     }
+      
+    //
+    // translation of automata to scala code
+    //
 
-      AlgebraicMatcher am;
+
+    /** `<switchResult>' */
+    public Tree _swres() { return gen.Ident( pos, resultSym );}
+    
+    /** `<state>' param */
+    public Tree _state() { return gen.Ident( pos, stateSym ); }
+
+    /** `<iterator>' param */
+    Tree _iter() {         return gen.Ident( pos, iterSym );  }
+
+    /** simple optimization: if we are in a sink state, stop traversing sequence
+     */
+    Tree stateWrap(int i) {
+        if( dfa.isSink( i ))
+            return run_finished( i ); // state won't change! optimization
+        else
+            return gen.If( cf.Negate( gen.Ident( pos, hasnSym )),
+                           run_finished( i ),
+                           code_state_NEW( i ));
+    }
+    
+    /** body of the matcherDefFun
+     */
+    public Tree code_body_NEW() {
+        int[] tags = new int[dfa.nstates];
+        Tree[] bodies = new Tree[dfa.nstates];
+        for( int i = 0; i<dfa.nstates; i++ ) {
+            tags[ i ]   = i;
+            bodies[ i ] = stateWrap( i );
+        }
+        if( optimize ) 
+            return loadCurrentElem( gen.Switch( _state(),
+                                                tags,
+                                                bodies,
+                                                code_error(), // cannot happen
+                                                funRetType()));
+                                    
+        Tree res = code_error();
+        for( int i = dfa.nstates-2; i>= 0; i-- )
+            res = gen.If( cf.Equals( _state(), gen.mkIntLit( cf.pos, i )), 
+                          bodies[ i ] , 
+                          res );
+        
+        return loadCurrentElem( res );
+        
+    }
+
+    AlgebraicMatcher am;
 
     /*
       void handleVars(  ) {
       }
     */
-      // calling the /*AlgebraicMatcher*/PatternMatcher here
-      Tree _cur_match( Tree pat ) {
-            Matcher m = new Matcher( funSym,//this.funSym, 
-                                     currentElem(), 
-                                     defs.BOOLEAN_TYPE() );
+    // calling the /*AlgebraicMatcher*/PatternMatcher here
+    Tree _cur_match( Tree pat ) {
+        Matcher m = new Matcher( this.funSym,   /* owner*/
+                                 currentElem(), /* root */
+                                 defs.BOOLEAN_TYPE() /* restype */);
             
-            am.construct( m, new CaseDef[] {
-                cf.gen.CaseDef( pat,
-                                gen.mkBooleanLit( pat.pos, true )),
-                cf.gen.CaseDef( cf.gen.Ident(pat.pos, defs.PATTERN_WILDCARD),
-                                gen.mkBooleanLit( pat.pos, false )) },
-                false);
-            return am.toTree();
-      }
-
-      Tree code_delta( int i, Label label ) {
-            throw new RuntimeException();
-      }
-
-      Tree code_fail() {
-            return gen.mkIntLit(Position.FIRSTPOS, FAIL );
-      }
-            
-      /** code for the return value of the automaton translation
-       */
-      Tree run_finished( int state ) {
-            if( dfa.isFinal( state )) {
-                  return gen.mkIntLit(Position.FIRSTPOS, ((Integer) dfa.finals.get( new Integer( state ) )).intValue() );                  
-            } 
-            return gen.mkIntLit(Position.FIRSTPOS, FAIL );
-      }
-
-    /*
-    Tree ifInputHasNext() {
-	return cf.If( cf._hasNext( _iter() ), 
-		      cf.Block( stateBody.pos,
-				new Tree[] {
-				    loadCurrentElem(),
-				    stateBody},
-				stateBody.type()) );
+        am.construct( m, new CaseDef[] {
+            cf.gen.CaseDef( pat,
+                            gen.mkBooleanLit( pat.pos, true )),
+            cf.gen.CaseDef( cf.gen.Ident(pat.pos, defs.PATTERN_WILDCARD),
+                            gen.mkBooleanLit( pat.pos, false )) },
+                      false);
+        return am.toTree();
     }
-    */
+
+    Tree code_delta( int i, Label label ) {
+        throw new RuntimeException();
+    }
+
+    /** some error happened which is due to bug in translation/automaton
+     */ 
+    final Tree code_error() {
+        return gen.Block( new Tree[] {
+            gen.Console_print( pos, "System error during pattern matching. Please file bug report\n"),
+            cf.ThrowMatchError( pos, funRetType() )
+        });
+    }
+    
+    Tree code_fail() {
+        return gen.mkIntLit(Position.FIRSTPOS, FAIL );
+    }
+          
+    /** code for the return value of the automaton translation
+     */
+    Tree run_finished( int state ) {
+        if( dfa.isFinal( state )) {
+            return gen.mkIntLit(Position.FIRSTPOS, ((Integer) dfa.finals.get( new Integer( state ) )).intValue() );                  
+        } 
+        return gen.mkIntLit( Position.FIRSTPOS, FAIL );
+    }
 
     Tree code_state_NEW( int i ) {
-	Tree stateBody = code_delta( i, Label.DefaultLabel );
+        Tree stateBody = code_delta( i, Label.DefaultLabel );
         if( stateBody == null )
             stateBody = code_fail();
-	HashMap trans = ((HashMap[])dfa.deltaq)[ i ];
-	
-	for( Iterator labs = dfa.labels.iterator(); labs.hasNext() ; ) {
-	    Object label = labs.next();
-	    Integer next = (Integer) trans.get( label );
-	    
-	    
-	    Tree action = code_delta( i, (Label) label );
-	    
-	    if( action != null ) {
-		assert stateBody != null : "stateBody is null";
-		stateBody = gen.If( currentMatches((Label) label ),
-				    action,
-				    stateBody);
-	    }
-	}
-	return stateBody;
+        HashMap trans = ((HashMap[])dfa.deltaq)[ i ];
+        
+        for( Iterator labs = dfa.labels.iterator(); labs.hasNext() ; ) {
+            Object label = labs.next();
+            Integer next = (Integer) trans.get( label );
+            
+            
+            Tree action = code_delta( i, (Label) label );
+            
+            if( action != null ) {
+                assert stateBody != null : "stateBody is null";
+                stateBody = gen.If( currentMatches((Label) label ),
+                                    action,
+                                    stateBody);
+            }
+        }
+        return stateBody;
     }
 }
