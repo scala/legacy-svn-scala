@@ -17,21 +17,25 @@ import java.util.*;
 public class TestRegTraverser extends Traverser {
     boolean result = false;
 	Set variables = new HashSet();
-	
+
     public void traverse(Tree tree) {
     	if (!result)
 			switch (tree) {
-				case Alternative(Tree[] ts):
+				case Alternative(_):
 					result = true;
 					break;
 				case Bind(_, Tree pat):
 					variables.add(tree.symbol());
 					traverse(pat);
 					break;
-				case Ident(_):
-					if (variables.contains(tree.symbol()))
+				case Ident(Name name):
+					if ((name != Names.WILDCARD) &&
+					    variables.contains(tree.symbol()))
 						result = true;
 					break;
+				 case CaseDef(Tree pat, _, _):
+            		traverse(pat);
+            		break;
 				default:
 					super.traverse( tree );
 			}
