@@ -57,15 +57,19 @@ public class AnalyzerPhase extends PhaseDescriptor {
                 .setType(definitions.UNIT_TYPE);
             startContext.imports = new ImportList(
 		importscala, new Scope(), startContext.imports);
+        }
 
-	    scala = make.Ident(Position.NOPOS, Names.scala)
+        if (!global.noimports && !global.nopredefs) {
+            TreeFactory make = global.make;
+
+	    Tree scala = make.Ident(Position.NOPOS, Names.scala)
                 .setSymbol(definitions.SCALA)
-                .setType(scala.type);
+                .setType(Type.singleType(definitions.ROOT_TYPE, definitions.SCALA));
 	    Symbol scalaPredefSym = definitions.getModule(Names.scala_Predef);
 	    Tree scalaPredef = make.Select(Position.NOPOS, scala, Names.Predef)
 		.setSymbol(scalaPredefSym)
 		.setType(Type.singleType(scala.type, scalaPredefSym));
-	    
+
 	    Tree importscalaPredef = make.Import(
 		Position.NOPOS, scalaPredef, new Name[]{Names.WILDCARD})
 		.setSymbol(scalaPredefSym)
