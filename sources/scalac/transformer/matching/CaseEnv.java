@@ -41,7 +41,20 @@ class CaseEnv {
     
     protected ValDef[] boundVars = new ValDef[4];
     protected int numVars = 0;
-    
+
+      /** substitutes a symbol on the right hand side of a ValDef
+       */
+      public void substitute( Symbol oldSym, Tree newInit ) {
+            int i = 0; 
+            while( i < numVars) {
+                  if( boundVars[ i ].rhs.symbol() == oldSym ) {
+                        boundVars[ i ].rhs = newInit;
+                        return;
+                  }
+                  i++ ;
+            }
+      }
+
     public void newBoundVar(Symbol sym, Type type, Tree init) {
 	sym.setOwner( owner ); // FIXME should be corrected earlier
 	if (numVars == boundVars.length) {
