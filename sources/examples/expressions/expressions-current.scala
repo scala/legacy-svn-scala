@@ -14,7 +14,7 @@ abstract class Lang {
   class Num(n: int) extends Exp {
     def visit(v: visitor): unit = v.caseNum(n);
   }
-
+  
   class Eval(result: Ref[int]): visitor extends Visitor {
     def caseNum(n: int) = result.elem = n;
   }
@@ -39,18 +39,18 @@ abstract class Lang2 extends Lang {
   class Show2(result: Ref[String]): visitor extends Visitor2 {
     def caseNum(n: int) = result.elem = n.toString();
     def casePlus(l: Exp, r: Exp) = 
-	result.elem = 
-	    "(" + { l.visit(this); result.elem } +
-            "+" + { r.visit(this); result.elem }+ ")";
+      result.elem = 
+	"(" + { l.visit(this); result.elem } + 
+        "+" + { r.visit(this); result.elem }+ ")";
   }
 }
 
 object Main {
-
+  
   def main(args: Array[String]) = {
     val l1 = new Lang { type visitor = Visitor }
     val e1: l1.Exp = new l1.Num(42);
-
+    
     val iref = new Ref(0);
     System.out.println("eval: " + { e1.visit(new l1.Eval(iref)); iref.elem });
 
