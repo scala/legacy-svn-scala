@@ -33,7 +33,7 @@ abstract class SingleLinkedList[A, This <: SingleLinkedList[A, This]]: This with
         that.append(next);
         next = that;
     }
-	
+    
     def apply(n: Int): A = {
         if (n == 0) elem
         else if (next == null) error("unknown element")
