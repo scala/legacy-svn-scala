@@ -29,7 +29,7 @@ public class ParserPhase extends PhaseDescriptor {
     public void apply(Global global) {
         for (int i = 0; i < global.units.length; i++) apply(global.units[i]);
     }
-
+	
     public void apply(Unit unit) {
         unit.global.start();
         unit.body = new Parser(unit).parse();

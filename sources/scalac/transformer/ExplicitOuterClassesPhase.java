@@ -32,7 +32,11 @@ public class ExplicitOuterClassesPhase extends PhaseDescriptor {
     public void apply(Global global) {
         new ExplicitOuterClasses(global).apply();
     }
-
+    
+	public void apply(Unit unit) {
+		new ExplicitOuterClasses(unit.global).apply(unit);
+	}
+	
     public Checker[] postCheckers(Global global) {
         return new Checker[] {
             new CheckSymbols(global),

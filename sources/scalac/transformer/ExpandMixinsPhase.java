@@ -33,7 +33,11 @@ public class ExpandMixinsPhase extends PhaseDescriptor {
     public void apply(Global global) {
         new ExpandMixins(global, this).apply();
     }
-
+    
+	public void apply(Unit unit) {
+		new ExpandMixins(unit.global, this).apply(unit);
+	}
+	
     public Checker[] postCheckers(Global global) {
         return new Checker[] {
             new CheckSymbols(global),

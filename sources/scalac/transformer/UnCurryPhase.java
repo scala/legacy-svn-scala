@@ -38,6 +38,10 @@ public class UnCurryPhase extends PhaseDescriptor implements Modifiers {
     public void apply(Global global) {
         new UnCurry(global, this).apply();
     }
+    
+    public void apply(Unit unit) {
+    	new UnCurry(unit.global, this).apply(unit);
+    }
 
     /** - return symbol's transformed type, 
      *  - if symbol is a def parameter with transformed type T, return () => T
