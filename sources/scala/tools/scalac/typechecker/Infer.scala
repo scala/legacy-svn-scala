@@ -1308,7 +1308,7 @@ class Infer(global: scalac_Global, gen: TreeGen, make: TreeFactory) extends scal
     var best: int = -1;
     { var i = 0; while (i < alttypes.length) {
       if (isApplicable(alttypes(i), argtypes, pt) &&
-	  (best < 0 || specializes(alttypes(i), alttypes(best))))	
+	  (best < 0 || specializes(alttypes(i), alttypes(best))))
 	best = i;
       i = i + 1
     }}
