@@ -8,51 +8,38 @@
 
 package scalac.transformer;
 
+import ch.epfl.lamp.util.CodePrinter;
+
 import scalac.Global;
 import scalac.Phase;
 import scalac.PhaseDescriptor;
 import scalac.CompilationUnit;
-import scalac.symtab.Definitions;
-
-import ch.epfl.lamp.util.CodePrinter;
-import scalac.atree.ATreePrinter;
-
 
 /**
  * This class represents the ICode phase for the java version
  * of the compiler. It doesn't do anything but permit to make
- * a bridge between the java implementation of Socos et the 
+ * a bridge between the java implementation of Socos et the
  * scala one. See scala.tools.scalac.icode.ICodePhase for
  * implementation
  */
-public class ICodePhase extends Phase {
-    
-    //########################################################################
-    // Private Fields
+public abstract class ICodePhase extends Phase {
 
-    private final Definitions definitions;
-   
     //########################################################################
     // Public Constructors
-    
+
     /** Initializes this instance. */
     public ICodePhase(Global global, PhaseDescriptor descriptor) {
         super(global, descriptor);
-        this.definitions = global.definitions;
     }
 
     //########################################################################
     // Public Methods
 
     /** Applies this phase to the given compilation units. */
-    public void apply(CompilationUnit[] units) {
-       	// This java version doesn't make anything
-    }
+    public abstract void apply(CompilationUnit[] units);
 
-    public ATreePrinter getPrinter(CodePrinter cp) {
-	return new ATreePrinter(cp);
-	// !! Useless
-    }
+    /** Prints the given compilation units. */
+    public abstract void print(CompilationUnit[] units, CodePrinter printer);
 
+    //########################################################################
 }
-
