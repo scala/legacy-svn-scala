@@ -823,7 +823,8 @@ public class Scanner extends TokenData {
         enterKeyword("#", HASH);
         enterKeyword("trait", TRAIT);
 	enterKeyword("as", AS);
-	enterKeyword("is", IS);
+	enterKeyword("is", IS); 
+	enterKeyword("@", AT);
     }
 }
 
