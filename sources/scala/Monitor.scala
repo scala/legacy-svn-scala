@@ -1,15 +1,9 @@
-package scala with {
+package scala;
 
-  class Monitor extends NativeMonitor() with {
-    
-    def synchronized[a](def p: a): a = {
-      var value: Ref[a] = null;
-      synchronised(=> value = Ref(p));
-      value.elem
-    }
+class Monitor() extends NativeMonitor() with {
 
-    def await(def cond: Boolean) = while (!cond) { this.wait() }
+  def synchronized[a](def p: a): a = synchronised(p);
 
-  }
+  def await(def cond: Boolean) = while (!cond) { this.wait() }
 
 }
