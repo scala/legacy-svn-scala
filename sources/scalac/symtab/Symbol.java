@@ -252,7 +252,7 @@ public abstract class Symbol implements Modifiers, Kinds {
 
     /** Does this symbol denote a final symbol? */
     public final boolean isFinal() {
-        return (flags & FINAL) != 0;
+        return (flags & FINAL) != 0; 
     }
 
     /** Does this symbol denote a method? 
@@ -372,6 +372,12 @@ public abstract class Symbol implements Modifiers, Kinds {
     public final boolean isPrivate() {
 	preInitialize();
         return (flags & PRIVATE) != 0;
+    }
+
+    /** Has this symbol been lifted? */
+    public final boolean isLifted() {
+	preInitialize();
+        return (flags & LIFTED) != 0;
     }
 
     /** Does this symbol denote a deferred symbol? */
