@@ -56,6 +56,14 @@ public class TreeGen implements Kinds, Modifiers {
     /*************************************************************************/
     /** METHODS **/
 
+    private Type deref(Type tp) {
+	switch (tp) {
+	case PolyType(Symbol[] tparams, Type restp):
+	    if (tparams.length == 0) return restp;
+	}
+	return tp;
+    }
+
     /** Create a dummy symbol to be used for templates.
      */
     public Symbol localDummy(int pos, Symbol owner) {
@@ -156,7 +164,13 @@ public class TreeGen implements Kinds, Modifiers {
         return make.Literal(pos, bool ? Boolean.TRUE : Boolean.FALSE).
             setType(definitions.BOOLEAN_TYPE);
     }
-    
+
+    /** Build a string literal
+     */
+    public Tree mkStringLit(int pos, String str) {
+        return make.Literal(pos, str).setType(definitions.JAVA_STRING_TYPE);
+    }
+	
     /** Build a tree to be used as a base class constructor for a template.
      */
     public Tree mkParentConstr(int pos, Type parentType) {
@@ -381,7 +395,7 @@ public class TreeGen implements Kinds, Modifiers {
 	Type symtype = qual.type.memberType(sym);
 	Global.instance.prevPhase();
 	return make.Select(pos, qual, sym.name)
-	    .setSymbol(sym).setType(symtype);
+	    .setSymbol(sym).setType(deref(symtype));
     }
 
     public Tree Select(Tree qual, Symbol sym) {
@@ -401,7 +415,7 @@ public class TreeGen implements Kinds, Modifiers {
 	Type symtype = sym.type();
 	Global.instance.prevPhase();
 	return make.Ident(pos, sym.name)
-	    .setSymbol(sym).setType(symtype);
+	    .setSymbol(sym).setType(deref(symtype));
     }
 
     public Tree Ident(Symbol sym) {
