@@ -10,17 +10,20 @@
 package scala.xml;
 
 import scala.collection.immutable ;
-/** an XML node for text (PCDATA). Used in both non-bound and bound XML 
- *  representations
+
+/** an XML node for unparsed character data (CDATA).
  * @author Burak Emir
- * @param text the text contained in this node
+ * @param text text contained in this node, may not contain "]]>"
 **/
 
-case class Text( text:String ) extends Node {  
+case class CharData( text:String ) extends Node {  
+
+  if( text.indexOf( "]]>" ) != -1 ) 
+    throw new IllegalArgumentException(" CDATA text may not contain \"]]>\" ");
 
   /** the constant "#PCDATA"
   */
-  def label    = "#PCDATA";
+  def label    = "#PI";
 
   /** always empty */
   final def attribute = immutable.TreeMap.Empty[String,String];
@@ -28,10 +31,7 @@ case class Text( text:String ) extends Node {
   /** always empty */
   final def child = Nil;
 
-  /** hashcode for this Text */
-  override def hashCode() = text.hashCode();
-
-  /** returns text, with some characters escaped according to XML spec */
-  override def toString() = Utility.escape( text );
+  /** returns  "<![CDATA["+text+"]]>" */
+  final override def toString() = "<![CDATA["+text+"]]>";
     
 }

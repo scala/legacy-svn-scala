@@ -9,6 +9,7 @@
 
 package scala.xml;
 
+import scala.collection.immutable ;
 /** an XML node for text (PCDATA). Used in both non-bound and bound XML 
  *  representations
  * @author Burak Emir
@@ -21,7 +22,7 @@ case class EntityRef( entityName:String ) extends Node {
   def label    = "#ENTITY";
 
   /** always empty */
-  final def attribute = Nil;
+  final def attribute = immutable.TreeMap.Empty[String,String];
 
   /** always empty */
   final def child = Nil;
