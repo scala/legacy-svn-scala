@@ -1,7 +1,16 @@
+/*     ___ ____ ___   __   ___   ___
+**    / _// __// _ | / /  / _ | / _ \    Scala classfile decoder
+**  __\ \/ /__/ __ |/ /__/ __ |/ ___/    (c) 2003, LAMP/EPFL
+** /____/\___/_/ |_/____/_/ |_/_/
+** 
+**  $Id$
+*/
+
 package scalap;
 
+
 class ByteArrayReader(content: Array[Byte]) {
-	import java.io._;
+    import java.io._;
 
     /** the buffer containing the file
      */
@@ -73,10 +82,10 @@ class ByteArrayReader(content: Array[Byte]) {
         } while ((b & 0x80) != 0);
         x
     }
-	
+    
     /** read an UTF8 encoded string
      */
-	def nextUTF8(len: Int): String = {
+    def nextUTF8(len: Int): String = {
         val cs: Array[Char] = new Array(len);
         var i = bp;
         var j = 0;
@@ -111,7 +120,7 @@ class ByteArrayReader(content: Array[Byte]) {
         ((buf(bp + 1) & 0xff) << 16) +
         ((buf(bp + 2) & 0xff) << 8) +
          (buf(bp + 3) & 0xff);
-	
+    
     /** extract a long integer at position bp from buf
      */
     def getLong(bp: Int): Long =
