@@ -82,7 +82,7 @@ trait Iterable[+A] {
         while (!res && it.hasNext) { res = p(it.next) }
         res
     }
-    
+
     /** Find and return the first element of the iterable object satisfying a
      *  predicate, if any.
      *
