@@ -140,7 +140,9 @@ public class Names {
     public static final Name throw_ = Name.fromString("throw");
     public static final Name true_ = Name.fromString("true");
     public static final Name update = Name.fromString("update");
-
+	
+	public static final Name tag = Name.fromString("$tag");
+	
     public static final Name
         ZNOT = encode("!"),
         ZAND = encode("&&"),
