@@ -9,13 +9,14 @@
 
 package scala.xml;
 
+
 /** an XML node for text (PCDATA). Used in both non-bound and bound XML 
  *  representations
  * @author Burak Emir
  * @param text the text contained in this node
 **/
 
-case class Text( text:String ) extends Node {
+case class Text( text:String ) extends Node {  
 
   /** the constant "#PCDATA"
   */
