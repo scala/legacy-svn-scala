@@ -18,14 +18,15 @@ package scala.collection.immutable ;
  */
 class BitSet(n:Int, ba: Array[Byte], copy:Boolean) extends scala.collection.BitSet {
   
-  val size   = n;
+  final def size   = n;
+
   val array:Array[Byte]  = 
     if( copy ) { 
       val arr = new Array[Byte](ba.length);
       java.lang.System.arraycopy( ba, 0, arr, 0, ba.length );
       arr
     } else ba;
-  
+
   def this(rbs: scala.collection.mutable.ResizableBitSet) = {
     this(rbs.size, rbs.toByteArray, false);
   }
