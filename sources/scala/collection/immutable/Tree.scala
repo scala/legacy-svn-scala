@@ -263,10 +263,11 @@ class Tree[KEY,Entry](order:Order[KEY],entryKey:Entry=>KEY) {
     // Some helpful definitions. 
     */
     protected val p = 2; // It seems that p = 2 is optimal for sorted keys */
-    protected def pow(a:int, b:int):int =
-	a.match {
+    protected def pow(a:int, b:int):int = 	
+      b.match {
 	    case 2 => a * a;
 	    case 1 => a;
+            case 0 => 1;
 	    case x if x > 0 => a * pow(a, b-1);
 	};
     private def div2(x:int) = x >> 1;
