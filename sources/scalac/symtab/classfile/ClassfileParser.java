@@ -17,7 +17,7 @@ import java.util.*;
 //todo: don't keep statics module in scope.
 
 public class ClassfileParser implements ClassfileConstants {
-    
+
     static final int CLASS_ATTR  = SOURCEFILE_ATTR
                                  | INNERCLASSES_ATTR
                                  | SYNTHETIC_ATTR
@@ -26,14 +26,14 @@ public class ClassfileParser implements ClassfileConstants {
                                  | SCALA_ATTR;
     static final int METH_ATTR   = CODE_ATTR
                                  | EXCEPTIONS_ATTR
-                                 | SYNTHETIC_ATTR 
+                                 | SYNTHETIC_ATTR
                                  | DEPRECATED_ATTR
                                  | META_ATTR;
     static final int FIELD_ATTR  = CONSTANT_VALUE_ATTR
                                  | SYNTHETIC_ATTR
                                  | DEPRECATED_ATTR
                                  | META_ATTR;
-    
+
     protected Global global;
     protected AbstractFileReader in;
     protected Symbol c;
@@ -47,8 +47,8 @@ public class ClassfileParser implements ClassfileConstants {
     protected AttributeParser attrib;
     protected Definitions defs;
     protected int phaseId;
-    
-    
+
+
     public ClassfileParser(Global global, AbstractFileReader in, Symbol c) {
         this.global = global;
         this.in = in;
@@ -62,7 +62,7 @@ public class ClassfileParser implements ClassfileConstants {
 	this.phaseId = global.POST_ANALYZER_PHASE_ID;
     }
 
-    
+
     /** parse the classfile and throw IO exception if there is an
      *  error in the classfile structure
      */
@@ -100,8 +100,8 @@ public class ClassfileParser implements ClassfileConstants {
 	    Symbol staticsClass = c.module().moduleClass();
 	    Type staticsInfo = Type.compoundType(Type.EMPTY_ARRAY, statics, staticsClass);
             staticsClass.setInfo(staticsInfo, phaseId);
-	    c.module().setInfo(Type.TypeRef(staticsClass.owner().thisType(), 
-					    staticsClass, Type.EMPTY_ARRAY)); 
+	    c.module().setInfo(Type.TypeRef(staticsClass.owner().thisType(),
+					    staticsClass, Type.EMPTY_ARRAY));
             basetpes[0] = supertpe;
             for (int i = 1; i < basetpes.length; i++)
                 basetpes[i] = readClassType(in.nextChar());
@@ -132,7 +132,7 @@ public class ClassfileParser implements ClassfileConstants {
             throw new IOException("bad class file (" + e.getMessage() + ")");
         }
     }
-    
+
     /** convert Java modifiers into Scala flags
      */
     public int transFlags(int flags) {
@@ -150,7 +150,7 @@ public class ClassfileParser implements ClassfileConstants {
             res |= Modifiers.INTERFACE | Modifiers.ABSTRACTCLASS;
         return res | Modifiers.JAVA;
     }
-    
+
     /** read a class name
      */
     protected Name readClassName(int i) {
@@ -170,7 +170,7 @@ public class ClassfileParser implements ClassfileConstants {
         else
             return res;
     }
-    
+
     /** read a signature and return it as a type
      */
     protected Type readType(int i) {
@@ -185,10 +185,10 @@ public class ClassfileParser implements ClassfileConstants {
         Name name = (Name)pool.readPool(in.nextChar());
         Type type = readType(in.nextChar());
 	int mods = transFlags(flags);
-	if ((flags & 0x0010) == 0) 
+	if ((flags & 0x0010) == 0)
 	    mods |= Modifiers.MUTABLE;
 	Symbol owner = c;
-	if ((flags & 0x0008) != 0) 
+	if ((flags & 0x0008) != 0)
 	    owner = c.module().moduleClass();
         Symbol s = new TermSymbol(Position.NOPOS, name, owner, mods);
         s.setInfo(type, phaseId);
@@ -216,7 +216,7 @@ public class ClassfileParser implements ClassfileConstants {
 	    case MethodType(Symbol[] vparams, _):
 		if (c == defs.OBJECT_CLASS)
 		    type = Type.PolyType(Symbol.EMPTY_ARRAY, ctype);
-		else 
+		else
 		    type = Type.MethodType(vparams, ctype);
 		break;
 	    default:
@@ -233,7 +233,8 @@ public class ClassfileParser implements ClassfileConstants {
 		transFlags(flags));
 	    s.setInfo(type, phaseId);
 	    attrib.readAttributes(s, type, METH_ATTR);
-	    ((flags & 0x0008) != 0 ? statics : locals).enterOrOverload(s);
+            if ((flags & 0x0002) == 0) // Don't include PRIVATE methods
+                ((flags & 0x0008) != 0 ? statics : locals).enterOrOverload(s);
 	}
     }
 }
