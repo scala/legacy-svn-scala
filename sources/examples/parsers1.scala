@@ -43,7 +43,7 @@ abstract class Parsers {
   }
 
   def succeed[a](x: a) = new Parser[a] {
-    def apply(in: intype) = Some(Pair(x, in))
+    def apply(in: intype): Result = Some(Pair(x, in))
   }
 
   def rep[a](p: Parser[a]): Parser[List[a]] =
@@ -71,7 +71,7 @@ case class Lst(elems: List[Tree]) extends Tree {}
 
 abstract class ListParsers extends CharParsers {
 
-  def ident: Parser[Tree] = 
+  def ident: Parser[Tree] =
     for (
       val c: char <- chr(Character.isLetter); 
       val cs: List[char] <- rep(chr(Character.isLetterOrDigit))
@@ -83,20 +83,20 @@ abstract class ListParsers extends CharParsers {
       val ds: List[char] <- rep(chr(Character.isDigit))
     ) yield Num(((d - '0') /: ds) ((x, digit) => x * 10 + digit - '0'));
 
-  def list: Parser[Tree] = 
+  def list: Parser[Tree] =
     for (
       val _ <- chr('(');
       val es <- listElems ||| succeed(List());
       val _ <- chr(')')
     ) yield Lst(es);
 
-  def listElems: Parser[List[Tree]] = 
+  def listElems: Parser[List[Tree]] =
     for (
       val x <- expr;
       val xs <- chr(',') &&& listElems ||| succeed(List())
     ) yield x :: xs;
 
-  def expr: Parser[Tree] = 
+  def expr: Parser[Tree] =
     list ||| ident ||| number;
 
 }
