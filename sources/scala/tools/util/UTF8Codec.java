@@ -4,7 +4,7 @@
 ** /_____/\____/\___/\____/____/                                        **
 \*                                                                      */
 
-// $Id: UTF8Codec.java
+// $Id$
 
 package scala.tools.util;
 
@@ -16,7 +16,7 @@ public final class UTF8Codec {
         int end = from + len;
         while (i < end) {
             int ch = src[i++];
-            if (ch < 128) 
+            if (ch < 128)
                 dst[j++] = (byte)ch;
             else if (ch <= 0x3FF) {
                 dst[j++] = (byte)(0xC0 | (ch >> 6));
