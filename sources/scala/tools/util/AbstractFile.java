@@ -2,11 +2,11 @@
 **    / __// __ \/ __// __ \/ ____/    SOcos COmpiles Scala             **
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
-**                                                                      **
-** $Id$
 \*                                                                      */
 
-package scalac.util;
+// $Id$
+
+package scala.tools.util;
 
 import java.io.*;
 import java.util.*;
@@ -14,11 +14,11 @@ import java.util.zip.*;
 import java.util.jar.*;
 
 public abstract class AbstractFile {
-    
+
     /** separator
      */
     protected char separator = File.separatorChar;
-    
+
     /** table of all opened jar-files
      */
     protected static Hashtable  opened = new Hashtable();
@@ -60,7 +60,7 @@ public abstract class AbstractFile {
     public InputStream getInputStream() throws IOException {
         return new ByteArrayInputStream(read());
     }
-    
+
     /** open file 'name' in directory 'dirname'
      */
     public static AbstractFile open(String dirname, String name) {
@@ -91,7 +91,7 @@ public abstract class AbstractFile {
             res = null;
         return res;
     }
-    
+
     /** create file given by a fully qualified name from root directory `outdir';
      *  create intermediate directories if they do not exist already
      */
@@ -116,11 +116,11 @@ class PlainFile extends AbstractFile {
     PlainFile(File f) {
         this.f = f;
     }
-    
+
     public String getName() {
         return f.getName();
     }
-    
+
     public String getPath() {
         return f.getPath();
     }
@@ -134,7 +134,7 @@ class PlainFile extends AbstractFile {
     }
 
     public long lastModified() {
-	return f.lastModified();
+        return f.lastModified();
     }
 
     public byte[] read() throws IOException {
@@ -161,7 +161,7 @@ class PlainFile extends AbstractFile {
             if (fs[i].isDirectory() &&
                 !res[i].endsWith("/"))
                 res[i] = res[i] + "/";
-        }   
+        }
         return res;
     }
 
@@ -173,11 +173,11 @@ class PlainFile extends AbstractFile {
 class ZippedFile extends AbstractFile {
     ZipDir      dir;
     ZipEntry    zipEntry;
-    
+
     {
         separator = '/';
     }
-    
+
     ZippedFile(ZipDir dir, String name) {
         this.dir = dir;
         if (dir.zipFile != null) {
@@ -187,25 +187,25 @@ class ZippedFile extends AbstractFile {
                 zipEntry = this.dir.zipFile.getEntry(name + separator);
         }
     }
-    
+
     public String getName() {
         return zipEntry.getName();
     }
-    
+
     public String getPath() {
         return dir.getPath() + "(" + zipEntry.getName() + ")";
     }
-    
+
     public boolean exists() {
         return (zipEntry != null);
     }
-    
+
     public boolean isDirectory() {
         return zipEntry.isDirectory();
     }
-    
+
     public long lastModified() {
-	return zipEntry.getTime();
+        return zipEntry.getTime();
     }
 
     public byte[] read() throws IOException {
@@ -221,7 +221,7 @@ class ZippedFile extends AbstractFile {
         in.close();
         return buf;
     }
-    
+
     public String[] list() throws IOException {
         if (!isDirectory())
             throw new IOException("not a directory");
@@ -237,11 +237,11 @@ class ZippedFile extends AbstractFile {
 class ZipDir extends AbstractFile {
     File f;
     ZipFile zipFile;
-    
+
     {
         separator = '/';
     }
-    
+
     ZipDir(File f) {
         this.f = f;
         try {
@@ -249,11 +249,11 @@ class ZipDir extends AbstractFile {
         } catch (ZipException e) {
         } catch (IOException e) {}
     }
-    
+
     public String getName() {
         return f.getName();
     }
-    
+
     public String getPath() {
         return f.getPath();
     }
@@ -267,7 +267,7 @@ class ZipDir extends AbstractFile {
     }
 
     public long lastModified() {
-	return -1;
+        return -1;
     }
 
     public byte[] read() throws IOException {
@@ -300,7 +300,7 @@ class ZipDir extends AbstractFile {
     public String[] list() throws IOException {
         return list("");
     }
-    
+
     public AbstractFile open(String name) {
         return new ZippedFile(this, name);
     }
@@ -310,10 +310,10 @@ final class JarArchive extends AbstractFile {
     File f;
     JarFile jarFile;
     HashMap entries;
-    
+
     public final static String[] EMPTY = new String[0];
-    
-    
+
+
     JarArchive(File f) {
         try {
             jarFile = new JarFile(this.f = f);
@@ -321,11 +321,11 @@ final class JarArchive extends AbstractFile {
         catch (ZipException e) {}
         catch (IOException e) {}
     }
-    
+
     public String getName() {
         return f.getName();
     }
-    
+
     public String getPath() {
         return f.getPath();
     }
@@ -339,13 +339,13 @@ final class JarArchive extends AbstractFile {
     }
 
     public long lastModified() {
-	return -1;
+        return -1;
     }
 
     public byte[] read() throws IOException {
         throw new IOException("cannot read archive");
     }
-    
+
     private void load() {
         entries = new HashMap();
         if (jarFile == null)
@@ -373,7 +373,7 @@ final class JarArchive extends AbstractFile {
             }
         }
     }
-    
+
     public String[] list(String prefix) {
         prefix = prefix.replace(File.separatorChar, '/');
         if (entries == null)
@@ -396,11 +396,11 @@ final class JarArchive extends AbstractFile {
         } else
             return (String[])files.keySet().toArray(new String[files.size()]);
     }
-    
+
     public String[] list() throws IOException {
         return list("");
     }
-    
+
     public AbstractFile open(String name) {
         if (entries == null)
             load();
@@ -434,23 +434,23 @@ final class JarArchive extends AbstractFile {
         } else
             return new NoJarDirEntry(name);
     }
-    
+
     static class NoJarDirEntry extends AbstractFile {
         String name;
-        
+
         NoJarDirEntry(String name) {
             this.name = name;
         }
-        
+
         public String getName() {
             return name.substring(
                 name.lastIndexOf('/', name.length() - 2) + 1);
         }
-        
+
         public String getPath() {
             return name;
         }
-        
+
         public String getFullName() {
             return name;
         }
@@ -462,66 +462,66 @@ final class JarArchive extends AbstractFile {
         public boolean isDirectory() {
             return true;
         }
-        
-	public long lastModified() {
-	    return -1;
-	}
+
+        public long lastModified() {
+            return -1;
+        }
 
         public String[] list() throws IOException {
             throw new IOException("not a directory");
         }
-        
+
         public byte[] read() throws IOException {
             throw new IOException("cannot read archive");
         }
-        
+
         public AbstractFile open(String fname) {
             throw new Error("cannot open archive entry");
         }
     }
-    
+
     final class JarDirEntry extends NoJarDirEntry {
         HashMap entries;
-        
+
         JarDirEntry(String name) {
             super(name);
             this.entries = new HashMap();
         }
-        
+
         public String getPath() {
             return JarArchive.this.getPath() + "(" + name + ")";
         }
-        
+
         public boolean exists() {
             return true;
         }
-        
+
         public String[] list() throws IOException {
             return JarArchive.this.list(name);
         }
-        
+
         public AbstractFile open(String fname) {
             fname = fname.replace(File.separatorChar, '/');
             return JarArchive.this.open(name + fname);
         }
     }
-    
+
     static class NoJarFileEntry extends AbstractFile {
         String name;
-        
+
         NoJarFileEntry(String name) {
             this.name = name;
         }
-        
+
         public String getName() {
             return name.substring(
                 name.lastIndexOf('/', name.length() - 1) + 1);
         }
-        
+
         public String getFullName() {
             return name;
         }
-        
+
         public String getPath() {
             return name;
         }
@@ -533,24 +533,24 @@ final class JarArchive extends AbstractFile {
         public boolean isDirectory() {
             return false;
         }
-        
-	public long lastModified() {
-	    return -1;
-	}
+
+        public long lastModified() {
+            return -1;
+        }
 
         public String[] list() throws IOException {
             throw new IOException("not a directory");
         }
-        
+
         public byte[] read() throws IOException {
             throw new IOException("cannot read archive");
         }
-        
+
         public AbstractFile open(String fname) {
             throw new Error("not a directory");
         }
     }
-    
+
     final class JarFileEntry extends NoJarFileEntry {
 
         JarFileEntry(String name) {
@@ -564,10 +564,10 @@ final class JarArchive extends AbstractFile {
         public boolean exists() {
             return true;
         }
-        
-	public long lastModified() {
-	    return jarFile.getJarEntry(name).getTime();
-	}
+
+        public long lastModified() {
+            return jarFile.getJarEntry(name).getTime();
+        }
 
         public byte[] read() throws IOException {
             JarEntry jarEntry = jarFile.getJarEntry(name);
