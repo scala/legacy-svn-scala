@@ -31,22 +31,24 @@ package scala.tools.scala4ant {
     
     def runCompiler(args:Array[String]) = {
         var result = true;
-	// dirty work, to get rid of debugging (-g) option, set in setupJavac...
+
+	// dirty work to get rid of debugging (-g) option, set in setupJavac...
       
-	val nargs = new Array[ String ]( args.length - 2 );
+	val nargs = new Array[ String ]( args.length - 1 );
 	var j = 0;
-	for( val  i <- List.range( 0, args.length-1 ) ) {
+	for( val  i <- List.range( 0, args.length ) ) {
+          Console.println( "args[ "+i+" ] = "+args(i));
 	    if( !args( i ).startsWith("-g") ) {
 		//System.err.print( args[ i ] +" ")
 		nargs( j ) = args( i );
                 j = j + 1;
 	    }
         }
-      
+
 	// compile
         val reporter = new Reporter();
         val command = new CompilerCommand(PRODUCT, VERSION, reporter, new CompilerPhases());
-        if (command.parse(nargs) && command.files.list.size() > 0) {
+        if( command.parse(nargs) && command.files.list.size() > 0 ) {
             val global = new Global(command);
 	    try {
 		global.compile(command.files.toArray(), false);
@@ -64,7 +66,7 @@ package scala.tools.scala4ant {
 	      js.parse(args);
 	      return js.JavaContext().JavaCompiler().compile();
 	    */
-	}
+	} 
 	result;
 	
     }
