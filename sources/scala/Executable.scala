@@ -21,7 +21,7 @@ package scala;
  *  defines the main program. This technique does not work if the main
  *  program depends on command-line arguments (which are not accessible
  *  with the technique presented here).
- * 
+ *
  *  It is possible to time the execution of objects that inherit from
  *  class <code>Executable</code> by setting the global scala.time property.
  *  Here is an example for benchmarking object <code>Main</code>:
@@ -32,17 +32,18 @@ package scala;
  *  @author  Matthias Zenger
  *  @version 1.0, 10/09/03
  */
+
 class Executable {
 
     /** The time when execution of this program started.
      */
-	val executionStart: Long = System.currentTimeMillis();
-	
-	/** The default main method.
-	 */
+    val executionStart: Long = System.currentTimeMillis();
+
+    /** The default main method.
+     */
     def main(args: Array[String]) = {
-    	if (System.getProperty("scala.time") != null)
-    		System.out.println("[total " +
-    			(System.currentTimeMillis() - executionStart) + "ms]");
+        if (System.getProperty("scala.time") != null)
+          System.out.println("[total " +
+                             (System.currentTimeMillis() - executionStart) + "ms]");
     }
 }
