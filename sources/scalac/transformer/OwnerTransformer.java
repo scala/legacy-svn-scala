@@ -34,7 +34,7 @@ public class OwnerTransformer extends Transformer {
 	currentOwner = global.definitions.ROOT_CLASS;
         unit.body = transform(unit.body);
     }
-    
+
     public Tree transform(Tree tree, Symbol owner) {
 	Symbol prevOwner = currentOwner;
 	currentOwner = owner;
@@ -95,21 +95,21 @@ public class OwnerTransformer extends Transformer {
 
 	case ClassDef(int mods, Name name, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Template impl):
 	    return copy.ClassDef(
-		tree, mods, name, 
-		transform(tparams, tree.symbol()), 
-		transform(vparams, tree.symbol()),
+		tree, mods, name,
+		transform(tparams, tree.symbol().constructor()),
+		transform(vparams, tree.symbol().constructor()),
 		transform(tpe),
 		transform(impl, tree.symbol()));
-		
+
 	case ModuleDef(int mods, Name name, Tree tpe, Template impl):
 	    return copy.ModuleDef(
-		tree, mods, name, transform(tpe), 
+		tree, mods, name, transform(tpe),
 		transform(impl, tree.symbol().moduleClass()));
 
 	case DefDef(int mods, Name name, TypeDef[] tparams, ValDef[][] vparams, Tree tpe, Tree rhs):
 	    return copy.DefDef(
-		tree, mods, name, 
-		transform(tparams, tree.symbol()), 
+		tree, mods, name,
+		transform(tparams, tree.symbol()),
 		transform(vparams, tree.symbol()),
 		transform(tpe, tree.symbol()),
 		transform(rhs, tree.symbol()));
