@@ -117,7 +117,7 @@ class Buffer[A] with MutableList[A] {
         len = len - 1;
         old;
     }
-
+    
     /** Clears the buffer contents.
      */
     def clear: Unit = reset;
