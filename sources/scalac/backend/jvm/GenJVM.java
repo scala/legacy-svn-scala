@@ -277,7 +277,8 @@ class GenJVM {
                 Pair/*<JLabel, Tree[]>*/ labelAndIdents =
                     (Pair)ctx.labels.get(funSym);
                 assert labelAndIdents != null : Debug.show(funSym);
-
+                JMethodType funType = (JMethodType)typeStoJ(funSym.info());
+                
                 JLabel label = (JLabel)labelAndIdents.fst;
                 Tree[] idents = (Tree[])labelAndIdents.snd;
                 assert idents.length == args.length;
@@ -287,7 +288,7 @@ class GenJVM {
                 for (int i = idents.length; i > 0; --i)
                     genStoreEpilogue(ctx, idents[i-1]);
                 ctx.code.emitGOTO(label);
-                generatedType = JType.VOID;
+                generatedType = funType.getReturnType();
             } else if (isKnownPrimitive(funSym)) {
                 Primitive prim = prims.getPrimitive(funSym);
 
