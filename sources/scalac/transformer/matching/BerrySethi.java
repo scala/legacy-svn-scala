@@ -291,10 +291,8 @@ class BerrySethi {
                   }
                   return first;
 
-            case Bind( Name n, Tree t ):  
-                  
-                  Integer p = (Integer) this.posMap.get( pat );
-                  
+            case Bind( Name n, Tree t ):  // == can also be star
+
                   TreeSet first = compFirst( t );
                   //System.out.print("BIND" + first);
                   recVars.put( pat.symbol(), first );
@@ -303,10 +301,6 @@ class BerrySethi {
                   // follow = oldfollw + ownfirst
                   if( isStar( n ) )
                         fol.addAll( first ); // an iterated pattern
-
-                  this.follow.put( p, fol.clone() );
-                  //System.out.println("Bind("+n+",...) first:"+first);
-                  //System.out.println("Bind("+n+",...) follow:"+fol);
 
                   // continue to compute follow sets with adjusted fol
                   return compFollow1( fol, t );
