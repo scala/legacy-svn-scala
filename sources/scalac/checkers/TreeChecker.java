@@ -393,8 +393,8 @@ public class TreeChecker {
             assert symbol != null && symbol.isTerm(): show(tree);
             Symbol owner = symbol.owner();
             assert owner.isClass() && !owner.isStaticOwner(): show(tree);
-            assert qualifier.type().baseType(owner) != Type.NoType: 
-                show(tree) + "#" + qualifier.type() + "/" + owner;
+            assert qualifier.type().baseType(owner) != Type.NoType:
+                show(tree) + format("qual.type", qualifier.type());
             return expression(qualifier, qualifier.type());
 
         default:
