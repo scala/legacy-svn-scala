@@ -3,7 +3,7 @@
 **  __\_ \/ /_/ / /__/ /_/ /\_ \       (c) 2002, LAMP/EPFL              **
 ** /_____/\____/\___/\____/____/                                        **
 **                                                                      **
-** $Id$ 
+** $Id$
 \*                                                                      */
 
 package scalac.ast;
@@ -29,11 +29,11 @@ public class TreeGen implements Kinds, Modifiers {
     /** the global environment
      */
     protected Global global;
-    
-    /** the global definitions 
+
+    /** the global definitions
      */
     protected Definitions definitions;
-    
+
     /** the tree factory
      */
     public TreeFactory make;
@@ -66,7 +66,7 @@ public class TreeGen implements Kinds, Modifiers {
     public Tree mkRef(int pos, Type pre, Symbol sym) {
 	if (pre == Type.localThisType || pre.symbol().isRoot())
 	    return Ident(pos, sym);
-	else 
+	else
 	    return Select(pos, mkStableId(pos, pre), sym);
     }
 
@@ -89,7 +89,7 @@ public class TreeGen implements Kinds, Modifiers {
 	Tree tree = mkTycon(pos, type);
 	switch (type) {
 	case TypeRef(Type pre, Symbol sym, Type[] args):
-	    if (args.length != 0) 
+	    if (args.length != 0)
 		return make.AppliedType(pos, tree, mkType(pos, args))
 		    .setType(type);
 	}
@@ -101,7 +101,7 @@ public class TreeGen implements Kinds, Modifiers {
     public Tree mkTycon(int pos, Type type) {
 	//System.out.println("making type " + type);//DEBUG
         switch (type) {
-	    
+
         case NoType:
 	    return Tree.Empty;
 
@@ -112,12 +112,12 @@ public class TreeGen implements Kinds, Modifiers {
 	case ThisType(_):
 	case SingleType(_, _):
 	    return make.SingletonType(pos, mkStableId(pos, type)).setType(type);
-	    
+
         case TypeRef(Type pre, Symbol sym, Type[] args):
 	    return mkRef(pos, pre, sym);
 
 	case CompoundType(Type[] parents, Scope members):
-	    if (parents.length == 1 && members.elems == Scope.Entry.NONE) 
+	    if (parents.length == 1 && members.elems == Scope.Entry.NONE)
 		return mkType(pos, parents[0]);
 	    else
 		return make.CompoundType(
@@ -137,7 +137,7 @@ public class TreeGen implements Kinds, Modifiers {
 	    throw new ApplicationError("illegal type", type);
         }
     }
-    
+
     /** Build and attribute tree array corresponding to given type array.
      */
     public Tree[] mkType(int pos, Type[] types) {
@@ -176,7 +176,7 @@ public class TreeGen implements Kinds, Modifiers {
 
     /** Build a tree to be used as a base class constructor for a template.
      */
-    public Tree mkParentConstr(int pos, Type parentType, Type root) {
+    public Tree mkParentConstr(int pos, Type parentType) {
 	switch (parentType) {
 	case TypeRef(Type pre, Symbol sym, Type[] args):
 	    Tree ref = mkRef(pos, pre, sym.constructor());
@@ -196,10 +196,10 @@ public class TreeGen implements Kinds, Modifiers {
 
     /** Build an array of trees to be used as base classes for a template.
      */
-    public Tree[] mkParentConstrs(int pos, Type[] parents, Type root) {
+    public Tree[] mkParentConstrs(int pos, Type[] parents) {
         Tree[] constrs = new Tree[parents.length];
         for (int i = 0; i < parents.length; ++i)
-	    constrs[i] = mkParentConstr(pos, parents[i], root);
+	    constrs[i] = mkParentConstr(pos, parents[i]);
         return constrs;
     }
 
@@ -252,9 +252,9 @@ public class TreeGen implements Kinds, Modifiers {
 	Type symtype = sym.info();
 	Global.instance.prevPhase();
 	return (TypeDef) make.TypeDef(
-	    pos, 
-	    sym.flags & SOURCEFLAGS, 
-	    sym.name, 
+	    pos,
+	    sym.flags & SOURCEFLAGS,
+	    sym.name,
 	    mkTypeParams(pos, sym.typeParams()),
 	    mkType(pos, symtype))
 	    .setSymbol(sym).setType(definitions.UNIT_TYPE);
@@ -326,7 +326,7 @@ public class TreeGen implements Kinds, Modifiers {
     /** Build an allocation   new P.C[TARGS](ARGS)
      *  given a (singleton) type P, class C, type arguments TARGS and arguments ARGS
      */
-    public Tree New(int pos, Type pre, Symbol clazz, 
+    public Tree New(int pos, Type pre, Symbol clazz,
 		    Type[] targs, Tree[] args) {
 	Tree constr = mkRef(pos, pre, clazz.constructor());
 	if (targs.length != 0) constr = TypeApply(constr, mkType(pos, targs));
@@ -445,10 +445,10 @@ public class TreeGen implements Kinds, Modifiers {
 	Global.instance.nextPhase();
 	Type symtype = sym.type();
 	Global.instance.prevPhase();
-	return make.ValDef(pos, 
-			   sym.flags & SOURCEFLAGS, 
-			   sym.name, 
-			   mkType(pos, symtype), 
+	return make.ValDef(pos,
+			   sym.flags & SOURCEFLAGS,
+			   sym.name,
+			   mkType(pos, symtype),
 			   rhs)
 	    .setSymbol(sym).setType(definitions.UNIT_TYPE);
     }
@@ -473,7 +473,7 @@ public class TreeGen implements Kinds, Modifiers {
                            body)
             .setSymbol(sym).setType(definitions.UNIT_TYPE);
     }
-	  
+
     public Tree DefDef(Symbol sym, Tree rhs) {
 	return DefDef(sym.pos, sym, rhs);
     }
@@ -515,10 +515,7 @@ public class TreeGen implements Kinds, Modifiers {
 	Global.instance.nextPhase();
 	Type clazzinfo = clazz.info();
 	Global.instance.prevPhase();
-	return ClassDef(pos, 
-			clazz, 
-			mkParentConstrs(pos, clazzinfo.parents(), clazzinfo),
-			body);
+	return ClassDef(pos, clazz, mkParentConstrs(pos, clazzinfo.parents()), body);
     }
 
     public Tree ClassDef(Symbol clazz, Tree[] body) {
@@ -538,7 +535,7 @@ public class TreeGen implements Kinds, Modifiers {
 	clazz.setInfo(Type.compoundType(new Type[]{f0t}, new Scope(), clazz));
 	clazz.constructor().setInfo(
 	    Type.MethodType(
-		Symbol.EMPTY_ARRAY, 
+		Symbol.EMPTY_ARRAY,
 		Type.TypeRef(owner.thisType(), clazz, Type.EMPTY_ARRAY)));
 
 	Symbol applyMeth = new TermSymbol(pos, Names.apply, clazz, FINAL)
