@@ -227,7 +227,7 @@ public class SequenceMatcher extends PatternTool {
             assert body.length == pat.length;
             this._m = _m;
 
-            this.cf = new CodeFactory( unit, infer /*, _m.pos*/ );
+            this.cf = new CodeFactory( unit, infer, _m.pos );
 
             Type seqType = pat[ 0 ].type();
 
@@ -263,11 +263,13 @@ public class SequenceMatcher extends PatternTool {
                   defaultCase = cf.ThrowMatchError( Position.FIRSTPOS, _m.resultType );
             
             Tree newbody[] = doBinding ? addBindersToBodies( body ): body;
-            
+
+            // FIXME - CODE FOR TESTING TUPLE STUFF
+
             _m.tree = scalaAut.getMatcherSwitch( _m.selector, 
-                                                 defaultCase, 
-                                                 newbody,
-                                                 _m.resultType );
+						 defaultCase, 
+						 newbody,
+						 _m.resultType );
       } // construct (Matcher, Tree[], Tree[], Tree, boolean ) 
 
       /** constructor, invoked  by AlgebraicMatcher
