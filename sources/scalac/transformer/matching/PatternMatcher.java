@@ -725,8 +725,8 @@ public class PatternMatcher extends PatternTool {
                           cf.ThrowMatchError(selector.pos, resultVar.getType(), gen.Ident(selector.pos, root.symbol())));
         return gen.mkBlock(selector.pos, ts, res);
     }
-    
-    protected Tree toTree(PatternNode node) {
+
+    /*protected*/ public Tree toTree(PatternNode node) {
         Tree res = gen.mkBooleanLit(node.pos, false);
         while (node != null)
             switch (node) {
