@@ -19,14 +19,14 @@ package scala.collection.mutable;
  *  @version 1.1, 09/05/2004
  */
 trait Map[A, B] with scala.collection.Map[A, B] with Scriptable[Message[Pair[A, B]]] with Cloneable {
-    
+
     /** This method allows one to add a new mapping from <code>key</code>
      *  to <code>value</code> to the map. If the map already contains a
      *  mapping for <code>key</code>, it will be overridden by this
      *  function.
      */
     def update(key: A, value: B): Unit;
-    
+
     /** This method defines syntactic sugar for adding or modifying
      *  mappings. It is typically used in the following way:
      *  <pre>
@@ -34,66 +34,66 @@ trait Map[A, B] with scala.collection.Map[A, B] with Scriptable[Message[Pair[A, 
      *  </pre>
      */
     def +=(key: A): MapTo = new MapTo(key);
-    
+
     /** This method adds all the mappings provided by an iterator of
      *  parameter <code>map</code> to the map.
      */
     def ++=(map: Iterable[Pair[A, B]]): Unit = ++=(map.elements);
-    
+
     /** This method adds all the mappings provided by an iterator of
      *  parameter <code>map</code> to the map.
      */
     def ++=(it: Iterator[Pair[A, B]]): Unit = it foreach {
         case Pair(key, value) => update(key, value);
     }
-    
+
     /** <code>incl</code> can be used to add many mappings at the same time
      *  to the map. The method assumes that a mapping is represented
      *  by a <code>Pair</code> object who's first component denotes the
      *  key, and who's second component refers to the value.
      */
     def incl(mappings: Pair[A, B]*): Unit = ++=(mappings.elements);
-    
+
     /** This method removes a mapping from the given <code>key</code>.
      *  If the map does not contain a mapping for the given key, the
      *  method does nothing.
      */
     def -=(key: A): Unit;
-    
+
     /** This method removes all the mappings for keys provided by an
      *  iterator over the elements of the <code>keys</code> object.
      */
     def --=(keys: Iterable[A]): Unit = --=(keys.elements);
-    
+
     /** This method removes all the mappings for keys provided by an
      *  iterator over the elements of the <code>keys</code> object.
      */
     def --=(it: Iterator[A]): Unit = it foreach -=;
-    
+
     /** This method will remove all the mappings for the given sequence
      *  of keys from the map.
      */
     def excl(keys: A*): Unit = --=(keys.elements);
-    
+
     /** Removes all mappings from the map. After this operation is
      *  completed, the map is empty.
      */
     def clear: Unit = keys foreach -=;
-    
+
     /** This function transforms all the values of mappings contained
      *  in this map with function <code>f</code>.
      */
     def map(f: (A, B) => B): Unit = elements foreach {
         case Pair(key, value) => update(key, f(key, value));
     }
-    
+
     /** This method removes all the mappings for which the predicate
      *  <code>p</code> returns <code>false</code>.
      */
     def filter(p: (A, B) => Boolean): Unit = toList foreach {
         case Pair(key, value) => if (!p(key, value)) -=(key);
     }
-    
+
     /** Send a message to this scriptable object.
      *
      *  @param cmd  the message to send.
@@ -106,20 +106,20 @@ trait Map[A, B] with scala.collection.Map[A, B] with Scriptable[Message[Pair[A, 
         case s: Script[Pair[A, B]] => s.elements foreach <<;
         case _ => error("message " + cmd + " not understood");
     }
-    
+
     /** Return a clone of this map.
      *
      *  @return an map with the same elements.
      */
     override def clone(): Map[A, B] = super.clone().asInstanceOf[Map[A, B]];
-    
+
     /** The hashCode method always yields an error, since it is not
      *  safe to use mutable maps as keys in hash tables.
      *
      *  @return never.
      */
     override def hashCode(): Int = error("unsuitable as hash key");
-    
+
     /** Returns a string representation of this map which shows
      *  all the mappings.
      */
@@ -135,13 +135,13 @@ trait Map[A, B] with scala.collection.Map[A, B] with Scriptable[Message[Pair[A, 
                 }
                 res;
             } + "}";
-    
+
     /** This method controls how a mapping is represented in the string
      *  representation provided by method <code>toString</code>.
      */
     def mappingToString(p: Pair[A, B]) = p._1.toString() + " -> " + p._2;
-    
-    private class MapTo(key: A) {
+
+    class MapTo(key: A) {
         def ->(value: B): Unit = update(key, value);
     }
 }
