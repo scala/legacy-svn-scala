@@ -24,54 +24,54 @@ package scala.collection;
  *  @version 1.0, 08/07/2003
  */
 trait Set[A] with Function1[A, Boolean] with Iterable[A] {
-	
-	/** Returns the number of elements in this set.
-	 *  
-	 *  @return number of set elements.
-	 */
+
+    /** Returns the number of elements in this set.
+    *
+    *  @return number of set elements.
+    */
     def size: Int;
-    
+
     /** Checks if this set contains element <code>elem</code>.
      *
      *  @param  elem    the element to check for membership.
      *  @return true, iff <code>elem</code> is contained in this set.
      */
     def contains(elem: A): Boolean;
-    
+
     /** This method allows sets to be interpreted as predicates.
      *  It returns true, iff this set contains element <code>elem</code>.
-     *  
+     *
      *  @param  elem    the element to check for membership.
      *  @return true, iff <code>elem</code> is contained in this set.
      */
     def apply(elem: A): Boolean = contains(elem);
-    
+
     /** Checks if this set is empty.
      *
      *  @return true, iff there is no element in the set.
      */
     def isEmpty: Boolean = (size == 0);
-    
+
     /** Checks if this set is a subset of set <code>that</code>.
      *
      *  @param  that another set.
      *  @return true, iff the other set is a superset of this set.
      */
     def subsetOf(that: Set[A]): Boolean = forall(that.contains);
-    
+
     /** Execute the statement <code>f</code> for every element in this set.
      *
      *  @param  f   a function that is applied to every element in this set.
      */
     def foreach(f: A => Unit): Unit = elements.foreach(f);
-    
+
     /** Checks if a given predicate is true for all elements in this set.
      *
      *  @param   p     the predicate
      *  @returns true, iff the predicate yields true for all elements.
      */
     def forall(p: A => Boolean): Boolean = elements.forall(p);
-    
+
 	/** Checks if a given predicate is true for at least one element
 	 *  in this set.
      *
@@ -79,7 +79,7 @@ trait Set[A] with Function1[A, Boolean] with Iterable[A] {
      *  @returns true, iff the predicate yields true for at least one element.
      */
     def exists(p: A => Boolean): Boolean = elements.exists(p);
-    
+
     /** Transform this set into a list of all elements.
      *
      *  @return  a list which enumerates all elements of this set.
@@ -89,7 +89,7 @@ trait Set[A] with Function1[A, Boolean] with Iterable[A] {
         elements.foreach { elem => res = elem :: res; }
         res;
     }
-    
+
     /** Compares this set with another object and returns true, iff the
      *  other object is also a set which contains the same elements as
      *  this set.
@@ -103,7 +103,7 @@ trait Set[A] with Function1[A, Boolean] with Iterable[A] {
         { val other = that.asInstanceOf[Set[A]];
           this.size == other.size &&
           this.elements.forall(other.contains) };
-    
+
     /** Returns a string representation of this set.
      *
      *  @return a string showing all elements of this set.
