@@ -35,7 +35,7 @@ import scalac.util.*;
 public class Global {
 
     public static Global instance;
-    
+
     /** global options
      */
     public final boolean noimports;
@@ -55,19 +55,19 @@ public class Global {
     /** the message reporter
      */
     public final Reporter reporter;
-    
+
     /** a stack for maintaining timestamps
      */
     private final Stack startTimes = new Stack();
-    
+
     /** all compilation units
      */
     public Unit[] units;
-    
+
     /** the class path
      */
     public final ClassPath classPath;
-    
+
     /** the global tree factory
      */
     public final TreeFactory make;
@@ -93,7 +93,7 @@ public class Global {
     /** documentation comments of trees
      */
     public final Map/*<Tree, String>*/ mapTreeComment = new HashMap();
-    
+
     /** documentation comments of symbols
      */
     public final Map/*<Symbol, String>*/ mapSymbolComment = new HashMap();
@@ -106,7 +106,7 @@ public class Global {
 
     /** The set of currenttly compiled top-level symbols
      */
-    public HashMap/*<Symbol,Sourcefile>*/ compiledNow = new HashMap();    
+    public HashMap/*<Symbol,Sourcefile>*/ compiledNow = new HashMap();
 
     /** the first phase
      */
@@ -162,10 +162,10 @@ public class Global {
     /** hooks for installing printers
      */
     protected TreePrinter newTextTreePrinter(OutputStream printStream) {
-	return new TextTreePrinter(printStream);
+        return new TextTreePrinter(printStream);
     }
     protected TreePrinter newHTMLTreePrinter(OutputStream printStream) {
-	return new HTMLTreePrinter(printStream);
+        return new HTMLTreePrinter(printStream);
     }
 
     /**
@@ -195,7 +195,7 @@ public class Global {
         this.outpath = args.outpath();
         this.target = interpret ? TARGET_INT : args.target.value.intern();
         this.separate = args.separate.value.equals("yes") ||
-	    args.separate.value.equals("default") && !this.target.equals(TARGET_INT);
+            args.separate.value.equals("default") && !this.target.equals(TARGET_INT);
         this.uniqueID = new UniqueID();
         String printFile = args.printfile.value;
         try {
@@ -216,7 +216,7 @@ public class Global {
         this.make = new DefaultTreeFactory();
         this.PHASE = args.phases;
         // if (!optimize) PHASE.remove(args.phases.OPTIMIZE);
-	// TODO: Enable TailCall for other backends when they handle LabelDefs
+        // TODO: Enable TailCall for other backends when they handle LabelDefs
         if (target != TARGET_JVM) args.phases.TAILCALL.addSkipFlag();
         if (target != TARGET_MSIL) args.phases.GENMSIL.addSkipFlag();
         if (target != TARGET_JVM) args.phases.GENJVM.addSkipFlag();
@@ -271,8 +271,8 @@ public class Global {
         this.units = (Unit[])units.toArray(new Unit[units.size()]);
         compile();
     }
-    
-    /** 
+
+    /**
      * The top-level compilation process.
      *
      * @param filename
@@ -285,7 +285,7 @@ public class Global {
         units = new Unit[]{new Unit(this, source, console)};
         compile();
     }
-    
+
     /** compile all compilation units
      */
     private void compile() {
@@ -321,15 +321,15 @@ public class Global {
                 sym.reset(new SourceCompleter(this));
             }
         }
-	symdata.clear();
+        symdata.clear();
         compiledNow.clear();
         printer.end();
     }
-    
+
     /** transform a unit and stop at the current compilation phase
      */
     public void transformUnit(Unit unit) {
-       	Phase oldCurrentPhase = currentPhase;
+        Phase oldCurrentPhase = currentPhase;
         currentPhase = PHASE.ANALYZER.phase().next; // or REFCHECK.next?
         while ((currentPhase.id < oldCurrentPhase.id) && (reporter.errors() == 0)) {
             start();
@@ -351,7 +351,7 @@ public class Global {
         }
         currentPhase = oldCurrentPhase;
     }
-    
+
     // !!! <<< Interpreter stuff
     public static final String CONSOLE_S = "$console$";
     private static final Name
@@ -531,43 +531,55 @@ public class Global {
     }
 
     // !!! >>> Interpreter stuff
-    
+
     /** stop the compilation process immediately
      */
     public Error fail() {
         throw new ApplicationError();
     }
-    
+
     /** stop the compilation process immediately
      */
     public Error fail(String message) {
         throw new ApplicationError(message);
     }
-    
+
     /** stop the compilation process immediately
      */
     public Error fail(String message, Object object) {
         throw new ApplicationError(message, object);
     }
-    
+
     /** stop the compilation process immediately
      */
     public Error fail(Object value) {
         throw new ApplicationError(value);
     }
-    
+
+    /** stop the compilation process immediately
+     */
+    public Error fail(String message, Throwable cause) {
+        throw new ApplicationError(message, cause);
+    }
+
+    /** stop the compilation process immediately
+     */
+    public Error fail(Throwable cause) {
+        throw new ApplicationError(cause);
+    }
+
     /** issue a global error
      */
     public void error(String message) {
         reporter.error(null, message);
     }
-    
+
     /** issue a global warning
      */
     public void warning(String message) {
         reporter.warning(null, message);
     }
-    
+
     /** issue an operation note
      */
     public void operation(String message) {
@@ -583,19 +595,19 @@ public class Global {
         }
         return true;
     }
-    
+
     /** return true if logging is switched on for the current phase
      */
     public boolean log() {
         return currentPhase.descriptor.hasLogFlag();
     }
-    
+
     /** start a new timer
      */
     public void start() {
         startTimes.push(new Long(System.currentTimeMillis()));
     }
-    
+
     /**
      * issue timing information
      *
