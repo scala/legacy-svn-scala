@@ -340,7 +340,7 @@ public class TextTreePrinter implements TreePrinter {
             printSymbolDefinition(tree.symbol(), name);
 	    if ((mods & (Modifiers.DEFERRED | Modifiers.PARAM)) != 0) {
 		printBounds(lobound, rhs);
-	    } else { 
+	    } else {
 		printOpt(TXT_EQUAL, rhs, true);
 	    }
             break;
@@ -393,7 +393,7 @@ public class TextTreePrinter implements TreePrinter {
 	case Subsequence(Tree[] trees):
 	    if( trees.length > 0 )
 		printArray(trees, TXT_LEFT_PAREN, TXT_RIGHT_PAREN, TXT_COMMA_SP);
-	    else 
+	    else
 		{
 		    print( TXT_LEFT_PAREN );
 		    print( TXT_COMMA );
@@ -471,27 +471,20 @@ public class TextTreePrinter implements TreePrinter {
             break;
 
         case Apply(Tree fun, Tree[] vargs):
-	    if (fun instanceof Tree.TypeTerm) 
-		print(fun.type.resultType().symbol().fullName().toString());	
+	    if (fun instanceof Tree.TypeTerm)
+		print(fun.type.resultType().symbol().fullName().toString());
 	    else
 		print(fun);
             printArray(vargs, TXT_LEFT_PAREN, TXT_RIGHT_PAREN, TXT_COMMA_SP);
             printType(tree);
             break;
 
-        case Super(Tree tpe):
-            if (tpe != Tree.Empty)
-                print(TXT_LEFT_PAREN);
-
+        case Super(Tree qualifier):
+	    if (qualifier != Tree.Empty) {
+		print(qualifier);
+		print(TXT_DOT);
+	    }
             print(KW_SUPER);
-
-            if (tpe != Tree.Empty) {
-                print(Text.Space);
-                print(TXT_COLON);
-                print(Text.Space);
-                print(tpe);
-                print(TXT_RIGHT_PAREN);
-            }
             printType(tree);
             break;
 
@@ -740,7 +733,7 @@ public class TextTreePrinter implements TreePrinter {
     }
 
     protected void printBounds(Tree lobound, Tree hibound) {
-	if (!"scala.All".equals(lobound.toString())) 
+	if (!"scala.All".equals(lobound.toString()))
 	    printOpt(TXT_SUPERTYPE, lobound, true);
 	if (!"scala.Any".equals(hibound.toString()))
             printOpt(TXT_SUBTYPE, hibound, true);
