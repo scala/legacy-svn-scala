@@ -58,7 +58,7 @@ public class SequenceMatcher extends PatternTool {
         Tree theTrace = gen.Ident( cf.pos, ltis.resultSym );
             
         //  (c) determinize + translate R
-            
+
         DetWordAutom dRight = new DetWordAutom( right, left, dLeft );
                         
         Set seqVars = NondetWordAutom.collectVariables( left );
