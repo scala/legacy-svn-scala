@@ -468,7 +468,7 @@ public class TextTreePrinter implements TreePrinter {
             for (int i = 0; i < tags.length; i++) {
                 print(KW_CASE);
                 print(Text.Space);
-                print("" + i);
+                print("" + tags[i]);
                 print(Text.Space);
                 print(TXT_RIGHT_ARROW);
                 print(Text.Space);
@@ -480,7 +480,7 @@ public class TextTreePrinter implements TreePrinter {
             undent();
             print(TXT_BLOCK_END);
             break;
-
+		
         case New(Tree.Template templ):
             printTemplate(KW_NEW, templ, false);
             printType(tree);
