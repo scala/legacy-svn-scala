@@ -94,7 +94,7 @@ public class Definitions {
      */
     public final Symbol OBJECT_CLASS;
     public final Type   OBJECT_TYPE;
-
+	
     /** the scala.All class
      */
     public final Symbol ALL_CLASS;
