@@ -570,14 +570,16 @@ public class DocSyms {
 				}
 				);
 	    // add all super packages.
-	    Symbol owner = pack.owner();
-	    while (!owner.isRoot()) {
-		syms.add(owner.module());
-		owner = owner.owner();
-	    }
+	    if (!pack.isRoot()) {
+                Symbol owner = pack.owner();
+                while (!owner.isRoot()) {
+                    syms.add(owner.module());
+                    owner = owner.owner();
+                }
+            }
 	}
     }
-    
+
     public boolean contains(Symbol sym) {
 	boolean res = false;
 	if (sym.isParameter())

@@ -775,11 +775,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	enterInScope(sym);
       }
       tree.setSymbol(sym);
-
-      // set the comment associated with a symbol
-      val comment: String = global.mapTreeComment.get(tree).asInstanceOf[String];
-      if (comment != null)
-	global.mapSymbolComment.put(sym, new Pair(comment, unit));
       
       sym
     }
@@ -822,7 +817,9 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	}
 
       case Tree$DocDef(comment, definition) =>
-        outerEnterSym(definition)
+        val sym = outerEnterSym(definition);
+        global.mapSymbolComment.put(sym, new Pair(comment, unit));
+        sym
 
       case Tree$ClassDef(mods, name, tparams, vparams, _, templ) =>
 	val clazz: ClassSymbol = ClassSymbol.define(
@@ -1130,7 +1127,7 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	      error(tree.pos, "" + NameTransformer.decode(selectors(i)) + " is not a member of " + expr);
 	    i = i + 2
 	  }
-	
+
 	case _ =>
 	  throw new ApplicationError();
       }
@@ -1977,12 +1974,6 @@ class Analyzer(global: scalac_Global, descr: AnalyzerPhase) extends Transformer(
 	  tree.setType(Type.NoType)
 
    	case Tree$DocDef(comment, definition) =>
-          val defined = definition match {
-            case Tree$PackageDef(pkg, _) => pkg.symbol()
-            case _ => definition.symbol()
-          }
-          assert(defined != null, tree);
-	  global.mapSymbolComment.put(defined, new Pair(comment, unit));
           transform(definition)
 
 	case Tree$PackageDef(pkg, templ @ Tree$Template(parents, body)) =>

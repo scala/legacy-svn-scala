@@ -156,10 +156,6 @@ class Parser(unit: Unit) {
   }
 
 /////// COMMENT COLLECTION ///////////////////////////////////////////////////
-    
-  /** keep the comments associated with a given tree
-  */
-  protected val mapTreeComment: Map = unit.global.mapTreeComment;
 
   /** stack of comments
   */
@@ -180,12 +176,16 @@ class Parser(unit: Unit) {
 
   /** pop a comment from the stack and associate it with the given tree
   */
-  protected def popComment(tree: Tree): Tree = {
-    if (local == 0)
-      if (!commentStack.empty())
-        mapTreeComment.put(tree, commentStack.pop().asInstanceOf[String]);
-    tree
-  }
+  protected def popComment(tree: Tree): Tree =
+    if ((local == 0) && !commentStack.empty()) {
+      val comment = commentStack.pop().asInstanceOf[String];
+      if (comment != null)
+        make.DocDef(tree.pos, comment, tree)
+      else
+        tree
+    }
+    else
+      tree;
 
 /////// TREE CONSTRUCTION ////////////////////////////////////////////////////
 
