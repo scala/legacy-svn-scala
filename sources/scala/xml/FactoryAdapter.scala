@@ -23,32 +23,21 @@ import org.xml.sax.SAXException;
 import org.xml.sax.SAXNotRecognizedException;
 import org.xml.sax.SAXNotSupportedException;
 import org.xml.sax.SAXParseException;
-import org.xml.sax.XMLReader;
+//import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 import org.xml.sax.helpers.ParserAdapter;
 
-import org.xml.sax.helpers.XMLReaderFactory;
+import javax.xml.parsers.SAXParserFactory; 
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+
+
+//import org.xml.sax.helpers.XMLReaderFactory;
 
 /** SAX adapter class, for use with Java SAX parser
 **/
-abstract class FactoryAdapter  
-	 extends DefaultHandler()
-	 // with ContentHandler
-	 // with ErrorHandler  // SAX2 
-{
-  // default settings
-
-  /** Default parser name - included in JDK1.4 */
-  val DEFAULT_PARSER_NAME   = "org.apache.crimson.parser.XMLReaderImpl"; 
-  //val DEFAULT_PARSER_NAME   = "org.apache.xerces.parsers.SAXParser";
+abstract class FactoryAdapter  extends DefaultHandler() {
       
-  /** Namespaces feature id (http://xml.org/sax/features/namespaces). */
-  val NAMESPACES_FEATURE_ID = "http://xml.org/sax/features/namespaces";
-      
-  //
-  // Constructors
-  //
-
   val buffer = new StringBuffer();
   val attribStack = new Stack[HashMap[String,String]];
   val hStack  = new Stack[Node];   // [ element ] contains siblings
@@ -271,89 +260,68 @@ abstract class FactoryAdapter
      */
     def  loadXML( source:InputSource ):Node = {
 
-        // variables
-        //PrintWriter out = new PrintWriter(System.out);
-        var parser:XMLReader  = null;
-
-        // use default parser
-        // create parser
-        try {
-             parser = XMLReaderFactory.createXMLReader(DEFAULT_PARSER_NAME);
-        } catch {
-	  case ( e:Exception ) => {
-            System.err.println("error: Unable to instantiate parser (" +
-                               DEFAULT_PARSER_NAME + ")");
-            System.exit(-1);
-          }
-	}
-
-        // set parser features
-        try {
-            parser.setFeature(NAMESPACES_FEATURE_ID, true);
-        } catch { 
-	  case ( e:SAXException ) => {
-            System.err.println("warning: Parser does not support feature (" + 
-                               NAMESPACES_FEATURE_ID + ")");
-          }
-	}
-        // set handlers
-        parser.setErrorHandler( this /*FA_ErrorHandler*/ );
-                
-        if (parser.isInstanceOf[ XMLReader ]) {
-            parser.setContentHandler(this);
+      // variables
+      var parser:SAXParser  = null;
+      
+      // create parser
+      try {
+        val f = SAXParserFactory.newInstance();
+        f.setNamespaceAware( true );
+        parser = f.newSAXParser();
+      } catch {
+	case ( e:Exception ) => {
+          System.err.println("error: Unable to instantiate parser");
+          System.exit(-1);
         }
-        else {
-            System.err.println("wrong parser");
-            System.exit(-1);
+      }
+      
+      // parse file
+      try {
+        //System.err.println("[parsing \"" + source + "\"]");
+        parser.parse( source, this );
+      } catch {
+        case ( e:SAXParseException ) => {
+          // ignore
         }
- 
-        // parse file
-        try {
-            //System.err.println("[parsing \"" + source + "\"]");
-            parser.parse( source );
-        } catch {
-          case ( e:SAXParseException ) => {
-            // ignore
-          }
-          case ( e:Exception ) => {
-            System.err.println("error: Parse error occurred - " + e.getMessage());
-            if (e.isInstanceOf[ SAXException ]) {
-              (e.asInstanceOf[ SAXException ])
-	       .getException()
-	       .printStackTrace( System.err );
-            } else {
-               e.printStackTrace(System.err);
-	    }
-          }
-	} // catch
+        case ( e:Exception ) => {
+          System.err.println("error: Parse error occurred - " + e.getMessage());
+          if (e.isInstanceOf[ SAXException ]) {
+            (e.asInstanceOf[ SAXException ])
+	    .getException()
+	    .printStackTrace( System.err );
+          } else {
+            e.printStackTrace(System.err);
+	  }
+        }
+      } // catch
       //System.err.println("[FactoryAdapter: total #elements = "+elemCount+"]");
       rootElem
-                
-    } // loadXML
       
-
-
+    } // loadXML
+  
+  
+  
   /** loads XML from given file */
   def loadFile( file:File ):Node = loadXML( new InputSource( 
-      new FileInputStream( file )
+    new FileInputStream( file )
   ));
-
+  
   /** loads XML from given file descriptor */
   def loadFile( fileDesc:FileDescriptor ):Node = loadXML( new InputSource( 
-      new FileInputStream( fileDesc )
+    new FileInputStream( fileDesc )
   ));
-
+  
   /** loads XML from given file */
   def loadFile( fileName:String ):Node = loadXML( new InputSource( 
     new FileInputStream( fileName )
   ));
-
+  
   /** loads XML from given InputStream */
   def load( is:InputStream ):Node = loadXML( new InputSource( is ));
   
   /** loads XML from given Reader */
   def load( reader:Reader ):Node = loadXML( new InputSource( reader ));
-
+  
   /** loads XML from given sysID */
   def load( sysID:String ):Node = loadXML( new InputSource( sysID ));
 
