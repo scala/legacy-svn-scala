@@ -196,7 +196,7 @@ public class RefCheck extends Transformer implements Modifiers, Kinds {
      *       M must be labelled `abstract override'.
      */
     void checkOverride(int pos, Symbol clazz, Symbol member, Symbol other) {
-	if (member.owner() == clazz) 
+	if (member.owner() == clazz)
 	    pos = member.pos;
 	else if (member.owner().isSubClass(other.owner())) 
 	    return; // everything was already checked elsewhere
