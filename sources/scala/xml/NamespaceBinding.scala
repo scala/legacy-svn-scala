@@ -6,7 +6,10 @@ package scala.xml;
  * which is not checked.
  */
 class NamespaceBinding(val prefix: String, val uri: String, val parent: NamespaceBinding) {
-  
+
+  if(null != prefix && 0 == prefix.length())
+    error("zero length prefix not allowed");
+
   def getURI(_prefix: String): String = {
     if(prefix == _prefix)
       uri
@@ -23,5 +26,32 @@ class NamespaceBinding(val prefix: String, val uri: String, val parent: Namespac
       parent.getURI(_uri);
   }
   
+  override def toString(): String = {
+    val sb = new StringBuffer();
+    toString(sb, TopScope);
+    sb.toString();
+  }
+
+  def toString(stop: NamespaceBinding): String = {
+    val sb = new StringBuffer();
+    toString(sb, stop);
+    sb.toString();
+  }
+
+  def toString(sb:StringBuffer, stop:NamespaceBinding): Unit = {
+    if(this ne stop) { // contains?
+      sb.append(" xmlns");
+      if(prefix != null) {
+        sb.append(':').append(prefix)
+      }
+      sb.append('=')
+      .append('"')
+      .append(uri)
+      .append('"');
+      parent.toString(sb, stop); // copy(ignore)
+    }
+  }
+    
+
 }
 
