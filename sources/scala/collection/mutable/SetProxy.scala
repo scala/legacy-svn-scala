@@ -17,34 +17,35 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.1, 09/05/2004
  */
-class SetProxy[A](set: Set[A]) extends Set[A]
-                               with scala.collection.SetProxy[A](set) {
+trait SetProxy[A] extends Set[A] with scala.collection.SetProxy[A] {
 
-    override def update(elem: A, included: Boolean): Unit = set(elem) = included;
-    
-    def +=(elem: A): Unit = set += elem;
-    
-    override def ++=(that: Iterable[A]): Unit = set ++= that;
-    
-    override def ++=(it: Iterator[A]): Unit = set ++= it;
-    
-    override def incl(elems: A*): Unit = set ++= elems;
-    
-    def -=(elem: A): Unit = set -= elem;
+    def self: Set[A];
 
-    override def --=(that: Iterable[A]): Unit = set --= that;
+    override def update(elem: A, included: Boolean): Unit = self(elem) = included;
+    
+    def +=(elem: A): Unit = self += elem;
+    
+    override def ++=(that: Iterable[A]): Unit = self ++= that;
+    
+    override def ++=(it: Iterator[A]): Unit = self ++= it;
+    
+    override def incl(elems: A*): Unit = self ++= elems;
+    
+    def -=(elem: A): Unit = self -= elem;
 
-    override def --=(it: Iterator[A]): Unit = set --= it;
-    
-    override def excl(elems: A*): Unit = set --= elems;
-    
-    override def intersect(that: Set[A]): Unit = set.intersect(that);
-    
-    def clear: Unit = set.clear;
-    
-    override def filter(p: A => Boolean): Unit =  set.filter(p);
+    override def --=(that: Iterable[A]): Unit = self --= that;
 
-    override def <<(cmd: Message[A]): Unit = set << cmd;
+    override def --=(it: Iterator[A]): Unit = self --= it;
     
-    override def clone(): Set[A] = new SetProxy(set.clone());
+    override def excl(elems: A*): Unit = self --= elems;
+    
+    override def intersect(that: Set[A]): Unit = self.intersect(that);
+    
+    def clear: Unit = self.clear;
+    
+    override def filter(p: A => Boolean): Unit =  self.filter(p);
+
+    override def <<(cmd: Message[A]): Unit = self << cmd;
+
+    override def clone(): Set[A] = new SetProxy[A] { def self = SetProxy.this.self.clone() }
 }
