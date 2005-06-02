@@ -268,7 +268,7 @@ object List {
   def transpose[a](xss: List[List[a]]): List[List[a]] = 
     if (xss.head.isEmpty) List()
     else (xss map (xs => xs.head)) :: transpose(xss map (xs => xs.tail));
-    
+
   /** Lists with ordered elements are ordered
    */
   implicit def list2ordered[a <% Ordered[a]](x: List[a]): Ordered[List[a]] = new Ordered[List[a]] {
