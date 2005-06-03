@@ -114,5 +114,18 @@ abstract class TreeGen {
   def mkAsInstanceOf(value: Tree, tpe: Type): Tree = {
     mkAsInstanceOf(value, tpe, global.phase.erasedTypes);
   }
+
+
+  /** Builds a list with given head and tail. */
+  def mkNewCons(head: Tree, tail: Tree):  Tree = 
+    New(Apply(mkRef(definitions.ConsClass), List(head,tail)));
+
+  /** Builds a list with given head and tail. */
+  def mkNil: Tree = 
+    mkRef(definitions.NilModule);
    
+  /** Builds a pair */
+  def mkNewPair(left: Tree, right: Tree) = 
+    New(Apply(mkRef(definitions.TupleClass(2)), List(left,right)));
+  
 }
