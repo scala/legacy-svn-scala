@@ -11,12 +11,20 @@ package scala.collection.mutable;
 
 /** This class implements single linked lists where both the head (<code>elem</code>)
  *  and the tail (<code>next</code>) are mutable.
- *  
+ *
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
 
-class LinkedList[A](head: A, tail: LinkedList[A]) extends SingleLinkedList[A, LinkedList[A]] {
-    elem = head;
-    next = tail;
+class LinkedList[A](head: A, tail: LinkedList[A])
+  extends SingleLinkedList[A, LinkedList[A]]
+{
+  elem = head;
+  next = tail;
+
+  override def equals(obj: Any): Boolean =
+    obj.isInstanceOf[LinkedList[A]]
+      && toList.equals((obj.asInstanceOf[LinkedList[A]]).toList);
+
+  override protected def stringPrefix: String = "LinkedList";
 }
