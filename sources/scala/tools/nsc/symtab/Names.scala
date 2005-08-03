@@ -212,14 +212,14 @@ class Names {
     /** does this name end with suffix?
      */
     final def endsWith(suffix: Name): boolean = endsWith(suffix, len);
-  
+
     /** does this name end with suffix just before given end index?
      */
     final def endsWith(suffix: Name, end: int): boolean = {
       var i = 1;
       while (i <= suffix.length && i <= end && chrs(index + end - i) == chrs(suffix.start + suffix.length - i))
-        i = i - 1;
-      i == suffix.length
+        i = i + 1;
+      i > suffix.length
     }
 
     /** the subname with characters from start to end-1 
