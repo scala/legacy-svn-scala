@@ -16,7 +16,7 @@ object stateInterpreter {
 
   def unitM[A](a: A) = M[A](s => Pair(a, s));
 
-  def showM(m: M[Value]): String = { 
+  def showM(m: M[Value]): String = {
     val Pair(a, s1) = m in 0;
     "Value: " + a + "; Count: " + s1
   }
@@ -33,7 +33,7 @@ object stateInterpreter {
   trait Value;
   case object Wrong extends Value {
    override def toString() = "wrong"
-  } 
+  }
   case class Num(n: int) extends Value {
     override def toString() = n.toString();
   }
@@ -83,3 +83,4 @@ object stateInterpreter {
     System.out.println(test(term1));
   }
 }
+

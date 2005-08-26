@@ -5,7 +5,7 @@ import scala.concurrent.pilib._;
 
 /** Church encoding of naturals in the Pi-calculus */
 object piNat with Application {
-  
+ 
   /** Locations of Pi-calculus natural */
   class NatChan extends Chan[Triple[Chan[unit], Chan[NatChan], Chan[NatChan]]];
 
@@ -52,14 +52,14 @@ object piNat with Application {
     choice (
       z  * { x => spawn < Z(m) >; Z(n)  },
       sd * { l1 => { val m1 = new NatChan; val n1 = new NatChan;
-                    spawn < SD(m1, m) | SD(n1, n) >; 
+                    spawn < SD(m1, m) | SD(n1, n) >;
                     Copy(l1, m1, n1) } },
       d * { l1 => { val m1 = new NatChan; val n1 = new NatChan;
-                   spawn < D(m1, m) | D(n1, n) >; 
+                   spawn < D(m1, m) | D(n1, n) >;
                    Copy(l1, m1, n1) } }
     )
   }
-  
+ 
   /** Consume the natural at location "n" and return its value */
   def value(n: NatChan): int =  {
     val z = new Chan[unit];
@@ -79,7 +79,7 @@ object piNat with Application {
   val l1 = new NatChan;
   val l2 = new NatChan;
   val l3 = new NatChan;
-  
+ 
   spawn <
   make(i, l) |
   Copy(l, l1, l2) |
@@ -89,3 +89,4 @@ object piNat with Application {
   >;
 
 }
+
