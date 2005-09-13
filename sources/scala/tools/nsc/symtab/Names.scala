@@ -203,6 +203,8 @@ class Names {
      */
     final def lastPos(c: char): int = lastPos(c, len - 1);
 
+    final def lastPos(s: String): int = lastPos(s, len - s.length());
+
     /** return the index of last occurrence of char c in this name from `start', 
      *  -1 if not found
      */
@@ -212,6 +214,22 @@ class Names {
       i
     }
   
+    /** return the index of last occurrence of string s in this name from `start', 
+     *  -1 if not found
+     */
+    final def lastPos(s: String, start: int): int = {
+      var i = lastPos(s.charAt(0), start);
+      while (i >= 0) {
+        var j = 1; 
+        while (s.charAt(j) == chrs(index + i + j)) {
+          j = j + 1;
+          if (j == s.length()) return i;
+        }
+        i = lastPos(s.charAt(0), i - 1)
+      }
+      -s.length()
+    }
+
     /** does this name start with prefix?
      */
     final def startsWith(prefix: Name): boolean = startsWith(prefix, 0);
