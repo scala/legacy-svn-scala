@@ -284,6 +284,9 @@ abstract class Trees: Global {
   /** Bind of a variable to a rhs pattern, eliminated by TransMatch */
   case class Bind(name: Name, body: Tree)
        extends DefTree;
+
+  def Bind(sym: Symbol, body: Tree): Bind = 
+    Bind(sym.name, body) setSymbol sym; 
   
   /** Array of expressions, needs to be translated in backend,
    */
