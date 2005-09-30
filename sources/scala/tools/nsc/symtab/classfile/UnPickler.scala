@@ -31,7 +31,7 @@ abstract class UnPickler {
     private val entries = new Array[AnyRef](index.length);
     private val symScopes = new HashMap[Symbol, Scope];
 
-    for (val i <- Iterator.range(0, index.length)) 
+    for (val i <- Iterator.range(0, index.length))
       if (isSymbolEntry(i)) { at(i, readSymbol); () }
 
     if (settings.debug.value) global.log("unpickled " + classRoot + ":" + classRoot.rawInfo + ", " + moduleRoot + ":" + moduleRoot.rawInfo);//debug
