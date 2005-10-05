@@ -12,15 +12,15 @@ class Settings(error: String => unit) {
   val debuginfo     = BooleanSetting("-g", "Generate debugging info");
   val nowarnings    = BooleanSetting("-nowarn", "Generate no warnings");
   val verbose       = BooleanSetting("-verbose", "Output messages about what the compiler is doing");
-  val classpath     = StringSetting ("-classpath", "path", "Specify where to find user class files", 
-                                     System.getProperty("scala.class.path", 
+  val classpath     = StringSetting ("-classpath", "path", "Specify where to find user class files",
+                                     System.getProperty("scala.class.path",
                                        System.getProperty("java.class.path", ".")));
-  val sourcepath    = StringSetting ("-sourcepath", "path", "Specify where to find input source files", 
-                                     System.getProperty("scala.source.path", 
+  val sourcepath    = StringSetting ("-sourcepath", "path", "Specify where to find input source files",
+                                     System.getProperty("scala.source.path",
                                        System.getProperty("java.source.path", ".")));
-  val bootclasspath = StringSetting ("-bootclasspath", "path", "Override location of bootstrap class files", 
+  val bootclasspath = StringSetting ("-bootclasspath", "path", "Override location of bootstrap class files",
                                      System.getProperty("sun.boot.class.path", ""));
-  val extdirs       = StringSetting ("-extdirs", "dirs", "Override location of installed extensions", 
+  val extdirs       = StringSetting ("-extdirs", "dirs", "Override location of installed extensions",
                                      System.getProperty("java.ext.dirs", ""));
   val outdir        = StringSetting ("-d", "directory", "Specify where to place generated class files", "");
   val encoding      = StringSetting ("-encoding", "encoding", "Specify character encoding used by source files", "ISO-8859-1");
@@ -29,7 +29,7 @@ class Settings(error: String => unit) {
   val debug         = BooleanSetting("-debug", "Output debugging messages");
   val statistics    = BooleanSetting("-statistics", "Print compiler statistics");
   val explaintypes  = BooleanSetting("-explaintypes", "Explain type errors in more detail");
-  val interprete    = BooleanSetting("-interprete", "Run interpreter");
+  val interpret     = BooleanSetting("-interpret", "Run interpreter");
   val resident      = BooleanSetting("-resident", "Compiler stays resident, files to compile are read from standard input");
   val uniqid        = BooleanSetting("-uniqid", "Print identifiers with unique names (debugging option)");
   val printtypes    = BooleanSetting("-printtypes", "Print tree types (debugging option)");
@@ -38,7 +38,7 @@ class Settings(error: String => unit) {
   val nopredefs     = BooleanSetting("-nopredefs", "Compile without any implicit predefined values");
   val skip          = PhasesSetting ("-skip", "Skip");
   val check         = PhasesSetting ("-check", "Check the tree at start of");
-  val print        = PhasesSetting ("-print", "Print out program after");
+  val print         = PhasesSetting ("-print", "Print out program after");
   val printer       = ChoiceSetting ("-printer", "Printer to use", List("text", "html"), "text");
   val printfile     = StringSetting ("-printfile", "file", "Specify file in which to print trees", "-");
   val graph         = PhasesSetting ("-graph", "Graph the program after");
@@ -62,7 +62,7 @@ class Settings(error: String => unit) {
 
     /** If first arg defines this setting, consume it as well as all following
      *  args needed to define the setting. If this can be done without
-     *  error, set value field and return suffix of args else 
+     *  error, set value field and return suffix of args else
      *  issue error message and return empty.
      *  If first arg does not define this setting return args unchanged.
      */
@@ -78,11 +78,11 @@ class Settings(error: String => unit) {
     allsettings = this :: allsettings;
   }
 
-  /** A setting represented by a boolean flag (false, unless set */
-  case class BooleanSetting(name: String, descr: String) 
+  /** A setting represented by a boolean flag (false, unless set) */
+  case class BooleanSetting(name: String, descr: String)
   extends Setting(name, descr) {
     var value: boolean = false;
-    
+
     def tryToSet(args: List[String]): List[String] = args match {
       case n :: rest if (n == name) => value = true; rest
       case _ => args
@@ -90,27 +90,27 @@ class Settings(error: String => unit) {
   }
 
   /** A setting represented by a string, (`default' unless set) */
-  case class StringSetting(name: String, arg: String, descr: String, default: String)  
+  case class StringSetting(name: String, arg: String, descr: String, default: String)
   extends Setting(name, descr) {
     var value: String = default;
 
     def tryToSet(args: List[String]): List[String] = args match {
-      case n :: rest if (n == name) => 
-        if (rest.isEmpty) { 
-	  error("missing argument"); 
-	  List() 
-	} else { 
-	  value = rest.head; 
-	  rest.tail
-	}
+      case n :: rest if (n == name) =>
+        if (rest.isEmpty) {
+    error("missing argument");
+    List()
+  } else {
+    value = rest.head;
+    rest.tail
+  }
       case _ => args
     }
 
     override def helpSyntax = name + " <" + arg + ">";
   }
 
-  /** A setting represented by a string in a given set of `choices', 
-   *  (`default' unless set) 
+  /** A setting represented by a string in a given set of `choices',
+   *  (`default' unless set)
    */
   case class ChoiceSetting(name: String, descr: String, choices: List[String], default: String)
   extends Setting(name, descr + choices.mkString(" (", ",", ")")) {
@@ -125,11 +125,11 @@ class Settings(error: String => unit) {
           error(
             if (choice == "") "missing " + argument
             else "unknown " + argument + " '" + choice + "'");
-	  List()
-	} else {
-          value = choice; 
+    List()
+  } else {
+          value = choice;
           rest
-	}
+  }
       case _ => args
     }
 
@@ -137,10 +137,10 @@ class Settings(error: String => unit) {
   }
 
   /** A setting represented by a list of strings which should be prefixes of
-   *  phase names. This is not checked here, however. 
+   *  phase names. This is not checked here, however.
    *  (the empty list, unless set)
    */
-  case class PhasesSetting(name: String, descr: String) 
+  case class PhasesSetting(name: String, descr: String)
   extends Setting(name, descr + " <phases> (see below)") {
     var value: List[String] = List();
 
@@ -148,12 +148,12 @@ class Settings(error: String => unit) {
       case n :: rest if (n startsWith (name + ":")) =>
         val phase = n.substring(name.length() + 1);
         if (phase == "") {
-	  error("missing phase");
-	  List()
-	} else {
-          value = value ::: List(phase); 
+    error("missing phase");
+    List()
+  } else {
+          value = value ::: List(phase);
           rest
-	}
+  }
       case _ => args
     }
 

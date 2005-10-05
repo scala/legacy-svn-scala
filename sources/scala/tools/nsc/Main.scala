@@ -23,7 +23,7 @@ object Main {
   private var reporter: ConsoleReporter = _;
 
   def error(msg: String): unit =
-    reporter.error(new Position(PRODUCT), 
+    reporter.error(new Position(PRODUCT),
                    msg + "\n  " + PRODUCT + " -help  gives more information");
 
   def errors() = reporter.errors();
@@ -59,7 +59,7 @@ object Main {
     })
   }
 
-  def interprete(gCompiler: Global): unit = {
+  def interpret(gCompiler: Global): unit = {
     val interpreter = new Interpreter {
       val compiler: gCompiler.type = gCompiler
     };
@@ -76,20 +76,20 @@ object Main {
       reporter.info(null, command.usageMsg, true)
     else {
       try {
-	val compiler = new Global(command.settings, reporter);
-	if (command.settings.resident.value)
-	  resident(compiler);
-	else if (command.settings.interprete.value)
-	  interprete(compiler);
-	else if (command.files.isEmpty)
-	  reporter.info(null, command.usageMsg, true)
-	else
-	  (new compiler.Run) compile command.files;
+  val compiler = new Global(command.settings, reporter);
+  if (command.settings.resident.value)
+    resident(compiler);
+  else if (command.settings.interpret.value)
+    interpret(compiler);
+  else if (command.files.isEmpty)
+    reporter.info(null, command.usageMsg, true)
+  else
+    (new compiler.Run) compile command.files;
       } catch {
-	case ex @ FatalError(msg) => 
-	  if (command.settings.debug.value)
-	    ex.printStackTrace();
-	  reporter.error(null, "fatal error: " + msg);
+  case ex @ FatalError(msg) =>
+    if (command.settings.debug.value)
+      ex.printStackTrace();
+    reporter.error(null, "fatal error: " + msg);
       }
       reporter.printSummary()
     }
