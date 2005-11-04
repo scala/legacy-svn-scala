@@ -35,5 +35,7 @@ class Atom[+A]( val data: A ) extends SpecialNode {
   /** returns text, with some characters escaped according to XML spec */
   def toString(sb:StringBuffer) = 
     Utility.escape( data.toString(), sb );
+
+  override def text: String = data.toString();
     
 }
