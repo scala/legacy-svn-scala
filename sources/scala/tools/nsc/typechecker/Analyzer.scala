@@ -9,7 +9,7 @@ package scala.tools.nsc.typechecker;
  */ 
 [_trait_] abstract class Analyzer 
 	 extends AnyRef
-            with Contexts 
+            with Contexts
     	    with Namers 
 	    with Typers 
 	    with Infer 
