@@ -17,7 +17,7 @@ package scala.collection.mutable;
  */
 [serializable]
 class LinkedList[A](head: A, tail: LinkedList[A])
-  extends SingleLinkedList[A, LinkedList[A]]
+  extends SingleLinkedList[A, LinkedList[A]] 
 {
   elem = head;
   next = tail;
@@ -29,3 +29,6 @@ class LinkedList[A](head: A, tail: LinkedList[A])
 
   override protected def stringPrefix: String = "LinkedList";
 }
+
+
+
