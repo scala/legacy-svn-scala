@@ -1057,12 +1057,12 @@ import Tokens._;
 	syntaxError("illegal start of simple pattern", true);
 	errorPatternTree
     }
-    
+
 ////////// MODIFIERS ////////////////////////////////////////////////////////////
 
     /** Modifiers ::= {Modifier}
      *  Modifier  ::= final
-     *             | private
+     *             | private [ "[" Id "]" ]
      *             | protected
      *             | override
      *             | abstract
