@@ -14,10 +14,6 @@ import scala.tools.nsc.reporters._;
 
 import scala.collection.mutable.{HashSet,HashMap,ListBuffer}
 
-
-
-
-
 import symtab._;
 import symtab.classfile.{PickleBuffer, Pickler};
 import util.Statistics;
@@ -333,7 +329,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 	       (phaseDescriptors.length+1) * fileset.size);
     
 
-
+    
     override val terminalPhase : Phase = new GlobalPhase(p) {
       def name = "terminal";
       def apply(unit: CompilationUnit): unit = {}

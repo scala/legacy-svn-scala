@@ -16,12 +16,15 @@ mixin class Typers requires Analyzer {
   import definitions._
   import posAssigner.atPos
 
+  
   var appcnt = 0
   var idcnt = 0
   var selcnt = 0
   var implcnt = 0
   var impltime = 0l
 
+
+  
   private val transformed = new HashMap[Tree, Tree]
 
   private val superDefs = new HashMap[Symbol, ListBuffer[Tree]]
@@ -29,7 +32,7 @@ mixin class Typers requires Analyzer {
   def resetTyper: unit = {
     resetContexts
     transformed.clear
-    superDefs.clear
+    superDefs  .clear
   }
 
   def newTyper(context: Context): Typer = new Typer(context)
