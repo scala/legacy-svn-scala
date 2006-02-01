@@ -78,7 +78,11 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
 
   val copy = new LazyTreeCopier();
-
+  
+  val comments = 
+    if (onlyPresentation) new HashMap[Symbol,String];
+    else null;
+  
 // reporting -------------------------------------------------------
     
   def error(msg: String) = reporter.error(null, msg);
@@ -118,7 +122,9 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     new SourceReader(charset.newDecoder());
   }
 
-  val classPath = new ClassPath.Build(
+	val classPath0 = new ClassPath(onlyPresentation);
+
+  val classPath = new classPath0.Build(
     settings.classpath.value, 
     settings.sourcepath.value,
     settings.outdir.value,
@@ -285,13 +291,8 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
   private var curRun: Run = NoRun;
   override def currentRun: Run = curRun;
-
-  class TyperRun extends Run {
-    override val terminalPhase : Phase = typerPhase.next.next;
-    //override val terminalPhase : Phase = superAccessors.next;
-  }
-
-
+  
+  def onlyPresentation = false;
 
   class Run extends CompilerRun {
     var currentUnit : CompilationUnit = _;
@@ -328,12 +329,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       progress((phasec * fileset.size) + unitc, 
 	       (phaseDescriptors.length+1) * fileset.size);
     
-
     
-    override val terminalPhase : Phase = new GlobalPhase(p) {
-      def name = "terminal";
-      def apply(unit: CompilationUnit): unit = {}
-    }
     override def phaseNamed(name: String): Phase = {
       var p: Phase = firstPhase;
       while (p.next != p && p.name != name) p = p.next;
@@ -350,6 +346,13 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
     private var unitbuf = new ListBuffer[CompilationUnit];
     private var fileset = new HashSet[AbstractFile];
+
+    override val terminalPhase : Phase = 
+      if (onlyPresentation) typerPhase.next.next;
+      else new GlobalPhase(p) {
+        def name = "terminal";
+        def apply(unit: CompilationUnit): unit = {}
+      }
 
     private def addUnit(unit: CompilationUnit): unit = {
       unitbuf += unit;
