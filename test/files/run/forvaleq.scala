@@ -7,7 +7,6 @@ import scala.{List=>L}
 object Test {
   // redefine some symbols to make it extra hard
   class List
-  class Pair
   class Tuple2
   def List[A](as:A*) = 5
 
@@ -31,6 +30,20 @@ object Test {
         yield x*2
     Console.println(oddFirstTimesTwo)
   }
+
+  {
+    // a test case with patterns
+    
+    val input = L.range(0,20)
+    val oddFirstTimesTwo =
+      for{val x <- input
+          val xf = firstDigit(x)
+          val yf = x - firstDigit(x) / 10
+          val Pair(a, b) = Pair(xf - yf, xf + yf)
+          xf % 2 == 1}
+        yield a + b
+    Console.println(oddFirstTimesTwo)
+  }
   
   {
     // make sure it works on non-Ls
@@ -42,7 +55,7 @@ object Test {
           val xf = firstDigit(x)
           xf % 2 == 1}
         yield x*2
-    Console.println(oddFirstTimesTwo.toL)    
+    Console.println(oddFirstTimesTwo.toList)    
   }
   
   {
@@ -74,6 +87,6 @@ object Test {
       
     Console.println("called " + count + " times")
   }
-  
+
   def main(args: Array[String]): Unit = ()
 }
