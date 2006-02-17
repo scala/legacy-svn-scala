@@ -15,15 +15,12 @@ mixin class Typers requires Analyzer {
   import global._
   import definitions._
   import posAssigner.atPos
-
   
   var appcnt = 0
   var idcnt = 0
   var selcnt = 0
   var implcnt = 0
   var impltime = 0l
-
-
   
   private val transformed = new HashMap[Tree, Tree]
 
