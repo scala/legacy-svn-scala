@@ -20,7 +20,17 @@ mixin class PatternNodeCreator requires (TransMatcher with PatternNodes) {
     //Console.println("pncrea::sequencePat sym.pos = "+sym.pos);
     node;
   }
-  
+
+  def pRightIgnoringSequencePat(pos: Int, tpe:Type, castedRest1: Symbol, minlen:int) = {
+    //assert (tpe != null);
+    val sym = newVar(Position.FIRSTPOS, tpe);
+    var castedRest = if(castedRest1 != null) castedRest1 else newVar(pos, tpe);
+    val node = new RightIgnoringSequencePat(sym, castedRest, minlen);
+    node.pos = pos;
+    node.tpe = tpe;
+    node;
+  }
+    
   def pSeqContainerPat(pos: int, tpe: Type, seqpat:Tree ) = {
     //assert (tpe != null);
     val sym = newVar(Position.NOPOS, tpe);
