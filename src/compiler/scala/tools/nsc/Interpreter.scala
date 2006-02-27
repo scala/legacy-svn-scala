@@ -91,6 +91,16 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
   private def reqBinding(vname: Name): Option[Request] = {
     prevRequests.toList.reverse.find(lin => lin.boundNames.contains(vname))
   }
+  
+  /** next line number to use */
+  var nextLineNo = 0
+  
+  /** allocate a fresh line name */
+  def newLineName = {
+    val num = nextLineNo
+    nextLineNo = nextLineNo + 1
+    "line" + num
+  }
  
   /** generate a string using a routine that wants to write on a stream */
   private def stringFrom(writer: PrintWriter=>Unit): String = {
@@ -161,11 +171,10 @@ class Interpreter(val compiler: Global, output: (String => Unit)) {
     // parse
 		val trees = parse(line)
     if(trees.isEmpty) return ()  // parse error or empty input
- 
-    // figure out what kind of request
-    val lineno = prevRequests.length
-    val lineName = "line" + lineno
+   
+    val lineName = newLineName
     
+    // figure out what kind of request
     val req = buildRequest(trees, line, lineName)
     if(req == null) return ()  // a disallowed statement type
       
