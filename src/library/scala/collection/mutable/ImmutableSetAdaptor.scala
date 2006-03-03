@@ -22,10 +22,8 @@ package scala.collection.mutable;
  *  @version 1.0, 21/07/2003
  */
 [serializable]
-class ImmutableSetAdaptor[A](s: immutable.Set[A]) extends Set[A] {
+class ImmutableSetAdaptor[A](protected var set: immutable.Set[A]) extends Set[A] {
 
-    protected var set = s;
-    
     def size: Int = set.size;
     
     override def isEmpty: Boolean = set.isEmpty;
@@ -46,7 +44,6 @@ class ImmutableSetAdaptor[A](s: immutable.Set[A]) extends Set[A] {
     
     def -=(elem: A): Unit = { set = set - elem; }
     
-    def clear: Unit = { set = empty; }
-    
-    protected def empty: scala.collection.immutable.Set[A] = s;
+    def clear: Unit = { set = set.empty; }
+
 }
