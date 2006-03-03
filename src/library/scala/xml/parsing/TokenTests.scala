@@ -10,10 +10,10 @@
 package scala.xml.parsing;
 
 /**
- * Helper functions for parsing XML fragments 
+ * Helper functions for parsing XML fragments
  */
-trait TokenTests {
-  
+mixin class TokenTests {
+
   /** (#x20 | #x9 | #xD | #xA) */
   final def isSpace( ch:Char ):Boolean = ch match {
     case '\u0009' | '\u000A' | '\u000D' | '\u0020' => true

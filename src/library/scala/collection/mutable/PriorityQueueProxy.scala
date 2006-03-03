@@ -14,13 +14,15 @@ package scala.collection.mutable;
 
 /** This class implements priority queues using a heap. The
  *  elements of the queue have to be ordered in terms of the
- *  <code>Ordered[T]</code> trait.
- *  
+ *  <code>Ordered[T]</code> class.
+ *
  *  @author  Matthias Zenger
  *  @version 1.0, 03/05/2004
  */
-abstract class PriorityQueueProxy[A <% Ordered[A]] extends PriorityQueue[A] with IterableProxy[A] { 
-										
+abstract class PriorityQueueProxy[A <% Ordered[A]] extends PriorityQueue[A]
+         with IterableProxy[A]
+{
+
   def self: PriorityQueue[A];
 
   /** Creates a new iterator over all elements contained in this

@@ -18,8 +18,8 @@ package scala.collection.mutable;
  *  @author  Matthias Zenger
  *  @version 1.1, 03/05/2004
  */
-trait QueueProxy[A] extends Queue[A] with SeqProxy[A] {
-    
+mixin class QueueProxy[A] extends Queue[A] with SeqProxy[A] {
+
     def self: Queue[A];
 
     /** Access element number <code>n</code>.
