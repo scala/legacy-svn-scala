@@ -1,15 +1,18 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2004, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-** $Id$
 \*                                                                      */
+
+// $Id$
+
 
 package scala.xml;
 
-/** 
+
+/**
  * This class acts as a Buffer for nodes. If it is used as a sequence
  * of nodes <code>Seq[Node]</code>, it must be ensured that no updates
  * occur after that point, because <code>scala.xml.Node</code> is assumed
