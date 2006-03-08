@@ -2,7 +2,7 @@ package examples
 
 import concurrent.ops._
 
-object futures { 
+object futures {
   def someLengthyComputation = 1
   def anotherLengthyComputation = 2
   def f(x: Int) = x + x
