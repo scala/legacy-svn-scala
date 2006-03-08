@@ -28,12 +28,8 @@ object List {
    *  @param xs the elements to put in the list
    *  @return the list containing elements xs.
    */
-  def apply[A](xs: A*): List[A] = 
-    // TODO: remove the type test once nsc becomes standard
-    if (xs.isInstanceOf$erased[List[A]])
-      xs.asInstanceOf$erased[List[A]];
-    else
-      fromArray(xs.asInstanceOf$erased[Array[A]]);
+  def apply[A](xs: A*): List[A] =
+    fromArray(xs.asInstanceOf[Array[A]]);
 
   /** Create a sorted list of all integers in a range.
    *
