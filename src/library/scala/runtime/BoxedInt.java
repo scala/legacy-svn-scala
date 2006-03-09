@@ -57,7 +57,7 @@ public final class BoxedInt extends BoxedNumber
     public final int hashCode() {
 	return value;
     }
-    
+
     public final String toString() {
 	return String.valueOf(value);
     }
