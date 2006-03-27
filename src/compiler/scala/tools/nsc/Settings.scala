@@ -17,10 +17,13 @@ class Settings(error: String => unit) {
       System.getProperty(name)
     else null
 
-  private val classpathDefault = 
-    alternatePath(
-      getProperty("env.classpath"),
-      ".")
+  private val classpathDefault =
+		if (System.getProperty("env.classpath") != null)
+			alternatePath(
+	      getProperty("env.classpath"),
+				".")
+		else getProperty("java.class.path")
+    
 
   private val bootclasspathDefault = 
     alternatePath(
