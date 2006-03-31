@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id:ExactNumeric.scala 6853 2006-03-20 16:58:47 +0100 (Mon, 20 Mar 2006) dubochet $
 
 
 package scala.dbc.value;
@@ -24,12 +24,12 @@ abstract class ExactNumeric [Type] extends Value {
 }
 
 object ExactNumeric {
-	
+  
   implicit def exactNumericToByte (obj:value.ExactNumeric[Byte]): Byte = obj.nativeValue;
   implicit def exactNumericToShort (obj:value.ExactNumeric[Short]): Short = obj.nativeValue;
   implicit def exactNumericToInt (obj:value.ExactNumeric[Int]): Int = obj.nativeValue;
   implicit def exactNumericToLong (obj:value.ExactNumeric[Long]): Long = obj.nativeValue;
   implicit def exactNumericToBigInteger (obj:value.ExactNumeric[BigInteger]): BigInteger = obj.nativeValue;
   implicit def exactNumericToBigDecimal (obj:value.ExactNumeric[BigDecimal]): BigDecimal = obj.nativeValue;
-	
+  
 }
