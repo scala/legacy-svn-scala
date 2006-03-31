@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.concurrent;
+package scala.concurrent
 
 
 /**
@@ -152,7 +152,7 @@ object pilib {
       case Pair(Nil, _) => None
       case Pair(_, Nil) => None
       case Pair(UGP(a1, d1, v1, c1) :: rest1, UGP(a2, d2, v2, c2) :: rest2) =>
-        if (a1 == a2 && d1 == !d2)          
+        if (a1 == a2 && d1 == !d2)
           Some(Triple(() => if (d1) a1.log(v2) else a1.log(v1), () => c1(v2), () => c2(v1)))
         else matches(gs1, rest2) match {
           case None => matches(rest1, gs2)
@@ -181,11 +181,9 @@ object pilib {
 
   /** Pi-calculus non-deterministic choice. */
   def choice[a](s: GP[a]*): a = {
-    val sum = Sum(s.asInstanceOf[List[GP[a]]] map { x => x.untyped });
+    val sum = Sum(s.toList map { x => x.untyped });
     synchronized { sums = compare(sum, sums) };
     (sum.continue).asInstanceOf[a]
   }
 
-
 }
-
