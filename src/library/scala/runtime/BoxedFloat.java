@@ -31,19 +31,12 @@ public class BoxedFloat extends BoxedNumber
     public final long longValue() { return (long)value; }
     public final float floatValue() { return (float)value; }
     public final double doubleValue() { return (double)value; }
-    
-    public final boolean $eq$eq(java.lang.Object other) {
-        return equals(other);
-    }
-    
-    public final boolean $bang$eq(java.lang.Object other) {
-        return !equals(other);
-    }
 
     public boolean equals(java.lang.Object other) {
-	return other instanceof BoxedNumber && value == ((BoxedNumber) other).floatValue();
+	return other instanceof BoxedNumber &&
+            value == ((BoxedNumber) other).floatValue();
     }
-    
+
     public int hashCode() {
 	return java.lang.Float.floatToIntBits(value);
     }
@@ -51,4 +44,5 @@ public class BoxedFloat extends BoxedNumber
     public String toString() {
 	return String.valueOf(value);
     }
+
 }

@@ -26,26 +26,19 @@ public final class BoxedBoolean
     public final boolean value;
 
     private BoxedBoolean(boolean value) { this.value = value; }
-  
+
     public final boolean booleanValue() { return value; }
 
-    public final boolean $eq$eq(java.lang.Object other) {
-        return equals(other);
-    }
-    
-    public final boolean $bang$eq(java.lang.Object other) {
-        return !equals(other);
-    }
-
     public boolean equals(java.lang.Object other) {
-	return other instanceof BoxedBoolean && value == ((BoxedBoolean) other).value;
+	return this == other;
     }
 
     public int hashCode() {
 	return value ? 1 : 0;
     }
-    
+
     public String toString() {
 	return String.valueOf(value);
     }
+
 }

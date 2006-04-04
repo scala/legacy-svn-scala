@@ -19,14 +19,6 @@ public final class BoxedUnit
     public final static BoxedUnit UNIT = new BoxedUnit();
 
     private BoxedUnit() { }
-  
-    public final boolean $eq$eq(java.lang.Object other) {
-        return equals(other);
-    }
-    
-    public final boolean $bang$eq(java.lang.Object other) {
-        return !equals(other);
-    }
 
     public boolean equals(java.lang.Object other) {
 	return this == other;
@@ -35,7 +27,7 @@ public final class BoxedUnit
     public int hashCode() {
 	return 0;
     }
-    
+
     public String toString() {
 	return "()";
     }
