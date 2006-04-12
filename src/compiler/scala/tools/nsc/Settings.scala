@@ -11,7 +11,7 @@ import java.io.File
 class Settings(error: String => unit) {
 
   private var allsettings: List[Setting] = List()
-  
+
   private def getProperty(name: String): String =
     if (System.getProperty(name) != "")
       System.getProperty(name)
@@ -23,7 +23,6 @@ class Settings(error: String => unit) {
         getProperty("env.classpath"),
         ".")
     else getProperty("java.class.path")
-    
 
   private val bootclasspathDefault = 
     alternatePath(
@@ -56,11 +55,14 @@ class Settings(error: String => unit) {
       if (guess.exists()) guess.getPath() else null
     } else null
   }
-  
+
   private val encodingDefault =
     new java.io.OutputStreamWriter(
       new java.io.ByteArrayOutputStream()).getEncoding
-  
+
+  private val windowtitleDefault = "Scala Library Documentation"
+  private val documenttitleDefault = "Scala 2"
+
   val doc           = BooleanSetting("-doc", "Generate documentation");
   val debuginfo     = BooleanSetting("-g", "Generate debugging info")
   val nowarnings    = BooleanSetting("-nowarn", "Generate no warnings")
@@ -74,6 +76,8 @@ class Settings(error: String => unit) {
   val extdirs       = StringSetting ("-extdirs", "dirs", "Override location of installed extensions", extdirsDefault)
   val outdir        = StringSetting ("-d", "directory", "Specify where to place generated class files", ".")
   val encoding      = StringSetting ("-encoding", "encoding", "Specify character encoding used by source files", encodingDefault)
+  val windowtitle   = StringSetting ("-windowtitle", "windowtitle", "Specify window title of generated HTML documentation", windowtitleDefault)
+  val documenttitle = StringSetting ("-documenttitle", "documenttitle", "Specify document title of generated HTML documentation", documenttitleDefault)
   val target        = ChoiceSetting ("-target", "Specify which backend to use",  List("jvm", "msil"), "jvm")
   val migrate       = BooleanSetting("-migrate", "Assist in migrating from Scala version 1.0")
   val debug         = BooleanSetting("-debug", "Output debugging messages")
