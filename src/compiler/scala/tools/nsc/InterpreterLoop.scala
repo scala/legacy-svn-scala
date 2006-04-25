@@ -7,6 +7,7 @@
 package scala.tools.nsc
 
 import java.io._
+
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.tools.nsc.util.{Position}
 
@@ -19,35 +20,32 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
 
   var settings: Settings = _ // set by main()
   var interpreter: Interpreter = null // set by createInterpreter()
-  
+
   /** A reverse list of commands to replay if the user
     * requests a :replay */
   var replayCommandsRev: List[String] = Nil
 
   /** A list of commands to replay if the user requests a :replay */
   def replayCommands = replayCommandsRev.reverse
-  
+
   /** Record a command for replay should the user requset a :replay */
-  def addReplay(cmd: String) = 
+  def addReplay(cmd: String) =
     replayCommandsRev = cmd :: replayCommandsRev
-    
 
   /** Close the interpreter, if there is one, and set
     * interpreter to null. */
-  def closeInterpreter = {
-    if(interpreter != null) {
+  def closeInterpreter =
+    if (interpreter != null) {
       interpreter.close
       interpreter = null
     }
-  }
-  
+
   /* As soon as the Eclipse plugin no longer needs it, delete uglinessxxx,
    * parentClassLoader0, and the parentClassLoader method in Interpreter
    */
   var uglinessxxx: ClassLoader = _
   def parentClassLoader0: ClassLoader = uglinessxxx
 
-  
   /** Create a new interpreter.  Close the old one, if there
     * is one. */
   def createInterpreter = {
@@ -57,8 +55,7 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
       override protected def parentClassLoader = parentClassLoader0;
     }
   }
-  
-  
+
   /** print a friendly help message */
   def printHelp = {
     out.println("This is an interpreter for Scala.")
@@ -70,11 +67,10 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
     out.println("Type :help to repeat this message later.")
   }
 
-  
   /** The main read-eval-print loop for the interpereter.  It calls
       command() for each line of input, and stops when command()
       returns false */
-  def repl(): Unit = {
+  def repl(): Unit =
     while(true) {
       out.print("\nscala> ")
       out.flush
@@ -83,13 +79,12 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
         return ()  // assumes null means EOF
 
       val Pair(keepGoing, shouldReplay) = command(line)
-      
+
       if (!keepGoing)
         return ()
       if(shouldReplay)
         addReplay(line)
     }
-  }
 
   /** interpret all lines from a specified file */
   def interpretAllFrom(filename: String): Unit = {
@@ -122,7 +117,7 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
       out.println
     }
   }
-    
+
   /** Run one command submitted by the user.  Two values are returned:
     * (1) whether to keep running, and (2) whether to record the
     * command for replay. */
@@ -134,11 +129,10 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
         return ()
       }
       val filename = command.substring(spaceIdx).trim
-      if(! new File(filename).exists) {
+      if (! new File(filename).exists) {
         out.println("That file does not exist")
         return ()
       }
-
       action(filename)
     }
 
@@ -147,9 +141,9 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
     val compileRegexp = ":c(o(m(p(i(l(e)?)?)?)?)?)?.*"
     val loadRegexp    = ":l(o(a(d)?)?)?.*"
     val replayRegexp  = ":r(e(p(l(a(y)?)?)?)?)?.*"
-    
+
     var shouldReplay = false
-    
+
     if (line.matches(helpRegexp))
       printHelp
     else if (line.matches(quitRegexp))
@@ -192,8 +186,6 @@ class InterpreterLoop(in: BufferedReader, out: PrintWriter) {
                          map(s => new File(s).toURL),
                  ClassLoader.getSystemClassLoader)
 
-
-                 
     if (!command.ok || command.settings.help.value) {
       // either the command line is wrong, or the user
       // explicitly requested a help listing
