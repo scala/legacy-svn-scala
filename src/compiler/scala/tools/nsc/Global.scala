@@ -82,13 +82,13 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
 
   val copy = new LazyTreeCopier();
-  
-  val comments = 
+
+  val comments =
     if (onlyPresentation) new HashMap[Symbol,String];
     else null;
-  
+
 // reporting -------------------------------------------------------
-    
+
   def error(msg: String) = reporter.error(null, msg);
   def warning(msg: String) = reporter.warning(null, msg);
   def inform(msg: String) = System.err.println(msg);
@@ -97,15 +97,15 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     //reporter.info(null, msg, true);
   def informProgress(msg: String) = 
     if (settings.verbose.value) inform("[" + msg + "]");
- 
+
   def informTime(msg: String, start: long) =
     informProgress(msg + " in " + (System.currentTimeMillis() - start) + "ms");
 
-  def log(msg: Object): unit = 
+  def log(msg: Object): unit =
     if (settings.log contains phase.name) inform("[log " + phase + "] " + msg);
 
   class ErrorWithPosition(val pos : Int, val error : Throwable) extends Error;
-  
+
   def tryWith[T](pos : Int, body : => T) : T = try {
     body;
   } catch {
@@ -121,11 +121,8 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       logError("POS: " + source.dbg(e.pos), e);
       throw e.error;
   }
-  
-  
-  
-  
-  def logError(msg: String, t : Throwable): Unit = {};
+
+  def logError(msg: String, t: Throwable): Unit = {};
 
   def abort(msg: String) = throw new Error(msg);
 
@@ -136,7 +133,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       settings.encoding.value = "ISO-8859-1"; // A mandatory charset
       Charset.forName(settings.encoding.value);
     }
-    val charset = 
+    val charset =
       try {
         Charset.forName(settings.encoding.value);
       } catch {
@@ -200,7 +197,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   abstract class GlobalPhase(prev: Phase) extends Phase(prev) {
     phaseWithId(id) = this;
     def run: unit = currentRun.units foreach applyPhase;
-    
+
     def apply(unit: CompilationUnit): unit;
     private val isErased = prev.name == "erasure" || prev.erasedTypes;
     override def erasedTypes: boolean = isErased;
@@ -222,7 +219,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
 
   object analyzer extends Analyzer {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object superAccessors extends SuperAccessors {
@@ -234,7 +231,7 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
 
   object refchecks extends RefChecks {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object liftcode extends LiftCode {
@@ -242,59 +239,59 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
 
   object uncurry extends UnCurry {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object tailCalls extends TailCalls {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object transMatcher extends TransMatcher {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
 //  object checkDefined extends CheckDefined {
-//    val global: Global.this.type = Global.this;
+//    val global: Global.this.type = Global.this
 //  }
 
   object explicitOuter extends ExplicitOuter {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object erasure extends Erasure {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object lambdaLift extends LambdaLift {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object constructors extends Constructors {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object flatten extends Flatten {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object mixer extends Mixin {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object sampleTransform extends SampleTransform {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object genicode extends GenICode {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object icodePrinter extends backend.icode.Printers {
-    val global: Global.this.type = Global.this;
-  }   
+    val global: Global.this.type = Global.this
+  }
 
   object scalaPrimitives extends ScalaPrimitives {
-    val global: Global.this.type = Global.this;
+    val global: Global.this.type = Global.this
   }
 
   object inliner extends Inliners {
@@ -302,8 +299,8 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
   }
 
   object genJVM extends GenJVM {
-    val global: Global.this.type = Global.this;
-  }    
+    val global: Global.this.type = Global.this
+  }
 
   object icodeChecker extends checkers.ICodeChecker();
 
@@ -311,8 +308,8 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
     analyzer.NoContext.make(EmptyTree, Global.this.definitions.RootClass, new Scope()));
 
   def phaseDescriptors: List[SubComponent] = List(
-    analyzer.namerFactory, 
-    analyzer.typerFactory, 
+    analyzer.namerFactory,
+    analyzer.typerFactory,
     superAccessors,
     pickler,
     refchecks,
@@ -334,18 +331,18 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
   private var curRun: Run = NoRun;
   override def currentRun: Run = curRun;
-  
+
   def onlyPresentation = settings.doc.value;
 
   class Run extends CompilerRun {
-    var currentUnit : CompilationUnit = _;
+    var currentUnit: CompilationUnit = _;
     curRun = this;
     override val firstPhase = syntaxAnalyzer.newPhase(NoPhase);
     phase = firstPhase;
     definitions.init; // needs firstPhase and phase to be defined != NoPhase,
                       // that's why it is placed here.
     icodes.init;
-  
+
     private var p: Phase = firstPhase;
     private var stopped = false;
     for (val pd <- phaseDescriptors) {
@@ -355,24 +352,23 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
       }
     }
     // progress tracking
-    def progress(current : Int, total : Int) : Unit = {}
-   
-    private var phasec : Int = 0;
-    private var unitc  : Int = 0;
-    def advancePhase : Unit = {
+    def progress(current: Int, total: Int): Unit = {}
+
+    private var phasec: Int = 0;
+    private var unitc: Int = 0;
+    def advancePhase: Unit = {
       unitc = 0;
       phasec = phasec + 1;
       refreshProgress;
     }
-    def advanceUnit : Unit = {
+    def advanceUnit: Unit = {
       unitc = unitc + 1;
       refreshProgress;
     }
     private def refreshProgress = if (fileset.size > 0)
-      progress((phasec * fileset.size) + unitc, 
-	       (phaseDescriptors.length+1) * fileset.size);
-    
-    
+      progress((phasec * fileset.size) + unitc,
+               (phaseDescriptors.length+1) * fileset.size);
+
     override def phaseNamed(name: String): Phase = {
       var p: Phase = firstPhase;
       while (p.next != p && p.name != name) p = p.next;
@@ -381,7 +377,8 @@ class Global(val settings: Settings, val reporter: Reporter) extends SymbolTable
 
     override val namerPhase = phaseNamed("namer");
     override val typerPhase = phaseNamed("typer");
-    override val refchecksPhase = phaseNamed("refchecks");                                                             
+    override val refchecksPhase = phaseNamed("refchecks");
+
     override val explicitOuterPhase = phaseNamed("explicitouter");
     override val erasurePhase = phaseNamed("erasure");
     override val flattenPhase = phaseNamed("flatten");
