@@ -38,6 +38,7 @@ package scala.tools.ant {
     *  <li>extdirs,</li>
     *  <li>extdirsref,</li>
     *  <li>encoding,</li>
+    *  <li>target,</li>
     *  <li>force,</li>
     *  <li>logging,</li>
     *  <li>logphase,</li>
@@ -86,6 +87,10 @@ package scala.tools.ant {
                         "flatten", "constructors", "mixin", "icode", "jvm",
                         "terminal")
     }
+
+    object Target extends PermissibleValue {
+      val values = List("jvm", "msil", "cldc")
+    }
     
     /** The directories that contain source files to compile. */
     private var origin: Option[Path] = None
@@ -103,7 +108,10 @@ package scala.tools.ant {
     
     /** The character encoding of the files to compile. */
     private var encoding: Option[String] = None
-    
+
+    // the targetted backend
+    private var backend: Option[String] = None
+
     /** Whether to force compilation of all files or not. */
     private var force: Boolean = false
     /** How much logging output to print. Either none (default),
@@ -228,6 +236,10 @@ package scala.tools.ant {
       * @param input The value of <code>encoding</code>. */
     def setEncoding(input: String): Unit =
       encoding = Some(input)
+
+    def setTarget(input: String): Unit =
+      if (Target.isPermissible(input)) backend = Some(input)
+      else error("Unknown target '" + input + "'")
 
     /** Sets the force attribute. Used by Ant.
       * @param input The value for <code>force</code>. */
@@ -439,6 +451,7 @@ package scala.tools.ant {
         settings.bootclasspath.value = asString(getBootclasspath)
       if (!extdirs.isEmpty) settings.extdirs.value = asString(getExtdirs)
       if (!encoding.isEmpty) settings.encoding.value = encoding.get
+      if (!backend.isEmpty) settings.target.value = backend.get
       if (!logging.isEmpty && logging.get == "verbose")
         settings.verbose.value = true
       else if (!logging.isEmpty && logging.get == "debug") {
