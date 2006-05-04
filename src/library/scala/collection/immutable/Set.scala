@@ -16,6 +16,10 @@ package scala.collection.immutable;
  *  just have to provide functionality for the abstract methods in
  *  <code>scala.collection.Set</code> as well as for <code>+</code> and
  *  <code>-</code>.
+ *
+ * Note that abstract immutable.Set's are not covariant in their type
+ * parameter.  This is because some subclasses cannot support the
+ * <code>+</code> method for arbitrary types.
  *  
  *  @author  Matthias Zenger
  *  @version 1.1, 03/05/2004
