@@ -33,6 +33,8 @@ trait ExceptionHandlers requires ICodes {
     }
 
     var covered: List[BasicBlock] = Nil;
+    
+    def covers(b: BasicBlock): Boolean = covered.contains(b);
 
     override def toString() = "exh_" + label + "(" + cls.simpleName + ")";
 

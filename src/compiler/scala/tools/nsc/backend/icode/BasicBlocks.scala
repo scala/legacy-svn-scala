@@ -52,6 +52,11 @@ trait BasicBlocks requires ICodes {
         instructionList = List.fromArray(instrs);
       instructionList
     }
+    
+    def fromList(is: List[Instruction]): Unit = {
+      instrs = toInstructionArray(is);
+      closed = true;
+    }
 
     // public:
 
@@ -133,7 +138,7 @@ trait BasicBlocks requires ICodes {
           newInstrs(j) = x;
           j = j + 1;
         }
-        if (i + 1 < instrs.length - 1)
+        if (i + 1 < instrs.length)
           System.arraycopy(instrs, i + 1, newInstrs, j, instrs.length - i - 1)
         instrs = newInstrs;
       }
