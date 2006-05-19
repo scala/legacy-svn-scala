@@ -64,7 +64,12 @@ class Position( val source : SourceFile, val offset: Int) {
     column;
   } else 0;
 
-
+  /** Map this position to a position in an original source
+    * file.  If the SourceFile is a normal SourceFile, simply
+    * return this.
+    */
+  def inUltimateSource = source.positionInUltimateSource(this)
+  
   def dbgString = {
     "source: " + (if (source == null) source else source . path) + " " + 
     (if (isLine) "line-" + line;
@@ -84,6 +89,9 @@ class Position( val source : SourceFile, val offset: Int) {
   
   /** Returns a string representation of the encoded position. */
   override def toString(): String = {
+    if(inUltimateSource != this)
+      return inUltimateSource.toString
+      
     val sb = new StringBuffer();
     if (source != null) {
       sb.append(source.file.path);
