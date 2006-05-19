@@ -1,17 +1,24 @@
-package scala.tools.nsc.backend.icode.analysis;
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
+ * @author  Martin Odersky
+ */
 
-import scala.collection.mutable.{Map, HashMap};
+// $Id$
 
-/** 
+package scala.tools.nsc.backend.icode.analysis
+
+import scala.collection.mutable.{Map, HashMap}
+
+/**
  * A modified copy-propagation like analysis. It 
  *  is augmented with a record-like value which is used
  *  to represent closures.
  */
 abstract class CopyPropagation {
-  val global: Global;
-  import global._;
-  import icodes._;
-  
+  val global: Global
+  import global._
+  import icodes._
+
   /** Locations can be local variables. */
   abstract sealed class Location;
   case class LocalVar(l: Local) extends Location;
@@ -431,6 +438,6 @@ abstract class CopyPropagation {
                "\nIN(" + b.label +"):\t Stack: " + in(b).stack) + "\n";
       res
     }
-    
+
   } /* class CopyAnalysis */
 }
