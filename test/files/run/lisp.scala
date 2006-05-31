@@ -13,16 +13,14 @@ class LispTokenizer(s: String) extends Iterator[String] {
     while (i < s.length() && s.charAt(i) <= ' ') { i = i + 1 }
     i < s.length()
   }
-  def next: String =
+  def next: String = 
     if (hasNext) {
-      val start = i;
-      var ch = s.charAt(i); i = i + 1;
-      if (ch == '(') "("
-      else if (ch == ')') ")"
-      else {
-        while (i < s.length() && !isDelimiter(s.charAt(i))){ i = i + 1 }
-        s.substring(start, i)
-      }
+      val start = i
+      if (isDelimiter(s charAt i)) i = i + 1
+      else 
+        do i = i + 1
+        while (!isDelimiter(s charAt i))
+      s.substring(start, i)
     } else error("premature end of string")
 }
 
