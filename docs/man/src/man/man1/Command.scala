@@ -10,7 +10,7 @@ trait Command {
   import ManPage._
 
   protected val cn: String
-  val command = cn.substring(cn.lastIndexOf(".") + 1, cn.length() - 1)	
+  val command = cn.substring(cn.lastIndexOf(".") + 1, cn.length() - 1)
 
   protected def MBold(contents: AbstractText) = Mono(Bold(contents))
   protected def MItalic(contents: AbstractText) = Mono(Italic(contents))
@@ -29,7 +29,8 @@ trait Command {
 
   def authors = Section("AUTHOR",
 
-    "Written by Stephane Micheloud.")
+    "Written by Martin Odersky and other members of the " &
+    Link("Scala team", "http://scala.epfl.ch/community/") & ".")
 
   def copyright = Section("COPYRIGHT",
 
