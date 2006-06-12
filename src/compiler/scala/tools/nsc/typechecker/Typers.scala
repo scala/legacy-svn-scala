@@ -1350,20 +1350,38 @@ trait Typers requires Analyzer {
           }
           typer1.typedLabelDef(ldef)
 
-        case Attributed(attr, defn) =>
-          val attr1 = typed(attr, mode | CONSTmode, AttributeClass.tpe)
-          val attrInfo = attr1 match {
+        case Attributed(Attribute(constr, elements), defn) =>
+          val constr1 = typed(constr, mode | CONSTmode, AttributeClass.tpe)
+          val attrInfo = constr1 match {
             case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
-              Pair(tpt.tpe, args map {
-                case Literal(value) => 
+              val constrArgs = args map {
+                case Literal(value) =>
                   value
-                case arg => 
+                case arg =>
                   error(arg.pos, "attribute argument needs to be a constant; found: "+arg)
                   null
-              })
+              }
+              val nvPairs = elements map {
+                case Assign(Ident(name), rhs) => {
+                  val sym = tpt.tpe.decls.lookupEntry(name).sym;
+                  if (sym == NoSymbol) {
+                    null
+                  } else {
+                    val rhs1 = typed(rhs, mode | CONSTmode, sym.tpe.resultType)
+                    val value = rhs1 match {
+                      case Literal(v) => v
+                      case arg =>
+                        error(arg.pos, "attribute argument needs to be a constant; found: "+arg)
+                      null
+                    }
+                    Pair(sym, value)
+                  }
+                }
+              }
+              Triple(tpt.tpe, constrArgs, nvPairs)
           }
           if (attrInfo != null) {
-            val attributed = 
+            val attributed =
               if (defn.symbol.isModule) defn.symbol.moduleClass else defn.symbol;
             attributed.attributes = attributed.attributes ::: List(attrInfo)
           }
