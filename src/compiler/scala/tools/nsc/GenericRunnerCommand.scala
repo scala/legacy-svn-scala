@@ -1,17 +1,24 @@
+/* NSC -- new Scala compiler
+ * Copyright 2006 LAMP/EPFL
+ * @author  Lex Spoon
+ */
+
+// $Id$
+
 package scala.tools.nsc
 
 /** A command for ScriptRunner */
-class GenericRunnerCommand(allargs: List[String], error: String=>Unit) {
+class GenericRunnerCommand(allargs: List[String], error: String => Unit) {
   def this(allargs: List[String]) = this(allargs, str:String => {
     Console.println("Error: " + str)
   })
-  
+
   /** Settings specified by this command */
   val settings = new GenericRunnerSettings(error)
-  
+
   /** Whether the command was parsed correctly */
   var ok = true
-  
+
   /** What to run.  If it is None, then the interpreter should be started */
   var thingToRun: Option[String] = None
 
@@ -30,14 +37,14 @@ class GenericRunnerCommand(allargs: List[String], error: String=>Unit) {
         ok = false
       }
     }
-    
+
     if(!args.isEmpty) {
       thingToRun = Some(args.head)
       arguments = args.tail
     }
   }
   parseArguments
-  
+
   val usageMessage = {
     "scala [ <compiler-option> | -howtorun:how ]... [<torun> <arguments>]\n" +
     "\n" +
