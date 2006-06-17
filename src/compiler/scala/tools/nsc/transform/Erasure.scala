@@ -577,8 +577,14 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
               unit.warning(tree.pos, 
                            "System.arraycopy should be applied only to arrays with fixed element types;\n" + 
                            "use Array.copy instead")
-            tree
-
+	    if (fn.symbol == Any_asInstanceOf || fn.symbol == Any_asInstanceOfErased)
+              fn match {
+                case TypeApply(Select(qual, _), List(targ)) =>
+                  if (qual.tpe <:< targ.tpe) Typed(qual, TypeTree(qual.tpe))
+                  else tree
+              }
+            else tree
+          
           case Template(parents, body) =>
             assert(!currentOwner.isImplClass);
 	    //System.out.println("checking no dble defs " + tree);//DEBUG
