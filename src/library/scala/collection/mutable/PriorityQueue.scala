@@ -160,11 +160,7 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] {
         res ++= this;
         res
     }
-    
-    /** Returns a list of all elements.
-     */
-    def toList: List[A] = elements.toList;
-    
+
     /** Returns a textual representation of a queue as a string.
      *
      *  @return the string representation of this queue.

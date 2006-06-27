@@ -23,13 +23,6 @@ import Predef._;
 [serializable]
 class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
 
-    def apply(n: Int): A = {
-        if ((n < 0) || (n >= size))
-            error("cannot access element " + n + " in ArrayBuffer");
-        else
-            array(n);
-    }
-    
     /** Append a single element to this buffer and return
      *  the identity of the buffer.
      *
@@ -132,9 +125,9 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
         res ++= this;
         res
     }
-    
+
     /** Checks if two buffers are structurally identical.
-     *  
+     *
      *  @return true, iff both buffers contain the same sequence of elements.
      */
     override def equals(obj: Any): Boolean = obj match {
