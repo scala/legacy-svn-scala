@@ -11,7 +11,7 @@
 
 package scala.io;
 
-
+import scala.runtime.compat.StringBuilder;
 import java.io.{ File, FileInputStream, PrintStream };
 
 /** convenience methods to create an iterable representation of a source 
@@ -98,13 +98,10 @@ object Source {
   }
 
   def setFileDescriptor(file: File, s: Source): Source = {
-    s.descr = new StringBuffer()
-              .append( "file:" )
-              .append( file.getAbsolutePath() )
-              .toString();
+    s.descr = new StringBuilder().append( "file:" ).append( file.getAbsolutePath() ).toString();
     s
   }
-
+  
   def fromURL(s:String): Source =
     fromURL(new java.net.URL(s));
   
@@ -174,16 +171,16 @@ abstract class Source extends Iterator[Char] {
     val buf = new StringBuffer();
     val it = reset;
     var i = 0;
-
+    
     while( it.hasNext && i < (line-1)) 
       if('\n' == it.next)
-        i = i + 1;
+	i = i + 1;
     
-    if(!it.hasNext) { // this should not happen
+    if(!it.hasNext) // this should not happen
       throw new java.lang.IllegalArgumentException(
         "line "+line+" does not exist?!"
       );
-    }
+    
     var ch = it.next;
     while(it.hasNext && '\n' != ch) {
       buf.append( ch );
@@ -193,11 +190,10 @@ abstract class Source extends Iterator[Char] {
     buf.setLength( 0 );
     res
   }
-
   /** returns true if this source has more characters
    */
   def hasNext = iter.hasNext;
-
+  
   /** returns next character and has the following side-effects: updates 
    *  position (ccol and cline) and assigns the character to ch
    */
@@ -207,7 +203,7 @@ abstract class Source extends Iterator[Char] {
     ch match {
       case '\n' =>
         ccol = 1;
-        cline = cline + 1;
+	    cline = cline + 1;
       case '\t' =>
         ccol = ccol + tabinc;
       case _ =>
@@ -215,18 +211,17 @@ abstract class Source extends Iterator[Char] {
     }
     ch 
   };
-
-
+  
+  
   /** reports an error message to console */
-  def reportError(pos: Int, msg: String): Unit = {
+  def reportError(pos: Int, msg: String): Unit = 
     report(pos, msg, java.lang.System.out);
-  }
-
+  
   def reportError(pos: Int, msg: String, out: PrintStream): Unit = {
     nerrors = nerrors + 1;
     report(pos, msg, java.lang.System.out);
   }
-
+  
   def report(pos: Int, msg: String, out: PrintStream): Unit = {
     val line = Position.line(pos);
     val col = Position.column(pos);
@@ -239,7 +234,7 @@ abstract class Source extends Iterator[Char] {
     }
     Console.println('^');
   }
-
+  
   /** reports a warning message to java.lang.System.out */
   def reportWarning(pos: Int, msg: String): Unit = 
     reportWarning(pos, msg, java.lang.System.out);
@@ -248,8 +243,8 @@ abstract class Source extends Iterator[Char] {
     nwarnings = nwarnings + 1;
     report(pos, "warning! "+msg, out);
   }
-
+  
   /** the actual reset method */
   def reset: Source;
-
+  
 }
