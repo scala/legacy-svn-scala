@@ -32,7 +32,7 @@ object scala extends Command {
         Mono(Argument("compiler-option")),
         "Options for the compiler.  See " &
         Link(Bold("scalac") & "(1)", "scalac.html") & "."),
-        
+
       Definition(
         Mono("-howtorun:") & Argument("how"),
         "How to execute " & Argument("torun") & ", if it is present. " &
@@ -43,7 +43,7 @@ object scala extends Command {
       Definition(
         Mono(Argument("torun")),
         "A top-level object or a script file to run."),
-        
+
       Definition(
         Mono(Argument("argument")),
         "An arguments to pass to " & Argument("torun") & ".")))
@@ -53,35 +53,34 @@ object scala extends Command {
     "The "&MBold(command)&" utility runs Scala code using a Java runtime "&
     "environment.  The Scala code to run is " &
     "specified in one of three ways:",
-    
+
     NumberedList(
         "With no arguments specified, an interactive interpreter starts " &
         "and reads commands interactively.",
-        
+
         "With " & Mono("-howtorun:object") & " specified, the fully " &
         "qualified name of a top-level " &
         "Scala object may be specified.  The object should previously have " &
         "been compiled using " & Link(Bold("scalac") & "(1)", "scalac.html") &
         ".",
-        
+
         "With " & Mono("-howtorun:script") & " specified, a file " &
         "containing Scala code may be specified."
         ),
-    
+
     "If " & Mono("-howtorun:") & " is left as the default (" & Mono("guess") &
     "), then the " & MBold(command) & " command " &
     "will check whether a file of the " &
     "specified name exists.  If it does, then it will treat it as a " &
     "script file; if it does not, then it will treat it as the name " &
     "of an object.",
-    
+
     "In all three cases, arbitrary scalac options may be specified. "&
     "The most common option is to specify a classpath with " &
     Mono("-classpath") & ", but see the " & 
     Link(Bold("scalac") & "(1)", "scalac.html") & " page for " &
     "full details.   ",
-      
-    
+
     "If an object is specified to run, then that object must be a top-level " &
     "Scala object with the specified name.  The object must define a method " &
     Bold("main") & " with the following signature:",
@@ -97,23 +96,22 @@ object scala extends Command {
     "Scala statements and declarations in the file are processed in order. " &
     "Any arguments specified will be available via the " & Mono("args") &
     "variable.",
-    
+
     "Script files may have an optional header fthat is ignored if " &
     "present.  There are two ways to format the header: either beginning with " &
     Mono("#!") & " and ending with " & Mono("!#") & ", or beginning with " &
     Mono("::#!") & " and ending with " & Mono("::!#") & ".",
-    
+
     "Such a header must have each header boundary start at the beginning of a " &
     "line.  Headers can be used to make stand-alone script files, as shown " &
     "in the examples below.",
-    
+
     "If " & Mono("scala") & " is run from an sbaz(1) directory, " &
     "then it will add to its classpath any jars installed in the " &
     "lib directory of the sbaz directory.  Additionally, if no " &
     "-classpath option is specified, then " & Mono("scala") & 
     " will add " & Quote(".") & ", the current directory, to the " &
     "end of the classpath.")
-    
 
   val options = Section("OPTIONS",
 
@@ -140,28 +138,28 @@ object scala extends Command {
   val examples = Section("EXAMPLES",
 
     "Here are some examples of running Scala code:",
-    
+
     DefinitionList(
       Definition(
         "Execute a Scala program generated in the current directory",
         CmdLine("hello.HelloWorld")),
-      
+
       Definition(
         "Execute a Scala program generated in a user-defined " &
         "directory " & Bold("classes"),
         CmdLine(CmdOption("classpath", "classes") & "hello.HelloWorld")),
-     
+
       Definition(
           "Execute a Scala program using a user-defined " & MBold("java") & " " &
           "command",
           MBold("JAVACMD") & Mono("=/usr/local/bin/cacao ") &
           CmdLine(CmdOption("classpath", "classes") & "hello.HelloWorld")),
-          
+
       Definition(
           "Execute a Scala program using JVM options",
           MBold("JAVACMD") & Mono("=\"java -Dmsg=hello -enableassertions\" ") &
           CmdLine(CmdOption("classpath", "classes") & "hello.HelloWorld"))),
-        
+
     "Here is a complete Scala script for Unix: ",
 
     CodeSample(
@@ -170,9 +168,9 @@ object scala extends Command {
       "!#\n" +
       "Console.println(\"Hello, world!\")\n" +
       "argv.toList foreach Console.println"),
-       
+
     "Here is a complete Scala script for Unix: ",
-    
+
     CodeSample(
       "::#!\n" +
       "@echo off\n" +
@@ -193,6 +191,7 @@ object scala extends Command {
 
   val seeAlso = Section("SEE ALSO",
 
+    Link(Bold("fsc") & "(1)", "fsc.html") & ", " &
     Link(Bold("sbaz") & "(1)", "sbaz.html") & ", " &
     Link(Bold("scalac") & "(1)", "scalac.html") & ", " &
     Link(Bold("scaladoc") & "(1)", "scaladoc.html") & ", " &
