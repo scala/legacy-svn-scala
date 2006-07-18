@@ -3,6 +3,7 @@
  * @author  Martin Odersky
  */
 // $Id$
+
 package scala.tools.nsc
 
 import java.io._
@@ -85,28 +86,27 @@ object CompileSocket {
     *  @param vmArgs  the argument string to be passed to the java or scala command
     *                 the string must be either empty or start with a ' '.
     */
-  def serverCommands(vmArgs: String): List[String] = 
+  def serverCommands(vmArgs: String): List[String] =
     List(
-      vmCommand+vmArgs+" "+serverClass,
-      vmCommand+".bat"+vmArgs+" "+serverClass)
+      vmCommand + vmArgs + " " + serverClass,
+      vmCommand + ".bat" + vmArgs + " " + serverClass)
 
   /** Start a new server; returns true iff it succeeds */
   def startNewServer(vmArgs: String): Boolean = {
-    for(val cmd <- serverCommands(vmArgs)) {
+    for (val cmd <- serverCommands(vmArgs)) {
       try {
         Runtime.getRuntime().exec(cmd)
         return true
       } catch {
-        case e:IOException => {
-          Console.println(e)
+        case e: IOException => {
+          //Console.println(e)
           ()
         }
       }
     }
     return false
   }
-  
-  
+
   /** The port identification file */
   def portFile(port: int) = new File(tmpDir, port.toString())
         
@@ -137,7 +137,7 @@ object CompileSocket {
     if (port < 0) {
       if(!startNewServer(vmArgs)) {
         System.err.println("cannot start server.  tried commands:")
-        for(val cmd <- serverCommands(vmArgs))
+        for (val cmd <- serverCommands(vmArgs))
           System.err.println(cmd)
         exit(1)
       }
