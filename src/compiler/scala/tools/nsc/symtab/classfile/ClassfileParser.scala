@@ -1,20 +1,19 @@
-/* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
  * @author  Martin Odersky
  */
-
 // $Id$
 
 /* Ideas to extend this to an icode reader:
-
-  1. Parse classfile a second time, creating a hashmap `code' that associates method symbols with code.
-  2. For every method symbol `meth' in the new scope:
-  
-    new = oldclass.info.decl(meth.name).suchThat(old => old.tpe =:= meth.tpe)
-
-    code(new) = code(meth)
-*/
-
+ *
+ * 1. Parse classfile a second time, creating a hashmap `code' that
+ *    associates method symbols with code.
+ * 2. For every method symbol `meth' in the new scope:
+ *
+ *    new = oldclass.info.decl(meth.name).suchThat(old => old.tpe =:= meth.tpe)
+ *
+ *   code(new) = code(meth)
+ */
 package scala.tools.nsc.symtab.classfile
 
 import scala.tools.nsc.util.Position
@@ -24,7 +23,11 @@ import scala.collection.immutable.{Map, ListMap}
 
 import java.io.IOException
 
-
+/** This abstract class implements a class file parser.
+ *
+ *  @author Martin Odersky
+ *  @version 1.0
+ */
 abstract class ClassfileParser {
   def sourcePath : AbstractFile = null
 
@@ -34,15 +37,15 @@ abstract class ClassfileParser {
   import ClassfileConstants._
   import Flags._
 
-  private var in: AbstractFileReader = _;  // the class file
-  private var clazz: Symbol = _;           // the class symbol containing dynamic members
-  private var staticModule: Symbol = _;    // the module symbol containing static members
-  private var instanceDefs: Scope = _;     // the scope of all instance definitions
-  private var staticDefs: Scope = _;       // the scope of all static definitions
-  private var pool: ConstantPool = _;      // the classfile's constant pool
-  private var isScala: boolean = _;        // does class file describe a scala class?
-  private var hasMeta: boolean = _;        // does class file contain jaco meta attribute?s
-  private var busy: boolean = false;       // lock to detect recursive reads
+  private var in: AbstractFileReader = _  // the class file
+  private var clazz: Symbol = _           // the class symbol containing dynamic members
+  private var staticModule: Symbol = _    // the module symbol containing static members
+  private var instanceDefs: Scope = _     // the scope of all instance definitions
+  private var staticDefs: Scope = _       // the scope of all static definitions
+  private var pool: ConstantPool = _      // the classfile's constant pool
+  private var isScala: boolean = _        // does class file describe a scala class?
+  private var hasMeta: boolean = _        // does class file contain jaco meta attribute?s
+  private var busy: boolean = false       // lock to detect recursive reads
   private var classTParams: Map[Name,Symbol] =
     collection.immutable.ListMap.Empty[Name,Symbol]
   private val fresh = new scala.tools.nsc.util.FreshNameCreator
@@ -101,7 +104,6 @@ abstract class ClassfileParser {
                             + majorVersion + "." + minorVersion
                             + ", should be at least "
                             + JAVA_MAJOR_VERSION + "." + JAVA_MINOR_VERSION)
-    
   }
 
   class ConstantPool {
@@ -112,7 +114,7 @@ abstract class ClassfileParser {
     { var i = 1
       while (i < starts.length) {
         starts(i) = in.bp; 
-	i = i + 1
+        i = i + 1
         in.nextByte match {
           case CONSTANT_UTF8 | CONSTANT_UNICODE =>
             in.skip(in.nextChar)
@@ -148,7 +150,7 @@ abstract class ClassfileParser {
       }
       internalized(index)
     }
-    
+
     def getClassSymbol(index: int): Symbol = {
       if (index <= 0 || len <= index) errorBadIndex(index)
       var c = values(index).asInstanceOf[Symbol]
@@ -194,7 +196,7 @@ abstract class ClassfileParser {
       }
       value.asInstanceOf[Constant]
     }
-    
+
     /** Throws an exception signaling a bad constant index. */
     private def errorBadIndex(index: int) =
       throw new RuntimeException("bad constant pool index: " + index)
@@ -207,11 +209,11 @@ abstract class ClassfileParser {
   private def sigToType(name: Name): Type = {
     var index = 0
     val end = name.length
-    def objToAny(tp: Type): Type = 
-      if (tp.symbol == definitions.ObjectClass) definitions.AnyClass.tpe 
+    def objToAny(tp: Type): Type =
+      if (tp.symbol == definitions.ObjectClass) definitions.AnyClass.tpe
       else tp
     def paramsigs2types: List[Type] =
-      if (name(index) == ')') { index = index + 1; List() } 
+      if (name(index) == ')') { index = index + 1; List() }
       else objToAny(sig2type) :: paramsigs2types
     def sig2type: Type = {
       val tag = name(index); index = index + 1
@@ -228,7 +230,7 @@ abstract class ClassfileParser {
         case 'L' =>
           val start = index
           while (name(index) != ';') { index = index + 1 }
-	  val end = index
+          val end = index
           index = index + 1
           definitions.getClass(name.subName(start, end)).tpe
         case ARRAY_TAG =>
@@ -261,14 +263,14 @@ abstract class ClassfileParser {
     val staticInfo = ClassInfoType(List(), staticDefs, statics)
 
     val curbp = in.bp
-    skipMembers(); // fields
-    skipMembers(); // methods
+    skipMembers() // fields
+    skipMembers() // methods
     parseAttributes(clazz, classInfo)
     if (!isScala) {
       clazz.setFlag(sflags)
       setPrivateWithin(clazz, jflags)
       if (!hasMeta) {
-	clazz.setInfo(classInfo)
+        clazz.setInfo(classInfo)
       }
       statics.setInfo(staticInfo)
       staticModule.setInfo(statics.tpe)
@@ -307,8 +309,8 @@ abstract class ClassfileParser {
     val jflags = in.nextChar
     var sflags = transFlags(jflags)
     if ((sflags & FINAL) == 0) sflags = sflags | MUTABLE
-    if ((sflags & PRIVATE) != 0) { 
-      in.skip(4); skipAttributes(); 
+    if ((sflags & PRIVATE) != 0) {
+      in.skip(4); skipAttributes()
     } else {
       val name = pool.getName(in.nextChar)
       val info = pool.getType(in.nextChar)
@@ -325,17 +327,17 @@ abstract class ClassfileParser {
     val jflags = in.nextChar
     var sflags = transFlags(jflags)
     if ((jflags & JAVA_ACC_BRIDGE) != 0) sflags = sflags | PRIVATE
-    if ((sflags & PRIVATE) != 0) { 
-      in.skip(4); skipAttributes(); 
+    if ((sflags & PRIVATE) != 0) {
+      in.skip(4); skipAttributes()
     } else {
       val name = pool.getName(in.nextChar)
       var info = pool.getType(in.nextChar)
       if (name == nme.CONSTRUCTOR)
-	info match {
-	  case MethodType(formals, restpe) =>
-	    assert(restpe.symbol == definitions.UnitClass)
-	    info = MethodType(formals, clazz.tpe)
-	}
+        info match {
+          case MethodType(formals, restpe) =>
+            assert(restpe.symbol == definitions.UnitClass)
+            info = MethodType(formals, clazz.tpe)
+        }
       val sym = getOwner(jflags)
         .newMethod(Position.NOPOS, name).setFlag(sflags).setInfo(info)
       setPrivateWithin(sym, jflags)
@@ -550,10 +552,11 @@ abstract class ClassfileParser {
         case DOUBLE_TAG => pool.getConstant(index)
         case CLASS_TAG  => Constant(pool.getType(index))
         case ENUM_TAG   =>
-          val t = pool.getType(index);
+          val t = pool.getType(index)
           val n = pool.getName(in.nextChar);
           val s = t.symbol.linkedModule.info.decls.lookup(n)
-          assert (s != NoSymbol, "while processing " + in.file + ": " + t + "." + n + ": " + t.decls)
+          //assert (s != NoSymbol, "while processing " + in.file + ": " + t + "." + n + ": " + t.decls)
+          assert (s != NoSymbol, t) // avoid string concatenation!
           Constant(s)
         case ARRAY_TAG  =>
           val arr = new ArrayBuffer[Constant]()
@@ -581,18 +584,18 @@ abstract class ClassfileParser {
 
     def parseInnerClasses(): unit = {
       for (val i <- 0 until in.nextChar) {
-	val innerIndex = in.nextChar
-	val outerIndex = in.nextChar
-	val nameIndex = in.nextChar
-	val jflags = in.nextChar
-	if (innerIndex != 0 && outerIndex != 0 && nameIndex != 0 && 
-	    (jflags & (JAVA_ACC_PUBLIC | JAVA_ACC_PROTECTED)) != 0 &&
-	    pool.getClassSymbol(outerIndex) == sym) {
-	  val innerAlias = getOwner(jflags)
-	    .newAliasType(Position.NOPOS, pool.getName(nameIndex).toTypeName)
-	    .setInfo(pool.getClassSymbol(innerIndex).tpe)
-	  getScope(jflags).enter(innerAlias)
-	}
+        val innerIndex = in.nextChar
+        val outerIndex = in.nextChar
+        val nameIndex = in.nextChar
+        val jflags = in.nextChar
+        if (innerIndex != 0 && outerIndex != 0 && nameIndex != 0 && 
+            (jflags & (JAVA_ACC_PUBLIC | JAVA_ACC_PROTECTED)) != 0 &&
+            pool.getClassSymbol(outerIndex) == sym) {
+          val innerAlias = getOwner(jflags)
+            .newAliasType(Position.NOPOS, pool.getName(nameIndex).toTypeName)
+            .setInfo(pool.getClassSymbol(innerIndex).tpe)
+          getScope(jflags).enter(innerAlias)
+        }
       }
     }
     val attrCount = in.nextChar
@@ -613,10 +616,10 @@ abstract class ClassfileParser {
     }
   }
 
-  private def getOwner(flags: int): Symbol = 
+  private def getOwner(flags: int): Symbol =
     if ((flags & JAVA_ACC_STATIC) != 0) statics else clazz
 
-  private def getScope(flags: int): Scope = 
+  private def getScope(flags: int): Scope =
     if ((flags & JAVA_ACC_STATIC) != 0) staticDefs else instanceDefs
 
   private def transFlags(flags: int): long = {
