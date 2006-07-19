@@ -50,29 +50,29 @@ object CompileSocket {
     def expand(trial: Pair[String, List[String]]): Option[File] = {
       val Pair(topdirProp, extensions) = trial
       val topdir = System.getProperty(topdirProp)
-      if(topdir == null)
+      if (topdir == null)
         return None
-        
+
       val fulldir =
         extensions.foldLeft[File](new File(topdir))(
             (dir,ext)=>new File(dir, ext))
-            
+
       Some(fulldir)
     }
-    
+
     /** Test if file f is a writable directory */
     def isDirWritable(f: File): Boolean =
       f.isDirectory && f.canWrite
-    
+
     val potentials =
       for {
         val trial <- totry
-        val expanded = expand(trial) 
+        val expanded = expand(trial)
         !expanded.isEmpty
         isDirWritable(expanded.get)
       }
       yield expanded.get
-        
+
     if (potentials.isEmpty) {
       fatal("could not find a directory for port files")
     } else {
@@ -109,17 +109,17 @@ object CompileSocket {
 
   /** The port identification file */
   def portFile(port: int) = new File(tmpDir, port.toString())
-        
+
   /** Poll for a server port number; return -1 if none exists yet */
   private def pollPort(): int = {
     val hits = tmpDir.listFiles()
-    if (hits.length == 0) -1 
+    if (hits.length == 0) -1
     else 
       try {
         for (val i <- 1 until hits.length) hits(i).delete()
         Integer.parseInt(hits(0).getName)
       } catch {
-        case ex: Throwable => 
+        case ex: Throwable =>
           fatal(ex.toString() +
                 "\nbad file in temp directory: " +
                 hits(0).getAbsolutePath() +
@@ -127,7 +127,6 @@ object CompileSocket {
       }
   }
 
-  
   /** Get the port number to which a scala compile server is connected;
    *  If no server is running yet, create one
    */
@@ -167,7 +166,7 @@ object CompileSocket {
 
   def getOrCreateSocket(vmArgs: String): Socket = {
     val nAttempts = 9
-    def getsock(attempts: int): Socket = 
+    def getsock(attempts: int): Socket =
       if (attempts == 0) {
         fatal("unable to establish connection to server; exiting")
       } else {
@@ -205,7 +204,7 @@ object CompileSocket {
       getSocket(hostName, port)
     }
   }
-      
+
   def getSocket(hostName: String, port: int): Socket =
     try {
       new Socket(hostName, port)
@@ -214,7 +213,7 @@ object CompileSocket {
         fatal("unable to establish connection to server " +
               hostName + ":" + port + "; exiting")
     }
-  
+
   def getPassword(port: int): String = {
     val f = new BufferedReader(new FileReader(portFile(port)))
     val result = f.readLine()
