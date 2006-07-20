@@ -3,6 +3,7 @@
  * @author  Martin Odersky
  */
 // $Id$
+
 package scala.tools.nsc
 
 import scala.tools.util.SocketServer
@@ -14,6 +15,9 @@ import java.io._
 
 /** The main class for NSC, a compiler for the programming
  *  language Scala.
+ *
+ *  @author Martin Odersky
+ *  @version 1.0
  */
 object CompileServer extends SocketServer {
 
@@ -54,10 +58,8 @@ object CompileServer extends SocketServer {
         progress = false
         spawn {
           Thread.sleep(10000)
-          if (!progress) {
-            System.err.println("port file no longer exists; exiting")
-            exit(1)
-          }
+          if (!progress)
+            fatal("port file no longer exists; exiting")
         }
       }
     }
@@ -66,9 +68,10 @@ object CompileServer extends SocketServer {
   private val runtime = Runtime.getRuntime()
 
   def session(): unit = {
-    System.out.println("New session, total memory = "+runtime.totalMemory()+
-                       ", max memory = "+runtime.maxMemory()+
-                       ", free memory = "+runtime.freeMemory)
+    System.out.println("New session" +
+                       ", total memory = "+ runtime.totalMemory() +
+                       ", max memory = " + runtime.maxMemory() +
+                       ", free memory = " + runtime.freeMemory)
     val password = CompileSocket.getPassword(port)
     val guessedPassword = in.readLine()
     val input = in.readLine()
@@ -81,19 +84,19 @@ object CompileServer extends SocketServer {
           out.println("[Scala compile server exited]")
           shutDown = true
           return
-        } 
+        }
         if (args contains "-reset") {
           out.println("[Scala compile server was reset]")
           compiler = null
           return
-        } 
+        }
         val reporter = new ConsoleReporter(in, out) {
           // disable prompts, so that compile server cannot block
           override def displayPrompt = {}
         }
         def error(msg: String): unit =
           reporter.error(new Position(PRODUCT),
-                         msg + "\n  " + PRODUCT + " -help  gives more information")    
+                         msg + "\n  " + PRODUCT + " -help  gives more information")
         val command = new CompilerCommand(args, error, false) {
           override val cmdName = "fsc"
           settings.disable(settings.prompt)
@@ -105,7 +108,7 @@ object CompileServer extends SocketServer {
           new settings.BooleanSetting("-J<flag>", "Pass <flag> directly to runtime system")
         }
 
-        reporter.prompt = command.settings.prompt.value;
+        reporter.prompt = command.settings.prompt.value
         if (command.settings.version.value)
           reporter.info(null, versionMsg, true)
         else if (command.settings.help.value)
@@ -118,7 +121,7 @@ object CompileServer extends SocketServer {
               compiler.settings = command.settings
               compiler.reporter = reporter
             } else {
-              if (args exists ("-verbose" ==))
+              if (args contains "-verbose")
                 out.println("[Starting new Scala compile server instance]")
               compiler = new Global(command.settings, reporter) {
                 override def inform(msg: String) = out.println(msg)
@@ -149,7 +152,7 @@ object CompileServer extends SocketServer {
     }
   }
 
-  def redirect(setter: PrintStream => unit, filename: String): unit = 
+  def redirect(setter: PrintStream => unit, filename: String): unit =
     setter(
       new PrintStream(
         new BufferedOutputStream(
