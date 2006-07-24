@@ -27,7 +27,7 @@ object Expression {
   
   abstract class GenExp ;
   case class Attrib(test: NameTest, e: Expr) extends GenExp;
-  
+
   abstract class Expr extends GenExp {
     def \ (x: String) = 
       if( x=="*") 
