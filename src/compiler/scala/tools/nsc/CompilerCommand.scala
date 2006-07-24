@@ -19,29 +19,28 @@ class CompilerCommand(arguments: List[String], error: String => unit, interactiv
 
   /** The name of the command */
   val cmdName = "scalac"
-    
+
   /** The file extension of files that the compiler can process */
   val fileEnding = ".scala"
-    
+
   /** A message explaining usage and options */
   def usageMsg: String = {
-    val helpSyntaxColumnWidth: int = 
-      Iterable.max(settings.allSettings map (. helpSyntax.length()));
+    val helpSyntaxColumnWidth: int =
+      Iterable.max(settings.allSettings map (. helpSyntax.length()))
     def format(s: String): String = {
-      val buf = new StringBuffer()
-      buf.append(s)
+      val buf = new StringBuffer(s)
       var i = s.length()
       while (i < helpSyntaxColumnWidth) { buf.append(' '); i = i + 1 }
       buf.toString()
     }
-    settings.allSettings 
-      .map(setting => 
+    settings.allSettings
+      .map(setting =>
            format(setting.helpSyntax) + "  " + setting.helpDescription)
       .mkString(
-                "Usage: " + cmdName + " <options | source files>\n" + 
+                "Usage: " + cmdName + " <options | source files>\n" +
                 "where possible options include: \n  ",
                 "\n  ",
-                "\n");
+                "\n")
   }
 
   // initialization
@@ -49,16 +48,16 @@ class CompilerCommand(arguments: List[String], error: String => unit, interactiv
   var ok = true
 
   while (!args.isEmpty && ok) {
-    if (args.head.startsWith("-")) {
+    if (args.head startsWith "-") {
       if (interactive) {
         error("no options can be given in interactive mode")
         ok = false
       } else {
         val args0 = args
-        for(val setting <- settings.allSettings)
-          if(args eq args0)
+        for (val setting <- settings.allSettings)
+          if (args eq args0)
             args = setting.tryToSet(args)
-          
+
         if (args eq args0) {
           error("bad option: '" + args.head + "'")
           ok = false
