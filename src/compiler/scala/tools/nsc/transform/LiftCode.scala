@@ -1,46 +1,53 @@
-/* NSC -- new scala compiler
- * Copyright 2005 LAMP/EPFL
- * @author
+/* NSC -- new Scala compiler
+ * Copyright 2005-2006 LAMP/EPFL
+ * @author Gilles Dubochet
  */
 // $Id$
-package scala.tools.nsc.transform;
 
-import symtab._;
-import Flags._;
-import util.TreeSet;
-import symtab.Flags._;
-import scala.collection.immutable.ListMap;
-import scala.collection.mutable.{HashMap, ListBuffer};
-import scala.tools.nsc.util.FreshNameCreator;
+package scala.tools.nsc.transform
 
+import symtab._
+import Flags._
+import symtab.Flags._
+import scala.collection.immutable.ListMap
+import scala.collection.mutable.{HashMap, ListBuffer}
+import scala.tools.nsc.util.{FreshNameCreator, TreeSet}
+
+/** This abstract class ...
+ *
+ *  @author Gilles Dubochet
+ *  @version 1.0
+ */
 abstract class LiftCode extends Transform {
 
-  import global._;                  // the global environment
-  import definitions._;             // standard classes and methods
-  import typer.{typed, atOwner};    // methods to type trees
-  import posAssigner.atPos;         // for filling in tree positions
+  import global._                  // the global environment
+  import definitions._             // standard classes and methods
+  import typer.{typed, atOwner}    // methods to type trees
+  import posAssigner.atPos         // for filling in tree positions
 
   /** the following two members override abstract members in Transform */
-  val phaseName: String = "liftcode";
-  
-  def newTransformer(unit: CompilationUnit): Transformer = new AddRefFields(unit);
-  
+  val phaseName: String = "liftcode"
+
+  def newTransformer(unit: CompilationUnit): Transformer =
+    new AddRefFields(unit)
+
   class AddRefFields(unit: CompilationUnit) extends Transformer {
     override def transform(tree: Tree): Tree = tree match {
-      case Apply(TypeApply(Select(x@Ident(_), nme.lift_), _), List(tree)) if x.symbol == CodeModule =>
+      case Apply(TypeApply(Select(x@Ident(_), nme.lift_), _), List(tree))
+      if x.symbol == CodeModule =>
         typed(atPos(tree.pos)(codify(tree)))
       case _ =>
         super.transform(tree)
     }
   }
 
-  case class FreeValue(tree: Tree) extends reflect.Tree;
-  
+  case class FreeValue(tree: Tree) extends reflect.Tree
+
   class ReifyEnvironment extends HashMap[Symbol, reflect.Symbol] {
     var targets = new HashMap[String, Option[reflect.LabelSymbol]]()
     def addTarget(name: String, target: reflect.LabelSymbol): Unit =
       targets.update(name, Some(target))
-    def getTarget(name: String): Option[reflect.LabelSymbol] = 
+    def getTarget(name: String): Option[reflect.LabelSymbol] =
       targets.get(name) match {
         case None =>
           targets.update(name, None)
@@ -56,7 +63,7 @@ abstract class LiftCode extends Transform {
     override def update(sym: Symbol, rsym: reflect.Symbol) =
       super.update(sym,rsym)
   }
-  
+
   class Reifier(env: ReifyEnvironment, currentOwner: reflect.Symbol) {
 
     def reify(tree: Tree): reflect.Tree = tree match {
@@ -209,46 +216,49 @@ abstract class LiftCode extends Transform {
       case _ =>
         null
     }
-    
+
   }
 
-  type InjectEnvironment = ListMap[reflect.Symbol, Name];
-  
+  type InjectEnvironment = ListMap[reflect.Symbol, Name]
+
   class Injector(env: InjectEnvironment, fresh: FreshNameCreator) {
 
     // todo replace className by caseName in CaseClass once we have switched to nsc.
     def className(value: CaseClass): String = value match {
       case _ :: _ => "scala.$colon$colon"
-      case reflect.MethodType(_, _) => 
-        if (value.isInstanceOf[reflect.ImplicitMethodType]) "scala.reflect.ImplicitMethodType" else "scala.reflect.MethodType"
+      case reflect.MethodType(_, _) =>
+        if (value.isInstanceOf[reflect.ImplicitMethodType])
+          "scala.reflect.ImplicitMethodType"
+        else
+          "scala.reflect.MethodType"
       case x =>
         "scala.reflect."+x.caseName
       //case _ => // bq:unreachable code
       //  ""
     }
-    
+
     def objectName(value: Any): String = value match {
-      case Nil => "scala.Nil"
-      case reflect.NoSymbol => "scala.reflect.NoSymbol"
+      case Nil                => "scala.Nil"
+      case reflect.NoSymbol   => "scala.reflect.NoSymbol"
       case reflect.RootSymbol => "scala.reflect.RootSymbol"
-      case reflect.NoPrefix => "scala.reflect.NoPrefix"
-      case reflect.NoType => "scala.reflect.NoType"
+      case reflect.NoPrefix   => "scala.reflect.NoPrefix"
+      case reflect.NoType     => "scala.reflect.NoType"
       case _ => ""
     }
 
     def inject(value: Any): Tree = value match {
-      case FreeValue(tree) => 
+      case FreeValue(tree) =>
         New(Ident(definitions.getClass("scala.reflect.Literal")), List(List(tree)))
-      case () => Literal(Constant(()))
-      case x: String => Literal(Constant(x))
-      case x: Boolean => Literal(Constant(x))
-      case x: Byte => Literal(Constant(x))
-      case x: Short => Literal(Constant(x))
-      case x: Char => Literal(Constant(x))
-      case x: Int => Literal(Constant(x))
-      case x: Long => Literal(Constant(x))
-      case x: Float => Literal(Constant(x))
-      case x: Double => Literal(Constant(x))
+      case ()           => Literal(Constant(()))
+      case x: String    => Literal(Constant(x))
+      case x: Boolean   => Literal(Constant(x))
+      case x: Byte      => Literal(Constant(x))
+      case x: Short     => Literal(Constant(x))
+      case x: Char      => Literal(Constant(x))
+      case x: Int       => Literal(Constant(x))
+      case x: Long      => Literal(Constant(x))
+      case x: Float     => Literal(Constant(x))
+      case x: Double    => Literal(Constant(x))
       case c: CaseClass =>
         val name = objectName(c);
         if (name.length() != 0) gen.mkAttributedRef(definitions.getModule(name))
@@ -260,21 +270,25 @@ abstract class LiftCode extends Transform {
             injectedArgs += inject(c.caseElement(i));
           New(Ident(definitions.getClass(name)), List(injectedArgs.toList))
         }
-      case null => gen.mkAttributedRef(definitions.getModule("scala.reflect.NoType"))
-      case _ => throw new Error("don't know how to inject " + value);
+      case null =>
+        gen.mkAttributedRef(definitions.getModule("scala.reflect.NoType"))
+      case _ =>
+        throw new Error("don't know how to inject " + value)
     }
-    
-  }
-  
-  def reify(tree: Tree): reflect.Tree = 
-    new Reifier(new ReifyEnvironment(), reflect.NoSymbol).reify(tree);
 
-  def inject(code: reflect.Tree): Tree = 
-    new Injector(ListMap.Empty, new FreshNameCreator).inject(code);
-  
+  }
+
+  def reify(tree: Tree): reflect.Tree =
+    new Reifier(new ReifyEnvironment(), reflect.NoSymbol).reify(tree)
+
+  def inject(code: reflect.Tree): Tree =
+    new Injector(ListMap.Empty, new FreshNameCreator).inject(code)
+
   def codify (tree: Tree): Tree =
-    New(TypeTree(appliedType(definitions.CodeClass.typeConstructor, List(tree.tpe))),List(List(inject(reify(tree)))))
-  
+    New(TypeTree(appliedType(definitions.CodeClass.typeConstructor,
+                             List(tree.tpe))),
+        List(List(inject(reify(tree)))))
+
 }
 
 // case EmptyTree =>
@@ -311,4 +325,3 @@ abstract class LiftCode extends Transform {
 // case Alternative(trees) =>
 // case Star(elem) =>
 // case Bind(name, body) =>
-    

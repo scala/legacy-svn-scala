@@ -1,37 +1,44 @@
 /* NSC -- new scala compiler
  * Copyright 2005 LAMP/EPFL
- * @author
+ * @author Iulian Dragos
  */
 // $Id$
+
 package scala.tools.nsc.transform;
 
 import scala.tools.nsc.symtab.Flags;
 
 /** Perform tail recursive call elimination.
- */ 
-abstract class TailCalls extends Transform 
+ *
+ *  @author Iulian Dragos
+ *  @version 1.0
+ */
+abstract class TailCalls extends Transform
                          /* with JavaLogging() */ {
   // inherits abstract value `global' and class `Phase' from Transform
-  
-  import global._;                  // the global environment
-  import definitions._;             // standard classes and methods
-  import typer.{typed, atOwner};               // methods to type trees
-  import posAssigner.atPos;         // for filling in tree positions 
 
-  val phaseName: String = "tailcalls";  
-  def newTransformer(unit: CompilationUnit): Transformer = new TailCallElimination(unit);
+  import global._                  // the global environment
+  import definitions._             // standard classes and methods
+  import typer.{typed, atOwner}    // methods to type trees
+  import posAssigner.atPos         // for filling in tree positions 
+
+  val phaseName: String = "tailcalls"
+
+  def newTransformer(unit: CompilationUnit): Transformer =
+    new TailCallElimination(unit)
 
   /** Create a new phase which applies transformer */
-  override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = new Phase(prev);
+  override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = new Phase(prev)
 
   /** The phase defined by this transform */
   class Phase(prev: scala.tools.nsc.Phase) extends StdPhase(prev) {
-    def apply(unit: global.CompilationUnit): unit = if (!(settings.debuginfo.value == "notc")) {
-      newTransformer(unit).transformUnit(unit);
-    }
+    def apply(unit: global.CompilationUnit): unit =
+      if (!(settings.debuginfo.value == "notc")) {
+        newTransformer(unit).transformUnit(unit);
+      }
   }
 
-  
+
   /**
    * A Tail Call Transformer
    *
@@ -74,51 +81,51 @@ abstract class TailCalls extends Transform
 
     class Context {
       /** The current method */
-      var currentMethod: Symbol = NoSymbol;
+      var currentMethod: Symbol = NoSymbol
 
       /** The current tail-call label */
-      var label: Symbol = NoSymbol;
+      var label: Symbol = NoSymbol
 
       /** The expected type arguments of self-recursive calls */
-      var tparams: List[Symbol] = Nil;
+      var tparams: List[Symbol] = Nil
 
       /** Tells whether we are in a (possible) tail position */
-      var tailPos = false;
+      var tailPos = false
 
       /** Is the label accessed? */
-      var accessed = false;
+      var accessed = false
 
       def this(that: Context) = {
-        this();
-        this.currentMethod = that.currentMethod;
-        this.label         = that.label;
-        this.tparams       = that.tparams;
-        this.tailPos       = that.tailPos;
-        this.accessed      = that.accessed;
+        this()
+        this.currentMethod = that.currentMethod
+        this.label         = that.label
+        this.tparams       = that.tparams
+        this.tailPos       = that.tailPos
+        this.accessed      = that.accessed
       }
 
       /** Create a new method symbol for the current method and store it in
         * the label field.
         */
       def makeLabel(): Unit = {
-        label = currentMethod.newLabel(currentMethod.pos, "_" + currentMethod.name);
-        accessed = false;
+        label = currentMethod.newLabel(currentMethod.pos, "_" + currentMethod.name)
+        accessed = false
       }
 
       override def toString(): String = (
         "" + currentMethod.name + " tparams: " + tparams + " tailPos: " + tailPos +
         " accessed: " + accessed + "\nLabel: " + label + "\nLabel type: " + label.info
-      );
+      )
     }
 
-    private def mkContext(that: Context) = new Context(that);
+    private def mkContext(that: Context) = new Context(that)
     private def mkContext(that: Context, tp: Boolean): Context = {
-      val t = mkContext(that);
-      t.tailPos = tp;
+      val t = mkContext(that)
+      t.tailPos = tp
       t
     }
 
-    private var ctx: Context = new Context();
+    private var ctx: Context = new Context()
 
     /** Rewrite this tree to contain no tail recursive calls */
     def transform(tree: Tree, nctx: Context): Tree = {
@@ -133,30 +140,30 @@ abstract class TailCalls extends Transform
       tree match {
 
         case DefDef(mods, name, tparams, vparams, tpt, rhs) =>
-          log("Entering DefDef: " + name);
-          val newCtx = mkContext(ctx);
-          newCtx.currentMethod = tree.symbol;
-          newCtx.makeLabel();
-          newCtx.label.setInfo(tree.symbol.info);
-          newCtx.tailPos = true;
+          log("Entering DefDef: " + name)
+          val newCtx = mkContext(ctx)
+          newCtx.currentMethod = tree.symbol
+          newCtx.makeLabel()
+          newCtx.label.setInfo(tree.symbol.info)
+          newCtx.tailPos = true
 
-          val t1 = if (newCtx.currentMethod.isFinal || 
+          val t1 = if (newCtx.currentMethod.isFinal ||
                        newCtx.currentMethod.enclClass.hasFlag(Flags.MODULE)) {
-            newCtx.tparams = Nil;
-            log("  Considering " + name + " for tailcalls");
+            newCtx.tparams = Nil
+            log("  Considering " + name + " for tailcalls")
             tree.symbol.tpe match {
               case PolyType(tpes, restpe) =>
-                newCtx.tparams = tparams map (.symbol);
+                newCtx.tparams = tparams map (.symbol)
                 newCtx.label.setInfo(
-                  restpe.substSym(tpes, tparams map (.symbol)));
-              case _ => ();
+                  restpe.substSym(tpes, tparams map (.symbol)))
+              case _ => ()
             }
 
             var newRHS = transform(rhs, newCtx);
             if (newCtx.accessed) {
               log("Rewrote def " + newCtx.currentMethod);
 
-              newRHS = 
+              newRHS =
                   typed(atPos(tree.pos)(
                     LabelDef(newCtx.label, 
                              List.flatten(vparams) map (.symbol), 
@@ -169,30 +176,30 @@ abstract class TailCalls extends Transform
           }
           log("Leaving DefDef: " + name);
           t1;
-        
-        case EmptyTree => tree;
 
-        case PackageDef(name, stats) => super.transform(tree);
-        case ClassDef(mods, name, tparams, tpt, impl) => 
-          log("Entering class " + name);
-          val res = super.transform(tree);
-          log("Leaving class " + name);
+        case EmptyTree => tree
+
+        case PackageDef(name, stats) => super.transform(tree)
+        case ClassDef(mods, name, tparams, tpt, impl) =>
+          log("Entering class " + name)
+          val res = super.transform(tree)
+          log("Leaving class " + name)
           res
 
-        case ValDef(mods, name, tpt, rhs) => tree; 
-        case AbsTypeDef(mods, name, lo, hi) => tree; //  (eliminated by erasure)
-        case AliasTypeDef(mods, name, tparams, rhs) => tree; // (eliminated by erasure)
-        case LabelDef(name, params, rhs) => super.transform(tree);
+        case ValDef(mods, name, tpt, rhs) => tree
+        case AbsTypeDef(mods, name, lo, hi) => tree //  (eliminated by erasure)
+        case AliasTypeDef(mods, name, tparams, rhs) => tree // (eliminated by erasure)
+        case LabelDef(name, params, rhs) => super.transform(tree)
 
-        case Template(parents, body) => super.transform(tree);
+        case Template(parents, body) => super.transform(tree)
 
         case Block(stats, expr) =>
-          copy.Block(tree, 
+          copy.Block(tree,
                      transformTrees(stats, mkContext(ctx, false)),
-                     transform(expr));
-          
+                     transform(expr))
+
         case CaseDef(pat, guard, body) =>
-          copy.CaseDef(tree, pat, guard, transform(body));
+          copy.CaseDef(tree, pat, guard, transform(body))
 
         case Sequence(_) | Alternative(_) |
              Star(_)     | Bind(_, _) =>
@@ -208,13 +215,13 @@ abstract class TailCalls extends Transform
 
         case Match(selector, cases) => //super.transform(tree);
           copy.Match(tree, transform(selector, mkContext(ctx, false)), transformTrees(cases).asInstanceOf[List[CaseDef]]);
-          
-        case Return(expr) =>           super.transform(tree);
-        case Try(block, catches, finalizer) => super.transform(tree);
 
-        case Throw(expr) => super.transform(tree);
-        case New(tpt) => super.transform(tree);
-        case Typed(expr, tpt) => super.transform(tree);
+        case Return(expr) => super.transform(tree)
+        case Try(block, catches, finalizer) => super.transform(tree)
+
+        case Throw(expr) => super.transform(tree)
+        case New(tpt) => super.transform(tree)
+        case Typed(expr, tpt) => super.transform(tree)
 
         case Apply(tapply @ TypeApply(fun, targs), vargs) =>
           if ( ctx.currentMethod.isFinal &&
@@ -226,7 +233,7 @@ abstract class TailCalls extends Transform
                  copy.Apply(tree, tapply, transformTrees(vargs, mkContext(ctx, false)));
 
         case TypeApply(fun, args) => 
-          super.transform(tree);
+          super.transform(tree)
 //          throw new RuntimeException("Lonely TypeApply found -- we can only handle them inside Apply(TypeApply()): " + tree + " at: " + unit);
 
         case Apply(fun, args) =>
@@ -238,27 +245,27 @@ abstract class TailCalls extends Transform
             copy.Apply(tree, fun, transformTrees(args, mkContext(ctx, false)));
 
         case Super(qual, mix) =>
-          tree;
+          tree
         case This(qual) =>
-          tree;
+          tree
         case Select(qualifier, selector) =>
-          tree;
+          tree
         case Ident(name) =>
-          tree;
+          tree
         case Literal(value) =>
-          tree;
-        case TypeTree() =>  tree;
-
+          tree
+        case TypeTree() =>
+          tree
         case _ =>
           tree
       }
     }
 
     def transformTrees(trees: List[Tree], nctx: Context): List[Tree] =
-      trees map ((tree) => transform(tree, nctx));
+      trees map ((tree) => transform(tree, nctx))
 
     private def rewriteTailCall(fun: Tree, args: List[Tree]): Tree = {
-      log("Rewriting tail recursive method call at: " + 
+      log("Rewriting tail recursive method call at: " +
                       unit.position(fun.pos));
       ctx.accessed = true;
       typed(atPos(fun.pos)(
@@ -276,16 +283,16 @@ abstract class TailCalls extends Transform
       * saved in ctx. If it is a method call, we check that it is applied to 
       * "this"
       */
-    private def isRecursiveCall(fun: Tree): Boolean = 
+    private def isRecursiveCall(fun: Tree): Boolean =
       if (fun.symbol eq ctx.currentMethod)
         fun match {
           case Select(t @ This(_), _) =>
             assert(t.symbol == ctx.currentMethod.owner, "This refers to other class: " + 
-                   t.symbol + ": " + ctx.currentMethod.owner);
-            true;
+                   t.symbol + ": " + ctx.currentMethod.owner)
+            true
 
-          case Ident(_) => true;
-          case _ => false;
+          case Ident(_) => true
+          case _ => false
         }
     else
       false;
