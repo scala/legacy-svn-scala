@@ -45,7 +45,7 @@ abstract class ExplicitOuter extends InfoTransform {
       if (sym.owner.isTrait && (sym hasFlag PROTECTED)) sym setFlag notPROTECTED
       if (sym.isConstructor && !isStatic(sym.owner))
         MethodType(formals ::: List(outerClass(sym.owner).toInterface.thisType), restpe)
-      else tp;
+      else tp
     case ClassInfoType(parents, decls, clazz) =>
       var decls1 = decls
       if (!(clazz hasFlag INTERFACE)) {
@@ -59,7 +59,7 @@ abstract class ExplicitOuter extends InfoTransform {
                      setInfo MethodType(List(), outerClass(clazz).thisType));
           decls1 enter (clazz.newValue(clazz.pos, nme.getterToLocal(outerAcc.name))
             setFlag (LOCAL | PRIVATE | PARAMACCESSOR | (outerAcc getFlag EXPANDEDNAME))
-            setInfo outerClass(clazz).thisType);
+            setInfo outerClass(clazz).thisType)
         }
         if (clazz.isTrait) {
           decls1 = newScope(decls1.toList)
@@ -87,8 +87,8 @@ abstract class ExplicitOuter extends InfoTransform {
   private def makeMixinConstructor(clazz: Symbol): Symbol =
     clazz.newMethod(clazz.pos, nme.MIXIN_CONSTRUCTOR) setInfo MethodType(List(), UnitClass.tpe)
 
-  /** A base class for transformers that maintain `outerParam' values for 
-   *  outer parameters of constructors. 
+  /** A base class for transformers that maintain `outerParam' values for
+   *  outer parameters of constructors.
    *  The class provides methods for referencing via outer.
    */
   class OuterPathTransformer extends Transformer {
@@ -102,14 +102,14 @@ abstract class ExplicitOuter extends InfoTransform {
       if (outerParam != NoSymbol) gen.mkAttributedIdent(outerParam)
       else outerSelect(gen.mkAttributedThis(currentOwner.enclClass))
 
-    /** The path 
+    /** The path
      *     `base'.$outer ... .$outer
-     *  which refers to the outer instance `to' of value `base
+     *  which refers to the outer instance 'to' of value 'base'
      */
     protected def outerPath(base: Tree, to: Symbol): Tree =
       if (base.tpe.symbol == to) base else outerPath(outerSelect(base), to)
 
-    /** Select and apply outer accessor from `base'
+    /** Select and apply outer accessor from 'base'
      */
     private def outerSelect(base: Tree): Tree = {
       val otp = outerClass(base.tpe.symbol).thisType
@@ -153,7 +153,7 @@ abstract class ExplicitOuter extends InfoTransform {
      *   3. Constructor bodies are augmented by calls to supermixin constructors
      *      (@see addMixinConstructorCalls)
      *   4. A constructor of a class with an outer link gets an outer parameter.
-     *   5. A reference C.this where C refers to an outer class is replaced by a selection 
+     *   5. A reference C.this where C refers to an outer class is replaced by a selection
      *        this.$outer ... .$outer (@see outerPath)
      *   7. A call to a constructor Q.<init>(args) or Q.$init$(args) where Q != this and
      *      the constructor belongs to a non-static class is augmented by an outer argument.
@@ -168,9 +168,9 @@ abstract class ExplicitOuter extends InfoTransform {
       var localTyper: analyzer.Typer = typer
 
       /** The two definitions
-       *    val outer : C.this.type _;
+       *    val outer: C.this.type _;
        *    def outer(): C.this.type  = outer ;
-       *  Here, C is the class enclosing the class `clazz' containing the two definitions. 
+       *  Here, C is the class enclosing the class `clazz' containing the two definitions.
        */
       def outerDefs(clazz: Symbol): List[Tree] = {
         val outerDef = outerMember(clazz.info)
@@ -212,7 +212,7 @@ abstract class ExplicitOuter extends InfoTransform {
               localTyper.typedOperator {
                 Select(This(clazz), mixinClass.primaryConstructor)
               },
-              List()) setType UnitClass.tpe; // don't type this with typed(...), 
+              List()) setType UnitClass.tpe; // don't type this with typed(...),
                                               // as constructor arguments might be missing
           }
         /*
@@ -226,9 +226,9 @@ abstract class ExplicitOuter extends InfoTransform {
           val ps = clazz.info.parents
           if (ps.isEmpty) List()
           else {
-            val superClass = ps.head.symbol;
+            val superClass = ps.head.symbol
             for {
-              val mclazz <- clazz.info.baseClasses.tail.takeWhile(superClass ne).reverse;
+              val mclazz <- clazz.info.baseClasses.tail.takeWhile(superClass ne).reverse
               mclazz.needsImplClass && mclazz != ScalaObjectClass
             } yield mixinConstructorCall(mclazz)
           }
@@ -257,11 +257,11 @@ abstract class ExplicitOuter extends InfoTransform {
           case Template(parents, decls) =>
             val savedLocalTyper = localTyper
             localTyper = localTyper.atOwner(tree, currentOwner)
-            var decls1 = decls;
+            var decls1 = decls
             if (!(currentOwner hasFlag INTERFACE) || (currentOwner hasFlag lateINTERFACE)) {
-              if (!isStatic(currentOwner)) 
+              if (!isStatic(currentOwner))
                 decls1 = decls1 ::: outerDefs(currentOwner); // (1)
-              if (currentOwner.isTrait) 
+              if (currentOwner.isTrait)
                 decls1 = decls1 ::: List(mixinConstructorDef(currentOwner)) // (2)
             }
             localTyper = savedLocalTyper
