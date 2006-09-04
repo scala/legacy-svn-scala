@@ -7,8 +7,7 @@
 package scala.tools.nsc.symtab
 
 import scala.collection.mutable.ListBuffer
-import scala.tools.nsc.util.Position
-import nsc.util.HashSet
+import scala.tools.nsc.util.{HashSet,Position}
 import Flags._
 
 /* A standard type pattern match:
@@ -70,7 +69,7 @@ trait Types requires SymbolTable {
      *  identity for all other types */
     def widen: Type = this
 
-    /** The type of `this' of a class type or reference type
+    /** The type of <code>this</code> of a class type or reference type
      */
     def typeOfThis = symbol.typeOfThis
 
@@ -88,7 +87,7 @@ trait Types requires SymbolTable {
      *  for a reference denoting an abstract type, its bounds,
      *  for all other types, a TypeBounds type all of whose bounds are this type.
      *  error for all other types */
-    def bounds: TypeBounds = TypeBounds(this, this);
+    def bounds: TypeBounds = TypeBounds(this, this)
 
     /** For a class or intersection type, its parents.
      *  For a TypeBounds type, the parents of its hi bound.
@@ -97,7 +96,7 @@ trait Types requires SymbolTable {
     def parents: List[Type] = List()
 
     /** For a typeref or single-type, its prefix. NoType for all other types. */
-    def prefix: Type = NoType;
+    def prefix: Type = NoType
 
     /** For a typeref, its arguments. The empty list for all other types */
     def typeArgs: List[Type] = List()
@@ -142,7 +141,7 @@ trait Types requires SymbolTable {
     // def isNonNull: boolean = false
 
     /** For a classtype or refined type, its defined or declared members;
-     *  inherited by subtypes and typerefs. 
+     *  inherited by subtypes and typerefs.
      *  The empty scope for all other types */
     def decls: Scope = EmptyScope
 
@@ -158,7 +157,7 @@ trait Types requires SymbolTable {
      */
     def nonPrivateDecl(name: Name): Symbol = findDecl(name, PRIVATE)
 
-    /** A list of all members of this type (defined or inherited) 
+    /** A list of all members of this type (defined or inherited)
      *  Members appear in linearization order of their owners.
      *  Members with the same owner appear in reverse order of their declarations.
      */
@@ -166,11 +165,11 @@ trait Types requires SymbolTable {
 
     /** A list of all non-private members of this type (defined or inherited) */
     def nonPrivateMembers: List[Symbol] =
-      findMember(nme.ANYNAME, PRIVATE | BRIDGE, 0, false).alternatives;
+      findMember(nme.ANYNAME, PRIVATE | BRIDGE, 0, false).alternatives
 
     /** A list of all implicit symbols of this type  (defined or inherited) */
     def implicitMembers: List[Symbol] =
-      findMember(nme.ANYNAME, BRIDGE, IMPLICIT, false).alternatives;
+      findMember(nme.ANYNAME, BRIDGE, IMPLICIT, false).alternatives
 
     /** The member with given name, 
      *  an OverloadedSymbol if several exist, NoSymbol if none exist */
@@ -190,7 +189,8 @@ trait Types requires SymbolTable {
      *  of this type */
     def baseType(clazz: Symbol): Type = NoType
 
-    /** This type as seen from prefix `pre' and class `clazz'. This means:
+    /** This type as seen from prefix <code>pre</code> and class
+     *  <code>clazz</code>. This means:
      *  Replace all thistypes of `clazz' or one of its subclasses by `pre'
      *  and instantiate all parameters by arguments of `pre'.
      *  Proceed analogously for thistypes referring to outer classes. */
@@ -254,7 +254,8 @@ trait Types requires SymbolTable {
       val result =
         ((this eq that) ||
          (if (explainSwitch) explain("<", isSubType, this, that) else isSubType(this, that)));
-      if (util.Statistics.enabled) subtypeMillis = subtypeMillis + System.currentTimeMillis() - startTime;
+      if (util.Statistics.enabled)
+        subtypeMillis = subtypeMillis + System.currentTimeMillis() - startTime
       result
     }
 
@@ -334,22 +335,22 @@ trait Types requires SymbolTable {
       else str
 
     /** The string representation of this type used as a prefix */
-    def prefixString = trimPrefix(toString()) + "#";
+    def prefixString = trimPrefix(toString()) + "#"
 
     /** The string representation of this type, with singletypes explained */
     def toLongString = {
       val str = toString()
-      if (str.endsWith(".type")) str + " (with underlying type " + widen + ")";
+      if (str.endsWith(".type")) str + " (with underlying type " + widen + ")"
       else str
     }
 
     /** Is this type completed (i.e. not a lazy type)?
      */
-    def isComplete: boolean = true;
+    def isComplete: boolean = true
 
     /** If this is a lazy type, assign a new type to `sym'. */
     def complete(sym: Symbol): unit = {
-      if (sym == NoSymbol || sym.isPackageClass) 
+      if (sym == NoSymbol || sym.isPackageClass)
         sym.validTo = period(currentRunId, phaseId(sym.validTo))
       else {
         val this1 = adaptToNewRunMap(this)
@@ -423,7 +424,7 @@ trait Types requires SymbolTable {
                          !self.memberType(member).matches(self.memberType(sym))}))
                     members = newScope(List(member, sym));
                 } else {
-                  var prevEntry = members lookupEntry sym.name;
+                  var prevEntry = members lookupEntry sym.name
                   while (prevEntry != null && 
                          !(prevEntry.sym == sym
                            || 
@@ -434,11 +435,11 @@ trait Types requires SymbolTable {
                              (self.memberType(prevEntry.sym) matches self.memberType(sym))}))
                     prevEntry = members lookupNextEntry prevEntry;
                   if (prevEntry == null) {
-                    members enter sym;
+                    members enter sym
                   }
                 }
               } else if (excl == DEFERRED) {
-                continue = true;
+                continue = true
               }
             }
             entry = if (name == nme.ANYNAME) entry.next else decls lookupNextEntry entry
@@ -448,7 +449,8 @@ trait Types requires SymbolTable {
         excluded = excludedFlags
       } // while (continue)
       checkMalformedSwitch = savedCheckMalformedSwitch;
-      if (util.Statistics.enabled) findMemberMillis = findMemberMillis + System.currentTimeMillis() - startTime;
+      if (util.Statistics.enabled)
+        findMemberMillis = findMemberMillis + System.currentTimeMillis() - startTime
       if (members == null) {
         if (util.Statistics.enabled) if (member == NoSymbol) noMemberCount = noMemberCount + 1;
         member
@@ -498,9 +500,10 @@ trait Types requires SymbolTable {
   /** An object representing an erroneous type */
   case object ErrorType extends Type {
     // todo see whether we can do without
-    override def isError: boolean = true;
-    override def decls: Scope = new ErrorScope(NoSymbol);
-    override def findMember(name: Name, excludedFlags: int, requiredFlags: long, stableOnly: boolean): Symbol = {
+    override def isError: boolean = true
+    override def decls: Scope = new ErrorScope(NoSymbol)
+    override def findMember(name: Name, excludedFlags: int,
+                            requiredFlags: long, stableOnly: boolean): Symbol = {
       var sym = decls lookup name
       if (sym == NoSymbol) {
         sym = NoSymbol.newErrorSymbol(name)
@@ -558,7 +561,7 @@ trait Types requires SymbolTable {
       if (sym.isRoot) "<root>"
       else if (sym.isEmptyPackageClass) "<empty>"
       else super.toString()
-    override def narrow: Type = this;
+    override def narrow: Type = this
   }
 
   /** A class for singleton types of the form &lt;prefix&gt;.&lt;sym.name&gt;.type.
@@ -653,11 +656,11 @@ trait Types requires SymbolTable {
               i = i + 1
             }
             def nextBaseType(i: int): Type = {
-              val j = index(i);
-              val pci = pclosure(i);
+              val j = index(i)
+              val pci = pclosure(i)
               if (j < pci.length) pci(j) else AnyClass.tpe
             }
-            val limit = pclosure(0).length;
+            val limit = pclosure(0).length
             while (index(0) != limit) {
               var minSym: Symbol = nextBaseType(0).symbol;
               i = 1;
@@ -668,7 +671,7 @@ trait Types requires SymbolTable {
               var minTypes: List[Type] = List();
               i = 0;
               while (i < nparents) {
-                val tp = nextBaseType(i);
+                val tp = nextBaseType(i)
                 if (tp.symbol == minSym) {
                   if (!(minTypes exists (tp =:=))) minTypes = tp :: minTypes;
                   index(i) = index(i) + 1
@@ -676,17 +679,17 @@ trait Types requires SymbolTable {
                 i = i + 1
               }
               buf += intersectionType(minTypes);
-              clSize = clSize + 1;
+              clSize = clSize + 1
             }
           }
           closureCache = new Array[Type](clSize);
           buf.copyToArray(closureCache, 0);
           //System.out.println("closureCache of " + symbol.tpe + " = " + List.fromArray(closureCache));//DEBUG
-          var j = 0;
+          var j = 0
           while (j < clSize) {
             closureCache(j) match {
               case RefinedType(parents, decls) =>
-                assert(decls.isEmpty);
+                assert(decls.isEmpty)
                 //Console.println("compute closure of "+this+" => glb("+parents+")")
                 closureCache(j) = glbNoRefinement(parents)
               case _ =>
@@ -721,10 +724,10 @@ trait Types requires SymbolTable {
         else {
           //System.out.println("computing base classes of " + symbol + " at phase " + phase);//DEBUG
           // optimized, since this seems to be performance critical
-          val superclazz = parents.head;
-          var mixins = parents.tail;
-          val sbcs = superclazz.baseClasses;
-          var bcs = sbcs;
+          val superclazz = parents.head
+          var mixins = parents.tail
+          val sbcs = superclazz.baseClasses
+          var bcs = sbcs
           def isNew(clazz: Symbol): boolean = (
             superclazz.closurePos(clazz) < 0 &&
             { var p = bcs;
@@ -780,7 +783,7 @@ trait Types requires SymbolTable {
    *  one should always use `refinedType' for creation.
    */
   abstract case class RefinedType(override val parents: List[Type],
-                                  override val decls: Scope) extends CompoundType;
+                                  override val decls: Scope) extends CompoundType
 
   /** A class representing a class info
    */
@@ -856,7 +859,8 @@ trait Types requires SymbolTable {
 
     override def typeOfThis = transform(sym.typeOfThis)
 
-    override def narrow = if (sym.isModuleClass) transform(sym.thisType) else super.narrow
+    override def narrow =
+      if (sym.isModuleClass) transform(sym.thisType) else super.narrow
 
     override def prefix: Type = pre
 
@@ -899,9 +903,9 @@ trait Types requires SymbolTable {
  
     override def toString(): String = {
       if (!settings.debug.value) {
-        if (sym == RepeatedParamClass && !args.isEmpty) 
+        if (sym == RepeatedParamClass && !args.isEmpty)
           return args(0).toString() + "*";
-        if (sym == ByNameParamClass && !args.isEmpty) 
+        if (sym == ByNameParamClass && !args.isEmpty)
           return "=> " + args(0).toString();
         if (isFunctionType(this))
           return args.init.mkString("(", ", ", ")") + " => " + args.last;
@@ -932,7 +936,7 @@ trait Types requires SymbolTable {
   case class MethodType(override val paramTypes: List[Type],
                         override val resultType: Type) extends Type {
     override val isTrivial: boolean =
-      paramTypes.forall(.isTrivial) && resultType.isTrivial;
+      paramTypes.forall(.isTrivial) && resultType.isTrivial
 
     //assert(paramTypes forall (pt => !pt.symbol.isImplClass));//DEBUG
     override def paramSectionCount: int = resultType.paramSectionCount + 1
@@ -973,7 +977,7 @@ trait Types requires SymbolTable {
 
     override def toString(): String =
       (if (typeParams.isEmpty) "=> "
-       else (typeParams map (.defString)).mkString("[", ",", "]")) + resultType;
+       else (typeParams map (.defString)).mkString("[", ",", "]")) + resultType
 
     override def cloneInfo(owner: Symbol) = {
       val tparams = cloneSymbols(typeParams, owner)
@@ -986,14 +990,17 @@ trait Types requires SymbolTable {
    */
   case class OverloadedType(pre: Type, alternatives: List[Symbol]) extends Type {
     override def prefix: Type = pre
-    override def toString() = (alternatives map pre.memberType).mkString("", " <and> ", "")
+    override def toString() =
+      (alternatives map pre.memberType).mkString("", " <and> ", "")
   }
 
-  /** A class remembering a type instantiation for some a set of overloaded polymorphic symbols.
+  /** A class remembering a type instantiation for some a set of overloaded
+   *  polymorphic symbols.
    *  Not used after phase `typer'.
    */
   case class AntiPolyType(pre: Type, targs: List[Type]) extends Type {
-    override def toString() = pre.toString() + targs.mkString("(with type arguments ", ",", ")");
+    override def toString() =
+      pre.toString() + targs.mkString("(with type arguments ", ",", ")");
     override def memberType(sym: Symbol) = pre.memberType(sym) match {
       case PolyType(tparams, restp) => restp.subst(tparams, targs)
       case ErrorType => ErrorType
@@ -1011,14 +1018,14 @@ trait Types requires SymbolTable {
       else constr.inst.toString();
   }
 
-  /** A class representing an as-yet unevaluated type. 
+  /** A class representing an as-yet unevaluated type.
    */
   abstract class LazyType extends Type {
     override def isComplete: boolean = false
     override def complete(sym: Symbol): unit
   }
 
-  /** A class representing a lazy type with known type parameters 
+  /** A class representing a lazy type with known type parameters.
    */
   class LazyPolyType(override val typeParams: List[Symbol], restp: Type) extends LazyType {
     override def complete(sym: Symbol): unit = {
@@ -1053,7 +1060,7 @@ trait Types requires SymbolTable {
 
   /** The canonical creator for single-types */
   def singleType(pre: Type, sym: Symbol): Type = {
-    if (phase.erasedTypes) 
+    if (phase.erasedTypes)
       sym.tpe.resultType
     else if (checkMalformedSwitch && !pre.isStable && !pre.isError)
       throw new MalformedType(pre, sym.name.toString())
@@ -1070,20 +1077,20 @@ trait Types requires SymbolTable {
   /** The canonical creator for super-types */
   def SuperType(thistp: Type, supertp: Type): Type =
     if (phase.erasedTypes) supertp
-    else unique(new SuperType(thistp, supertp) with UniqueType);
+    else unique(new SuperType(thistp, supertp) with UniqueType)
 
   /** The canonical creator for type bounds */
   def TypeBounds(lo: Type, hi: Type): TypeBounds =
-    unique(new TypeBounds(lo, hi) with UniqueType);
+    unique(new TypeBounds(lo, hi) with UniqueType)
 
   /** the canonical creator for a refined type with a given scope */
   def refinedType(parents: List[Type], owner: Symbol, decls: Scope): Type = {
     if (phase.erasedTypes)
       if (parents.isEmpty) ObjectClass.tpe else parents.head
     else {
-      val clazz = owner.newRefinementClass(NoPos);
+      val clazz = owner.newRefinementClass(NoPos)
       val result = new RefinedType(parents, decls) { override def symbol: Symbol = clazz }
-      clazz.setInfo(result);
+      clazz.setInfo(result)
       result
     }
   }
@@ -1120,9 +1127,8 @@ trait Types requires SymbolTable {
   }
 
   /** create a type-ref as found, without checks or rebinds */
-  def rawTypeRef(pre: Type, sym: Symbol, args: List[Type]): Type = {
+  def rawTypeRef(pre: Type, sym: Symbol, args: List[Type]): Type =
     unique(new TypeRef(pre, sym, args) with UniqueType)
-  }
 
   /** The canonical creator for implicit method types */
   def ImplicitMethodType(paramTypes: List[Type], resultType: Type): ImplicitMethodType =
@@ -1186,7 +1192,7 @@ trait Types requires SymbolTable {
       uniques = new HashSet(20000)
       uniqueRunId = currentRunId
     }
-    val tp1 = uniques.findEntry(tp);
+    val tp1 = uniques.findEntry(tp)
     if (tp1 == null) {
       uniques.addEntry(tp); tp
     } else {
@@ -1599,7 +1605,7 @@ trait Types requires SymbolTable {
       case Pair(_, ErrorType) => true
       case Pair(_, WildcardType) => true
 
-      case Pair(NoType, _) => false 
+      case Pair(NoType, _) => false
       case Pair(NoPrefix, _) => tp2.symbol.isPackageClass
       case Pair(_, NoType) => false
       case Pair(_, NoPrefix) => tp1.symbol.isPackageClass
@@ -1614,7 +1620,7 @@ trait Types requires SymbolTable {
       case Pair(SingleType(pre1, sym1), ThisType(sym2))
       if (sym1.isModule && 
           sym1.moduleClass == sym2 &&
-          pre1 =:= sym2.owner.thisType) => 
+          pre1 =:= sym2.owner.thisType) =>
         true
       case Pair(ThisType(sym1), SingleType(pre2, sym2))
       if (sym2.isModule && 
@@ -1798,8 +1804,8 @@ trait Types requires SymbolTable {
   /** Does member `sym1' of `tp1' have a stronger type than member `sym2' of `tp2'? */
   private def specializesSym(tp1: Type, sym1: Symbol, tp2: Type, sym2: Symbol): boolean = {
     //System.out.println("specializes "+tp1+"."+sym1+" "+tp2+"."+sym2)//DEBUG
-    val info1 = tp1.memberInfo(sym1);
-    val info2 = tp2.memberInfo(sym2).substThis(tp2.symbol, tp1);
+    val info1 = tp1.memberInfo(sym1)
+    val info2 = tp2.memberInfo(sym2).substThis(tp2.symbol, tp1)
     sym2.isTerm && (info1 <:< info2) ||
     sym2.isAbstractType && info2.bounds.containsType(info1) ||
     sym2.isAliasType && tp2.memberType(sym2).substThis(tp2.symbol, tp1) =:= tp1.memberType(sym1)
@@ -1915,8 +1921,8 @@ trait Types requires SymbolTable {
     if (tss.tail.isEmpty) tss.head
     else if (tss exists (.isEmpty)) List()
     else {
-      val ts0 = tss map (.head);
-      val sym = minSym(ts0);
+      val ts0 = tss map (.head)
+      val sym = minSym(ts0)
       if (ts0 forall (t => t.symbol == sym))
         mergePrefixAndArgs(elimSub(ts0), 1).toList ::: lubList(tss map (.tail))
       else
@@ -1957,7 +1963,7 @@ trait Types requires SymbolTable {
    *  of some other element of the list. */
   private def elimSuper(ts: List[Type]): List[Type] = ts match {
     case List() => List()
-    case t :: ts1 => 
+    case t :: ts1 =>
       val rest = ts1 filter (t1 => !(t <:< t1));
       if (rest exists (t1 => t1 <:< t)) rest else t :: rest
   }
@@ -1966,7 +1972,7 @@ trait Types requires SymbolTable {
    *  of some other element of the list. */
   private def elimSub(ts: List[Type]): List[Type] =  ts match {
     case List() => List()
-    case t :: ts1 => 
+    case t :: ts1 =>
       val rest = ts1 filter (t1 => !(t1 <:< t));
       if (rest exists (t1 => t <:< t1)) rest else t :: rest
   }
@@ -1976,9 +1982,9 @@ trait Types requires SymbolTable {
     def lub0(ts0: List[Type]): Type = elimSub(ts0 map (.deconst)) match {
       case List() => AllClass.tpe
       case List(t) => t
-      case ts @ PolyType(tparams, _) :: _ => 
+      case ts @ PolyType(tparams, _) :: _ =>
         PolyType(
-          List.map2(tparams, List.transpose(matchingBounds(ts, tparams))) 
+          List.map2(tparams, List.transpose(matchingBounds(ts, tparams)))
             ((tparam, bounds) => tparam.cloneSymbol.setInfo(glb(bounds))),
           lub0(matchingInstTypes(ts, tparams)))
       case ts @ MethodType(pts, _) :: rest =>
@@ -1998,16 +2004,16 @@ trait Types requires SymbolTable {
           val lubThisType = lubType.symbol.thisType
           val narrowts = ts map (.narrow)
           def lubsym(proto: Symbol): Symbol = {
-            val prototp = lubThisType.memberInfo(proto);
+            val prototp = lubThisType.memberInfo(proto)
             val syms = narrowts map (t =>
               t.nonPrivateMember(proto.name).suchThat(sym =>
-                sym.tpe matches prototp.substThis(lubThisType.symbol, t)));
+                sym.tpe matches prototp.substThis(lubThisType.symbol, t)))
             if (syms contains NoSymbol) NoSymbol
             else {
               val symtypes =
                 (List.map2(narrowts, syms)
                    ((t, sym) => t.memberInfo(sym).substThis(t.symbol, lubThisType)));
-              if (proto.isTerm) 
+              if (proto.isTerm)
                 proto.cloneSymbol(lubType.symbol).setInfo(lub(symtypes))
               else if (symtypes.tail forall (symtypes.head =:=))
                 proto.cloneSymbol(lubType.symbol).setInfo(symtypes.head)
@@ -2050,8 +2056,8 @@ trait Types requires SymbolTable {
     res
   }
 
-  def glb(ts: List[Type]): Type = glb(ts, !phase.erasedTypes);
-  def glbNoRefinement(ts: List[Type]): Type = glb(ts, false);
+  def glb(ts: List[Type]): Type = glb(ts, !phase.erasedTypes)
+  def glbNoRefinement(ts: List[Type]): Type = glb(ts, false)
 
   /** The greatest lower bound wrt &lt;:&lt; of a list of types */
   private def glb(ts: List[Type], computeRefinement: boolean): Type = {
@@ -2086,7 +2092,7 @@ trait Types requires SymbolTable {
                 if (proto.isTerm) glb(symtypes)
                 else {
                   def isTypeBound(tp: Type) = tp match {
-                    case TypeBounds(_, _) => true 
+                    case TypeBounds(_, _) => true
                     case _ => false 
                   }
                   def glbBounds(bnds: List[Type]): TypeBounds = {
@@ -2127,7 +2133,7 @@ trait Types requires SymbolTable {
       log(indent + "glb of " + ts)//debug
       indent = indent + "  "
     }
-    val res = limitRecursion(ts, "greatest lower", glb0);
+    val res = limitRecursion(ts, "greatest lower", glb0)
     if (settings.debug.value) {
       indent = indent.substring(0, indent.length() - 2)
       log(indent + "glb of " + ts + " is " + res)//debug
@@ -2177,8 +2183,8 @@ trait Types requires SymbolTable {
         case ex: MalformedType => None
       }
     case SingleType(_, sym) :: rest =>
-      val pres = tps map (.prefix);
-      val pre = if (variance == 1) lub(pres) else glb(pres);
+      val pres = tps map (.prefix)
+      val pre = if (variance == 1) lub(pres) else glb(pres)
       try {
         Some(singleType(pre, sym))
       } catch {
