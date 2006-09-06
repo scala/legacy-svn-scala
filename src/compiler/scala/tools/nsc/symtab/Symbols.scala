@@ -60,7 +60,7 @@ trait Symbols requires SymbolTable {
         else ret = ret + ("var").length()
         while (Character.isWhitespace(buf(ret))) ret = ret + 1
         ret
-      }  
+      }
       else if (isValue) {
         if (pos < (buf.length + ("val ").length())) {
           if ((buf(pos + 0) == 'v') &&
@@ -99,7 +99,8 @@ trait Symbols requires SymbolTable {
     final def newConstructor(pos: PositionType) =
       newMethod(pos, nme.CONSTRUCTOR)
     final def newModule(pos: PositionType, name: Name, clazz: ClassSymbol) =
-      new ModuleSymbol(this, pos, name).setFlag(MODULE | FINAL).setModuleClass(clazz)
+      new ModuleSymbol(this, pos, name).setFlag(MODULE | FINAL)
+        .setModuleClass(clazz)
     final def newModule(pos: PositionType, name: Name) = {
       val m = new ModuleSymbol(this, pos, name).setFlag(MODULE | FINAL)
       m.setModuleClass(new ModuleClassSymbol(m))
@@ -271,8 +272,13 @@ trait Symbols requires SymbolTable {
       isClass && (isAnonymousClass || isRefinementClass || isLocal ||
                   !owner.isPackageClass && owner.isLocalClass)
 
-    /** A a member of class `base' is incomplete if (1) it is declared deferred or
-     *  (2) it is abstract override and its super symbol in `base' is nonexistent or inclomplete.
+    /** A a member of class `base' is incomplete if
+     *  (1) it is declared deferred or
+     *  (2) it is abstract override and its super symbol in `base' is
+     *      nonexistent or inclomplete.
+     *
+     *  @param base ...
+     *  @return     ...
      */
     final def isIncompleteIn(base: Symbol): boolean = (
       (this hasFlag DEFERRED) ||
@@ -293,7 +299,7 @@ trait Symbols requires SymbolTable {
     final def isContravariant: boolean = isType && hasFlag(CONTRAVARIANT)
 
     /** The variance of this symbol as an integer */
-    final def variance: int = 
+    final def variance: int =
       if (isCovariant) 1
       else if (isContravariant) -1
       else 0
@@ -466,7 +472,7 @@ trait Symbols requires SymbolTable {
       rawInfo.load(this); rawInfo.typeParams
     }
 
-    def getAttributes(clazz: Symbol): List[AttrInfo] = 
+    def getAttributes(clazz: Symbol): List[AttrInfo] =
       attributes.filter(._1.symbol.isNonBottomSubClass(clazz))
 
     /** Reset symbol to initial state
@@ -505,10 +511,9 @@ trait Symbols requires SymbolTable {
       owner == that || owner != NoSymbol && (owner isNestedIn that)
 
     /** Is this class symbol a subclass of that symbol? */
-    final def isNonBottomSubClass(that: Symbol): boolean = {
+    final def isNonBottomSubClass(that: Symbol): boolean =
       this == that || this.isError || that.isError ||
       info.closurePos(that) >= 0
-    }
 
     final def isSubClass(that: Symbol): boolean = {
       isNonBottomSubClass(that) ||
@@ -566,11 +571,14 @@ trait Symbols requires SymbolTable {
 
     /** The primary constructor of a class */
     def primaryConstructor: Symbol = {
-      val c = info.decl(if (isTrait || isImplClass) nme.MIXIN_CONSTRUCTOR else nme.CONSTRUCTOR)
+      val c = info.decl(
+        if (isTrait || isImplClass) nme.MIXIN_CONSTRUCTOR
+        else nme.CONSTRUCTOR)
       if (c hasFlag OVERLOADED) c.alternatives.head else c
     }
 
-    /** The self symbol of a class with explicit self type, or else the symbol itself.
+    /** The self symbol of a class with explicit self type, or else the
+     *  symbol itself.
      */
     def thisSym: Symbol = this
 
@@ -581,7 +589,9 @@ trait Symbols requires SymbolTable {
     def typeOfThis_=(tp: Type): unit =
       throw new Error("typeOfThis cannot be set for " + this)
 
-    /** If symbol is a class, the type this.type in this class, otherwise NoPrefix */
+    /** If symbol is a class, the type <code>this.type</code> in this class,
+     * otherwise <code>NoPrefix</code>.
+     */
     def thisType: Type = NoPrefix
 
     /** Return every accessor of a primary constructor parameter in this case class
@@ -602,8 +612,8 @@ trait Symbols requires SymbolTable {
 
     final def implClass: Symbol = owner.info.decl(nme.implClassName(name))
 
-    /** For a paramaccessor: a superclass paramaccessor for which this symbol is
-     *  an alias, NoSymbol for all others */
+    /** For a paramaccessor: a superclass paramaccessor for which this symbol
+     *  is an alias, NoSymbol for all others */
     def alias: Symbol = NoSymbol
 
     /** The top-level class containing this symbol */
@@ -628,14 +638,17 @@ trait Symbols requires SymbolTable {
           sym => (sym hasFlag MODULE) && (sym.rawInfo ne NoType))
       } else NoSymbol
 
-    /** For a module its linked class, for a class its linked module or case factory otherwise */
+    /** For a module its linked class, for a class its linked module or case
+     *  factory otherwise.
+     */
     final def linkedSym: Symbol =
       if (isTerm) linkedClassOfModule
       else if (isClass) owner.info.decl(name.toTermName).suchThat(sym => sym.rawInfo ne NoType)
       else NoSymbol
 
-    /** For a module class its linked class, for a plain class 
-     *  the module class of itys linked module */
+    /** For a module class its linked class, for a plain class
+     *  the module class of itys linked module.
+     */
     final def linkedClassOfClass: Symbol =
       if (isModuleClass) linkedClassOfModule else linkedModuleOfClass.moduleClass
 
@@ -748,7 +761,7 @@ trait Symbols requires SymbolTable {
     def sourceFile: AbstractFile =
       (if (isModule) moduleClass else toplevelClass).sourceFile
 
-    def sourceFile_=(f: AbstractFile): unit = 
+    def sourceFile_=(f: AbstractFile): unit =
       throw new Error("sourceFile_= inapplicable for " + this)
 
     def isFromClassFile: Boolean =
@@ -802,14 +815,14 @@ trait Symbols requires SymbolTable {
     def nameString: String =
       simpleName.decode + idString
 
-    /** String representation of symbol's full name with `separator'
+    /** String representation of symbol's full name with <code>separator</code>
      *  between class names.
      *  Never translates expansions of operators back to operator symbol.
      *  Never adds id.
      */
     final def fullNameString(separator: char): String = {
       assert(owner != NoSymbol, this)
-      var str = 
+      var str =
         if (owner.isRoot || owner.isEmptyPackageClass) simpleName.toString()
         else owner.fullNameString(separator) + separator + simpleName
       if (str.charAt(str.length - 1) == ' ') str = str.substring(0, str.length - 1)
@@ -960,7 +973,9 @@ trait Symbols requires SymbolTable {
   }
 
   /** A class for type parameters viewed from inside their scopes */
-  class ThisSkolem(initOwner: Symbol, initPos: PositionType, initName: Name, clazz: Symbol) extends TermSymbol(initOwner, initPos, initName) {
+  class ThisSkolem(initOwner: Symbol, initPos: PositionType,
+                   initName: Name, clazz: Symbol)
+  extends TermSymbol(initOwner, initPos, initName) {
     override def deSkolemize = clazz
     override def cloneSymbolImpl(owner: Symbol): Symbol = {
       throw new Error("should not clone a this skolem")
@@ -1031,8 +1046,10 @@ trait Symbols requires SymbolTable {
     if (util.Statistics.enabled) typeSymbolCount = typeSymbolCount + 1
   }
 
-  /** A class for type parameters viewed from inside their scopes */ 
-  class TypeSkolem(initOwner: Symbol, initPos: PositionType, initName: Name, typeParam: Symbol) extends TypeSymbol(initOwner, initPos, initName) {
+  /** A class for type parameters viewed from inside their scopes */
+  class TypeSkolem(initOwner: Symbol, initPos: PositionType,
+                   initName: Name, typeParam: Symbol)
+  extends TypeSymbol(initOwner, initPos, initName) {
     override def deSkolemize = typeParam
     override def cloneSymbolImpl(owner: Symbol): Symbol = {
       throw new Error("should not clone a type skolem")
@@ -1043,12 +1060,14 @@ trait Symbols requires SymbolTable {
   }
 
   /** A class for class symbols */
-  class ClassSymbol(initOwner: Symbol, initPos: PositionType, initName: Name) extends TypeSymbol(initOwner, initPos, initName) {
+  class ClassSymbol(initOwner: Symbol, initPos: PositionType, initName: Name)
+  extends TypeSymbol(initOwner, initPos, initName) {
 
     /** The classfile from which this class was loaded. Maybe null. */
     var classFile: AbstractFile = null;
     private var source: AbstractFile = null
-    override def sourceFile = if (owner.isPackageClass) source else super.sourceFile
+    override def sourceFile =
+      if (owner.isPackageClass) source else super.sourceFile
     override def sourceFile_=(f: AbstractFile): unit = {
       //System.err.println("set source file of " + this + ": " + f);
       source = f
@@ -1096,7 +1115,7 @@ trait Symbols requires SymbolTable {
     /** A symbol carrying the self type of the class as its type */
     override def thisSym: Symbol = thissym
 
-    override def typeOfThis: Type = 
+    override def typeOfThis: Type =
       if (getFlag(MODULE | IMPLCLASS) == MODULE && owner != NoSymbol)
         singleType(owner.thisType, sourceModule)
       else thissym.tpe
@@ -1122,7 +1141,8 @@ trait Symbols requires SymbolTable {
    *  Note: Not all module classes are of this type; when unpickled, we get
    *  plain class symbols!
    */
-  class ModuleClassSymbol(owner: Symbol, pos: PositionType, name: Name) extends ClassSymbol(owner, pos, name) {
+  class ModuleClassSymbol(owner: Symbol, pos: PositionType, name: Name)
+  extends ClassSymbol(owner, pos, name) {
     private var module: Symbol = null
     def this(module: TermSymbol) = {
       this(module.owner, module.pos, module.name.toTypeName)
