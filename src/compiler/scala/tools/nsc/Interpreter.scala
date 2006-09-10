@@ -351,8 +351,8 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
       it is using.
 
       Specifically, this deletes the temporary directory used for holding
-      class files for this instance.  This cannot safely be done as commands
-      are executed becaus of Java's demand loading.
+      class files for this instance.  This cannot safely be done after
+      each command is executed because of Java's demand loading.
   */
   def close: Unit =
     Interpreter.deleteRecursively(classfilePath)
@@ -609,10 +609,17 @@ class Interpreter(val settings: Settings, reporter: Reporter, out: PrintWriter) 
     def newClassName = trees match {
       case List(ClassDef(_, name, _, _, _)) => name
     }
-
+  
+    def keyword = trees.head.asInstanceOf[ClassDef].keyword
+    
     override def resultExtractionCode(code: PrintWriter): Unit = {
       super.resultExtractionCode(code)
-      code.println(" + \"defined class " + newClassName + "\\n\"")
+      code.print(
+          " + \"defined " + 
+          keyword + 
+          " " + 
+          newClassName + 
+          "\\n\"")
     }
   }
 
