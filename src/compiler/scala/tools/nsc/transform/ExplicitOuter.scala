@@ -1,6 +1,6 @@
 /* NSC -- new Scala compiler
  * Copyright 2005-2006 LAMP/EPFL
- * @author
+ * @author Martin Odersky
  */
 // $Id$
 
@@ -11,6 +11,11 @@ import Flags._
 import scala.collection.mutable.{HashMap, ListBuffer}
 import matching.{TransMatcher, PatternNodes, CodeFactory, PatternMatchers}
 
+/** This class ...
+ *
+ *  @author  Martin Odersky
+ *  @version 1.0
+ */
 abstract class ExplicitOuter extends InfoTransform with TransMatcher with PatternNodes with CodeFactory with PatternMatchers with TypingTransformers {
   import global._
   import definitions._
@@ -34,20 +39,21 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
 
   private def outerField(clazz: Symbol): Symbol = {
     val result = clazz.info.member(nme.getterToLocal(nme.OUTER))
-    if (result == NoSymbol) assert(false, "no outer field in "+clazz+clazz.info.decls+" at "+phase)
+    if (result == NoSymbol)
+      assert(false, "no outer field in "+clazz+clazz.info.decls+" at "+phase)
     result
   }
-    
+
   private def outerAccessor(clazz: Symbol): Symbol = {
     val firstTry = clazz.info.decl(clazz.expandedName(nme.OUTER))
     if (firstTry != NoSymbol && firstTry.outerSource == clazz) firstTry
     else {
-      var e = clazz.info.decls.elems;
+      var e = clazz.info.decls.elems
       while (e != null && e.sym.outerSource != clazz) e = e.next
       if (e != null) e.sym else NoSymbol
     }
   }
-    
+
   /** The type transformation method: 
    *  1. Add an outer parameter to the formal parameters of a constructor
    *     in a inner non-trait class; 
@@ -64,10 +70,10 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
    */
   def transformInfo(sym: Symbol, tp: Type): Type = tp match {
     case MethodType(formals, restpe) =>
-      if (sym.owner.isTrait && ((sym hasFlag SUPERACCESSOR) || sym.isModule)) { // 5 
-        Console.println("make not private: "+sym+" "+sym.owner)
+      if (sym.owner.isTrait && ((sym hasFlag SUPERACCESSOR) || sym.isModule)) { // 5
+        //Console.println("make not private: "+sym+" "+sym.owner)//debug
         sym.makeNotPrivate(sym.owner)
-        Console.println("made not private: "+sym)
+        //Console.println("made not private: "+sym)//debug
       }
       if (sym.owner.isTrait && (sym hasFlag PROTECTED)) sym setFlag notPROTECTED // 6
       if (sym.isClassConstructor && isInner(sym.owner)) // 1
@@ -122,28 +128,32 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
     protected def outerValue: Tree =
       if (outerParam != NoSymbol) gen.mkAttributedIdent(outerParam)
       else outerSelect(gen.mkAttributedThis(currentClass))
-    
+
     /** Select and apply outer accessor from 'base'
      *  The result is typed but not positioned.
      */
-    private def outerSelect(base: Tree): Tree = {
+    private def outerSelect(base: Tree): Tree =
       localTyper.typed(Apply(Select(base, outerAccessor(base.tpe.symbol)), List()))
-    }
 
     /** The path
      *     `base'.$outer$$C1 ... .$outer$$Cn
-     *  which refers to the outer instance of class 'to' of value 'base'
-     *  The result is typed but not positioned.
+     *  which refers to the outer instance of class <code>to</code> of
+     *  value <code>base</code>. The result is typed but not positioned.
+     *
+     *  @param base ...
+     *  @param from ...
+     *  @param to   ...
+     *  @return     ...
      */
     protected def outerPath(base: Tree, from: Symbol, to: Symbol): Tree = {
       //Console.println("outerPath from "+from+" to "+to+" at "+base+":"+base.tpe)
       assert(base.tpe.baseType(from.toInterface) != NoType, base.tpe)
-      if (from == to || from.isImplClass && from.toInterface == to) base 
+      if (from == to || from.isImplClass && from.toInterface == to) base
       else outerPath(outerSelect(base), from.outerClass, to)
     }
- 
+
     override def transform(tree: Tree): Tree = {
-      val savedOuterParam = outerParam;
+      val savedOuterParam = outerParam
       try {
         tree match {
           case Template(_, _) =>
@@ -208,7 +218,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
                 else Select(This(currentClass), outerField(currentClass))
       localTyper.typed {
         atPos(currentClass.pos) {
-          DefDef(outerAcc, vparamss => rhs)    
+          DefDef(outerAcc, vparamss => rhs)
         }
       }
     }
@@ -220,7 +230,9 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
      */
     def mixinOuterAccessorDef(mixinClass: Symbol): Tree = {
       val outerAcc = outerAccessor(mixinClass).overridingSymbol(currentClass)
-      if (outerAcc == NoSymbol) Console.println("cc "+currentClass+":"+currentClass.info.decls+" at "+phase)//debug
+      if (outerAcc == NoSymbol)
+        Console.println("cc " + currentClass + ":" + currentClass.info.decls +
+                        " at " + phase)//debug
       assert(outerAcc != NoSymbol)
       val path = gen.mkAttributedQualifier(currentClass.thisType.baseType(mixinClass).prefix)
       val rhs = ExplicitOuterTransformer.this.transform(path)
@@ -267,7 +279,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
                 val clazz = sym.owner
                 val vparamss1 =
                   if (isInner(clazz)) { // (4)
-                    val outerParam = 
+                    val outerParam =
                       sym.newValueParameter(sym.pos, nme.OUTER) setInfo outerField(clazz).info
                     ((ValDef(outerParam) setType NoType) :: vparamss.head) :: vparamss.tail
                   } else vparamss
@@ -279,8 +291,8 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
             super.transform(tree)
           }
 
-        case This(qual) => 
-          if (sym == currentClass || (sym hasFlag MODULE) && sym.isStatic) tree 
+        case This(qual) =>
+          if (sym == currentClass || (sym hasFlag MODULE) && sym.isStatic) tree
           else atPos(tree.pos)(outerPath(outerValue, currentClass.outerClass, sym)) // (5)
 
         case Select(qual, name) =>
@@ -293,7 +305,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
           super.transform(tree)
 
         case Apply(sel @ Select(qual, name), args)
-          if (name == nme.CONSTRUCTOR && isInner(sel.symbol.owner)) => 
+          if (name == nme.CONSTRUCTOR && isInner(sel.symbol.owner)) =>
             val outerVal = atPos(tree.pos) {
               if (qual.isInstanceOf[This]) { // it's a call between constructors of same class
                 assert(outerParam != NoSymbol)
@@ -308,15 +320,15 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
 
         case Match(selector, cases) => // <----- transmatch hook
           val tid = unit.fresh.newName("tidmark")
-          if(settings.debug.value)
+          if (settings.debug.value)
             Console.println("transforming patmat with tidmark "+tid+" ncases = "+cases.length)
-          if((cases.length > 1)&&( treeInfo.isDefaultCase(cases(0))))
-            assert(false,"transforming too much, "+tid)
+          if ((cases.length > 1) && (treeInfo.isDefaultCase(cases(0))))
+            assert(false,"transforming too much, " + tid)
 
           val nselector = transform(selector)
           assert(nselector.tpe =:= selector.tpe)
           val ncases = transformCaseDefs(cases)
-        
+
           ExplicitOuter.this.resultType = tree.tpe
           //Console.println("TransMatcher currentOwner ="+currentOwner+")")
           //Console.println("TransMatcher selector.tpe ="+selector.tpe+")")
@@ -325,13 +337,13 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
           val t_untyped = handlePattern(nselector, ncases, currentOwner, transform)
           //Console.println("t_untyped "+t_untyped.toString())
           val t = atPos(tree.pos) { localTyper.typed(t_untyped, resultType) }
-          
+
           //t = transform(t)
           //val t         = atPos(tree.pos) { typed(t_untyped, resultType) }
           //val t         = atPos(tree.pos) { typed(t_untyped) }
           //Console.println("t typed "+t.toString())
-          if(settings.debug.value)
-            Console.println("finished translation of "+tid)
+          if (settings.debug.value)
+            Console.println("finished translation of " + tid)
           t
 
         case _ =>
