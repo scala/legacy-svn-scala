@@ -169,13 +169,13 @@ trait Infer requires Analyzer {
    *  @param tp ...
    */
   def normalize(tp: Type): Type = skipImplicit(tp) match {
-    case MethodType(formals, restpe) => 
+    case MethodType(formals, restpe) =>
       if (util.Statistics.enabled) normM = normM + 1;
       functionType(formals, normalize(restpe))
-    case PolyType(List(), restpe) => 
+    case PolyType(List(), restpe) =>
       if (util.Statistics.enabled) normP = normP + 1;
-      normalize(restpe);
-    case tp1 => 
+      normalize(restpe)
+    case tp1 =>
       if (util.Statistics.enabled) normO = normO + 1;
       tp1
   }
@@ -201,16 +201,16 @@ trait Infer requires Analyzer {
       tree.setType(ErrorType)
     }
 
-    def decode(name: Name): String = 
+    def decode(name: Name): String =
       (if (name.isTypeName) "type " else "value ") + name.decode;
 
-    def treeSymTypeMsg(tree: Tree): String = 
+    def treeSymTypeMsg(tree: Tree): String =
       if (tree.symbol == null) 
         "expression of type " + tree.tpe
-      else if (tree.symbol.hasFlag(OVERLOADED)) 
+      else if (tree.symbol.hasFlag(OVERLOADED))
         "overloaded method " + tree.symbol + " with alternatives " + tree.tpe
       else (
-        tree.symbol.toString() + 
+        tree.symbol.toString() +
         (if (tree.tpe.paramSectionCount > 0) ": " else " of type ") + 
         tree.tpe
       );
@@ -221,20 +221,20 @@ trait Infer requires Analyzer {
     );
 
     def foundReqMsg(found: Type, req: Type): String =
-      ";\n found   : " + found.toLongString + "\n required: " + req;
-            
+      ";\n found   : " + found.toLongString + "\n required: " + req
+
     def error(pos: PositionType, msg: String): unit =
-      context.error(pos, msg);
+      context.error(pos, msg)
 
     def errorTree(tree: Tree, msg: String): Tree = {
-      if (!tree.isErroneous) error(tree.pos, msg); 
+      if (!tree.isErroneous) error(tree.pos, msg)
       setError(tree)
     }
 
     def typeError(pos: PositionType, found: Type, req: Type): unit =
       if (!found.isErroneous && !req.isErroneous) {
         error(pos,
-          "type mismatch" + foundReqMsg(found, req) + 
+          "type mismatch" + foundReqMsg(found, req) +
              (if (!(found.resultType eq found) && isWeaklyCompatible(found.resultType, req))
             "\n possible cause: missing arguments for method or constructor"
            else ""));
@@ -246,7 +246,7 @@ trait Infer requires Analyzer {
       typeError(tree.pos, found, req)
       setError(tree)
     }
-        
+
     /* -- Tests & Checks---------------------------------------------------- */
 
     /** Check that `sym' is defined and accessible as a member of
