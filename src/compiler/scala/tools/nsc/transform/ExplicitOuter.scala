@@ -70,10 +70,8 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
    */
   def transformInfo(sym: Symbol, tp: Type): Type = tp match {
     case MethodType(formals, restpe) =>
-      if (sym.owner.isTrait && ((sym hasFlag SUPERACCESSOR) || sym.isModule)) { // 5
-        //Console.println("make not private: "+sym+" "+sym.owner)//debug
+      if (sym.owner.isTrait && ((sym hasFlag SUPERACCESSOR) || sym.isModule)) { // 5 
         sym.makeNotPrivate(sym.owner)
-        //Console.println("made not private: "+sym)//debug
       }
       if (sym.owner.isTrait && (sym hasFlag PROTECTED)) sym setFlag notPROTECTED // 6
       if (sym.isClassConstructor && isInner(sym.owner)) // 1
