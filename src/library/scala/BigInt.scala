@@ -1,4 +1,14 @@
-package scala;
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
+package scala
 
 import java.math.BigInteger
 import java.util.Random
@@ -9,46 +19,58 @@ import java.util.Random
  */
 object BigInt {
 
-  private val minCached = -1024;
-  private val maxCached = 1024;
+  private val minCached = -1024
+  private val maxCached = 1024
   private val cache = new Array[BigInt](maxCached - minCached + 1)
 
-  /** Constructs a BigInt whose value is equal to that of the specified integer value. 
+  /** Constructs a <code>BigInt</code> whose value is equal to that of the
+   *  specified integer value.
+   *
+   *  @param i the specified integer value
+   *  @return  the constructed <code>BigInt</code>
    */
-  def apply(i: Int): BigInt = 
+  def apply(i: Int): BigInt =
     if (minCached <= i && i <= maxCached) {
       var n = cache(i)
       if (n == null) { n = new BigInt(BigInteger.valueOf(i)); cache(i) = n }
       n
     } else new BigInt(BigInteger.valueOf(i))
 
-  /** Constructs a BigInt whose value is equal to that of the specified long value. 
+  /** Constructs a <code>BigInt</code> whose value is equal to that of the
+   *  specified long value.
+   *
+   *  @param l the specified long value
+   *  @return  the constructed <code>BigInt</code>
    */
-  def apply(l: Long): BigInt = 
+  def apply(l: Long): BigInt =
     if (minCached <= l && l <= maxCached) apply(l.toInt)
     else new BigInt(BigInteger.valueOf(l))
 
   /** Translates a byte array containing the two's-complement binary 
-   *  representation of a BigInt into a BigInt. 
+   *  representation of a BigInt into a BigInt.
    */
   def apply(x: Array[byte]): BigInt = 
     new BigInt(new BigInteger(x))
 
-  /** Translates the sign-magnitude representation of a BigInt into a BigInt. 
+  /** Translates the sign-magnitude representation of a BigInt into a BigInt.
    */
-  def apply(signum: Int, magnitude: Array[byte]): BigInt = 
+  def apply(signum: Int, magnitude: Array[byte]): BigInt =
     new BigInt(new BigInteger(signum, magnitude))
   
   /** Constructs a randomly generated positive BigInt that is probably prime, 
-   *  with the specified bitLength. 
+   *  with the specified bitLength.
    */
-  def apply(bitlength: Int, certaInty: Int, rnd: Random): BigInt = 
+  def apply(bitlength: Int, certaInty: Int, rnd: Random): BigInt =
     new BigInt(new BigInteger(bitlength, certaInty, rnd))
 
-  /** Constructs a randomly generated BigInt, uniformly distributed over the range 
-   *  0 to (2 ^ numBits - 1), inclusive.
+  /** Constructs a randomly generated BigInt, uniformly distributed over the
+   *  range 0 to (2 ^ numBits - 1), inclusive.
+   *
+   *  @param numbits ...
+   *  @param rnd     ...
+   *  @return        ...
    */
-  def apply(numbits: Int, rnd: Random): BigInt = 
+  def apply(numbits: Int, rnd: Random): BigInt =
     new BigInt(new BigInteger(numbits, rnd))
 
   /** Translates the decimal String representation of a BigInt into a BigInt.
@@ -56,18 +78,22 @@ object BigInt {
   def apply(x: String): BigInt = 
     new BigInt(new BigInteger(x))
 
-  /** Translates the String representation of a BigInt in the 
-   *  specified radix into a BigInt.
+  /** Translates the string representation of a BigInt in the
+   *  specified <code>radix</code> into a BigInt.
+   *
+   *  @param x     ...
+   *  @param radix ...
+   *  @return      ...
    */
-  def apply(x: String, radix: Int): BigInt = 
+  def apply(x: String, radix: Int): BigInt =
     new BigInt(new BigInteger(x, radix))
 
   /** Returns a positive BigInt that is probably prime, with the specified bitLength.
    */
-  def probablePrime(bitLength: Int, rnd: Random): BigInt = 
+  def probablePrime(bitLength: Int, rnd: Random): BigInt =
     new BigInt(BigInteger.probablePrime(bitLength, rnd))
 
-  /** Implicit conversion from int to BigInt
+  /** Implicit conversion from <code>int</code> to <code>BigInt</code>.
    */
   implicit def int2bigInt(i: Int): BigInt = apply(i)
 
@@ -75,7 +101,7 @@ object BigInt {
    */
   implicit def long2bigInt(l: Long): BigInt = apply(l)
 
-  /** Implicit conversion from BigInt to Ordered
+  /** Implicit conversion from BigInt to <code>Ordered</code>.
    */
   implicit def bigInt2ordered(x: BigInt): Ordered[BigInt] = new Ordered[BigInt] with Proxy {
     def self: Any = x;
@@ -100,7 +126,7 @@ class BigInt(val bigInteger: BigInteger) extends runtime.BoxedNumber {
 
   /** Compares this BigInt with the specified BigInt for equality.
    */
-  def equals (that: BigInt): boolean = 
+  def equals (that: BigInt): boolean =
     this.bigInteger.compareTo(that.bigInteger) == 0
 
   /** Compares this BigInt with the specified BigInt
@@ -150,23 +176,23 @@ class BigInt(val bigInteger: BigInteger) extends runtime.BoxedNumber {
     Pair(new BigInt(dr(0)), new BigInt(dr(1)))
   }
 
-  /** Leftshift of BigInt 
+  /** Leftshift of BigInt
    */
   def << (n: Int): BigInt = new BigInt(this.bigInteger.shiftLeft(n))
 
-  /** (Signed) rightshift of BigInt 
+  /** (Signed) rightshift of BigInt
    */
   def >> (n: Int): BigInt = new BigInt(this.bigInteger.shiftRight(n))
 
-  /** Bitwise and of BigInts 
+  /** Bitwise and of BigInts
    */
   def &  (that: BigInt): BigInt = new BigInt(this.bigInteger.and(that.bigInteger))
 
-  /** Bitwise or of BigInts 
+  /** Bitwise or of BigInts
    */
   def |  (that: BigInt): BigInt = new BigInt(this.bigInteger.or (that.bigInteger))
 
-  /** Bitwise exclusive-or of BigInts 
+  /** Bitwise exclusive-or of BigInts
    */
   def ^  (that: BigInt): BigInt = new BigInt(this.bigInteger.xor(that.bigInteger))
 
@@ -178,7 +204,7 @@ class BigInt(val bigInteger: BigInteger) extends runtime.BoxedNumber {
    */
   def gcd (that: BigInt): BigInt = new BigInt(this.bigInteger.gcd(that.bigInteger))
 
-  /** Returns a BigInt whose value is (this mod m). 
+  /** Returns a BigInt whose value is (this mod m).
    *  This method differs from `%' in that it always returns a non-negative BigInt.
    */
   def mod (that: BigInt): BigInt = new BigInt(this.bigInteger.mod(that.bigInteger))
@@ -195,10 +221,10 @@ class BigInt(val bigInteger: BigInteger) extends runtime.BoxedNumber {
    */
   def pow (exp: Int): BigInt = new BigInt(this.bigInteger.pow(exp))
 
-  /** Returns a BigInt whose value is 
+  /** Returns a BigInt whose value is
    *  (<tt>this</tt> raised to the power of <tt>exp</tt> modulo <tt>m</tt>).
    */
-  def modPow (exp: BigInt, m: BigInt): BigInt = 
+  def modPow (exp: BigInt, m: BigInt): BigInt =
     new BigInt(this.bigInteger.modPow(exp.bigInteger, m.bigInteger))
 
   /** Returns a BigInt whose value is (the inverse of <tt>this</tt> modulo <tt>m</tt>).
@@ -292,16 +318,16 @@ class BigInt(val bigInteger: BigInteger) extends runtime.BoxedNumber {
    */
   def intValue    = this.bigInteger.intValue
 
-  /** Converts this BigInt to a <tt>long</tt>. 
-   *  If the BigInt is too big to fit in a char, only the low-order 64 bits are returned. 
-   *  Note that this conversion can lose information about the overall magnitude of the 
+  /** Converts this BigInt to a <tt>long</tt>.
+   *  If the BigInt is too big to fit in a char, only the low-order 64 bits are returned.
+   *  Note that this conversion can lose information about the overall magnitude of the
    *  BigInt value as well as return a result with the opposite sign.
    */
   def longValue   = this.bigInteger.longValue
 
-  /** Converts this BigInt to a <tt>float</tt>. 
-   *  if this BigInt has too great a magnitude to represent as a float, 
-   *  it will be converted to Float.NEGATIVE_INFINITY or Float.POSITIVE_INFINITY as appropriate. 
+  /** Converts this BigInt to a <tt>float</tt>.
+   *  if this BigInt has too great a magnitude to represent as a float,
+   *  it will be converted to Float.NEGATIVE_INFINITY or Float.POSITIVE_INFINITY as appropriate.
    */
   def floatValue  = this.bigInteger.floatValue
 
@@ -311,18 +337,19 @@ class BigInt(val bigInteger: BigInteger) extends runtime.BoxedNumber {
    */
   def doubleValue = this.bigInteger.doubleValue
 
-  /** Returns the decimal String representation of this BigInt. 
+  /** Returns the decimal String representation of this BigInt.
    */
   override def toString(): String = this.bigInteger.toString()
 
-  /** Returns the String representation in the specified radix of this BigInt. 
+  /** Returns the String representation in the specified radix of this BigInt.
    */
   def toString(radix: Int): String = this.bigInteger.toString(radix)
 
-  /** Returns a byte array containing the two's-complement representation of this BigInt. 
-   *  The byte array will be in big-endian byte-order: the most significant byte is in the 
-   *  zeroth element. The array will contain the minimum number of bytes required to represent 
-   *  this BigInt, including at least one sign bit. 
+  /** Returns a byte array containing the two's-complement representation of
+   *  this BigInt. The byte array will be in big-endian byte-order: the most
+   *  significant byte is in the zeroth element. The array will contain the
+   *  minimum number of bytes required to represent this BigInt, including at
+   *  least one sign bit.
    */
   def toByteArray: Array[Byte] = this.bigInteger.toByteArray()
 }

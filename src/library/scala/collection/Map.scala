@@ -21,7 +21,7 @@ package scala.collection
  *  implemented by maps that are modified destructively, whereas the class in
  *  the second package is used by functional map implementations that rely on
  *  immutable data structures.
- * 
+ *
  *  @author  Matthias Zenger
  *  @version 1.1, 02/05/2004
  */
@@ -34,7 +34,7 @@ trait Map[A, +B] extends AnyRef
      *  @return the number of mappings
      */
     def size: Int
-    
+
     /** Check if this map maps <code>key</code> to a value and return the
      *  value if it exists.
      *
@@ -48,7 +48,7 @@ trait Map[A, +B] extends AnyRef
      *  @return true, iff the map is empty.
      */
     def isEmpty: Boolean = (size == 0)
-    
+
     /** Retrieve the value which is associated with the given key. This
      *  method throws an exception if there is no mapping from the given
      *  key to a value.
@@ -60,7 +60,7 @@ trait Map[A, +B] extends AnyRef
       case None => default(key)
       case Some(value) => value
     }
-    
+
     /** Is the given key mapped to a value by this map?
      *
      *  @param   key        the key
@@ -70,14 +70,14 @@ trait Map[A, +B] extends AnyRef
       case None => false
       case Some(_) => true
     }
-    
+
     /** Does this map contain a mapping from the given key to a value?
      *
      *  @param   key        the key
      *  @return true, iff there is a mapping for key in this map
      */
     def isDefinedAt(key: A) = contains(key)
-    
+
     /** Creates an iterator for all keys.
      *
      *  @return an iterator over all keys.
@@ -87,7 +87,7 @@ trait Map[A, +B] extends AnyRef
       def hasNext = iter.hasNext
       def next = iter.next._1
     }
-    
+
     /** Creates an iterator for a contained values.
      *
      *  @return an iterator over all values.
