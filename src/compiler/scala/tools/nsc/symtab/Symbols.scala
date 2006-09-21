@@ -84,7 +84,7 @@ trait Symbols requires SymbolTable {
 
 // Creators -------------------------------------------------------------------
 
-    final def newValue(pos: PositionType, name: Name) =
+    final def newValue(pos: PositionType, name: Name) = 
       new TermSymbol(this, pos, name)
     final def newVariable(pos: PositionType, name: Name) =
       newValue(pos, name).setFlag(MUTABLE)
@@ -126,7 +126,7 @@ trait Symbols requires SymbolTable {
 
     final def newOuterAccessor(pos: PositionType) = {
       val sym = newMethod(pos, nme.OUTER) 
-      sym setFlag STABLE
+      sym setFlag (STABLE | SYNTHETIC)
       if (isTrait) sym setFlag DEFERRED
       sym.expandName(this)
       sym.referenced = this
