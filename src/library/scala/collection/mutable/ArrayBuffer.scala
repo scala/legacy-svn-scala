@@ -41,7 +41,7 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
    *  @param iter  the iterable object.
    */
   override def ++(iter: Iterable[A]): Buffer[A] = { insertAll(size, iter); this }
-
+    
   /** Prepend a single element to this buffer and return
    *  the identity of the buffer.
    *
@@ -54,6 +54,16 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
     size = size + 1
     this
   }
+   
+  /** returns the i-th element of this ArrayBuffer. Throws IndexOutOfBoundException if
+   *  i is out of bounds.
+   */
+  override def apply(i: Int) = { 
+    if ((i < 0) || (i >= size))
+      throw new IndexOutOfBoundsException(i.toString())
+    else
+      array(i)
+  }
 
   /** Prepends a number of elements provided by an iterable object
    *  via its <code>elements</code> method. The identity of the
@@ -62,7 +72,7 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
    *  @param iter  the iterable object.
    */
   override def ++:(iter: Iterable[A]): Buffer[A] = { insertAll(0, iter); this }
-
+  
   /** Inserts new elements at the index <code>n</code>. Opposed to method
    *  <code>update</code>, this method will not replace an element with a
    *  one. Instead, it will insert a new element at index <code>n</code>.
@@ -72,57 +82,60 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
    */
   def insertAll(n: Int, iter: Iterable[A]): Unit = {
     if ((n < 0) || (n > size))
-      error("cannot insert element " + n + " in ListBuffer")
-    val xs = iter.elements.toList
-    val len = xs.length
-    ensureSize(size + len)
-    copy(n, n + len, size - n)
-    xs.copyToArray(array, n)
-    size = size + len
+      throw new IndexOutOfBoundsException("cannot insert element at " + n);
+    val xs = iter.elements.toList;
+    val len = xs.length;
+    ensureSize(size+len);
+    copy(n, n + len, size - n);
+    xs.copyToArray(array, n);
+    size = size + len;
   }
-
+  
   /** Replace element at index <code>n</code> with the new element
    *  <code>newelem</code>.
    *
    *  @param n       the index of the element to replace.
    *  @param newelem the new element.
    */
-  def update(n: Int, newelem: A): Unit =
+  def update(n: Int, newelem: A): Unit = {
     if ((n < 0) || (n >= size))
-      error("cannot update element " + n + " in ArrayBuffer")
+      throw new IndexOutOfBoundsException("cannot update element at " + n);
     else {
       val res = array(n)
       array(n) = newelem
       res
     }
-
+  }
+  
   /** Removes the element on a given index position.
    *
    *  @param n  the index which refers to the element to delete.
    */
   def remove(n: Int): A = {
     if ((n < 0) || (n >= size))
-      error("cannot remove element " + n + " in Buffer")
-    val res = array(n)
-    copy(n + 1, n, size - n - 1)
-    size = size - 1
+      throw new IndexOutOfBoundsException("cannot remove element at " + n);
+    val res = array(n);
+    copy(n + 1, n, size - n - 1);
+    size = size - 1;
     res
   }
-
+  
   /** Clears the buffer contents.
    */
-  def clear: Unit = { size = 0 }
-
+  def clear: Unit = {
+    size = 0;
+  }
+  
   /** Return a clone of this buffer.
    *
    *  @return an <code>ArrayBuffer</code> with the same elements.
    */
   override def clone(): Buffer[A] = {
-    val res = new ArrayBuffer[A]
-    res ++= this
+    val res = new ArrayBuffer[A];
+    res ++= this;
     res
   }
-
+  
   /** Checks if two buffers are structurally identical.
    *
    *  @return true, iff both buffers contain the same sequence of elements.
@@ -130,13 +143,13 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
   override def equals(obj: Any): Boolean = obj match {
     case that: ArrayBuffer[A] =>
       this.length == that.length &&
-      elements.zip(that.elements).forall {
-        case Pair(thiselem, thatelem) => thiselem == thatelem
-      }
+    elements.zip(that.elements).forall {
+      case Pair(thiselem, thatelem) => thiselem == thatelem
+    }
     case _ =>
       false
   }
-
+  
   /** Defines the prefix of the string representation.
    */
   override protected def stringPrefix: String = "ArrayBuffer"
