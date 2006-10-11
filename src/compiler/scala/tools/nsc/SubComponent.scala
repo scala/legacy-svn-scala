@@ -6,18 +6,10 @@
 
 package scala.tools.nsc
 
-/** <p>
- *    An nsc sub-component.
- *  </p>
- *  <dl class="subclasses">
- *    <dt><b>Direct Known Subclasses:</b></dt>
- *    <dd>
- *      <a href="transform/Transform.html" target="contentFrame">Transform</a>
- *   </dd>
- *  </dl>
+/** An nsc sub-component.
  *
  *  @author Martin Odersky
- */ 
+ */
 abstract class SubComponent {
 
   /** The global environment; overridden by instantiation in Global. */
@@ -32,7 +24,7 @@ abstract class SubComponent {
   /** The phase factory */
   def newPhase(prev: Phase): Phase
 
-  /** A standard phase template */ 
+  /** A standard phase template */
   abstract class StdPhase(prev: Phase) extends global.GlobalPhase(prev) {
     def name = phaseName
     override def newFlags = phaseNewFlags
