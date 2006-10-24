@@ -12,6 +12,7 @@
 package scala.xml
 
 import compat.StringBuilder
+import compat.Platform.UnsupportedOperationException
 
 /** prefixed attributes always have a non-null namespace.
  *  @param value the attribute value, which may not be null
@@ -23,7 +24,7 @@ class PrefixedAttribute(val pre: String,
 
   if(value == null)
     throw new UnsupportedOperationException("value is null")
-			  
+
   /** same as this(key, Utility.parseAttributeValue(value), next) */
   def this(pre: String, key: String, value: String, next: MetaData) = 
     this(pre, key, Utility.parseAttributeValue(value), next)

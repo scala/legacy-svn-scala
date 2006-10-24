@@ -11,6 +11,9 @@
 
 package scala.concurrent
 
+
+import compat.Platform.UnsupportedOperationException
+
 /** This object ...
  *
  *  @author  Erik Stenman
@@ -30,14 +33,14 @@ object Process {
   def send(p: Process, msg: MailBox#Message) =
     p.send(msg)
 
-  def receive[a](f: PartialFunction[MailBox#Message, a]): a = 
+  def receive[a](f: PartialFunction[MailBox#Message, a]): a =
     self.receive(f)
 
   def receiveWithin[a](msec: long)(f: PartialFunction[MailBox#Message, a]): a =
     self.receiveWithin(msec)(f)
-  
+
   /**
-   *  @throws UnsupportedOperationException
+   *  @throws scala.compat.Platform.UnsupportedOperationException
    */
   def self: Process =
     if (Thread.currentThread().isInstanceOf[Process])
