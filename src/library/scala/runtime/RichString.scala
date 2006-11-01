@@ -102,7 +102,7 @@ final class RichString(s: String) {
       val len = line.length
       var index = 0;
       while (index < len && line.charAt(index) <= ' ') index = index + 1
-      buf append 
+      buf append
         (if (index < len && line.charAt(index) == marginChar) line.substring(index + 1) else line)
     }
     buf.toString
