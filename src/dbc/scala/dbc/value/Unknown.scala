@@ -21,7 +21,7 @@ abstract class Unknown extends Value {
 }
 
 object UnknownType {
-  
-  def view (obj:value.Unknown): Object = obj.nativeValue;
-  
+
+  def view (obj:value.Unknown): AnyRef = obj.nativeValue;
+
 }
