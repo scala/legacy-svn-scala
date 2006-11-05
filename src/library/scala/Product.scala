@@ -6,11 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id: CaseClass.scala 8756 2006-09-22 16:00:23Z michelou $
 
 
 package scala
-
 
 /** The trait <code>CaseClass</code> defines access functions for instances
  *  of case classes.
@@ -18,26 +17,26 @@ package scala
  *  @author  Burak Emir
  *  @version 1.0
  */
-trait CaseClass extends AnyRef {
+trait Product extends AnyRef {
 
-  /** for a case class <code>A(x_0,...,x_(k-1))</code>, returns <code>x_i</code>
-   *  for <code>0 &lt;= i &lt; k</code>, <code>null</code> otherwise.
+  /** for a case class <code>A(x_1,...,x_k))</code>, returns <code>x_i</code>
+   *  for <code>1 &lt;= i &lt; k</code>
    *
-   *  @param n the position of the n-th element
+   *  @param  n the position of the n-th element
+   *  @throws IndexOutOfBoundsException
    *  @return  ...
    */
-  def caseElement(n: Int): Any
+  def element(n: Int): Any
 
-  /** need also, for reflection
-  def setCaseElement(n: Int, v: Any): unit
-  */
-
-  /** for a case class <code>A(x_0,...,x_(k-1))</code>, returns <code>k</code>
+  /** return k for a product <code>A(x_1,...,x_k))</code>
    */
-  def caseArity: Int 
+  def arity: Int 
 
-  /**
+  /** 
+   *  By default the empty string. Implementations may override this
+   *  method in order to prepend a string prefix to the result of the 
+   *  toString methods. 
    */
-  def caseName: String
+  def productPrefix = ""
 
 }
