@@ -19,10 +19,10 @@ final class BoxedByteArray(val value: Array[Byte]) extends BoxedArray {
 
   def length: Int = value.length
 
-  def apply(index: Int): AnyRef = BoxedByte.box(value(index))
+  def apply(index: Int): AnyRef = Byte.box(value(index))
 
   def update(index: Int, elem: AnyRef): Unit = {
-    value(index) = elem.asInstanceOf[BoxedNumber].byteValue()
+    value(index) = Byte.unbox(elem)
   }
 
   def unbox(elemTag: String): AnyRef = value
@@ -33,12 +33,12 @@ final class BoxedByteArray(val value: Array[Byte]) extends BoxedArray {
     other.isInstanceOf[BoxedByteArray] && value == other.asInstanceOf[BoxedByteArray].value
 
   override def hashCode(): Int = value.hashCode();
-        
+
   def subArray(start: Int, end: Int): Array[Byte] = {
     val result = new Array[Byte](end - start)
     Array.copy(value, start, result, 0, end - start)
     result
-  }    
+  }
 
   def filter(p: Any => Boolean): Array[Byte] = {
     val include = new Array[Boolean](value.length)
@@ -58,4 +58,3 @@ final class BoxedByteArray(val value: Array[Byte]) extends BoxedArray {
     result
   }
 }
-

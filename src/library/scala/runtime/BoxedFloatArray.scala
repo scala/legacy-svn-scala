@@ -19,10 +19,10 @@ final class BoxedFloatArray(val value: Array[Float]) extends BoxedArray {
 
   def length: Int = value.length
 
-  def apply(index: Int): AnyRef = BoxedFloat.box(value(index))
+  def apply(index: Int): AnyRef = Float.box(value(index))
 
   def update(index: Int, elem: AnyRef): Unit = {
-    value(index) = elem.asInstanceOf[BoxedNumber].floatValue()
+    value(index) = Float.unbox(elem)
   }
 
   def unbox(elemTag: String): AnyRef = value
@@ -33,12 +33,12 @@ final class BoxedFloatArray(val value: Array[Float]) extends BoxedArray {
     other.isInstanceOf[BoxedFloatArray] && value == other.asInstanceOf[BoxedFloatArray].value
 
   override def hashCode(): Int = value.hashCode()
-       
+
   def subArray(start: Int, end: Int): Array[Float] = {
     val result = new Array[Float](end - start)
     Array.copy(value, start, result, 0, end - start)
     result
-  }    
+  }
 
   def filter(p: Any => Boolean): Array[Float] = {
     val include = new Array[Boolean](value.length)
@@ -58,4 +58,3 @@ final class BoxedFloatArray(val value: Array[Float]) extends BoxedArray {
     result
   }
 }
-

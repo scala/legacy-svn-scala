@@ -19,10 +19,10 @@ final class BoxedDoubleArray(val value: Array[Double]) extends BoxedArray {
 
   def length: Int = value.length
 
-  def apply(index: Int): AnyRef = BoxedDouble.box(value(index))
+  def apply(index: Int): AnyRef = Double.box(value(index))
 
   def update(index: Int, elem: AnyRef): Unit = {
-    value(index) = elem.asInstanceOf[BoxedNumber].doubleValue()
+    value(index) = Double.unbox(elem)
   }
 
   def unbox(elemTag: String): AnyRef = value
@@ -33,12 +33,12 @@ final class BoxedDoubleArray(val value: Array[Double]) extends BoxedArray {
     other.isInstanceOf[BoxedDoubleArray] && value == other.asInstanceOf[BoxedDoubleArray].value
 
   override def hashCode(): Int = value.hashCode()
-       
+
   def subArray(start: Int, end: Int): Array[Double] = {
     val result = new Array[Double](end - start)
     Array.copy(value, start, result, 0, end - start)
     result
-  }    
+  }
 
   def filter(p: Any => Boolean): Array[Double] = {
     val include = new Array[Boolean](value.length)
@@ -58,4 +58,3 @@ final class BoxedDoubleArray(val value: Array[Double]) extends BoxedArray {
     result
   }
 }
-

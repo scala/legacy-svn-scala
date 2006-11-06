@@ -19,10 +19,10 @@ final class BoxedBooleanArray(val value: Array[Boolean]) extends BoxedArray {
 
   def length: Int = value.length
 
-  def apply(index: Int): AnyRef = BoxedBoolean.box(value(index))
+  def apply(index: Int): AnyRef = Boolean.box(value(index))
 
   def update(index: Int, elem: AnyRef): Unit = {
-    value(index) = elem.asInstanceOf[BoxedBoolean].value
+    value(index) = Boolean.unbox(elem)
   }
 
   def unbox(elemTag: String): AnyRef = value
@@ -33,12 +33,12 @@ final class BoxedBooleanArray(val value: Array[Boolean]) extends BoxedArray {
     other.isInstanceOf[BoxedBooleanArray] && value == other.asInstanceOf[BoxedBooleanArray].value
 
   override def hashCode(): Int = value.hashCode()
-        
+
   def subArray(start: Int, end: Int): Array[Boolean] = {
     val result = new Array[Boolean](end - start)
     Array.copy(value, start, result, 0, end - start)
     result
-  }    
+  }
 
   def filter(p: Any => Boolean): Array[Boolean] = {
     val include = new Array[Boolean](value.length)
@@ -58,4 +58,3 @@ final class BoxedBooleanArray(val value: Array[Boolean]) extends BoxedArray {
     result
   }
 }
-

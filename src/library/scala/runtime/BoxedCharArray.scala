@@ -19,10 +19,10 @@ final class BoxedCharArray(val value: Array[Char]) extends BoxedArray {
 
   def length: Int = value.length;
 
-  def apply(index: Int): AnyRef = BoxedChar.box(value(index));
+  def apply(index: Int): AnyRef = Char.box(value(index));
 
   def update(index: Int, elem: AnyRef): Unit = {
-    value(index) = elem.asInstanceOf[BoxedNumber].charValue()
+    value(index) = Char.unbox(elem)
   }
 
   def unbox(elemTag: String): AnyRef = value;
@@ -34,12 +34,12 @@ final class BoxedCharArray(val value: Array[Char]) extends BoxedArray {
   );
 
   override def hashCode(): Int = value.hashCode();
-       
+
   def subArray(start: Int, end: Int): Array[Char] = {
     val result = new Array[Char](end - start);
     Array.copy(value, start, result, 0, end - start)
     result
-  }    
+  }
 
   def filter(p: Any => Boolean): Array[Char] = {
     val include = new Array[Boolean](value.length);
@@ -59,4 +59,3 @@ final class BoxedCharArray(val value: Array[Char]) extends BoxedArray {
     result
   }
 }
-

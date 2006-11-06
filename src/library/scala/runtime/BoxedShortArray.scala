@@ -19,10 +19,10 @@ final class BoxedShortArray(val value: Array[Short]) extends BoxedArray {
 
   def length: Int = value.length
 
-  def apply(index: Int): AnyRef = BoxedShort.box(value(index))
+  def apply(index: Int): AnyRef = Short.box(value(index))
 
   def update(index: Int, elem: AnyRef): Unit = {
-    value(index) = elem.asInstanceOf[BoxedNumber].shortValue()
+    value(index) = Short.unbox(elem)
   }
 
   def unbox(elemTag: String): AnyRef = value
@@ -33,12 +33,12 @@ final class BoxedShortArray(val value: Array[Short]) extends BoxedArray {
     other.isInstanceOf[BoxedShortArray] && value == other.asInstanceOf[BoxedShortArray].value
 
   override def hashCode(): Int = value.hashCode()
-       
+
   def subArray(start: Int, end: Int): Array[Short] = {
     val result = new Array[Short](end - start)
     Array.copy(value, start, result, 0, end - start)
     result
-  }    
+  }
 
   def filter(p: Any => Boolean): Array[Short] = {
     val include = new Array[Boolean](value.length)
@@ -58,4 +58,3 @@ final class BoxedShortArray(val value: Array[Short]) extends BoxedArray {
     result
   }
 }
-
