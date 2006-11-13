@@ -25,9 +25,13 @@ object Iterator {
 
   def empty[a] = new Iterator[a] {
     def hasNext: Boolean = false
-    def next: a =  throw new NoSuchElementException("next on empty iterator")
+    def next: a = throw new NoSuchElementException("next on empty iterator")
   }
 
+  /**
+   *  @param x the element
+   *  @return  the iterator with one single element
+   */
   def single[a](x: a) = new Iterator[a] {
     private var hasnext = true
     def hasNext: Boolean = hasnext
@@ -35,17 +39,21 @@ object Iterator {
       if (hasnext) { hasnext = false; x }
       else throw new NoSuchElementException("next on empty iterator")
   }
-  
+
   def fromValues[a](xs: a*) = xs.elements
 
+  /**
+   *  @param xs the array of elements
+   *  @return   the iterator on <code>xs</code>.
+   */
   def fromArray[a](xs: Array[a]): Iterator[a] =
     fromArray(xs, 0, xs.length)
 
   /**
-   *  @param xs     ...
+   *  @param xs     the array of elements
    *  @param start  ...
    *  @param length ...
-   *  @return ...
+   *  @return       ...
    */
   def fromArray[a](xs: Array[a], start: Int, length: Int): Iterator[a] =
     new BufferedIterator[a] {
@@ -58,6 +66,10 @@ object Iterator {
                     else throw new NoSuchElementException("head on empty iterator")
   }
 
+  /**
+   *  @param str the given string
+   *  @return    the iterator on <code>str</code>
+   */
   def fromString(str: String): Iterator[Char] =
     new BufferedIterator[Char] {
       private var i = 0
@@ -67,24 +79,30 @@ object Iterator {
       def head = str charAt i
     }
 
-  def fromProduct(n:Product): Iterator[Any] = new Iterator[Any] {
+  /**
+   *  @param n the product arity
+   *  @return  the iterator on <code>Product&lt;n&gt;</code>.
+   */
+  def fromProduct(n: Product): Iterator[Any] = new Iterator[Any] {
     private var c: Int = 0
     private val cmax = n.arity
     def hasNext = c < cmax
     def next = { val a = n element c; c = c + 1; a }
   }
 
-  /** deprecated */
-  def fromCaseClass(n:Product) = fromProduct(n)
+  /**
+   * @deprecated use class <code>Product&lt;n&gt;</code> instead.
+   */
+  def fromCaseClass(n: Product) = fromProduct(n)
 
   /** Create an iterator with elements
    *  <code>e<sub>n+1</sub> = e<sub>n</sub> + 1</code>
    *  where <code>e<sub>0</sub> = lo</code>
    *  and <code>e<sub>i</sub> &lt; end</code>.
    *
-   *  @param lo the start value of the iterator
+   *  @param lo  the start value of the iterator
    *  @param end the end value of the iterator
-   *  @return the iterator with values in range [lo;end).
+   *  @return    the iterator with values in range <code>[lo;end)</code>.
    */
   def range(lo: Int, end: Int): Iterator[Int] =
     range(lo, end, 1)
@@ -94,10 +112,10 @@ object Iterator {
    *  where <code>e<sub>0</sub> = lo</code>
    *  and <code>e<sub>i</sub> &lt; end</code>.
    *
-   *  @param lo the start value of the iterator
-   *  @param end the end value of the iterator
+   *  @param lo   the start value of the iterator
+   *  @param end  the end value of the iterator
    *  @param step the increment value of the iterator (must be positive or negative)
-   *  @return the iterator with values in range [lo;end).
+   *  @return     the iterator with values in range <code>[lo;end)</code>.
    */
   def range(lo: Int, end: Int, step: Int): Iterator[Int] = {
     assert(step != 0)
@@ -118,10 +136,10 @@ object Iterator {
    *  where <code>e<sub>0</sub> = lo</code>
    *  and <code>e<sub>i</sub> &lt; end</code>.
    *
-   *  @param lo the start value of the iterator
-   *  @param end the end value of the iterator
+   *  @param lo   the start value of the iterator
+   *  @param end  the end value of the iterator
    *  @param step the increment function of the iterator
-   *  @return the iterator with values in range [lo;end).
+   *  @return     the iterator with values in range <code>[lo;end)</code>.
    */
   def range(lo: Int, end: Int, step: Int => Int): Iterator[Int] =
     new BufferedIterator[Int] {
@@ -140,7 +158,7 @@ object Iterator {
    *  where <code>e<sub>0</sub> = lo</code>.
    *
    *  @param lo the start value of the iterator
-   *  @return the iterator starting at value <code>lo</code>.
+   *  @return   the iterator starting at value <code>lo</code>.
    */
   def from(lo: Int): Iterator[Int] =
     from(lo, 1)
@@ -149,9 +167,9 @@ object Iterator {
    * <code>e<sub>n+1</sub> = e<sub>n</sub> + step</code>
    *  where <code>e<sub>0</sub> = lo</code>.
    *
-   *  @param lo the start value of the iterator
+   *  @param lo   the start value of the iterator
    *  @param step the increment value of the iterator
-   *  @return the iterator starting at value <code>lo</code>.
+   *  @return     the iterator starting at value <code>lo</code>.
    */
   def from(lo: Int, step: Int): Iterator[Int] =
     new BufferedIterator[Int] {
@@ -165,9 +183,9 @@ object Iterator {
    *  <code>e<sub>n+1</sub> = step(e<sub>n</sub>)</code>
    *  where <code>e<sub>0</sub> = lo</code>.
    *
-   *  @param lo the start value of the iterator
+   *  @param lo   the start value of the iterator
    *  @param step the increment function of the iterator
-   *  @return the iterator starting at value <code>lo</code>.
+   *  @return     the iterator starting at value <code>lo</code>.
    */
   def from(lo: Int, step: Int => Int): Iterator[Int] =
     new BufferedIterator[Int] {
@@ -184,8 +202,7 @@ object Iterator {
  *  if there is a next element available, and a <code>next</code> method
  *  which returns the next element and discards it from the iterator.
  *
- *  @author  Martin Odersky
- *  @author  Matthias Zenger
+ *  @author  Martin Odersky, Matthias Zenger
  *  @version 1.2, 15/03/2004
  */
 trait Iterator[+A] {
@@ -193,13 +210,16 @@ trait Iterator[+A] {
   /** Does this iterator provide another element?
    */
   def hasNext: Boolean
-    
+
   /** Returns the next element.
    */
   def next: A
-    
+
   /** Returns a new iterator that iterates only over the first <code>n</code>
    *  elements.
+   *
+   *  @param n the first <code>n</code> elements of the iterator
+   *  @return  the new iterator
    */
   def take(n: Int) = new Iterator[A] {
     var remaining = n
@@ -208,12 +228,12 @@ trait Iterator[+A] {
       if (hasNext) { remaining = remaining - 1; Iterator.this.next }
       else throw new NoSuchElementException("next on empty iterator")
   }
-    
+
   /** Removes the first <code>n</code> elements from this iterator.
    */
   def drop(n: Int): Iterator[A] =
     if (n > 0) { next; drop(n - 1) } else this
-    
+
   /** Returns a new iterator that maps all elements of this iterator
    *  to new elements using function <code>f</code>.
    */
@@ -221,7 +241,7 @@ trait Iterator[+A] {
     def hasNext = Iterator.this.hasNext
     def next = f(Iterator.this.next)
   }
-    
+
   /** Returns a new iterator that first yields the elements of this
    *  iterator followed by the elements provided by iterator <code>that</code>.
    */
@@ -229,17 +249,18 @@ trait Iterator[+A] {
     def hasNext = Iterator.this.hasNext || that.hasNext
     def next = if (Iterator.this.hasNext) Iterator.this.next else that.next
   }
-    
+
   /** Applies the given function <code>f</code> to each element of
    *  this iterator, then concatenates the results.
    *
    *  @param f the function to apply on each element.
-   *  @return an iterator over <code>f(a0), ... , f(an)</code> if this iterator
-   *          yields the elements <code>a0, ..., an</code>.
+   *  @return  an iterator over <code>f(a<sub>0</sub>), ... ,
+   *           f(a<sub>n</sub>)</code> if this iterator yields the
+   *           elements <code>a<sub>0</sub>, ..., a<sub>n</sub></code>.
    */
   def flatMap[B](f: A => Iterator[B]): Iterator[B] = new Iterator[B] {
     private var cur: Iterator[B] = Iterator.empty
-    def hasNext: Boolean = 
+    def hasNext: Boolean =
       if (cur.hasNext) true
       else if (Iterator.this.hasNext) {
         cur = f(Iterator.this.next)
@@ -252,7 +273,7 @@ trait Iterator[+A] {
         next
       } else throw new NoSuchElementException("next on empty iterator")
   }
-  
+
   /** Returns an iterator over all the elements of this iterator that
    *  satisfy the predicate <code>p</code>. The order of the elements
    *  is preserved.
@@ -273,7 +294,7 @@ trait Iterator[+A] {
     def hasNext: Boolean = { skip; ahead || hasMore }
     def next: A =
       if (hasNext) { ahead = false; hd }
-      else throw new NoSuchElementException("next on empty iterator");
+      else throw new NoSuchElementException("next on empty iterator")
     def head: A = { skip; hd }
  }
 
@@ -281,25 +302,26 @@ trait Iterator[+A] {
    *  <code>that</code> by associating each element of the former with
    *  the element at the same position in the latter.
    *
-   *  @param   <code>that</code> must have the same number of elements as this
-   *           iterator.
-   *  @return  an iterator yielding <code>(a0,b0), ..., (an,bn)</code> where
-   *           <code>ai</code> are the elements from this iterator and
-   *           <code>bi</code> are the elements from iterator <code>that</code>.
+   *  @param that list <code>that</code> must have the same number of
+   *              elements as this iterator.
+   *  @return     an iterator yielding <code>(a<sub>0</sub>,b<sub>0</sub>), ...,
+   *              (a<sub>n</sub>,b<sub>n</sub>)</code> where
+   *              <code>a<sub>i</sub></code> are the elements from this iterator
+   *              and <code>b<sub>i</sub></code> are the elements from iterator
+   *              <code>that</code>.
    */
   def zip[B](that: Iterator[B]) = new Iterator[Pair[A, B]] {
     def hasNext = Iterator.this.hasNext && that.hasNext
     def next = Pair(Iterator.this.next, that.next)
   }
-   
 
   /** Return an iterator that pairs each element of this iterator
    *  with its index, counting from 0.
    *
-   *  @param   <code>start</code> the index of the first element
-   *
-   *  @return  an iterator yielding <code>(a0,0), (a0,1)...</code>
-   *           where <code>ai</code> are the elements from this iterator.
+   *  @param start the index of the first element.
+   *  @return      an iterator yielding <code>(a<sub>0</sub>,0),
+   *               (a<sub>0</sub>,1)...</code> where <code>a<sub>i</sub></code>
+   *               are the elements from this iterator.
    */
   def zipWithIndex = new Iterator[Pair[A, int]] {
     var idx = 0
@@ -310,20 +332,21 @@ trait Iterator[+A] {
       ret
     }
   }
-	
+
   /** Apply a function <code>f</code> to all elements of this
    *  iterable object.
    *
    *  @param  f   a function that is applied to every element.
    */
-  def foreach(f: A => Unit): Unit = while (hasNext) { f(next) }
+  def foreach(f: A => Unit): Unit = while (hasNext) f(next)
 
   /** Apply a predicate <code>p</code> to all elements of this
-   *  iterable object and return true, iff the predicate yields
-   *  true for all elements.
+   *  iterable object and return <code>true</code> iff the predicate yields
+   *  <code>true</code> for all elements.
    *
-   *  @param   p     the predicate
-   *  @returns true, iff the predicate yields true for all elements.
+   *  @param p the predicate
+   *  @return  <code>true</code> iff the predicate yields <code>true</code>
+   *           for all elements.
    */
   def forall(p: A => Boolean): Boolean = {
     var res = true
@@ -333,10 +356,11 @@ trait Iterator[+A] {
 
   /** Apply a predicate <code>p</code> to all elements of this
    *  iterable object and return true, iff there is at least one
-   *  element for which <code>p</code> yields true.
+   *  element for which <code>p</code> yields <code>true</code>.
    *
-   *  @param   p     the predicate
-   *  @returns true, iff the predicate yields true for at least one element.
+   *  @param p the predicate
+   *  @return  <code>true</code> iff the predicate yields <code>true</code>
+   *           for at least one element.
    */
   def exists(p: A => Boolean): Boolean = {
     var res = false
@@ -347,8 +371,8 @@ trait Iterator[+A] {
   /** Tests if the given value <code>elem</code> is a member of this list.
    *
    *  @param elem element whose membership has to be tested.
-   *  @return True iff there is an element of this list which is
-   *  equal (w.r.t. <code>==</code>) to <code>elem</code>.
+   *  @return     <code>true</code> iff there is an element of this list which
+   *              is equal (w.r.t. <code>==</code>) to <code>elem</code>.
    */
   def contains(elem: Any): Boolean = exists { x => x == elem }
 
@@ -356,23 +380,25 @@ trait Iterator[+A] {
    *  predicate, if any.
    *
    *  @param p the predicate
-   *  @return the first element in the iterable object satisfying <code>p</code>,
-   *  or <code>None</code> if none exists.
+   *  @return  the first element in the iterable object satisfying
+   *           <code>p</code>, or <code>None</code> if none exists.
    */
   def find(p: A => Boolean): Option[A] = {
     var res: Option[A] = None
     while (res.isEmpty && hasNext) {
       val e = next
-      if (p(e)) res = Some(e);
+      if (p(e)) res = Some(e)
     }
     res
   }
 
   /** Combines the elements of this list together using the binary
    *  operator <code>op</code>, from left to right, and starting with
-   *  the value <code>z</code>. 
-   *  @return <code>op(... (op(op(z,a0),a1) ...), an)</code> if the list
-   *  is <code>List(a0, a1, ..., an)</code>.
+   *  the value <code>z</code>.
+   *
+   *  @return <code>op(... (op(op(z,a<sub>0</sub>),a<sub>1</sub>) ...),
+   *          a<sub>n</sub>)</code> if the list is
+   *          <code>List(a<sub>0</sub>, a<sub>1</sub>, ..., a<sub>n</sub>)</code>.
    */
   def foldLeft[B](z: B)(op: (B, A) => B): B = {
     var acc = z
@@ -382,24 +408,37 @@ trait Iterator[+A] {
 
   /** Combines the elements of this list together using the binary
    *  operator <code>op</code>, from rigth to left, and starting with
-   *  the value <code>z</code>. 
-   *  @return <code>a0 op (... op (an op z)...)</code> if the list
-   *  is <code>[a0, a1, ..., an]</code>.
+   *  the value <code>z</code>.
+   *
+   *  @return <code>a<sub>0</sub> op (... op (a<sub>n</sub> op z)...)</code>
+   *          if the list is <code>List(a<sub>0</sub>, a<sub>1</sub>, ...,
+   *          a<sub>n</sub>)</code>.
    */
   def foldRight[B](z: B)(op: (A, B) => B): B = {
-    def fold(z: B): B =
-      if (hasNext) op(next, fold(z)) else z;
+    def fold(z: B): B = if (hasNext) op(next, fold(z)) else z
     fold(z)
   }
 
   /** Similar to <code>foldLeft</code> but can be used as
    *  an operator with the order of list and zero arguments reversed.
-   *  That is, <code>z /: xs</code> is the same as <code>xs foldLeft z</code>
+   *  That is, <code>z /: xs</code> is the same as <code>xs foldLeft z</code>.
+   *
+   *  @param z the left argument of the first application of <code>f</code>
+   *           (evaluation occurs from left to right).
+   *  @param f the applied function.
+   *  @return  the result value
+   *  @see     <code><a href="#foldLeft">foldLeft</a></code>.
    */
   def /:[B](z: B)(f: (B, A) => B): B = foldLeft(z)(f)
 
   /** An alias for <code>foldRight</code>.
-   *  That is, <code>xs :\ z</code> is the same as <code>xs foldRight z</code>
+   *  That is, <code>xs :\ z</code> is the same as <code>xs foldRight z</code>.
+   *
+   *  @param z the right argument of the first application of <code>f</code>
+   *           (evaluation occurs from right to left).
+   *  @param f the applied function.
+   *  @return  the result value.
+   *  @see     <code><a href="#foldRight">foldRight</a></code>.
    */
   def :\[B](z: B)(f: (A, B) => B): B = foldRight(z)(f)
 
@@ -410,7 +449,7 @@ trait Iterator[+A] {
     private var ahead: Boolean = false
     def head: A = {
       if (!ahead) {
-        hd = Iterator.this.next;
+        hd = Iterator.this.next
         ahead = true
       }
       hd
@@ -428,9 +467,11 @@ trait Iterator[+A] {
     def hasNext: Boolean = Iterator.this.hasNext
     def next: A = { cnt = cnt + 1; Iterator.this.next }
   }
-    
+
   /** Creates two new iterators that both iterate over the same elements
    *  than this iterator (in the same order).
+   *
+   *  @return a pair of iterators
    */
   def duplicate: Pair[Iterator[A], Iterator[A]] = {
     var xs: List[A] = Nil
@@ -464,15 +505,15 @@ trait Iterator[+A] {
     ahead = new Partner
     Pair(ahead, new Partner)
   }
-    
+
   /** Fills the given array <code>xs</code> with the elements of
    *  this sequence starting at position <code>start</code>.
    *
-   *  @param  xs the array to fill.
-   *  @param  start starting index.
-   *  @return the given array <code>xs</code> filled with the elements of
-   *          this iterator.
-   *  @pre The array must be large enough to hold all elements.
+   *  @param  xs    the array to fill.
+   *  @param  start the starting index.
+   *  @return       the given array <code>xs</code> filled with the elements
+   *                of this iterator.
+   *  @pre          the array must be large enough to hold all elements.
    */
   def copyToArray[B >: A](xs: Array[B], start: Int): Array[B] = {
     var i = start
