@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2007 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -8,8 +8,8 @@
 //todo: use inherited type info also for vars and values
 package scala.tools.nsc.typechecker
 
-import compat.Platform.currentTime
 import scala.collection.mutable.{HashMap, ListBuffer}
+import scala.compat.Platform.currentTime
 import scala.tools.nsc.util.{HashSet, Position, Set}
 import symtab.Flags._
 import util.HashSet
@@ -2191,14 +2191,14 @@ trait Typers requires Analyzer {
         case WildcardTypeTree(lo, hi) =>
           tree setType TypeBounds(typedType(lo).tpe, typedType(hi).tpe)
 
-        case TypeTree() => 
+        case TypeTree() =>
           // we should get here only when something before failed 
           // and we try again (@see tryTypedApply). In that case we can assign 
           // whatever type to tree; we just have to survive until a real error message is issued.
           tree setType AnyClass.tpe
 
         case _ =>
-          throw new Error("unexpected tree: "+tree);//debug
+          throw new Error("unexpected tree: " + tree)//debug
       }
     }
 
@@ -2384,7 +2384,7 @@ trait Typers requires Analyzer {
 
       val tc = newTyper(context.makeImplicit(reportAmbiguous))
 
-      def ambiguousError(info1: ImplicitInfo, info2: ImplicitInfo, 
+      def ambiguousError(info1: ImplicitInfo, info2: ImplicitInfo,
                          pre1: String, pre2: String, trailer: String) =
         error(
           pos,
@@ -2423,7 +2423,7 @@ trait Typers requires Analyzer {
           tc.typedImplicit(pos, info, pt, isLocal) != EmptyTree
         def applicableInfos(is: List[ImplicitInfo]) = {
           val result = is filter isApplicable
-          if (isLocal) 
+          if (isLocal)
             for (val i <- is) shadowed addEntry i.name
           result
         }
@@ -2432,7 +2432,7 @@ trait Typers requires Analyzer {
         if (best == NoImplicitInfo) EmptyTree
         else {
           val competing = applicable dropWhile (alt => best == alt || improves(best, alt))
-          if (!competing.isEmpty) ambiguousError(best, competing.head, "both", "and ", "")
+          if (!competing.isEmpty) ambiguousError(best, competing.head, "both", "and", "")
           for (val alt <- applicable)
             if (alt.sym.owner != best.sym.owner && isSubClassOrObject(alt.sym.owner, best.sym.owner)) {
               ambiguousError(best, alt, 
