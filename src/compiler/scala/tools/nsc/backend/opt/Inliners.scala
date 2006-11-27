@@ -24,10 +24,8 @@ abstract class Inliners extends SubComponent {
   override def newPhase(p: Phase) = new InliningPhase(p);
 
   /** The Inlining phase.
-   */ 
-  class InliningPhase(prev: Phase) extends GlobalPhase(prev) {
-    def name = phaseName;
-    override def newFlags = phaseNewFlags;
+   */
+  class InliningPhase(prev: Phase) extends StdPhase(prev) {
 
     override def erasedTypes = true;
     val inliner = new Inliner;
