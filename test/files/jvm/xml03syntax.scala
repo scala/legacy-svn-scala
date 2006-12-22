@@ -12,14 +12,19 @@ object Test {
     import scala.xml.NodeSeq
     import NodeSeq.view
     import testing.UnitTest._
+
+    val xNull = <hello>{null}</hello> // these used to be Atom(unit), changed to empty children
+
+    assertSameElements( xNull.child, Nil )
     
-    val x0 = <hello>{}</hello>
-    val x00 = <hello>{ }</hello>
+    val x0 = <hello>{}</hello> // these used to be Atom(unit), changed to empty children
+    val x00 = <hello>{ }</hello> //  dto.
+
     val xa = <hello>{ "world" }</hello>
 
 
-    assertEquals( handle[Unit](x0),  {} )
-    assertEquals( handle[Unit](x00), {} )
+    assertSameElements( x0.child,  Nil )
+    assertSameElements( x00.child, Nil )
     assertEquals( handle[String](xa),"world" )
 
     val xb = <hello>{ 1.5 }</hello>
