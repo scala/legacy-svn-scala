@@ -34,22 +34,17 @@ object TreeSet {
  */
 
 [serializable]
-class TreeSet[A <% Ordered[A]] extends Set[A] {
+class TreeSet[A <% Ordered[A]](val size: int, t: RedBlack[A]#Tree[Unit])
+extends RedBlack[A] with Set[A] {
 
-  def size: int = 0
+  def isSmaller(x: A, y: A) = x < y
 
-  val rb = new RedBlack[A] {
-    def isSmaller(x: A, y: A) = x < y
-  }
-
-  def tree: rb.Tree[Unit] = rb.Empty
-
-  private def newSet[B](s: int, t: rb.Tree[Unit]) = new TreeSet[A] {
-    override val size = s
-    override val rb: TreeSet.this.rb.type = TreeSet.this.rb
-    override val tree = t
-  }
+  def this() = this(0, null)
   
+  protected val tree: RedBlack[A]#Tree[Unit] = if (size == 0) Empty else t
+
+  private def newSet(s: int, t: RedBlack[A]#Tree[Unit]) = new TreeSet[A](s, t)
+
   /** A factory to create empty maps of the same type of keys.
    */
   def empty[B]: Set[B] = ListSet.empty[B]
