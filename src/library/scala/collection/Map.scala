@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -14,20 +14,22 @@ package scala.collection
 import Predef._
 
 
-//import Predef.NoSuchElementException
-
-/** This class defines the interface of collections that unambiguously map
- *  keys to values (i.e. a key is mapped to at least one value).
- *  Class <code>Map</code> may only be used for accessing elements from map
- *  implementations. Two different extensions of class <code>Map</code> in
- *  the package <code><a href="mutable$content.html" target="contentFrame">
- *  scala.collection.mutable</a></code>
- *  and  <code><a href="immutable$content.html" target="contentFrame">
- *  scala.collection.immutable</a></code> provide functionality for
- *  adding new key/value mappings to a map. The class in the first package is
- *  implemented by maps that are modified destructively, whereas the class in
- *  the second package is used by functional map implementations that rely on
- *  immutable data structures.
+/** <p>
+ *    This class defines the interface of collections that unambiguously map
+ *     keys to values (i.e. a key is mapped to at least one value).
+ *  </p>
+ *  <p>
+ *    Class <code>Map</code> may only be used for accessing elements from map
+ *    implementations. Two different extensions of class <code>Map</code> in
+ *    the package <code><a href="mutable$content.html" target="contentFrame">
+ *    scala.collection.mutable</a></code>
+ *    and  <code><a href="immutable$content.html" target="contentFrame">
+ *    scala.collection.immutable</a></code> provide functionality for
+ *    adding new key/value mappings to a map. The class in the first package is
+ *    implemented by maps that are modified destructively, whereas the class in
+ *    the second package is used by functional map implementations that rely on
+ *    immutable data structures.
+ *  </p>
  *
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
@@ -76,14 +78,14 @@ trait Map[A, +B] extends PartialFunction[A, B] with Iterable[Pair[A, B]] {
     case None => false
     case Some(_) => true
   }
-     
+
   /** Does this map contain a mapping from the given key to a value?
    *
    *  @param key the key
    *  @return    <code>true</code> iff there is a mapping for key in this map
    */
   def isDefinedAt(key: A) = contains(key)
-  
+
   /** Creates an iterator for all keys.
    *
    *  @return an iterator over all keys.
@@ -93,13 +95,13 @@ trait Map[A, +B] extends PartialFunction[A, B] with Iterable[Pair[A, B]] {
     def hasNext = iter.hasNext
     def next = iter.next._1
   }
-  
+
   /** @return the keys of this map as a set. 
    */
   def keySet = new Set[A] {
-    def size = Map.this.size;
-    def contains(key : A) = Map.this.contains(key);
-    def elements = Map.this.elements.map(._1);
+    def size = Map.this.size
+    def contains(key : A) = Map.this.contains(key)
+    def elements = Map.this.elements.map(._1)
   }
 
   /** Creates an iterator for a contained values.
@@ -111,7 +113,7 @@ trait Map[A, +B] extends PartialFunction[A, B] with Iterable[Pair[A, B]] {
     def hasNext = iter.hasNext
     def next = iter.next._2
   }
-  
+
   /** Compares two maps structurally; i.e. checks if all mappings
    *  contained in this map are also contained in the other map,
    *  and vice versa.
@@ -135,21 +137,22 @@ trait Map[A, +B] extends PartialFunction[A, B] with Iterable[Pair[A, B]] {
    */
   override def hashCode() =
     (0 /: elements) ((hash, kv) => hash + kv.hashCode)
-  
+
   /** Creates a string representation for this map.
    *
    *  @return    a string showing all mappings
    */
-  override def toString() = 
+  override def toString() =
     elements.toList.map(kv => kv._1 + " -> " + kv._2).mkString("Map(", ", ", ")")
 
   /** The default value for the map, returned when a key is not found
-   *  The method implemented here yields an error, 
+   *  The method implemented here yields an error,
    *  but it might be overridden in subclasses.
    *
    *  @param key the given key value
-   *  @throws Predef.NoSuchElementException 
+   *  @throws Predef.NoSuchElementException
    */
   def default(key: A): B =
     throw new NoSuchElementException("key not found: " + key)
+
 }
