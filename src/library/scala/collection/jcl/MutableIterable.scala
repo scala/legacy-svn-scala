@@ -1,7 +1,17 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.collection.jcl;
 
 /**
- * An iterable collection that supports remove operations.  
+ * An iterable collection that supports remove operations.
  * Useful for representing projections of mutable collections that where only 
  * the remove operation makes sense.
  *
