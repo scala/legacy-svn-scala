@@ -400,6 +400,9 @@ trait TypeKinds requires ICodes {
           else
             REFERENCE(sym)
       }
+      
+    case AttributedType(attribs, tp) =>
+      toTypeKind(tp)
 
     case _ =>
       abort("Unknown type: " + t)

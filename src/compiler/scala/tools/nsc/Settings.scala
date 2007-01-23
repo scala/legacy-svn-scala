@@ -10,7 +10,8 @@ import java.lang.System
 import java.io.File
 
 class Settings(error: String => unit) {
-
+  def this() = this(Console.println)
+  
   private var allsettings: List[Setting] = List()
 
   private def getProperty(name: String): String =
@@ -131,6 +132,7 @@ class Settings(error: String => unit) {
   val Xunapply      = BooleanSetting("-Xunapply", "enable unapply pattern matching")
   Xunapply.value = true
   val Xplugtypes    = BooleanSetting("-Xplugtypes", "parse but ignore annotations in more locations")
+  //Xplugtypes.value = true // just while experimenting
   val Xkilloption   = BooleanSetting("-Xkilloption", "optimizes option types")
   val XprintOuterMatches = BooleanSetting("-XprintOuterMatches", "prints outer-checks caused by pattern matching")
 
