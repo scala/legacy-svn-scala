@@ -376,5 +376,5 @@ trait Iterable[+A] {
       buf.append(sep); buf.append(elems.next)
     }
     buf.append(end)
-  }    
+  }
 }
