@@ -23,7 +23,9 @@ trait ExceptionHandlers requires ICodes {
   class ExceptionHandler(val method: IMethod, val label: String, val cls: Symbol) {
     private var _startBlock: BasicBlock = _;
     var finalizer: Finalizer = _;
-   
+
+    var resultKind: TypeKind = _;
+
     def setStartBlock(b: BasicBlock) = _startBlock = b;
     def startBlock = _startBlock;
 
