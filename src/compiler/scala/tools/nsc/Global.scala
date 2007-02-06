@@ -40,11 +40,11 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   def this(reporter: Reporter) =
     this(new Settings(err => reporter.error(null,err)), 
          reporter)
-         
+
   def this(settings: Settings) =
-    this(settings, new ConsoleReporter)
-         
-  def this() = this(new Settings, new ConsoleReporter)
+    this(settings, new ConsoleReporter(settings))
+
+  //def this() = this(new Settings, new ConsoleReporter)
   
   // sub-components --------------------------------------------------
   object treePrinters extends TreePrinters {
