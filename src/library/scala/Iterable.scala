@@ -185,8 +185,8 @@ trait Iterable[+A] {
    *  @param n the number of elements to drop
    *  @return  the new iterable
    */
-  def drop(n: Int): Iterable[A] = 
-    new ArrayBuffer[A] ++ elements.take(n)
+  def drop(n: Int): Iterable[A] =
+    new ArrayBuffer[A] ++ elements.drop(n)
 
   /** Apply a function <code>f</code> to all elements of this
    *  iterable object.
