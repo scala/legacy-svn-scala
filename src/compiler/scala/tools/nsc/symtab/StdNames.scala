@@ -333,6 +333,12 @@ trait StdNames requires SymbolTable {
     val LSL  = encode("<<")
     val LSR  = encode(">>>")
     val ASR  = encode(">>")
+    
+    // unary operators
+    val UNARY_~ = newTermName("unary_~")
+    val UNARY_+ = newTermName("unary_+")
+    val UNARY_- = newTermName("unary_-")
+    val UNARY_! = newTermName("unary_!")
 
     // value-conversion methods
     val toByte = newTermName("toByte")
