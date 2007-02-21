@@ -96,7 +96,7 @@ trait Contexts requires Analyzer {
     var retyping = false
 
     var savedTypeBounds: List[(Symbol, Type)] = List()
-    
+
     override def equals(that : Any) = that match {
       case that if (super.equals(that)) => true
       case NoContext => false
