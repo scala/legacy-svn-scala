@@ -14,6 +14,7 @@ package scala.runtime
 
 import Predef.{Class, Error}
 import collection.mutable.ArrayBuffer
+import compat.StringBuilder
 
 /**
  *  <p>A class representing <code>Array[T]</code></p>
@@ -21,7 +22,7 @@ import collection.mutable.ArrayBuffer
 abstract class BoxedArray extends Seq[Any] {
   /** The length of the array */
   def length: Int
-  
+
   /** The element at given index */
   def apply(index: Int): Any
 
