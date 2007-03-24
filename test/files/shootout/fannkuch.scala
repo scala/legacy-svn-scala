@@ -10,7 +10,7 @@ object fannkuch
   var permN : int = 0
   var maxFlips : int = 0
 
-  def flips(l: List[int]): int = l match {
+  def flips(l: List[int]): int = (l: @unchecked) match { // bq: suppress warning
     case 1 :: ls => 0
     case n :: ls => flips((l take n reverse) ::: (l drop n)) + 1
   }
