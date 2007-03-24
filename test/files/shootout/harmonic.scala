@@ -4,9 +4,7 @@
 /*                                                                    */
 /* Contributed by Anthony Borla                                       */
 /* ------------------------------------------------------------------ */
-object Test extends Application {
-  for(val n <- List(6000000,8000000,10000000)) harmonic.main(Array(n.toString)) 
-} 
+
 import java.text.DecimalFormat;
 import java.text.FieldPosition;
 

@@ -4,9 +4,7 @@
    contributed by Andrei Formiga 
    modified by Isaac Gouy 
 */
-object Test extends Application {
-  for(val n <- List(25000,250000,2500000)) partialsums.main(Array(n.toString)) 
-}  
+
 object partialsums {
 
    def main(args: Array[String]) = {

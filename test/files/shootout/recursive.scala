@@ -4,9 +4,7 @@
  *
  * contributed by Andrei Formiga
  */
-object Test extends Application {
-  for(val n <- List(3,7,11)) recursive.main(Array(n.toString)) 
-} 
+
 object recursive
 {
   def ack(x:int, y:int): int = if (x == 0) y + 1 

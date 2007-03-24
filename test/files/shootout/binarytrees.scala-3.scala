@@ -4,9 +4,7 @@
    contributed by Kannan Goundan
    modified by Isaac Gouy
 */
-object Test extends Application {
-  for(val n <- List(12,14,16)) binarytrees.main(Array(n.toString)) 
-} 
+
 object binarytrees {
    def main(args: Array[String]) = {
       val n = try { Integer.parseInt(args(0)) } catch { case _ => 1 }

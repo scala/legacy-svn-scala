@@ -2,9 +2,7 @@
    http://shootout.alioth.debian.org/
    contributed by Isaac Gouy (Scala novice)
 */
-object Test extends Application {
-  for(val n <- List(50,100,150,200)) hash2.main(Array(n.toString)) 
-}
+
 import scala.collection.mutable.HashMap;
 
 object hash2 {

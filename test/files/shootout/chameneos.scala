@@ -3,9 +3,7 @@
    contributed by Yura Taras
    modified by Isaac Gouy
 */
-object Test extends Application {
-  for(val n <- List(10000,100000,1000000)) chameneos.main(Array(n.toString)) 
-}  
+
 
 object chameneos {
   abstract class Colour 

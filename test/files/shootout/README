@@ -1,0 +1,14 @@
+The tests in this directory ($SCALA_SRC/test/files/shootout) are based on Debian's programming language shootout
+
+1) get their Scala files:
+
+cvs -d :pserver:anonymous@cvs.alioth.debian.org:/cvsroot/shootout login
+cvs -d :pserver:anonymous@cvs.alioth.debian.org:/cvsroot/shootout checkout shootout
+
+find shootout/bench/ -iname *.scala -exec cp \{} $SCALA_SRC/test/files/shootout \;
+
+2) Derive *.scala.runner files from the Makefiles in the shootout/bench/ subdirectories
+ --> they supply the right arguments / input
+see also howtorun
+
+3) scalatest combines the original *.scala files with the appropriate scala.runner file

@@ -2,9 +2,7 @@
    http://shootout.alioth.debian.org/
    contributed by Isaac Gouy (Scala novice)
 */
-object Test extends Application {
-  for(val n <- List(3000,5000,7000,9000)) ary3.main(Array(n.toString)) 
-} 
+
 object ary3 {
    def main(args: Array[String]) = {
       val n = toPositiveInt(args);

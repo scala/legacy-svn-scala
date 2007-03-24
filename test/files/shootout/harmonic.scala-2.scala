@@ -2,9 +2,7 @@
    http://shootout.alioth.debian.org/
    contributed by Isaac Gouy (Scala novice)
 */
-object Test extends Application {
-  for(val n <- List(6000000,8000000,10000000)) harmonic.main(Array(n.toString)) 
-} 
+
 object harmonic {
    def main(args: Array[String]) = {
       val n = Integer.parseInt(args(0));

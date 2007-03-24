@@ -2,9 +2,7 @@
    http://shootout.alioth.debian.org/
    contributed by Isaac Gouy
 */
-object Test extends Application {
-  for(val n <- List(1000,2000,3000)) message.main(Array(n.toString)) 
-}  
+
 
 import scala.concurrent._ 
 

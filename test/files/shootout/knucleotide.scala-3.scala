@@ -8,13 +8,6 @@ import java.io._
 import scala.collection.mutable.{HashTable, HashEntry}
 import scala.Console
 
-object Test extends Application {
-  for(val n <- List(2500,25000,250000)) {
-    System.setIn(new FileInputStream(System.getProperty("scalatest.cwd")+"/knucleotide-input"+n+".txt"))
-    knucleotide.main(Array(n.toString)) 
-  }
-} 
-
 object knucleotide {
 
    var sequence: String = _

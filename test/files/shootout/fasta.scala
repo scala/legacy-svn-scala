@@ -2,9 +2,7 @@
    http://shootout.alioth.debian.org/
    contributed by Isaac Gouy
 */
-object Test extends Application {
-  for(val n <- List(25000,250000,2500000)) fasta.main(Array(n.toString)) 
-}  
+
 import java.io._
 
 object fasta { 

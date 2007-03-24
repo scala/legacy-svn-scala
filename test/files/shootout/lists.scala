@@ -2,9 +2,7 @@
    http://shootout.alioth.debian.org/
    contributed by Isaac Gouy (Scala novice)
 */
-object Test extends Application {
-  for(val n <- List(4,8,12,16,18)) lists.main(Array(n.toString)) 
-} 
+
 import collection.mutable.ListBuffer;
 
 object lists {

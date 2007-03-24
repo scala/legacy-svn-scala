@@ -2,12 +2,7 @@
    http://shootout.alioth.debian.org/
    contributed by Isaac Gouy
 */
-object Test extends Application {
-  for(val n <- List(100000,300000,500000)) {
-    System.setIn(new java.io.FileInputStream(System.getProperty("scalatest.cwd")+"/regexdna-input"+n+".txt"))
-    regexdna.main(Array(n.toString)) 
-  }
-} 
+
 import java.io.InputStreamReader, java.util.regex._
 
 object regexdna { 

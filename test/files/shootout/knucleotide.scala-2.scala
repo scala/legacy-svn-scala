@@ -2,16 +2,10 @@
    http://shootout.alioth.debian.org/
    contributed by Isaac Gouy
 */
+
 import java.io._
 import scala.collection.mutable.HashMap
 import scala.Console
-
-object Test extends Application {
-  for(val n <- List(2500,25000,250000)) {
-    System.setIn(new FileInputStream(System.getProperty("scalatest.cwd")+"/knucleotide-input"+n+".txt"))
-    knucleotide.main(Array(n.toString)) 
-  }
-} 
 
 object knucleotide { 
 

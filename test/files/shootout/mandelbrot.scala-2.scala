@@ -2,9 +2,7 @@
    http://shootout.alioth.debian.org/
    contributed by Isaac Gouy
 */
-object Test extends Application {
-  for(val n <- List(200,400,600)) mandelbrot.main(Array(n.toString)) 
-} 
+
 import java.io.BufferedOutputStream
 
 object mandelbrot { 

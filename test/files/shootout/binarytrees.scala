@@ -8,9 +8,7 @@
   Contributed by Kannan Goundan
   De-optimized by Isaac Gouy
 */
-object Test extends Application {
-  for(val n <- List(12,14,16)) binarytrees.main(Array(n.toString)) 
-} 
+
 object binarytrees {
 
   abstract class Tree;

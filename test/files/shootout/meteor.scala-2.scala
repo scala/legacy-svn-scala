@@ -2,9 +2,7 @@
    http://shootout.alioth.debian.org/
    contributed by Isaac Gouy
 */
-object Test extends Application {
-  for(val n <- List(0)) meteor.main(Array(n.toString)) 
-} 
+
 // This is an un-optimised example implementation
 // classes BoardCell and PieceCell have Array 
 

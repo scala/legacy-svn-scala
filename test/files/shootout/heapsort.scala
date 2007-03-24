@@ -2,9 +2,7 @@
    http://shootout.alioth.debian.org/
    contributed by Isaac Gouy (Scala novice)
 */
-object Test extends Application {
-  for(val n <- List(20000,40000,60000,80000,100000)) heapsort.main(Array(n.toString)) 
-} 
+
 object heapsort {
    def main(args: Array[String]) = {
       val n = toPositiveInt(args);

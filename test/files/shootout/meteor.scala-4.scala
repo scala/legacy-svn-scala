@@ -2,9 +2,7 @@
    http://shootout.alioth.debian.org/
    contributed by Isaac Gouy
 */
-object Test extends Application {
-  for(val n <- List(0)) meteor.main(Array(n.toString)) 
-} 
+
 // Most for-comprehension replaced by while loops
 // BoardCells occupied by each Piece orientation are cached
 // Piece orientations are cached

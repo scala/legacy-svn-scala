@@ -2,9 +2,7 @@
    http://shootout.alioth.debian.org/
    contributed by Isaac Gouy (Scala novice)
 */
-object Test extends Application {
-  for(val n <- List(9000,300000,600000,900000)) random.main(Array(n.toString)) 
-}  
+
 object random {
    def main(args: Array[String]) = {
       var n = toPositiveInt(args);

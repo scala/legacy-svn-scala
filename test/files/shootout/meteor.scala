@@ -4,9 +4,7 @@
 */
 
 // This is an un-optimised example implementation
-object Test extends Application {
-  for(val n <- List(0)) meteor.main(Array(n.toString)) 
-} 
+
 
 import scala.collection.mutable._
 

@@ -4,9 +4,7 @@
  *
  * contributed by Andrei Formiga
  */
-object Test extends Application {
-  for(val n <- List(25000,250000,2500000)) partialsums.main(Array(n.toString)) 
-}  
+
 object partialsums
 {
   val twodiv3 = 2.0 / 3.0

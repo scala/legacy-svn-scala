@@ -2,9 +2,7 @@
    http://shootout.alioth.debian.org/
    contributed by Isaac Gouy (Scala novice)
 */
-object Test extends Application {
-  for(val n <- List(12,24,32)) fibo.main(Array(n.toString)) 
-}  
+
 object fibo {
    def main(args: Array[String]) = 
       Console.println( fib( toPositiveInt(args) ));

@@ -2,12 +2,7 @@
    http://shootout.alioth.debian.org/
    contributed by Isaac Gouy
 */
-object Test extends Application {
-  for(val n <- List(25000,250000,2500000)) {
-    System.setIn(new java.io.FileInputStream(System.getProperty("scalatest.cwd")+"/revcomp-input"+n+".txt"))
-    revcomp.main(Array(n.toString)) 
-  }
-} 
+
 import java.io._
 import scala.collection.mutable.Stack
 

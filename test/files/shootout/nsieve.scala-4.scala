@@ -2,9 +2,7 @@
    http://shootout.alioth.debian.org/
    contributed by Isaac Gouy
 */
-object Test extends Application {
-  for(val n <- List(7,8,9)) nsieve.main(Array(n.toString)) 
-} 
+
 
 object nsieve { 
 

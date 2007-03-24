@@ -4,9 +4,7 @@
  *
  * contributed by Andrei Formiga
  */
-object Test extends Application {
-  for(val n <- List(8,9,10)) fannkuch.main(Array(n.toString)) 
-}  
+
 object fannkuch
 {
   def main(args: Array[String]) = {

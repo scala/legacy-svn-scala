@@ -4,9 +4,7 @@
 /*                                                                    */
 /* Contributed by Anthony Borla                                       */
 /* ------------------------------------------------------------------ */
-object Test extends Application {
-  for(val n <- List(8,9,10)) takfp.main(Array(n.toString)) 
-} 
+
 object takfp
 {
   def main(args: Array[String]): unit =

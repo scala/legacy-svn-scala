@@ -2,9 +2,7 @@
    http://shootout.alioth.debian.org/
    contributed by Isaac Gouy (Scala novice)
 */
-object Test extends Application {
-  for(val n <- List(400000,700000,1000000,1500000)) objinst.main(Array(n.toString)) 
-} 
+
 object objinst {
    def main(args: Array[String]) = {
       var n = toPositiveInt(args);

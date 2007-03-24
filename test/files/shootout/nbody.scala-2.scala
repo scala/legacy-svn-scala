@@ -2,9 +2,7 @@
    http://shootout.alioth.debian.org/
    contributed by Isaac Gouy
 */
-object Test extends Application {
-  for(val n <- List(200000,2000000,20000000)) nbody.main(Array(n.toString)) 
-} 
+
 object nbody { 
    def main(args: Array[String]) = {
       var n = Integer.parseInt(args(0))

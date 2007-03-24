@@ -4,9 +4,7 @@
 /*                                                                    */
 /* Contributed by Anthony Borla                                       */
 /* ------------------------------------------------------------------ */
-object Test extends Application {
-  for(val n <- List(600,800,1000)) pidigits.main(Array(n.toString)) 
-} 
+
 object pidigits
 {
   def main(args: Array[String]): unit =

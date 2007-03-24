@@ -2,9 +2,7 @@
    http://shootout.alioth.debian.org/
    contributed by Isaac Gouy 
 */
-object Test extends Application {
-  for(val n <- List(500,1500,2500)) spectralnorm.main(Array(n.toString)) 
-}  
+
 object spectralnorm {
 
    def main(args: Array[String]) = {
