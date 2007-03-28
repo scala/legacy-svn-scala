@@ -142,5 +142,6 @@ abstract class BitSet extends Set[Int] {
    *  @return a mask with 1 at the position of the bit.
    */
   protected final def mask(n: Int): Int = 1 << (n & 0x1F)
-
+  
+  override def toArray[B >: Int]: Array[B] = super.toArray
 }
