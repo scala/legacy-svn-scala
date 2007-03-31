@@ -236,9 +236,9 @@ trait Iterator[+A] {
    *
    *  @param n the number of elements to drop
    *  @return  the new iterator
-   */  
+   */
   def drop(n: Int): Iterator[A] =
-    if (n > 0) { next; drop(n - 1) } else this
+    if (n > 0 && hasNext) { next; drop(n - 1) } else this
 
   /** Returns a new iterator that maps all elements of this iterator
    *  to new elements using function <code>f</code>.
