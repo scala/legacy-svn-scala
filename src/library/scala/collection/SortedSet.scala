@@ -39,10 +39,10 @@ trait SortedSet[A] extends Set[A] with Sorted[A, A] {
   override def until(until: A) = rangeImpl(None, Some(until))
 
   override def range(from: A, until: A) = rangeImpl(Some(from),Some(until))
-  
+
   override def subsetOf(that: Set[A]): Boolean = that match {
-    case that: SortedSet[A] => that.hasAll(elements)
+    case that: SortedSet[_] => that.hasAll(elements)
     case that => super.subsetOf(that)
   }
-  
+
 }
