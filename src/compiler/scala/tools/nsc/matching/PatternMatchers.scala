@@ -1168,6 +1168,10 @@ print()
             val ntpe = node.tpe
             var cond: Tree = null
 
+          // new, but doesn't work
+          // cond = if(ignoreSelectorType) Literal(Constant(true))
+          //       else condition(ntpe, selector.duplicate)
+
           // if type 2 test is same as static type, then just null test
           if(isSubType(selector.tpe, ntpe) && isSubType(ntpe, defs.AnyRefClass.tpe)) {
             cond = NotNull(selector.duplicate)
@@ -1177,7 +1181,7 @@ print()
           } else {
             cond = typed { gen.mkIsInstanceOf(selector.duplicate, ntpe) }
           }
-          
+
           // compare outer instance for patterns like foo1.Bar foo2.Bar if not statically known to match
           casted.tpe match {
             case TypeRef(prefix,_,_) if needsOuterTest(casted.tpe, selector.tpe) =>
