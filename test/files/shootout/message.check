@@ -1,0 +1,14 @@
+/home/odersky/scala/test/files/shootout/message-shootout.obj/test.scala:19: warning: class Actor in package concurrent is deprecated
+      class Incrementor(next: Pid) extends Actor {
+                                           ^
+/home/odersky/scala/test/files/shootout/message-shootout.obj/test.scala:19: warning: class Pid in package concurrent is deprecated
+      class Incrementor(next: Pid) extends Actor {
+                              ^
+/home/odersky/scala/test/files/shootout/message-shootout.obj/test.scala:43: warning: class Pid in package concurrent is deprecated
+      def actorChain(i: Int, a: Pid): Pid = 
+                                      ^
+/home/odersky/scala/test/files/shootout/message-shootout.obj/test.scala:43: warning: class Pid in package concurrent is deprecated
+      def actorChain(i: Int, a: Pid): Pid = 
+                                ^
+four warnings found
+500000
