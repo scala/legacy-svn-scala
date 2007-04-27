@@ -268,7 +268,7 @@ package scala.tools.ant {
           }
         </package>
       }
-      
+
       log("Creating package '" + name.get + "'")
       
       // Creates the advert file

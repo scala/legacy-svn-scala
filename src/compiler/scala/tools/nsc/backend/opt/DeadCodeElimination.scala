@@ -106,7 +106,7 @@ abstract class DeadCodeElimination extends SubComponent {
         }
       }
     }
-    
+
     /** Mark useful instructions. Instructions in the worklist are each inspected and their
      *  dependecies are marked useful too, and added to the worklist.
      */
