@@ -12,6 +12,8 @@
 package scala.collection.mutable
 
 
+import compat.Platform.ConcurrentModificationException
+
 /** The canonical factory methods for <a href="Set.html">mutable sets</a>.
    * Currently these return <a href="HashSet.html">HashSet's</a>.
    */
@@ -202,15 +204,15 @@ trait Set[A] extends collection.Set[A] with Scriptable[Message[A]] {
    *  @return  a set with the same elements.
    */
   override def clone(): Set[A] = super.clone().asInstanceOf[Set[A]]
-                                                            
+
   /** Return a read-only projection of this set */
   def readOnly : scala.collection.Set[A] = new scala.collection.Set[A] {
     /** used to trigger version checking in JCL and hopefully the mutable collections */
     override val hashCode = Set.this.hashCode
-    private def check = 
-      if (false && hashCode != Set.this.hashCode) 
-        throw new java.util.ConcurrentModificationException
-      
+    private def check =
+      if (false && hashCode != Set.this.hashCode)
+        throw new ConcurrentModificationException
+
     def contains(item : A) = {
       check
       Set.this.contains(item)
