@@ -6,15 +6,15 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: MatchError.scala 10366 2007-03-16 13:34:42 +0000 (Fri, 16 Mar 2007) michelou $
+// $Id$
 
 
 package scala
 
 import Predef._
 
-/** This class represents uninitialized variable/value errors. 
+/** This class represents uninitialized variable/value errors.
+ *
  *  @author  Martin Odersky
  */
 final class UninitializedError extends RuntimeException("uninitialized value")
-
