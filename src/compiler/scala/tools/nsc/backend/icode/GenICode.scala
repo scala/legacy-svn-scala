@@ -42,7 +42,11 @@ abstract class GenICode extends SubComponent  {
     val SCALA_ALL    = REFERENCE(definitions.AllClass)
     val SCALA_ALLREF = REFERENCE(definitions.AllRefClass)
     val THROWABLE    = REFERENCE(definitions.ThrowableClass)
-    
+
+    val BoxedCharacterClass = definitions.getClass("java.lang.Character")
+    val Comparator_equals = definitions.getMember(definitions.getModule("scala.runtime.Comparator"),
+                                                 nme.equals_)
+
     /** Tree transformer that makes fresh label defs. */
     val duplicator = new DuplicateLabels
 
@@ -1373,36 +1377,36 @@ abstract class GenICode extends SubComponent  {
           local.end   = (r.pos).line.get
           local
       }
-      
-      def mustUseAnyComparator: Boolean = { 
+
+      def mustUseAnyComparator: Boolean = {
         val lsym = l.tpe.symbol
         val rsym = r.tpe.symbol
         (lsym == definitions.ObjectClass) ||
         (rsym == definitions.ObjectClass) ||
         (lsym isNonBottomSubClass definitions.BoxedNumberClass)||
-        (lsym isNonBottomSubClass definitions.BoxedCharacterClass) ||
+        (lsym isNonBottomSubClass BoxedCharacterClass) ||
         (rsym isNonBottomSubClass definitions.BoxedNumberClass) ||
-        (rsym isNonBottomSubClass definitions.BoxedCharacterClass)
+        (rsym isNonBottomSubClass BoxedCharacterClass)
       }
-      
+
       if (mustUseAnyComparator) {
-        
+
         val ctx1 = genLoad(l, ctx, ANY_REF_CLASS)
         val ctx2 = genLoad(r, ctx1, ANY_REF_CLASS)
-        ctx2.bb.emit(CALL_METHOD(definitions.Comparator_equals, Static(false)))
+        ctx2.bb.emit(CALL_METHOD(Comparator_equals, Static(false)))
         ctx2.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL))
         ctx2.bb.close
-        
+
       }
       else {
-        
+
         (l, r) match {
           // null == expr -> expr eq null
           case (Literal(Constant(null)), expr) =>
             val ctx1 = genLoad(expr, ctx, ANY_REF_CLASS)
             ctx1.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ANY_REF_CLASS))
             ctx1.bb.close
-        
+
           // expr == null -> if(expr eq null) true else expr.equals(null)
           case (expr, Literal(Constant(null))) =>
             val eqEqTempLocal = getTempLocal
@@ -1412,13 +1416,13 @@ abstract class GenICode extends SubComponent  {
             val nonNullCtx = ctx1.newBlock
             ctx1.bb.emit(CZJUMP(thenCtx.bb, nonNullCtx.bb, EQ, ANY_REF_CLASS))
             ctx1.bb.close
-        
+
             nonNullCtx.bb.emit(LOAD_LOCAL(eqEqTempLocal), l.pos)
             nonNullCtx.bb.emit(CONSTANT(Constant(null)), r.pos)
             nonNullCtx.bb.emit(CALL_METHOD(definitions.Object_equals, Dynamic))
             nonNullCtx.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL))
             nonNullCtx.bb.close
-        
+
           // l == r -> if (l eq null) r eq null else l.equals(r)
           case _ =>
             val eqEqTempLocal = getTempLocal
@@ -1430,20 +1434,20 @@ abstract class GenICode extends SubComponent  {
             ctx1.bb.emit(DUP(ANY_REF_CLASS))
             ctx1.bb.emit(CZJUMP(nullCtx.bb, nonNullCtx.bb, EQ, ANY_REF_CLASS))
             ctx1.bb.close
-        
+
             nullCtx.bb.emit(DROP(ANY_REF_CLASS), l.pos) // type of AnyRef
             nullCtx.bb.emit(LOAD_LOCAL(eqEqTempLocal))
             nullCtx.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ANY_REF_CLASS))
             nullCtx.bb.close
-        
+
             nonNullCtx.bb.emit(LOAD_LOCAL(eqEqTempLocal), l.pos)
             nonNullCtx.bb.emit(CALL_METHOD(definitions.Object_equals, Dynamic))
             nonNullCtx.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL))
             nonNullCtx.bb.close
         }
-        
+
       }
-      
+
     }
 
     /**
