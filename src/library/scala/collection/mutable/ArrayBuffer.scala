@@ -22,7 +22,6 @@ import Predef._
  */
 @serializable
 class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
-
   /** Appends a single element to this buffer and returns
    *  the identity of the buffer.
    *
@@ -171,7 +170,7 @@ class ArrayBuffer[A] extends Buffer[A] with ResizableArray[A] {
     case _ =>
       false
   }
-  
+
   /** Defines the prefix of the string representation.
    */
   override protected def stringPrefix: String = "ArrayBuffer"
