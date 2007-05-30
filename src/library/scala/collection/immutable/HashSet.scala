@@ -21,9 +21,9 @@ object HashSet {
    */
   def empty[A] = new HashSet[A]
 
-  /** The canonical factory for this type 
+  /** The canonical factory for this type
    */
-  def apply[A, B](elems: A*) = empty[A] ++ elems
+  def apply[A](elems: A*) = empty[A] ++ elems
 }
 
 /** This class implements immutable sets using a hash table.
