@@ -21,7 +21,8 @@ object Test extends TestConsoleMain {
       new TestSimpleIntSwitch,
       new Test717,
       new TestGuards,
-      new TestStream
+      new TestStream,
+      new Test1163_Order
     )
   
 
@@ -83,6 +84,22 @@ object Test extends TestConsoleMain {
     def runTest() = assertEquals(sum(str), 6)
   }
   
+  class Test1163_Order extends TestCase("bug#1163 order of temps must be preserved") {
+    abstract class Function
+    case class Var(n: String) extends Function
+    case class Const(v: double) extends Function
+    
+    def f(): (Function, Function) = {
+      (Var("x"): Function, Var("y"): Function) match {
+        case (Const(v), Const(w)) => throw new Error
+        case (leftOne, Var("z")) => throw new Error
+        case (leftTwo, rightTwo) => (leftTwo, rightTwo) // was giving "y","x"
+      }
+    }
+    
+    def runTest() =  assertEquals("both", (Var("x"),Var("y")), f) 
+  }
+
   class Test806_818 { // #806, #811 compile only -- type of bind
     // bug811
     trait Core {
