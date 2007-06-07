@@ -63,17 +63,29 @@ object MainGenericRunner {
       addClasspathExtras(settings.classpath.value)
     
     settings.defines.applyToCurrentJVM
-    
-    if (settings.help.value || !command.ok) {
-      Console.println(command.usageMessage)
-      return
-    }
 
     if (settings.version.value) {
       Console.println(
         "Scala code runner " +
         Properties.versionString + " -- " +
         Properties.copyrightString)
+      return
+    }
+
+    if (settings.help.value || !command.ok) {
+      println(command.usageMessage)
+      return
+    }
+
+    def sampleCompiler = new Global(settings)
+
+    if (settings.showPhases.value) {
+      println(sampleCompiler.phaseDescriptions)
+      return
+    }
+
+    if (settings.showPlugins.value) {
+      println(sampleCompiler.pluginDescriptions)
       return
     }
 
