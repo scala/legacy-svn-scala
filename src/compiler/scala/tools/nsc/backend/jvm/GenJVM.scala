@@ -403,6 +403,10 @@ abstract class GenJVM extends SubComponent {
       var flags = javaFlags(m.symbol)
       if (jclass.isInterface())
         flags = flags | JAccessFlags.ACC_ABSTRACT;
+      
+      // native methods of objects are generated in mirror classes
+      if (method.native)
+        flags = flags | JAccessFlags.ACC_NATIVE
 
       jmethod = jclass.addNewMethod(flags,
                                     javaName(m.symbol),
@@ -421,7 +425,7 @@ abstract class GenJVM extends SubComponent {
           m.symbol.attributes = ainfo :: m.symbol.attributes;
         }
 
-      if (!jmethod.isAbstract()) {
+      if (!jmethod.isAbstract() && !method.native) {
         jcode = jmethod.getCode().asInstanceOf[JExtendedCode]
 
         // add a fake local for debugging purpuses
@@ -452,7 +456,7 @@ abstract class GenJVM extends SubComponent {
         if (emitVars)
           genLocalVariableTable(m);
       }
-
+      
       addExceptionsAttribute(m.symbol)
       addAnnotations(jmethod, m.symbol.attributes)
       addParamAnnotations(m.params.map(_.sym.attributes))
