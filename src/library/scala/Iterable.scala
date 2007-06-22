@@ -382,7 +382,11 @@ trait Iterable[+A] {
    *  @note Will not terminate for infinite-sized collections.
    */
   def toList: List[A] = elements.toList
-  
+
+  /**
+   *  Create a stream which contains all the elements of this iterable object.
+   */
+  def toStream: Stream[A] = Stream.fromIterator(elements)
 
   /** Returns a string representation of this iterable object. The resulting string
    *  begins with the string <code>start</code> and is finished by the string
