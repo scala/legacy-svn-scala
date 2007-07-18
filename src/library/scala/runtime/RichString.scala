@@ -25,7 +25,12 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
                  else if (until > self.length) self.length else until 
     new RichString(self.substring(from0, until0))
   }
-
+  //override def ++ [B >: A](that: Iterable[B]): Seq[B] = {
+  override def ++[B >: Char](that : Iterable[B]) : RandomAccessSeq[B] = that match {
+  case that : RichString => new RichString(self + that.self) 
+  case that => super.++(that)
+  }
+  
   override def take(until : Int) : RichString = slice(0, until)
   override def drop(from : Int)  : RichString = slice(from, self.length)
   override def startsWith[B](that : Seq[B]) = that match {
