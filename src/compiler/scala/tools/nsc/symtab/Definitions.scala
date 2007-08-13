@@ -136,6 +136,8 @@ trait Definitions {
     //var UnsealedClass: Symbol = _
     lazy val UncheckedClass: Symbol = getClass("scala.unchecked")
 
+    var EqualsPatternClass: Symbol = _
+
     val MaxTupleArity = 22
     val TupleClass: Array[Symbol] = new Array(MaxTupleArity + 1)
       def tupleField(n: Int, j: Int) = getMember(TupleClass(n), "_" + j)
@@ -763,6 +765,15 @@ trait Definitions {
       ByNameParamClass = newCovariantPolyClass(
         ScalaPackageClass, nme.BYNAME_PARAM_CLASS_NAME, tparam => AnyClass.typeConstructor)
 
+      EqualsPatternClass = newClass(ScalaPackageClass, nme.EQUALS_PATTERN_NAME, List());
+      { 
+        val tparam = newTypeParam(EqualsPatternClass, 0);
+        EqualsPatternClass.setInfo(
+          PolyType(
+            List(tparam),
+            ClassInfoType(List(AnyClass.typeConstructor), newScope, EqualsPatternClass)))
+      }
+      
       /* <unapply> */
       //UnsealedClass = getClass("scala.unsealed") //todo: remove once 2.4 is out.
 
