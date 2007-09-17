@@ -70,5 +70,5 @@ class Random(self0: System.Random) {
   def nextLong(): Long = nextInt().toLong // 2x nextInt() ?!
 
   def setSeed(seed: Long) { rnd = new System.Random(seed.toInt) }
- 
+
 }
