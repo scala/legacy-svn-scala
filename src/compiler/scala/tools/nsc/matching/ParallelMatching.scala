@@ -3,7 +3,7 @@
  * @author Burak Emir
  */
 // $Id$
-
+ 
 package scala.tools.nsc.matching
 
 import scala.tools.nsc.util.Position
@@ -899,8 +899,8 @@ trait ParallelMatching  {
       
       //Console.println("case temps"+caseTemps.toString)
       try{
-      var vdefs     = caseTemps map { 
-        case (tmp,accessorMethod) => 
+      var vdefs     = caseTemps map {p => 
+        val tmp = p._1; val accessorMethod = p._2
           //Console.println("tmp: "+tmp+":"+tmp.tpe)
           //Console.println("accessorMethod: "+accessorMethod+":"+accessorMethod.tpe)
           val untypedAccess = Apply(Select(mkIdent(casted), accessorMethod),List()) 

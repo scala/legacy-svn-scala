@@ -386,7 +386,7 @@ trait ModelExtractor {
   // patterns for standard tags with 1 and 2 arguments
   private val pat1 = Pattern.compile(
     "[ \t]*@(author|deprecated|pre|return|see|since|todo|version|ex|note)[ \t]*(.*)")
-  private val pat2 = Pattern.compile(
+  private val pat2 = Pattern.compile(  
     "[ \t]*@(exception|param|throws)[ \t]+(\\p{Graph}*)[ \t]*(.*)")
 
   def sort[E <: Entity](entities : Iterable[E]) : Iterable[E] = {

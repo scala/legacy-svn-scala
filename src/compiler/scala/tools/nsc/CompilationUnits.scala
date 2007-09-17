@@ -16,9 +16,8 @@ trait CompilationUnits { self: Global =>
     * It typically corresponds to a single file of source code.  It includes
     * error-reporting hooks.  */
   class CompilationUnit(val source: SourceFile) extends CompilationUnitTrait {
-
     /** the fresh name creator */
-    var fresh = new FreshNameCreator
+    var fresh : FreshNameCreator = new FreshNameCreator.Default
 
     /** the content of the compilation unit in tree form */
     var body: Tree = EmptyTree
@@ -28,8 +27,11 @@ trait CompilationUnits { self: Global =>
      */
     val depends = new HashSet[Symbol]
 
+    /** used to track changes in a signature */
+    var pickleHash : Long = 0
+
     def position(pos: Int) = source.position(pos)
-    
+
     /** The icode representation of classes in this compilation unit.
      *  It is empty up to phase 'icode'.
      */
@@ -38,14 +40,14 @@ trait CompilationUnits { self: Global =>
     val errorPositions = new HashSet[Position]
 
     def error(pos: Position, msg: String) =
-      if (!(errorPositions contains pos)) {
-        errorPositions += pos
+      if (inIDE || !(errorPositions contains pos)) {
+        if (!inIDE) errorPositions += pos
         reporter.error((pos), msg)
       }
 
     def warning(pos: Position, msg: String) = 
-      if (!(errorPositions contains pos)) {
-        errorPositions += pos
+      if (inIDE || !(errorPositions contains pos)) {
+        if (!inIDE) errorPositions += pos
         reporter.warning((pos), msg)
       }
 
@@ -58,8 +60,8 @@ trait CompilationUnits { self: Global =>
       else currentRun.uncheckedWarnings = true
 
     def incompleteInputError(pos: Position, msg:String) =
-      if (!(errorPositions contains pos)) {
-        errorPositions += pos
+      if (inIDE || !(errorPositions contains pos)) {
+        if (!inIDE) errorPositions += pos
         reporter.incompleteInputError((pos), msg)
       }
     
