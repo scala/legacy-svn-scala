@@ -248,7 +248,7 @@ abstract class SymbolLoaders {
           val a = attrs(0).asInstanceOf[MSILAttribute]
           if (a.getConstructor() == clrTypes.SYMTAB_CONSTR)
             enterClassAndModule(name, new MSILTypeLoader(typ))
-        }
+        } 
         else
           enterClassAndModule(name, new MSILTypeLoader(typ))
       }
@@ -260,7 +260,7 @@ abstract class SymbolLoaders {
       val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global
     }
     protected def doComplete(root: Symbol) {
-      typeParser.parse(typ, root.asInstanceOf)
+      typeParser.parse(typ, root)
     }
     protected def kindString: String = typ.FullName
     protected def sourceString = typ.Assembly.FullName
