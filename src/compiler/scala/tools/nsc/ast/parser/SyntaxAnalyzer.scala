@@ -7,7 +7,7 @@
 package scala.tools.nsc.ast.parser
 
 /** An nsc sub-component.
- */
+ */ 
 abstract class SyntaxAnalyzer extends SubComponent with Parsers with MarkupParsers with NewScanners {
 
   val phaseName = "parser"

@@ -425,7 +425,7 @@ trait Typers { self: Analyzer =>
         // hack, because the skolems are reused.
         if (inIDE) tparam.symbol.setInfo(rawInfo)
         tparam.symbol.deSkolemize 
-      }
+      } 
 
     /** The qualifying class of a this or super with prefix <code>qual</code>.
      *
