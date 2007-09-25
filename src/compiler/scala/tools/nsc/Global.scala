@@ -3,7 +3,7 @@
  * @author  Martin Odersky
  */
 // $Id$
- 
+
 package scala.tools.nsc
 
 import java.io.{File, FileOutputStream, PrintWriter}
