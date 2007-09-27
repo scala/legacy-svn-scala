@@ -37,7 +37,7 @@ class ExtGlobal(settings: Settings, reporter: Reporter) extends Global(settings,
  */
 class WorkerActor(val master: MasterActor, val settings: Settings, var reporter: ExtConsoleReporter) extends Actor {
   import scala.actors.Actor._
-  
+
   def newGlobal: ExtGlobal = new ExtGlobal(settings, reporter)
 
   def newGlobal(log: File): ExtGlobal = {
@@ -45,7 +45,7 @@ class WorkerActor(val master: MasterActor, val settings: Settings, var reporter:
     reporter.shortname = true
     newGlobal
   }
-  
+
   private def dirDelete(dir: File) {
     if (dir.isDirectory) {
       for (file <- dir.list) dirDelete(new File(dir, file))
