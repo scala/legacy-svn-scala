@@ -5,7 +5,7 @@
 // $Id$
 
 package scala.tools.nsc
-
+ 
 import java.io.{File, FileOutputStream, PrintWriter}
 import java.io.{IOException, FileNotFoundException}
 import java.nio.charset._
@@ -705,5 +705,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends Trees
   def unpickleIDEHook : (( => Type) => Type) = unpickleIDEHook0
   def doPickleHash = false
   /* hook for IDE to detect source from class dependencies */
-  def attachSourceToClass(clazz : ClassSymbol, tpe : LazyType, sourceFile : AbstractFile) = clazz.sourceFile = sourceFile
+  def attachSourceToClass(clazz : Symbol, tpe : LazyType, sourceFile : AbstractFile) = clazz match {
+    case clazz : ClassSymbol => clazz.sourceFile = sourceFile
+    case _ => 
+  }
 }
