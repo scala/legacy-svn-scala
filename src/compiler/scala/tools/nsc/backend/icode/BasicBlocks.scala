@@ -318,6 +318,10 @@ trait BasicBlocks {
         _lastInstruction = instr
       }
     }
+    
+    def emit(instrs: Seq[Instruction]) {
+      instrs foreach (i => emit(i, i.pos))
+    }
 
     /** Close the block */
     def close = {
