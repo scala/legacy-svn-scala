@@ -179,23 +179,25 @@ object Array {
    *  @return  array wrapped in an option
    */
    def unapplySeq[A](x: Array[A]): Option[Seq[A]] = Some(x)
-   
+
    trait Projection[A] extends RandomAccessSeq.MutableProjection[A] {
      protected def newArray[B >: A](length : Int, elements : Iterator[A]) : Array[B]
      override def toArray[B >: A] = (newArray(length, elements))//:Any).asInstanceOf[Array[B]]
-     override def force : Array[A] = toArray	
+     override def force : Array[A] = toArray
      override def drop( from: Int) = slice(from, length)
      override def take(until: Int) = slice(0, until)
      override def slice(from0 : Int, until0 : Int) : Projection[A] = new RandomAccessSeq.MutableSlice[A] with Projection[A] {
        override def from = from0
        override def until = until0
        override def underlying = Projection.this
-       override protected def newArray[B >: A](length : Int, elements : Iterator[A]) = underlying.newArray(length, elements)
-       override def slice(from0 : Int, until0 : Int) = 
-         Projection.this.slice(from + from0, from + until0)                       
+       override protected def newArray[B >: A](length : Int, elements : Iterator[A]) =
+         underlying.newArray(length, elements)
+       override def slice(from0 : Int, until0 : Int) =
+         Projection.this.slice(from + from0, from + until0)
      }
      override def reverse : Projection[A] = new Projection[A] {
-       override protected def newArray[B >: A](length : Int, elements : Iterator[A]) = Projection.this.newArray(length, elements)
+       override protected def newArray[B >: A](length : Int, elements : Iterator[A]) =
+         Projection.this.newArray(length, elements)
        def update(idx : Int, what : A) : Unit = Projection.this.update(length - idx - 1, what)
        def length = Projection.this.length
        def apply(idx : Int) = Projection.this.apply(length - idx - 1)
@@ -218,55 +220,55 @@ object Array {
  *  @version 1.0
  */
 final class Array[A](_length: Int) extends Array.Array0[A] {
-   
+
    /** Multidimensional array creation */
    def this(dim1: Int, dim2: Int) = {
-     this(dim1); 
+     this(dim1);
      throw new Error()
    }
 
    /** Multidimensional array creation */
    def this(dim1: Int, dim2: Int, dim3: Int) = {
-     this(dim1); 
+     this(dim1);
      throw new Error()
    }
 
    /** Multidimensional array creation */
    def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int) = {
-     this(dim1); 
+     this(dim1);
      throw new Error()
    }
 
    /** Multidimensional array creation */
    def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int) = {
-     this(dim1); 
+     this(dim1);
      throw new Error()
    }
 
    /** Multidimensional array creation */
    def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int) = {
-     this(dim1); 
+     this(dim1);
      throw new Error()
    }
 
    /** Multidimensional array creation */
    def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int) = {
-     this(dim1); 
+     this(dim1);
      throw new Error()
    }
 
    /** Multidimensional array creation */
    def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int, dim8: Int) = {
-     this(dim1); 
+     this(dim1);
      throw new Error()
    }
 
    /** Multidimensional array creation */
    def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int, dim8: Int, dim9: Int) = {
-     this(dim1); 
+     this(dim1);
      throw new Error()
    }
-   
+
   /** The length of the array */
   def length: Int = throw new Error()
 
@@ -311,8 +313,6 @@ final class Array[A](_length: Int) extends Array.Array0[A] {
 
   /** @deprecated  use <code>slice(from,end).force</code> instead */
   def subArray(from: Int, end: Int): Array[A] = throw new Error()
-
-  
 
   /** Returns an array consisting of all elements of this array that satisfy the
    *  predicate <code>p</code>. The order of the elements is preserved.
@@ -438,5 +438,5 @@ final class Array[A](_length: Int) extends Array.Array0[A] {
    *  @return     <code>true</code> iff both arrays are deeply equal.
    */
   def deepEquals(that: Any): Boolean = throw new Error()
-  
+
 }
