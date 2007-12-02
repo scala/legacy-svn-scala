@@ -6,7 +6,7 @@
 
 package scala.tools.nsc.symtab
 
-import java.io.{File, IOException}
+import java.io.{File, IOException} 
 
 import ch.epfl.lamp.compiler.msil.{Type => MSILType, Attribute => MSILAttribute}
 
@@ -260,7 +260,7 @@ abstract class SymbolLoaders {
       val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global
     }
     protected def doComplete(root: Symbol) {
-      typeParser.parse(typ, root)
+      typeParser.parse(typ, root.asInstanceOf) 
     }
     protected def kindString: String = typ.FullName
     protected def sourceString = typ.Assembly.FullName
@@ -291,8 +291,8 @@ abstract class SymbolLoaders {
         global.attachSourceToClass(module, this, if (sourceFile ne null) sourceFile else clazz.sourceFile)
       case _ => 
       }
-      if (root.sourceFile ne null) {
-        global.generateIdeMaps.sourceFiles(root.sourceFile) = classFile.container
+      if (root.sourceFile ne null) { 
+        //global.generateIdeMaps.sourceFiles(root.sourceFile) = classFile.container
       }
     }
     protected def kindString: String = "class file"
