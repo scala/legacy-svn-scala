@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -254,9 +254,8 @@ abstract class UnPickler {
           val dcls = symScope(clazz)
           new RefinedType(ps, dcls) { override def symbol = clazz }
 */
-         new RefinedType(until(end, readTypeRef), symScope(clazz)(newTempScope)) { 
-           @deprecated override def symbol = clazz 
-           override def typeSymbol = clazz 
+         new RefinedType(until(end, readTypeRef), symScope(clazz)(newTempScope)) {
+           override def typeSymbol = clazz
           }
         case CLASSINFOtpe =>
           val clazz = readSymbolRef()
