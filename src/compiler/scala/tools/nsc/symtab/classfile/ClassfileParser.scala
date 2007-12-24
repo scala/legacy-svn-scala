@@ -339,9 +339,9 @@ abstract class ClassfileParser {
     var ifaces = for (i <- List.range(0, ifaceCount)) yield pool.getSuperClass(in.nextChar).tpe
     if (isAnnotation) ifaces = definitions.ClassfileAnnotationClass.tpe :: ifaces
     val parents = superType :: ifaces
-
-    instanceDefs = newClassScope
-    staticDefs = newClassScope
+    // get the class file parser to reuse scopes. 
+    instanceDefs = newClassScope(clazz)
+    staticDefs = newClassScope(statics)
     val classInfo = ClassInfoType(parents, instanceDefs, clazz)
     val staticInfo = ClassInfoType(List(), staticDefs, statics)
 
@@ -495,7 +495,7 @@ abstract class ClassfileParser {
                 case _ => 
                   xs += sig2type(tparams)
               }
-            }
+            } 
             accept('>')
             assert(xs.length > 0)
             existentialAbstraction(existentials.toList,
