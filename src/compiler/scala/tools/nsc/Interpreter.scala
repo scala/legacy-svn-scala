@@ -698,11 +698,14 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
         code.print(" + \"" + vname + ": " + 
 		   string2code(typeOf(vname)) +
 		   " = \" + " +
-                   " (if(" + 
+                   " (if(" +
+		   fullPath(vname) + 
+                   ".asInstanceOf[AnyRef] != null) " +
+                   " ((if(" + 
 		   fullPath(vname) + 
 		   ".toString.contains('\\n')) " +
                    " \"\\n\" else \"\") + " +
-                   fullPath(vname) + " + \"\\n\"")
+                   fullPath(vname) + " + \"\\n\") else \"null\\n\") ")
       }
     }
 
