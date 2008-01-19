@@ -12,7 +12,7 @@ object hash {
       val table = new HashMap[String,Int]();
 
       for (val i <- Iterator.range(1,n+1)) 
-         table += Integer.toString(i, 16) -> i;
+         table += (Integer.toString(i, 16) -> i)
 
       for (val i <- Iterator.range(1,n+1)) 
          if (table contains Integer.toString(i, 10)) 

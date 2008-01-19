@@ -21,7 +21,7 @@ object hash2 {
       val table2 = new HashMap[String,Cell[Int]]();
 
       for (val i <- Iterator.range(0,nKeys)) 
-         table1 += ("foo_" + i) -> new Cell(i);
+         table1 += (("foo_" + i) -> new Cell(i));
 
 
       while (n>0) {
@@ -33,7 +33,7 @@ object hash2 {
                case Some(c2) => 
                   c2.value = c2.value + c1.value;
                case None => 
-                  table2 += key -> new Cell(c1.value);
+                  table2 += (key -> new Cell(c1.value));
             }
          }
          n = n-1;
