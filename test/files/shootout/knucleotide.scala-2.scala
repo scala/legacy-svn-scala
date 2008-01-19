@@ -71,7 +71,7 @@ object knucleotide {
          while (i < n){
             val k = sequence.substring(i,i+j)
             d.get(k) match {
-               case None => d += k -> new Counter(1)
+               case None => d += (k -> new Counter(1))
                case Some(c) => c++
             }
             i = i + j
