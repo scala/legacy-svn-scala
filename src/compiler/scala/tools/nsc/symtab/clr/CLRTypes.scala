@@ -13,7 +13,7 @@ import ch.epfl.lamp.compiler.msil._
 
 import scala.collection.mutable.{ListBuffer, Map, HashMap, Set, HashSet}
 import scala.tools.nsc.util.{Position, NoPosition}
-
+ 
 /**
  * Collects all types from all reference assemblies.
  */

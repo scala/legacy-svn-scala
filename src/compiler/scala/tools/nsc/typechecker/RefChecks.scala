@@ -92,7 +92,7 @@ abstract class RefChecks extends InfoTransform {
     private def checkAllOverrides(clazz: Symbol) {
 
       val self = clazz.thisType
-
+ 
       def infoString(sym: Symbol) = {
         val sym1 = analyzer.underlying(sym)
         sym1.toString() + 
