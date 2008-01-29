@@ -17,7 +17,7 @@ object Test extends AnyRef with Assert {
     val xNull = <hello>{null}</hello> // these used to be Atom(unit), changed to empty children
 
     assertSameElements(xNull.child, Nil)
-    
+
     val x0 = <hello>{}</hello> // these used to be Atom(unit), changed to empty children
     val x00 = <hello>{ }</hello> //  dto.
 
@@ -31,7 +31,7 @@ object Test extends AnyRef with Assert {
     val xb = <hello>{ 1.5 }</hello>
 
     assertEquals(handle[Double](xb), 1.5)
-    
+
     val xc = <hello>{ 5 }</hello>
 
     assertEquals(handle[Int](xc), 5)
@@ -47,7 +47,7 @@ object Test extends AnyRef with Assert {
     val xf = <hello>{ val x = 27; x }</hello>
 
     assertEquals(handle[Int](xf), 27)
-    
+
     val xg = <hello>{ List(1,2,3,4) }</hello>
 
     println(xg)
@@ -56,13 +56,28 @@ object Test extends AnyRef with Assert {
     }
 
     val xh = <hello>{ for(x <- List(1,2,3,4) if x % 2 == 0) yield x }</hello>
-    
+
     println(xh)
     for (z <- xh.child) {
       println(z.toString() + {if (z.isInstanceOf[Text]) "(is text node ' ')" else ""})
     }
     println
   }
+
+    // this demonstrates how to handle entities
+    val s = io.Source.fromString("<a>&nbsp;</a>")
+    object parser extends xml.parsing.ConstructingParser(s, false /*ignore ws*/) {
+      override def replacementText(entityName: String): io.Source = {
+        entityName match {
+          case "nbsp" => io.Source.fromString("\u0160");
+          case _ => super.replacementText(entityName);
+        }
+      }
+      nextch; // !!important, to initialize the parser
+    }
+    val parsed = parser.element(TopScope) // parse the source as element
+    // alternatively, we could call document()
+    parsed
 
   /** see SVN r13821 (emir): support for <elem key={x:Option[Seq[Node]]} />,
    *  so that Options can be used for optional attributes.
@@ -75,6 +90,7 @@ object Test extends AnyRef with Assert {
     val x2: Option[Seq[Node]] = None
     val n2 = <elem key={x2} />;
     println("node="+n2+", key="+n2.attribute("key"))
+>>>>>>> .r13822
   }
 
 }
