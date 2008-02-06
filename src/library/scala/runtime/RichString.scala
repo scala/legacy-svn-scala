@@ -63,6 +63,16 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
     case that: RichString => self contains that.self
     case that => super.containsSlice(that)
   }
+
+  override def reverse: RichString = {
+    val buf = new StringBuffer
+    var i = self.length - 1
+    while (i >= 0) {
+      buf append (self charAt i)
+      i = i - 1
+    }
+    new RichString(buf.toString)
+  }
   
   override def compare(other: String) = self compareTo other
 
