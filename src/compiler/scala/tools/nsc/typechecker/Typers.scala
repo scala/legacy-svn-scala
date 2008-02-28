@@ -907,9 +907,10 @@ trait Typers { self: Analyzer =>
                 copy.Block(cbody, cstats1, cunit.duplicate)
             }
 
-            val outercontext = context.outer
-            val cbody2 = // called both during completion AND typing.
-              newTyper(outercontext.makeNewScope(constr, outercontext.owner)(ParentTypesScopeKind))
+            val outercontext = context.outer 
+            assert(clazz != NoSymbol)
+            val cscope = outercontext.makeNewScope(constr, outercontext.owner)(ParentTypesScopeKind(clazz))
+            val cbody2 = newTyper(cscope) // called both during completion AND typing.
                 .typePrimaryConstrBody(clazz,  
                   cbody1, supertparams, clazz.unsafeTypeParams, vparamss map (_.map(_.duplicate)))
 
