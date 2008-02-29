@@ -14,11 +14,11 @@ import java.util.StringTokenizer
 import scala.actors.Actor._
 
 trait DirectRunner {
-  
+
   def fileManager: FileManager
-  
-  protected val numActors = Integer.parseInt(System.getProperty("scalatest.actors", "8"))
-  
+
+  private val numActors = Integer.parseInt(System.getProperty("scalatest.actors", "8"))
+
   def runTestsForFiles(kindFiles: List[File], kind: String): (Int, Int) = {
     val len = kindFiles.length
     val (testsEach, lastFrag) = (len/numActors, len%numActors)
@@ -46,11 +46,11 @@ trait DirectRunner {
       }
     }
     logsToDelete.foreach { log =>
-      NestUI.verbose("deleting "+log+"\n")
+      NestUI.verbose("deleting "+log)
       fileManager.deleteRecursive(log)
     }
     outdirsToDelete.foreach { outdir =>
-      NestUI.verbose("deleting "+outdir+"\n")
+      NestUI.verbose("deleting "+outdir)
       fileManager.deleteRecursive(outdir)
     }
     
