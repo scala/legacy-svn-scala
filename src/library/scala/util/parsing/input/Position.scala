@@ -9,7 +9,7 @@
 package scala.util.parsing.input
 
 /** <p>
- *    <code>Position</code> is the base class for objects describing a
+ *    <code>Position</code> is the base trait for objects describing a
  *    position in a ``document''.
  *  </p>
  *  <p>
@@ -53,18 +53,7 @@ trait Position {
    *<pre>    List(this, is, a, line, from, the, document)
    *                  ^</pre>
    */
-  def longString = lineContents(line)+"\n"+List.toString(List.make(column-1, ' '))+"^"
-/*                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  TODO: it would be nicer to be able to write       (' '*column-1)
-    --> add * method to scala.runtime.RichChar?
- class RichChar { ...
-   /** Returns a string that consists of `n' occurrences of this character. */
-   def *(n: int) = {
-     val chars = new StringBuffer
-     for (val i <- 1 until n) chars append this
-     chars.toString
-   }
- }*/
+  def longString = lineContents(line)+"\n"+(" " * (column - 1))+"^"
 
   /** Compare this position to another, by first comparing their line numbers,
    * and then -- if necessary -- using the columns to break a tie.
