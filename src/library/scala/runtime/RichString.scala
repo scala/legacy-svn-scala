@@ -11,8 +11,8 @@
 
 package scala.runtime
 
-
 import Predef._
+import scala.util.matching.Regex
 
 final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char] with Ordered[String] {
   import RichString._  
@@ -200,6 +200,13 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
     self.split(re)
   }
 
+  /** You can follow a string with `.r', turning
+   *  it into a Regex. E.g.
+   *
+   *  """A\w*""".r   is the regular expression for identifiers starting with `A'.
+   */
+  def r: Regex = new Regex(self)
+  
   def toBoolean: Boolean = parseBoolean(self)
   def toByte: Byte       = java.lang.Byte.parseByte(self)
   def toShort: Short     = java.lang.Short.parseShort(self)
