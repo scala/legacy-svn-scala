@@ -28,9 +28,8 @@ class ReflectiveRunner {
                       latestActFile.toURL, latestPartestFile.toURL,
                       latestFjbgFile.toURL)
   val sepLoader = new java.net.URLClassLoader(sepUrls, null)
-  
-  val debug = System.getProperty("partest.debug", "false") equals "true"
-  if (debug) {
+
+  if (fileManager.debug) {
     println("Loading classes from:")
     sepUrls foreach { url => println(url) }
   }
