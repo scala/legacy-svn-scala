@@ -22,8 +22,18 @@ import Predef._
  */
 object Stream {
 
+  def apply[A](xs: A*) = (xs :\ (empty: Stream[A]))(cons(_, _))
+    
+  def unapplySeq[A](xs: Stream[A]): Option[Seq[A]] = Some(xs)
+
+  object lazy_:: {
+    def unapply[A](xs: Stream[A]): Option[(A, Stream[A])] = 
+      if (xs.isEmpty) None
+      else Some(xs.head, xs.tail)
+  }
+
    /** a stream with a definite size */
-   trait Definite[+A] extends Stream[A] with Function0[Stream[A]] {
+  trait Definite[+A] extends Stream[A] with Function0[Stream[A]] {
      override def hasDefiniteSize = true
      override def apply = this
      override def toString = super[Stream].toString
@@ -36,8 +46,9 @@ object Stream {
     def tail: Stream[Nothing] = throw new UnsupportedOperationException("tail of empty stream")
     protected def addDefinedElems(buf: StringBuilder, prefix: String): StringBuilder = buf
   }
-  
+
   object cons {
+
     /** A stream consisting of a given first element and remaining elements 
      *  @param hd   The first element of the result stream
      *  @param tl   The remaining elements of the result stream
