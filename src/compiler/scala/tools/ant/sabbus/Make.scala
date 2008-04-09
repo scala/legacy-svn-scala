@@ -25,6 +25,10 @@ class Make extends Task {
       case Some(ps) => Some(ps + " " + input)
     }
   }
+  
+  def setTarget(input: String): Unit = {
+    compTarget = Some(input)
+  }
 
   def setCompilationPath(input: Path): Unit = {
     if (compilationPath.isEmpty) compilationPath = Some(input)
@@ -74,6 +78,7 @@ class Make extends Task {
   
   private var id: Option[String] = None
   private var params: Option[String] = None
+  private var compTarget: Option[String] = None
   private var compilationPath: Option[Path] = None
   private var sourcePath: Option[Path] = None
   private var compilerPath: Option[Path] = None
@@ -84,6 +89,7 @@ class Make extends Task {
     if (compilerPath.isEmpty) error("Mandatory attribute 'compilerpath' is not set.")
     val settings = new Settings
     if (!destinationDir.isEmpty) settings.d = destinationDir.get
+    if (!compTarget.isEmpty) settings.target = compTarget.get
     if (!compilationPath.isEmpty) settings.classpath = compilationPath.get
     if (!sourcePath.isEmpty) settings.sourcepath = sourcePath.get
     if (!params.isEmpty) settings.more = params.get
