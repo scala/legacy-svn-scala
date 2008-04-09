@@ -3,12 +3,12 @@
    contributed by Isaac Gouy 
 */
 
-object spectralnorm {
+object SpectralNorm {
 
    def main(args: Array[String]) = {
       val n = Integer parseInt(args(0))
 
-      Console.printf("{0,number,0.000000000}\n", 
+      Console.printf("%.9f\n", 
          new SpectralNorm() approximate(n) )
    }
 }

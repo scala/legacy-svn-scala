@@ -7,9 +7,9 @@ object nbody {
    def main(args: Array[String]) = {
       var n = Integer.parseInt(args(0))
 
-      Console.printf("{0,number,0.000000000}\n", JovianSystem.energy )
+      Console.printf("%.9f\n", JovianSystem.energy )
       while (n > 0) { JovianSystem.advance(0.01); n = n-1 }
-      Console.printf("{0,number,0.000000000}\n", JovianSystem.energy )
+      Console.printf("%.9f\n", JovianSystem.energy )
    } 
 }
 

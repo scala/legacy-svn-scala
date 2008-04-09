@@ -14,7 +14,7 @@ object partialsums
 		s7:double, s8:double, s9:double, sign: double, kd: double): unit = {
 
     if (kd > n) {
-      val f = "{0,number,0.000000000}\t"
+      val f = "%.9f\t"
 
       Console.printf( f + "(2/3)^k\n", s1)
       Console.printf( f + "k^-0.5\n", s2)

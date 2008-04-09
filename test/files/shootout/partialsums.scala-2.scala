@@ -41,7 +41,7 @@ object partialsums {
 
       } else {
 
-         val f = "{0,number,0.000000000}\t"
+         val f = "%.9f\t"
          Console.printf( f + "(2/3)^k\n", a1)
          Console.printf( f + "k^-0.5\n", a2)
          Console.printf( f + "1/k(k+1)\n", a3)

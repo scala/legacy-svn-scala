@@ -27,7 +27,7 @@ object recursive
   def main(args: Array[String]) = {
     var n = Integer.parseInt(args(0))
     Console.println("Ack(3," + n + "): " + ack(3, n))
-    Console.printf("Fib({0,number,.#}): {1,number,.#}\n", (27.0+n), fib(27.0+n))
+    Console.printf("Fib(%.1f): %.1f\n", (27.0+n), fib(27.0+n))
     n = n - 1
     Console.println("Tak(" + (3*n) + "," + (2*n) + "," + n + "): " + tak(3*n, 2*n, n))
     Console.println("Fib(3): " + fib(3))
