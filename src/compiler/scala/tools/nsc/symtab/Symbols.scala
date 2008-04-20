@@ -118,7 +118,7 @@ trait Symbols {
     final def newModule(pos: Position, name: Name) = {
       val m = new ModuleSymbol(this, pos, name).setFlag(MODULE | FINAL)
       m.setModuleClass(new ModuleClassSymbol(m))
-    }
+    } 
     final def newPackage(pos: Position, name: Name) = {
       assert(name == nme.ROOT || isPackageClass)
       val m = newModule(pos, name).setFlag(JAVA | PACKAGE)
@@ -1322,8 +1322,13 @@ trait Symbols {
     
     def setLazyAccessor(sym: Symbol): TermSymbol = {
       // @S: in IDE setLazyAccessor can be called multiple times on same sym
-      assert(hasFlag(LAZY) && (referenced == NoSymbol || referenced == sym), this)
-      referenced = sym
+      if (inIDE && referenced != NoSymbol && referenced != sym) {
+        // do nothing
+        recycle(referenced)
+      } else {
+        assert(hasFlag(LAZY) && (referenced == NoSymbol || referenced == sym), this)
+        referenced = sym
+      }
       this
     }
     
