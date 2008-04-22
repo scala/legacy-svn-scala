@@ -324,8 +324,13 @@ trait Namers { self: Analyzer =>
             tree.symbol.moduleClass.setInfo(namerOf(tree.symbol).moduleClassTypeCompleter((tree)))
             finish
             
-          case ValDef(mods, name, tp, rhs) => 
-            if (context.owner.isClass && (mods.flags & (PRIVATE | LOCAL)) != (PRIVATE | LOCAL)
+          case ValDef(mods, name, tp, rhs) =>
+            if (name.endsWith(nme.OUTER, nme.OUTER.length)) { // SM
+              tree.symbol = enterInScope(owner.newValue(tree.pos, name)
+                .setFlag(mods.flags))
+              finish
+            }
+            else if (context.owner.isClass && (mods.flags & (PRIVATE | LOCAL)) != (PRIVATE | LOCAL)
                 || (mods.flags & LAZY) != 0) {
               val accflags: Long = ACCESSOR |
                 (if ((mods.flags & MUTABLE) != 0) mods.flags & ~MUTABLE & ~PRESUPER 
