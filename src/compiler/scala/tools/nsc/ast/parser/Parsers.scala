@@ -2232,10 +2232,11 @@ trait Parsers extends NewScanners with MarkupParsers {
           val vdefs: List[ValDef] = body flatMap { 
             case vdef @ ValDef(mods, name, tpt, rhs) if !(mods hasFlag Flags.DEFERRED) =>
               List(copy.ValDef(vdef, mods | Flags.PRESUPER, name, tpt, rhs))
-            case stat =>
+            case stat if !stat.isEmpty =>
               syntaxError(stat.pos, "only concrete field definitions allowed in early object initialization section", false)
               List()
-          }
+            case _ => List()
+          } 
           inNextToken
           val (parents, argss) = templateParents(isTrait)
           val (self1, body1) = templateBodyOpt(isTrait)
