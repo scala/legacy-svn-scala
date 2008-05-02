@@ -11,12 +11,16 @@ object sumcol
   def main(args: Array[String]) = 
   {
     var sum = 0
-    var line = Console.readLine
-
-    while (line != null)
+    try
     {
-      sum = sum + Integer.parseInt(line)
-      line = Console.readLine
+      while (true)
+      {
+        val line = Console.readLine
+        sum += Integer.parseInt(line)
+      }
+    }
+    catch {
+      case e: java.io.EOFException => //nop
     }
 
     Console.println(sum.toString())
