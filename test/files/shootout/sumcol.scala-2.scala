@@ -10,8 +10,15 @@ object sumcol
 {
   def sumFile(res: int): int = 
   {
-    val line = Console.readLine
-    if (line == null) res else sumFile(res + Integer.parseInt(line))
+    try
+    {
+      val line = Console.readLine
+      sumFile(res + Integer.parseInt(line))
+    }
+    catch
+    {
+      case _: java.io.EOFException => res
+    } 
   }
 
   def main(args: Array[String]) = 
