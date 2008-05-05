@@ -7,7 +7,7 @@
 
 package scala.tools.nsc.io
 
-import java.io.{File, FileInputStream, IOException}
+import java.io.{File, FileInputStream, FileOutputStream, IOException}
 
 object PlainFile {
   /**
@@ -37,7 +37,8 @@ class PlainFile(val file: File) extends AbstractFile {
   override def container : AbstractFile = new PlainFile(file.getParentFile)
 
   override def input = new FileInputStream(file)
-
+  override def output = new FileOutputStream(file)
+  
   override def size = Some(file.length.toInt)
   
   override def hashCode(): Int = fpath.hashCode
