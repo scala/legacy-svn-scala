@@ -7,12 +7,12 @@ import scala.collection.mutable.BitSet
 
 object nsievebits { 
 
-   def nsieve(m: int) = {
+   def nsieve(m: Int) = {
       val isPrime = new BitSet(m+1)
-      isPrime ++= Iterator.range(2,m+1)
+      isPrime ++= Iterator.range(2, m+1)
 
-      for (val i <- Iterator.range(2,m+1)){
-         if (isPrime.contains(i)){
+      for (i <- Iterator.range(2, m+1)) {
+         if (isPrime.contains(i)) {
             var k = i+i
             while (k <= m){ isPrime -= k; k = k+i }
          }
@@ -21,11 +21,11 @@ object nsievebits {
    }
 
 
-   def main(args: Array[String]) = {
+   def main(args: Array[String]) {
 
-      def printPrimes(m: int) = {
+      def printPrimes(m: Int) = {
 
-         def pad(i: int, width: int) = {
+         def pad(i: Int, width: Int) = {
             val s = i.toString
             List.range(0, width - s.length)
                .map((i) => " ") .foldLeft("")((a,b) => a+b) + s  
