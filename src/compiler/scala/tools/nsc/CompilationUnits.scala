@@ -68,6 +68,9 @@ trait CompilationUnits { self: Global =>
         if (!inIDE) errorPositions += pos
         reporter.incompleteInputError((pos), msg) 
       }
+
+    /** Is this about a .java source file? */
+    def isJava = source.file.name.endsWith(".java")
     
     override def toString() = source.toString()
 
