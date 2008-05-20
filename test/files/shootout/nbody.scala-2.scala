@@ -4,11 +4,11 @@
 */
 
 object nbody { 
-   def main(args: Array[String]) = {
+   def main(args: Array[String]) {
       var n = Integer.parseInt(args(0))
 
       Console.printf("%.9f\n", JovianSystem.energy )
-      while (n > 0) { JovianSystem.advance(0.01); n = n-1 }
+      while (n > 0) { JovianSystem.advance(0.01); n -= 1 }
       Console.printf("%.9f\n", JovianSystem.energy )
    } 
 }
@@ -18,13 +18,13 @@ abstract class NBodySystem {
 
    def energy() = {
       var e = 0.0
-      for (val i <- Iterator.range(0,bodies.length)){
+      for (i <- Iterator.range(0,bodies.length)) {
          e = e + 0.5 * bodies(i).mass *
             ( bodies(i).vx * bodies(i).vx
             + bodies(i).vy * bodies(i).vy
             + bodies(i).vz * bodies(i).vz )
 
-         for (val j <- Iterator.range(i+1,bodies.length)){
+         for (val j <- Iterator.range(i+1,bodies.length)) {
             val dx = bodies(i).x - bodies(j).x
             val dy = bodies(i).y - bodies(j).y
             val dz = bodies(i).z - bodies(j).z
@@ -37,12 +37,12 @@ abstract class NBodySystem {
    }
 
 
-   def advance(dt: double) = {
+   def advance(dt: Double) = {
       var i = 0
-      while (i < bodies.length){
+      while (i < bodies.length) {
 
          var j = i+1
-         while (j < bodies.length){
+         while (j < bodies.length) {
             val dx = bodies(i).x - bodies(j).x
             val dy = bodies(i).y - bodies(j).y
             val dz = bodies(i).z - bodies(j).z
@@ -58,26 +58,26 @@ abstract class NBodySystem {
             bodies(j).vy = bodies(j).vy + dy * bodies(i).mass * mag
             bodies(j).vz = bodies(j).vz + dz * bodies(i).mass * mag
 
-            j = j+1
+            j += 1
          }
-         i = i+1
+         i += 1
       }
 
       i = 0
-      while (i < bodies.length){
+      while (i < bodies.length) {
          bodies(i).x = bodies(i).x + dt * bodies(i).vx
          bodies(i).y = bodies(i).y + dt * bodies(i).vy
          bodies(i).z = bodies(i).z + dt * bodies(i).vz
 
-         i = i+1
+         i += 1
       }
    }
 
 
    protected val bodies: Array[Body]
 
-   class Body(){
-      var x = 0.0; var y = 0.0; var z = 0.0;
+   class Body() {
+      var x = 0.0; var y = 0.0; var z = 0.0
       var vx = 0.0; var vy = 0.0; var vz = 0.0
       var mass = 0.0
    }
@@ -137,7 +137,7 @@ object JovianSystem extends NBodySystem {
       val initialValues = Array ( sun, jupiter, saturn, uranus, neptune )
 
       var px = 0.0; var py = 0.0; var pz = 0.0;
-      for (val b <- initialValues){
+      for (b <- initialValues){
          px = px + (b.vx * b.mass)
          py = py + (b.vy * b.mass)
          pz = pz + (b.vz * b.mass)
