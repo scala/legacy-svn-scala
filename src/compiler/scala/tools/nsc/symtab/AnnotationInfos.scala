@@ -66,7 +66,7 @@ trait AnnotationInfos {
 	val symbols: AnnotationInfos.this.type = AnnotationInfos.this
       }
 
-      reifiers.reify(intTree)
+      reifiers.reify(intTree) 
     }
 
     val constant: Option[Constant] = tree2cons(intTree)

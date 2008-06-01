@@ -13,7 +13,7 @@ import scala.collection.immutable.{Map, ListMap}
 import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.{Position, NoPosition}
-
+ 
 
 /** This abstract class implements a class file parser.
  *

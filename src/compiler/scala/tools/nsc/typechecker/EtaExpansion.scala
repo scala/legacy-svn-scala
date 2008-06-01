@@ -109,7 +109,7 @@ trait EtaExpansion { self: Analyzer =>
         def cnt = {
           cnt0 += 1
           cnt0 - 1
-        }
+        } 
         val params = formals map (formal =>
           ValDef(Modifiers(SYNTHETIC | PARAM), freshName(tree.pos, cnt), TypeTree(formal), EmptyTree))
         atPos(tree.pos)(Function(params, expand(Apply(tree, params map gen.paramToArg), restpe)))

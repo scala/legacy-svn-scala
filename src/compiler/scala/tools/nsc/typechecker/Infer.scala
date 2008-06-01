@@ -330,8 +330,9 @@ trait Infer {
                     (if (sym.isClassConstructor) context.enclClass.owner else pre.widen) +
                     explanation)
 
+        val topClass = context.owner.toplevelClass
         if (context.unit != null)
-          context.unit.depends += sym.toplevelClass
+          context.unit.depends += sym.toplevelClass 
 
         val sym1 = sym filter (alt => context.isAccessible(alt, pre, site.isInstanceOf[Super]))
         if (sym1 == NoSymbol) {
