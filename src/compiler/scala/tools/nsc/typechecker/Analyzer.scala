@@ -7,7 +7,7 @@
 package scala.tools.nsc.typechecker
 
 /** The main attribution phase.
- */
+ */ 
 trait Analyzer extends AnyRef
             with Contexts
             with Namers
@@ -35,7 +35,7 @@ trait Analyzer extends AnyRef
     val global: Analyzer.this.global.type = Analyzer.this.global
     val phaseName = "typer"
     def newPhase(_prev: Phase): StdPhase = new StdPhase(_prev) {
-      resetTyper()
+      if (!inIDE) resetTyper()
       def apply(unit: CompilationUnit) {
         unit.body = newTyper(rootContext(unit)).typed(unit.body)
       }
