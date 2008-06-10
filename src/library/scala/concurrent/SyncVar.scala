@@ -27,6 +27,14 @@ class SyncVar[A] {
     if (exception.isEmpty) value
     else throw exception.get
   }
+  
+  def take() = synchronized {
+    try {
+      get
+    } finally {
+      unset()
+    }
+  }
 
   def set(x: A) = synchronized {
     value = x
@@ -41,6 +49,9 @@ class SyncVar[A] {
     notifyAll()
   }
   
+  /**
+   *  @deprecated Will be removed in 2.8. SyncVar should not allow exception by design.
+   */
   def setWithCatch(x: => A) = synchronized {
     try {
       this set x
@@ -50,13 +61,19 @@ class SyncVar[A] {
         throw e
     }
   }
-
+  
+  def put(x: A) = synchronized {
+    while (isDefined) wait()
+    set(x)
+  }
+  
   def isSet: Boolean = synchronized {
     isDefined
   }
 
-  def unset = synchronized {
+  def unset(): Unit = synchronized {
     isDefined = false
+    notifyAll()
   }
 
 }
