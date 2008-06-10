@@ -8,19 +8,15 @@
 /* imperative version */
 object sumcol
 {
-  def main(args: Array[String]) = 
+  def main(args: Array[String])
   {
     var sum = 0
-    try
+    var line = Console.readLine
+
+    while (line != null)
     {
-      while (true)
-      {
-        val line = Console.readLine
-        sum += Integer.parseInt(line)
-      }
-    }
-    catch {
-      case e: java.io.EOFException => //nop
+      sum = sum + Integer.parseInt(line)
+      line = Console.readLine
     }
 
     Console.println(sum.toString())
