@@ -72,7 +72,7 @@ class TabbedPane extends Component with Publisher {
       for(i <- n to length) apply(i)._index -= 1
       t
     }
-    protected def insertAt(n: Int, t: Page) { 
+    protected def insertAt(n: Int, t: Page) {
       for(i <- n to length) apply(i)._index += 1
       t.parent = TabbedPane.this
       peer.insertTab(t.title, null, t.content.peer, t.tip, n) 
