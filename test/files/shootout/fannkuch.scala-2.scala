@@ -7,17 +7,17 @@
 
 object fannkuch
 {
-  def main(args: Array[String]) = {
+  def main(args: Array[String]) {
     val n = Integer.parseInt(args(0))
     var maxFlips = 0
     var permN = 0
-    var k: int = 0
-    var temp: int = 0
-    var first: int = 0
-    var flips: int = 0
-    var perm0: Array[int] = new Array[int](n)
-    var perm: Array[int] = new Array[int](n)
-    var rot: Array[int] = new Array[int](n)
+    var k: Int = 0
+    var temp: Int = 0
+    var first: Int = 0
+    var flips: Int = 0
+    var perm0: Array[Int] = new Array[Int](n)
+    var perm: Array[Int] = new Array[Int](n)
+    var rot: Array[Int] = new Array[Int](n)
 
     while (k < n) { perm(k) = k + 1; rot(k) = 0; k = k + 1; }
     while (rot(n - 1) < n) {

@@ -10,7 +10,7 @@ import java.text.FieldPosition;
 
 object harmonic
 {
-  def main(args: Array[String]): unit =
+  def main(args: Array[String])
   {
     var n = Integer.parseInt(args(0));
 
@@ -22,10 +22,7 @@ object harmonic
     System.out.println(formattedValue);
   }
 
-  final def harmonic(n: int, a: double): double =
-  {
-    if (n == 0) return a;
-    return harmonic(n - 1, a + 1.0 / n);
-  }
+  final def harmonic(n: Int, a: Double): Double =
+    if (n == 0) a else harmonic(n - 1, a + 1.0 / n);
 }
 

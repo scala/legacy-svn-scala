@@ -13,9 +13,9 @@ object partialsums {
 
    val twothirds = 2.0 / 3.0
 
-   def accumulate(a1: double, a2: double, a3: double, a4: double, a5: double, 
-                  a6: double, a7: double, a8: double, a9: double,
-                  n: double, alt: double, k: double) : Unit = {
+   def accumulate(a1: Double, a2: Double, a3: Double, a4: Double, a5: Double, 
+                  a6: Double, a7: Double, a8: Double, a9: Double,
+                  n: Double, alt: Double, k: Double) {
 
       if (k < n) {
 

@@ -5,7 +5,7 @@
 
 object SpectralNorm {
 
-   def main(args: Array[String]) = {
+   def main(args: Array[String]) {
       val n = Integer parseInt(args(0))
 
       Console.printf("%.9f\n", 
@@ -15,9 +15,9 @@ object SpectralNorm {
 
 class SpectralNorm(){
 
-   type Vector = Array[double]
+   type Vector = Array[Double]
 
-   def approximate(n: int)= {
+   def approximate(n: Int)= {
       val u = new Vector(n)
       var i = 0; 
       while (i < n){ u(i) = 1.0; i = i+1 }
@@ -43,9 +43,9 @@ class SpectralNorm(){
    }
 
 
-   def a(i: int, j: int) = 1.0/((i+j)*(i+j+1)/2 +i+1)
+   def a(i: Int, j: Int) = 1.0/((i+j)*(i+j+1)/2 +i+1)
 
-   def multiplyAv(n: int, v: Vector, av: Vector) = {
+   def multiplyAv(n: Int, v: Vector, av: Vector) = {
       var i = 0
       while (i < n){
          av(i) = 0.0
@@ -55,7 +55,7 @@ class SpectralNorm(){
       }
    }
 
-   def multiplyAtv(n: int, v: Vector, atv: Vector) = {
+   def multiplyAtv(n: Int, v: Vector, atv: Vector) = {
       var i = 0
       while (i < n){
          atv(i) = 0.0
@@ -65,7 +65,7 @@ class SpectralNorm(){
       }
    }
 
-   def multiplyAtAv(n: int, v: Vector, atav: Vector) = {
+   def multiplyAtAv(n: Int, v: Vector, atav: Vector) = {
       val u = new Vector(n)
       multiplyAv(n,v,u)
       multiplyAtv(n,u,atav)

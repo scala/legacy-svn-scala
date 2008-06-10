@@ -7,27 +7,27 @@
 
 object fannkuch
 {
-  var permN : int = 0
-  var maxFlips : int = 0
+  var permN: Int = 0
+  var maxFlips: Int = 0
 
-  def flips(l: List[int]): int = (l: @unchecked) match { // bq: suppress warning
+  def flips(l: List[Int]): Int = (l: @unchecked) match { // bq: suppress warning
     case 1 :: ls => 0
     case n :: ls => flips((l take n reverse) ::: (l drop n)) + 1
   }
 
-  def rotateLeft(l: List[int]) = 
+  def rotateLeft(l: List[Int]) = 
     l match { case List() => List() case x :: xs => xs ::: List(x) }
 
-  def printPerm(perm: List[int]) = 
+  def printPerm(perm: List[Int]) = 
     { perm foreach(x => Console.print(x.toString())); Console.println; }
 
-  def processPerm(perm: List[int]) = {
+  def processPerm(perm: List[Int]) = {
     val f = flips(perm)
     if (f > maxFlips) maxFlips = f
     if (permN < 30) { printPerm(perm); permN = permN + 1; }
   }
 
-  def permutations(l: List[int], n: int, i: int): unit = {
+  def permutations(l: List[Int], n: Int, i: Int) {
     if (i < n) {
       if (n == 1)
 	processPerm(l)
@@ -38,7 +38,7 @@ object fannkuch
     }
   }
 
-  def main(args: Array[String]) = 
+  def main(args: Array[String])
   {
     val n = Integer.parseInt(args(0))
 

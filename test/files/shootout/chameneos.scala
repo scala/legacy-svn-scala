@@ -12,7 +12,7 @@ object chameneos {
   case object BLUE extends Colour
   case object FADED extends Colour
   val colours = List(RED, BLUE, YELLOW, FADED)
-  class MeetingPlace(var n: int) {
+  class MeetingPlace(var n: Int) {
     var other: Creature = _
     def meet(c: Creature) = synchronized {
       if(n > 0) {
@@ -54,23 +54,23 @@ object chameneos {
       }
     }
     
-    def complement(other: Colour) = Pair(colour,other) match {
-          case Pair(RED,YELLOW) => BLUE
-          case Pair(RED,BLUE)   => YELLOW
-          case Pair(RED,RED)    => RED
-          case Pair(YELLOW,BLUE)=> RED
-          case Pair(YELLOW,RED)    => BLUE
-          case Pair(YELLOW,YELLOW) => YELLOW
-          case Pair(BLUE,RED)      => YELLOW
-          case Pair(BLUE,YELLOW)   => RED
-          case Pair(BLUE,BLUE)     => BLUE
-          case Pair(FADED, _)      => FADED
+    def complement(other: Colour) = (colour, other) match {
+      case (RED, YELLOW)   => BLUE
+      case (RED, BLUE)     => YELLOW
+      case (RED, RED)      => RED
+      case (YELLOW, BLUE)  => RED
+      case (YELLOW, RED)   => BLUE
+      case (YELLOW,YELLOW) => YELLOW
+      case (BLUE, RED)     => YELLOW
+      case (BLUE, YELLOW)  => RED
+      case (BLUE, BLUE)    => BLUE
+      case (FADED, _)      => FADED
     }
   }
   
-  def apply(n: int) {
+  def apply(n: Int) {
       val mp = new MeetingPlace(n)
-      val creatures = for(val x <- colours) yield {
+      val creatures = for(x <- colours) yield {
         val cr = new Creature(mp, x);
         cr.start();
         cr
