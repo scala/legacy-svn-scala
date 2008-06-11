@@ -29,7 +29,7 @@ object knucleotide {
 
 
 
-   def findSequence(id: String, r: BufferedReader): Unit = {
+   def findSequence(id: String, r: BufferedReader) {
       var line = r.readLine
       while (line != null) {
          val c = line.charAt(0)
@@ -55,49 +55,49 @@ object knucleotide {
       b.toString
    }
 
-   
-   class Counter(_value: int){ 
-      var value = _value 
-      def ++() = { value = value + 1 }
+
+   class Counter(_value: Int) { 
+      var value = _value
+      def ++() = { value += 1 }
    }
 
 
-   def generateFrequencies(length: int) = {
+   def generateFrequencies(length: Int) = {
       val d: HashMap[String,Counter] = new HashMap()
    
-      def kFrequency(offset: int, j: int) = {
+      def kFrequency(offset: Int, j: Int) = {
          val n = sequence.length - j + 1
          var i = offset
          while (i < n){
-            val k = sequence.substring(i,i+j)
+            val k = sequence.substring(i, i+j)
             d.get(k) match {
                case None => d += (k -> new Counter(1))
                case Some(c) => c++
             }
-            i = i + j
+            i += j
          }
       }
 
-      for (val o <- Iterator.range(0,length)) kFrequency(o,length)
+      for (o <- Iterator.range(0,length)) kFrequency(o,length)
       d
    } 
 
 
-   def writeFrequencies(j: int) = {
+   def writeFrequencies(j: Int) {
       val d = generateFrequencies(j)
       val n = sequence.length - j + 1.0
       val sortedValues = d.toList.sort(
          (a,b) => if (a._2.value == b._2.value) a._1 > b._1 
                   else a._2.value > b._2.value )
 
-      for (val a <- sortedValues) 
+      for (a <- sortedValues) 
          Console.printf("%s %.3f\n", a._1, a._2.value / n * 100.0)
 
       Console.println
    }
 
 
-   def writeCount(fragment: String) = {
+   def writeCount(fragment: String) {
       val d = generateFrequencies(fragment.length)
       val count = if (d.contains(fragment)) d(fragment).value else 0
       Console.println(count + "\t" + fragment)
