@@ -8,7 +8,7 @@
 /* functional version */
 object sumcol
 {
-  def sumFile(res: int): int = 
+  def sumFile(res: Int): Int = 
   {
     try
     {
@@ -21,7 +21,7 @@ object sumcol
     } 
   }
 
-  def main(args: Array[String]) = 
+  def main(args: Array[String])
   {
     Console.println(sumFile(0).toString())
   }

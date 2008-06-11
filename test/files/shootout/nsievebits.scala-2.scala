@@ -7,7 +7,7 @@ import scala.collection.mutable.BitSet
 
 object nsievebits { 
 
-   def nsieve(m: int) = {
+   def nsieve(m: Int): Int = {
       val notPrime = new BitSet(m+1)
       notPrime += 1
 
@@ -15,26 +15,26 @@ object nsievebits {
       while (i <= m){
          if (!notPrime.contains(i)){
             var k = i+i
-            while (k <= m){ notPrime += k; k = k+i }
+            while (k <= m) { notPrime += k; k += i }
          }
 
-         i = i+1
+         i += 1
       }
       m - notPrime.size
    }
 
 
-   def main(args: Array[String]) = {
+   def main(args: Array[String]) {
 
-      def printPrimes(m: int) = {
+      def printPrimes(m: Int) {
 
-         def pad(i: int, width: int) = {
+         def pad(i: Int, width: Int) = {
             val s = i.toString
             List.range(0, width - s.length)
-               .map((i) => " ") .foldLeft("")((a,b) => a+b) + s 
+               .map(i => " ") .foldLeft("")((a,b) => a+b) + s 
          }
 
-         Console.println("Primes up to " +  pad(m,8) + pad(nsieve(m),9))
+         Console.println("Primes up to " +  pad(m, 8) + pad(nsieve(m), 9))
       }
 
       val n = Integer.parseInt(args(0))
