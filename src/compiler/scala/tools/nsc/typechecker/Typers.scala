@@ -15,7 +15,7 @@ import scala.compat.Platform.currentTime
 import scala.tools.nsc.util.{HashSet, Position, Set, NoPosition, SourceFile}
 import symtab.Flags._
 import util.HashSet
-
+ 
 // Suggestion check whether we can do without priminng scopes with symbols of outer scopes,
 // like the IDE does. 
 /** This trait provides methods to assign types to trees.
@@ -2942,7 +2942,8 @@ trait Typers { self: Analyzer =>
         if (parents1 exists (_.tpe.isError)) tree setType ErrorType
         else {
           val decls = scopeFor(tree, CompoundTreeScopeKind)
-          val self = refinedType(parents1 map (_.tpe), context.enclClass.owner, decls)
+          //Console.println("Owner: " + context.enclClass.owner + " " + context.enclClass.owner.id)
+          val self = refinedType(parents1 map (_.tpe), context.enclClass.owner, decls, templ.pos)
           newTyper(context.make(templ, self.typeSymbol, decls)).typedRefinement(templ.body)
           tree setType self
         }
