@@ -65,6 +65,8 @@ trait TypeStacks { self: ICodes =>
       types = types.drop(n)
       prefix
     }
+    
+    def apply(n: Int): TypeKind = types(n)
 
     /**
      * A TypeStack aggress with another one if they have the same
