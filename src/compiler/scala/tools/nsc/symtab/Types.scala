@@ -484,14 +484,20 @@ trait Types {
 
     /** Is this type a subtype of that type? */
     def <:<(that: Type): Boolean = {
-      if (util.Statistics.enabled) subtypeCount += 1
+      if (util.Statistics.enabled) subtypeCount += 1 
       val startTime = if (util.Statistics.enabled) currentTime else 0l
       val result =
         ((this eq that) ||
          (if (explainSwitch) explain("<", isSubType, this, that)
-          else isSubType(this, that)));
+          else isSubType(this, that))); 
       if (util.Statistics.enabled)
         subtypeMillis = subtypeMillis + currentTime - startTime
+      if (!result && this.isInstanceOf[ExistentialType]) {
+        Console.println("XXX: " + this + " " + that)
+        assert(true)
+        assert(true)
+      }
+      
       result
     }
 
@@ -3622,7 +3628,7 @@ A type's typeSymbol should never be inspected directly.
         (ref2.toList forall tp1.specializes) &&
         (!parents2.exists(_.typeSymbol.isAbstractType) || tp1.typeSymbol != AllRefClass)
       case (ExistentialType(_, _), _) =>
-        try {
+        try { 
           skolemizationLevel += 1
           tp1.skolemizeExistential(NoSymbol, null) <:< tp2
         } finally {
