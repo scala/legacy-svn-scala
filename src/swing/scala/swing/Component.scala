@@ -11,10 +11,18 @@ object Component {
   private val ClientKey = "scala.swingWrapper"
   
   /**
-   * Returns the wrapper for a given peer.
+   * Returns the wrapper for a given peer. 
+   * Fails if there is no wrapper for the given component.
    */
-  protected[swing] def wrapperFor[C<:Component](c: javax.swing.JComponent): C = 
-    c.getClientProperty(ClientKey).asInstanceOf[C]   
+  protected[swing] def wrapperFor[C<:Component](c: javax.swing.JComponent): C =
+    c.getClientProperty(ClientKey).asInstanceOf[C]
+  
+  /**
+   * Wraps a given Java Swing Component into a new wrapper.
+   */
+  def wrap[A](c: JComponent) = new Component {
+    override lazy val peer = c
+  }
 }
 
 /**
@@ -23,8 +31,19 @@ object Component {
  * @see javax.swing.JComponent
  */
 abstract class Component extends UIElement with Publisher {
-  override lazy val peer: javax.swing.JComponent = new javax.swing.JComponent{}
+  override lazy val peer: javax.swing.JComponent = new javax.swing.JComponent with SuperMixin {}
+  var initP: JComponent = null
   peer.putClientProperty(Component.ClientKey, this)
+  
+  trait SuperMixin extends JComponent {
+    override def paintComponent(g: java.awt.Graphics) {
+      Component.this.paintComponent(g)
+    }
+    def __super__paintComponent(g: java.awt.Graphics) {
+      super.paintComponent(g)
+    }
+  }
+
   
   /**
    * Used by certain layout managers, e.g., BoxLayout or OverlayLayout to 
@@ -34,10 +53,10 @@ abstract class Component extends UIElement with Publisher {
   def xLayoutAlignment_=(x: Double) = peer.setAlignmentX(x.toFloat)
   def yLayoutAlignment: Double = peer.getAlignmentY
   def yLayoutAlignment_=(y: Double) = peer.setAlignmentY(y.toFloat)
-    
+  
   def border: Border = peer.getBorder
   def border_=(b: Border) { peer.setBorder(b) }
-    
+  
   def opaque: Boolean = peer.isOpaque
   def opaque_=(b: Boolean) = peer.setOpaque(b)
   
@@ -181,6 +200,15 @@ abstract class Component extends UIElement with Publisher {
   })
   
   def revalidate() { peer.revalidate() }
+  
+  def requestFocus() { peer.requestFocus() }
+  
+  protected def paintComponent(g: java.awt.Graphics) {
+    peer match {
+      case peer: SuperMixin => peer.__super__paintComponent(g)
+      case _ => // it's a wrapper created on the fly
+    }
+  }
    
   override def toString = "scala.swing wrapper " + peer.toString
 }

@@ -13,8 +13,8 @@ object GridBagDemo extends SimpleGUIApplication {
       c.fill = Fill.Horizontal
     }
 
-    val button1 = new Button("Button 1")
-
+    val button1 = new Button("Button 1") 
+    
     c.weightx = 0.5
 
     c.fill = Fill.Horizontal
