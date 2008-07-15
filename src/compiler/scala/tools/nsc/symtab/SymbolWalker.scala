@@ -1,7 +1,7 @@
 package scala.tools.nsc.symtab
 
 trait SymbolWalker {
-  val global : Global
+  val global : Global 
   import scala.tools.nsc.util._
   import global._
   import scala.collection.jcl._
