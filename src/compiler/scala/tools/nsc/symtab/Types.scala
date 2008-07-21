@@ -121,7 +121,7 @@ trait Types {
   }
 
   /** A proxy for a type (identified by field `underlying') that forwards most 
-   *  operations to it (for exceptions, see WrappingProxy, which forwards even more operations.
+   *  operations to it (for exceptions, see WrappingProxy, which forwards even more operations).
    *  every operation that is overridden for some kind of types should be forwarded.
    */
   trait SimpleTypeProxy extends Type {
@@ -212,7 +212,7 @@ trait Types {
       IsDependentTraverser.traverse(this)
       IsDependentTraverser.result
     }
-
+ 
     /** The term symbol associated with the type
       * Note that the symbol of the normalized type is returned (@see normalize)
       */
@@ -305,7 +305,7 @@ trait Types {
     /** For a (potentially wrapped) poly type, its type parameters,
      *  the empty list for all other types */
     def typeParams: List[Symbol] = List()
-
+  
     /** For a (potentially wrapped) poly or existential type, its bound symbols,
      *  the empty list for all other types */
     def boundSyms: List[Symbol] = List()
@@ -377,7 +377,7 @@ trait Types {
      *  an OverloadedSymbol if several exist, NoSymbol if none exist */
     def nonPrivateMember(name: Name): Symbol =
       findMember(name, PRIVATE | BRIDGE, 0, false)(NoSymbol)
-
+  
     /** The non-local member with given name,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist */
     def nonLocalMember(name: Name)(from : Symbol): Symbol =
@@ -498,7 +498,7 @@ trait Types {
         subtypeMillis = subtypeMillis + currentTime - startTime
       result
     }
-
+  
     /** Is this type equivalent to that type? */
     def =:=(that: Type): Boolean = (
       (this eq that) ||
@@ -639,7 +639,7 @@ trait Types {
       if (alts.isEmpty) sym
       else (baseClasses.head.newOverloaded(this, alts))
     }
-
+    
     /**
      *  Find member(s) in this type. If several members matching criteria are found, they are
      *  returned in an OverloadedSymbol
@@ -1035,7 +1035,10 @@ trait Types {
           if (util.Statistics.enabled)
             compoundBaseTypeSeqCount += 1
           baseTypeSeqCache = undetBaseTypeSeq
-          baseTypeSeqCache = memo(compoundBaseTypeSeq(this))(_.baseTypeSeq updateHead typeSymbol.tpe)
+          baseTypeSeqCache = memo(compoundBaseTypeSeq(typeSymbol, parents))(_.baseTypeSeq updateHead typeSymbol.tpe)
+//          println("normalizing baseTypeSeq of "+typeSymbol+"/"+parents+": "+baseTypeSeqCache)//DEBUG
+          baseTypeSeqCache.normalize(parents)
+//          println("normalized baseTypeSeq of "+typeSymbol+"/"+parents+": "+baseTypeSeqCache)//DEBUG
         }
         //Console.println("baseTypeSeq(" + typeSymbol + ") = " + List.fromArray(baseTypeSeqCache));//DEBUG
       }
@@ -1468,7 +1471,6 @@ A type's typeSymbol should never be inspected directly.
             else sym.info.baseTypeSeq map transform
             
         }
-      }
       }
       if (baseTypeSeqCache == undetBaseTypeSeq)
         throw new TypeError("illegal cyclic inheritance involving " + sym)
