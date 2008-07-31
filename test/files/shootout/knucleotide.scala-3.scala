@@ -53,10 +53,10 @@ object knucleotide {
       b.toString
    }
 
-   def generateFrequencies(length: int) = {
+   def generateFrequencies(length: Int) = {
       val bag: HashBag[String] = new HashBag()
 
-      def kFrequency(offset: int, j: int) = {
+      def kFrequency(offset: Int, j: Int) = {
          val n = sequence.length - j + 1
          var i = offset
          while (i < n){ bag += sequence.substring(i,i+j); i = i+j }
@@ -66,7 +66,7 @@ object knucleotide {
       bag
    }
 
-   def writeFrequencies(j: int) = {
+   def writeFrequencies(j: Int) = {
       val bag = generateFrequencies(j)
       val n = sequence.length - j + 1.0
       val sortedValues = bag.elements.toList.sort(
@@ -92,7 +92,7 @@ class HashBag[A] extends HashTable[A] {
    def elements = entries
 
    def +=(elem: A): Unit = {
-      var bucket = table(index(elemHashCode(elem)))
+      var bucket = table(index(elemHashCode(elem))).asInstanceOf[Entry]
       while (bucket ne null) {
          if (elemEquals(entryKey(bucket), elem)){
             bucket.inc
@@ -103,8 +103,8 @@ class HashBag[A] extends HashTable[A] {
       addEntry(new Entry(elem, 1))
    }
 
-   def findOccurrences(elem: A): int = {
-      var bucket = table(index(elemHashCode(elem)))
+   def findOccurrences(elem: A): Int = {
+      var bucket = table(index(elemHashCode(elem))).asInstanceOf[Entry]
       while (bucket ne null) {
          if (elemEquals(entryKey(bucket), elem)){
             return bucket.value
@@ -129,7 +129,7 @@ class HashBag[A] extends HashTable[A] {
 */
 }
 
-protected class Counter[A](k: A, v: int) extends AnyRef with HashEntry[A, Counter[A]] {
+protected class Counter[A](k: A, v: Int) extends AnyRef with HashEntry[A, Counter[A]] {
    val key = k
    var value = v
    def inc = { value = value + 1 }
