@@ -20,11 +20,11 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
 /**
  * FJTaskScheduler2
  *
- * @version 0.9.12
+ * @version 0.9.18
  * @author Philipp Haller
  */
 class FJTaskScheduler2 extends Thread with IScheduler {
-  // as long as this thread runs, JVM should not exit 
+  // as long as this thread runs, JVM should not exit
   setDaemon(false)
 
   var printStats = false
@@ -139,28 +139,18 @@ class FJTaskScheduler2 extends Thread with IScheduler {
   }
 
   /**
-   *  @param item the task to be executed.
+   *  @param  task the task to be executed
    */
-  def execute(task: Runnable) {
-    executor.execute(task)
-  }
+  def execute(task: Runnable): Unit =
+    executor execute task
 
-  def start(task: Runnable) {
-    if (task.isInstanceOf[Reaction]) {
-      val reaction = task.asInstanceOf[Reaction]
-      ActorGC.newActor(reaction.a)
-    }
-    executor.execute(task)
-  }
+  def execute(fun: => Unit): Unit =
+    executor.execute(new Runnable {
+      def run() { fun }
+    })
 
   /**
-   *  @param worker the worker thread executing tasks
-   *  @return       the executed task
-   */
-  def getTask(worker: WorkerThread) = null
-
-  /**
-   *  @param a the actor
+   *  @param  a the actor
    */
   def tick(a: Actor) {
     lastActivity = Platform.currentTime
