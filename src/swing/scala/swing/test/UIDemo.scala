@@ -9,8 +9,7 @@ object UIDemo extends SimpleGUIApplication {
     title = "UIElement Test"
     
     menuBar = new MenuBar
-    
-    import Views._
+
     import Border._
     
     val menu = new Menu("A Menu")
