@@ -1992,7 +1992,6 @@ trait Parsers extends NewScanners with MarkupParsers {
     /** VarDef ::= PatDef
      *           | Id {`,' Id} `:' Type `=' `_'
      *  VarDcl ::= Id {`,' Id} `:' Type
-     */
     def varDefOrDcl(mods: Modifiers): List[Tree] = {
       var newmods = mods | Flags.MUTABLE
       val lhs = new ListBuffer[(Int, Name)]
@@ -2021,6 +2020,7 @@ trait Parsers extends NewScanners with MarkupParsers {
         } else ValDef(newmods, name, tp.duplicate, rhs.duplicate)
       }
     }
+     */
 
     /** FunDef ::= FunSig `:' Type `=' Expr
      *           | FunSig [nl] `{' Block `}'
@@ -2029,8 +2029,8 @@ trait Parsers extends NewScanners with MarkupParsers {
      *  FunSig ::= id [FunTypeParamClause] ParamClauses
      */
     def funDefOrDcl(mods: Modifiers): Tree = {
-      var pos = inSkipToken
-      if (inToken == THIS) {
+      var pos = inSkipToken // position of `def' 
+      if (inToken == THIS) {  
         atPos(inCurrentPos) {
           inNextToken
           val vparamss = paramClauses(nme.CONSTRUCTOR, implicitClassViews map (_.duplicate), false)
@@ -2045,7 +2045,9 @@ trait Parsers extends NewScanners with MarkupParsers {
         val name = ident()
         if (name != nme.ERROR) pos = namePos
         atPos(pos) {
-          val implicitViewBuf = new ListBuffer[Tree]
+          // implicitViewBuf is for view bounded type parameters of the form
+          // [T <% B]; it contains the equivalent implicit parameter, i.e. (implicit p: T => B)
+          val implicitViewBuf = new ListBuffer[Tree]  
           val tparams = typeParamClauseOpt(name, implicitViewBuf)
           val vparamss = paramClauses(name, implicitViewBuf.toList, false)
           newLineOptWhenFollowedBy(LBRACE)
@@ -2325,6 +2327,7 @@ trait Parsers extends NewScanners with MarkupParsers {
     /** Packaging ::= package QualId [nl] `{' TopStatSeq `}'
      */
     def packaging(): Tree = {
+      
       val pkgPos = accept(PACKAGE)
       val pkg = qualId()
       val pos = if (pkg.pos != NoPosition) pkg.pos else i2p(pkgPos)
@@ -2436,7 +2439,20 @@ trait Parsers extends NewScanners with MarkupParsers {
       stats.toList
     }
 
-    /** overridable IDE hook for local definitions of blockStatSeq */
+    /** overridable IDE hook for local definitions of blockStatSeq 
+     *  Here's an idea how to fill in start and end positions.
+    def localDef : List[Tree] = {
+      atEndPos {
+        atStartPos(inCurrentPos) {
+          val annots = annotations(true)
+          val mods = localModifiers() withAnnotations annots
+          if (!(mods hasFlag ~(Flags.IMPLICIT | Flags.LAZY))) defOrDcl(mods)
+          else List(tmplDef(mods))
+        }
+      } (inCurrentPos)
+    }
+    */
+
     def localDef : List[Tree] = {
       val annots = annotations(true)
       val mods = localModifiers() withAnnotations annots
