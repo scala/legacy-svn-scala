@@ -67,6 +67,9 @@ trait RegexParsers extends Parsers {
     }
   }
 
+  override def phrase[T](p: Parser[T]): Parser[T] =
+    super.phrase(p <~ opt("""\z""".r))
+
   /** Parse some prefix of reader `in' with parser `p' */
   def parse[T](p: Parser[T], in: Reader[Char]): ParseResult[T] = 
     p(in)
@@ -76,15 +79,15 @@ trait RegexParsers extends Parsers {
     p(new CharSequenceReader(in))
   
   /** Parse some prefix of reader `in' with parser `p' */
-  def parse[T](p: Parser[T], in: java.io.Reader): ParseResult[T] = 
+  def parse[T](p: Parser[T], in: java.io.Reader): ParseResult[T] =
     p(new PagedSeqReader(PagedSeq.fromReader(in)))
 
   /** Parse all of reader `in' with parser `p' */
-  def parseAll[T](p: Parser[T], in: Reader[Char]): ParseResult[T] = 
+  def parseAll[T](p: Parser[T], in: Reader[Char]): ParseResult[T] =
     parse(phrase(p), in)
 
   /** Parse all of reader `in' with parser `p' */
-  def parseAll[T](p: Parser[T], in: java.io.Reader): ParseResult[T] = 
+  def parseAll[T](p: Parser[T], in: java.io.Reader): ParseResult[T] =
     parse(phrase(p), in)
 
   /** Parse all of character sequence `in' with parser `p' */
