@@ -1,6 +1,6 @@
 package scala.swing
 
-import java.awt.Dimension
+import java.awt.{Dimension, Insets}
 import javax.swing.{AbstractButton => JAbstractButton, Icon}
 import event._
 
@@ -12,7 +12,7 @@ import event._
  */
 abstract class AbstractButton extends Component with Action.Trigger with Publisher {
   override lazy val peer: JAbstractButton = new JAbstractButton with SuperMixin {}
-  
+
   def text: String = peer.getText
   def text_=(s: String) = peer.setText(s)
   
@@ -76,4 +76,10 @@ abstract class AbstractButton extends Component with Action.Trigger with Publish
   
   def multiClickThreshold: Long = peer.getMultiClickThreshhold
   def multiClickThreshold_=(n: Long) { peer.setMultiClickThreshhold(n) }
+
+  def doClick() { peer.doClick() }  
+  def doClick(times: Int) { peer.doClick(times) }
+	
+  def margin: Insets = peer.getMargin
+  def margin_=(i: Insets) { peer.setMargin(i) }
 }
