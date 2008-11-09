@@ -148,6 +148,9 @@ abstract class Inliners extends SubComponent {
          val newInstr = i match {
            case THIS(clasz) =>
              LOAD_LOCAL(inlinedThis);
+             
+           case STORE_THIS(_) =>
+             STORE_LOCAL(inlinedThis)
 
            case JUMP(whereto) =>
              JUMP(inlinedBlock(whereto));
