@@ -1,7 +1,8 @@
-/* The Computer Language Shootout
+/* The Computer Language Benchmarks Game
    http://shootout.alioth.debian.org/
    contributed by Isaac Gouy
    fixed by Iulian Dragos
+   fixed by Meiko Rachimow
 */
 
 import java.io._ 
