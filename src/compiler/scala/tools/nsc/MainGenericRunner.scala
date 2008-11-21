@@ -7,7 +7,7 @@
 
 package scala.tools.nsc
 
-import java.io.File
+import java.io.{File, IOException}
 import java.lang.{ClassNotFoundException, NoSuchMethodException}
 import java.lang.reflect.InvocationTargetException
 import java.net.URL
@@ -90,6 +90,10 @@ object MainGenericRunner {
       Console.println(command.getInfoMessage(sampleCompiler))
       return
     }
+  
+    def exitSuccess : Nothing = exit(0)
+    def exitFailure : Nothing = exit(1)
+    def exitCond(b: Boolean) : Nothing = if(b) exitSuccess else exitFailure
 
     def fileToURL(f: File): Option[URL] =
       try { Some(f.toURL) }
@@ -129,9 +133,9 @@ object MainGenericRunner {
       case _ if settings.execute.value != "" =>
         val fullArgs =
 	  command.thingToRun.toList ::: command.arguments
-        ScriptRunner.runCommand(settings, 
-				settings.execute.value,
-				fullArgs)
+        exitCond(ScriptRunner.runCommand(settings, 
+		  			 settings.execute.value,
+					 fullArgs))
 
       case None =>
         (new InterpreterLoop).main(settings)
@@ -146,28 +150,31 @@ object MainGenericRunner {
           }
 
         if (isObjectName) {
-
           try {
             ObjectRunner.run(classpath, thingToRun, command.arguments)
           } catch {
             case e: ClassNotFoundException =>
               Console.println(e)
-              exit(1)
+              exitFailure
             case e: NoSuchMethodException =>
               Console.println(e)
-              exit(1)
+              exitFailure
             case e: InvocationTargetException =>
               e.getCause.printStackTrace
-              exit(1)
+              exitFailure
           }
-
         } else {
           try {
-            ScriptRunner.runScript(settings, thingToRun, command.arguments)
+            exitCond(ScriptRunner.runScript(settings, 
+					    thingToRun, 
+					    command.arguments))
           } catch {
+	    case e: IOException =>
+              Console.println(e.getMessage())
+              exitFailure
             case e: SecurityException =>
               Console.println(e)
-              exit(1)
+              exitFailure
           }
         }
     }
