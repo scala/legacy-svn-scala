@@ -252,9 +252,13 @@ abstract class TailCalls extends Transform
                isSameTypes(ctx.tparams, targs map (_.tpe.typeSymbol)) &&
                isRecursiveCall(fun)) {
             fun match {
-              case Select(receiver, _) => 
-                // make sure the type of 'this' doesn't change through this recursive call
-                if (!forMSIL && (receiver.tpe.widen == ctx.currentMethod.enclClass.typeOfThis)) 
+              case Select(receiver, _) =>
+                val recTpe = receiver.tpe.widen
+                val enclTpe = ctx.currentMethod.enclClass.typeOfThis
+                // make sure the type of 'this' doesn't change through this polymorphic recursive call
+                if (!forMSIL && 
+                    (receiver.tpe.typeParams.isEmpty || 
+                      (receiver.tpe.widen == ctx.currentMethod.enclClass.typeOfThis))) 
                   rewriteTailCall(fun, receiver :: transformTrees(vargs, mkContext(ctx, false))) 
                 else 
                   defaultTree
