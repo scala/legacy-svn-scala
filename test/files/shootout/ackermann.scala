@@ -5,8 +5,17 @@
 
 object ackermann {
    def main(args: Array[String]) = {
-      val n = toPositiveInt(args);
-      Console println("Ack(3," + n + "): " + ack(3,n));
+     val n = toPositiveInt(args);
+
+     // spawn a new thread fixes stack overflows on Windows 1.5 JDK
+     // see more on ticket #1508
+     val t = new Thread {
+       override def run {
+	 Console println("Ack(3," + n + "): " + ack(3,n));
+       }
+     }
+     t.start()
+     t.join()
    }
 
    def ack(m: Int, n: Int): Int = 
