@@ -1,12 +1,15 @@
 package scalax.collection.generic
 
 trait IterableFactory[CC[A] <: Iterable[A]] {
-  
+
   /** Create CC collection of specified elements */
   def apply[A](args: A*): CC[A]
 
   protected def newBuilder[A]: Builder[CC, A] = 
     apply().newBuilder[A].asInstanceOf[Builder[CC, A]]
+
+  // can't have an empty here because it is defined in subclass covariant.IterableFactory with type
+  // CC[Nothing]. This type does not make sense for immutable iterables.
 
   /** Concatenate all the argument lists into a single list.
    *
