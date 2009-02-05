@@ -14,4 +14,4 @@ package scalax.collection.generic.covariant
 import annotation.unchecked.uncheckedVariance
 
 trait SequenceTemplate[+CC[+B] <: SequenceTemplate[CC, B] with Sequence[B], +A] 
-    extends generic.SequenceTemplate[CC, A @uncheckedVariance] {self /*: CC[A]*/ => }
+    extends generic.SequenceTemplate[CC, A @uncheckedVariance] 
