@@ -3,6 +3,22 @@
    contributed by Isaac Gouy
 */
 
+// This test is in pending because it fails on windows only,
+// but partest's output and the fact that this test outputs in
+// binary makes it a challenge to debug remotely.  However,
+// it's easy to guess that it has to do with the BufferedOutputStream
+// and some kind of windows-specific damage that requires an extra
+// flush, or different line-ending characters, or any of the various
+// write-once-know-quirks-everywhere aspects of java i/o.
+//
+//   [partest] testing: [...]\files\shootout\mandelbrot.scala-2.scala                [FAILED]
+//   [partest] P4
+//   [partest] 200 200
+//   [partest] 
+// ^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^B^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@
+// ^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@
+// [etc]
+
 import java.io.BufferedOutputStream
 
 object mandelbrot { 
