@@ -6,14 +6,16 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: CloneableCollection.scala 12003 2007-06-13 12:14:15Z mihaylov $
+// $Id: Map.scala 16884 2009-01-09 16:52:09Z cunei $
 
 
-package scalax.collection.mutable
+package scalax.collection
 
-/** The J2ME version of the library defined this trait with a clone method
- * to substitute for the lack of Object.clone there
- */
-trait CloneableCollection {
-  override def clone(): AnyRef = super.clone()
+import generic._
+
+trait Map[A, B] extends MapTemplate[A, B, Map]
+
+/* Factory object for `Map` class */
+object Map extends MapFactory[Map] {
+  def empty[A, B]: Map[A, B] = new immutable.EmptyMap[A, B]
 }
