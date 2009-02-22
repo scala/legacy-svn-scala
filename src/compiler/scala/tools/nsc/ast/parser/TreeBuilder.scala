@@ -18,7 +18,10 @@ abstract class TreeBuilder {
   def freshName(pos : Position, prefix: String): Name
   def freshName(pos : Position): Name = freshName(pos, "x$")
 
-  def scalaDot(name: Name): Tree =
+  def rootId(name: Name) = Select(Ident(nme.ROOTPKG), name)
+  def rootScalaDot(name: Name): Tree = Select(rootId(nme.scala_) setSymbol definitions.ScalaPackage, name)
+
+  def scalaDot(name: Name): Tree = 
     Select(Ident(nme.scala_) setSymbol definitions.ScalaPackage, name)
   def scalaAnyRefConstr: Tree =
     scalaDot(nme.AnyRef.toTypeName)
