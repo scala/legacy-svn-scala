@@ -190,7 +190,7 @@ abstract class GenJVM extends SubComponent {
                                   c.cunit.source.toString)
       if (jclass.getName.endsWith("$"))
         jclass.addAttribute(getMarkerAttr(jclass))
-
+      
       if (isStaticModule(c.symbol) || serialVUID != None) {
         if (isStaticModule(c.symbol))
             addModuleInstanceField;
@@ -736,6 +736,7 @@ abstract class GenJVM extends SubComponent {
           && !m.isConstructor
           && !m.isStaticMember
           && !(m.owner == definitions.AnyClass) 
+          && !module.isSubClass(module.linkedClassOfModule)
           && !conflictsIn(definitions.ObjectClass, m.name)
           && !conflictsIn(module.linkedClassOfModule, m.name))
       
