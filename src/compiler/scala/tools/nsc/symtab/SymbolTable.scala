@@ -109,6 +109,11 @@ abstract class SymbolTable extends Names
       phase = current
     }
   }
+  
+  /** Break into repl debugger if assertion is true and debugging enabled */
+  def breakIf(assertion: => Boolean, args: Any*): Unit =
+    if (settings.debugger.value && assertion)
+      Interpreter.break(args.toList)
 
   /** The set of all installed infotransformers */
   var infoTransformers = new InfoTransformer {
