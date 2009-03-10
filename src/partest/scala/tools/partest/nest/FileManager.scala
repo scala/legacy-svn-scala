@@ -39,7 +39,7 @@ trait FileManager {
       val args = Array(f1.getCanonicalPath(), f2.getCanonicalPath())
       DiffPrint.doDiff(args, diffWriter)
       res = diffWriter.toString
-      if (res.startsWith("No"))
+      if (res startsWith "No")
         res = ""
     } catch {
       case e: IOException =>
@@ -47,14 +47,15 @@ trait FileManager {
     }
     res
   }
-  
-  
+
   var JAVACMD: String
   var JAVAC_CMD: String
 
   var CLASSPATH: String
   var LATEST_LIB: String
   var LIB_DIR: String = ""
+
+  val TESTROOT: String
 
   var showDiff = false
   var showLog = false
