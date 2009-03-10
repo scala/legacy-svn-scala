@@ -9,6 +9,7 @@
 // $Id$
 
 package scala.tools.partest.utils
+
 import scala.util.PropertiesTrait
 
 /** A utility to load the library properties from a Java properties file
@@ -19,7 +20,7 @@ import scala.util.PropertiesTrait
 object Properties extends PropertiesTrait {
   protected def propCategory    = "partest"
   protected def pickJarBasedOn  = classOf[Application]
-  
+
   // XXX unlikely it's intentional that only partest uses ISO-8859-1
   override val encodingString = prop("file.encoding", "ISO-8859-1")
 }
