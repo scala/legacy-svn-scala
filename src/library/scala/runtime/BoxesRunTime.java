@@ -41,6 +41,8 @@ public class BoxesRunTime {
     }
         
 /* BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING */
+
+    // for 2.8: change to valueOf methods.
     
     private static int charLowBound = 0;
     private static int charUpBound = 255;
