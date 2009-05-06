@@ -7,17 +7,15 @@
 
 package scala.tools.partest.nest
 
-import java.io.{File, FileInputStream, FileOutputStream, PrintStream,
-                PrintWriter, StringWriter, FileWriter, InputStreamReader,
-                FileReader, OutputStreamWriter, BufferedReader}
-
-import java.net.URL
+import java.io._
+import java.net.{URLClassLoader, URL}
 import java.util.{Timer, TimerTask}
 
 import scala.tools.nsc.{ObjectRunner, GenericRunnerCommand}
 
 import scala.actors.{Actor, Exit, TIMEOUT}
 import scala.actors.Actor._
+import scalap.scalax.rules.scalasig.{ByteCode, ClassFileParser, ScalaSigAttributeParsers}
 
 case class RunTests(kind: String, files: List[File])
 case class Results(succ: Int, fail: Int, logs: List[LogFile], outdirs: List[File])
@@ -457,7 +455,7 @@ class Worker(val fileManager: FileManager) extends Actor {
             NestUI.verbose("loading classes from:")
             urlArr foreach {url => NestUI.verbose(url.toString)}
             val loader = new java.net.URLClassLoader(urlArr, fileManager.getClass.getClassLoader)
-            
+
             (try {
               Some(Class.forName("ScalaCheckHelper", true, loader))
             } catch {
@@ -501,7 +499,7 @@ class Worker(val fileManager: FileManager) extends Actor {
               diff = file2String(logFile)
             } else
               diff = compareOutput(dir, fileBase, kind, logFile)
-            
+
             if (!diff.equals("")) {
               NestUI.verbose("output differs from log file\n")
               succeeded = false
@@ -649,15 +647,15 @@ class Worker(val fileManager: FileManager) extends Actor {
             })
             logFileReader.close()
             tempLogFilePrinter.close()
-            
+
             val tempLogFileReader = new BufferedReader(new FileReader(tempLogFile))
             val logFilePrinter= new PrintWriter(new FileWriter(logFile), true)
             (new StreamAppender(tempLogFileReader, logFilePrinter)).run
             tempLogFileReader.close()
             logFilePrinter.close()
-            
+
             tempLogFile.delete()
-            
+
             diff = compareOutput(dir, fileBase, kind, logFile)
             if (!diff.equals("")) {
               NestUI.verbose("output differs from log file\n")
@@ -714,7 +712,7 @@ class Worker(val fileManager: FileManager) extends Actor {
               } else {
                 NestUI.verbose("compilation of "+testFile+"succeeded")
                 // -------- run test --------
-                
+
                 //TODO: detect whether we have to use Runtime.exec
                 val useRuntime = true
 
@@ -740,6 +738,61 @@ class Worker(val fileManager: FileManager) extends Actor {
           } else
             LogContext(logFile, None)
         }
+
+      case "scalap" => {
+
+        def decompileFile(clazz: Class[_]) = {
+          val byteCode = ByteCode.forClass(clazz)
+          val classFile = ClassFileParser.parse(byteCode)
+          val Some(sig) = classFile.attribute("ScalaSig").map(_.byteCode).map(ScalaSigAttributeParsers.parse)
+          import scala.tools.scalap.Main._
+          parseScalaSignature(sig)
+        }
+
+        runInContext(file, kind, (logFile: File, outDir: File) => {
+          val sourceDir = file.getParentFile
+          val sourceDirName = sourceDir.getName
+
+          // 1. Find file with result text
+          val results = sourceDir.listFiles(new FilenameFilter {
+            def accept(dir: File, name: String) = name == "result.test"
+          })
+          
+          if (results.length != 1) {
+            NestUI.verbose("Result file not found in directory " + sourceDirName + " \n")
+          } else {
+            val resFile = results(0)
+            // 2. Compile source file
+            if (!compileMgr.shouldCompile(outDir, List(file), kind, logFile)) {
+              succeeded = false
+            } else {
+
+              // 3. Decompile file and compare results
+              val className = sourceDirName.capitalize
+              val url = outDir.toURI.toURL
+              val loader = new URLClassLoader(Array(url), getClass.getClassLoader)
+              val clazz = loader.loadClass(className)
+
+              val result = decompileFile(clazz)
+
+              try {
+                val fstream = new FileWriter(logFile);
+                val out = new BufferedWriter(fstream);
+                out.write(result)
+                out.close();
+              } catch {
+                case e: IOException => NestUI.verbose(e.getMessage()); succeeded = false
+              }
+
+              val diff = fileManager.compareFiles(logFile, resFile)
+              if (!diff.equals("")) {
+                NestUI.verbose("output differs from log file\n")
+                succeeded = false
+              }
+            }
+          }
+        })
+      }
 
       case "script" => {
         val osName = System.getProperty("os.name", "")
@@ -787,7 +840,7 @@ class Worker(val fileManager: FileManager) extends Actor {
               async.start()
               inApp.run()
               async.join()
-          
+
               writer.close()
 
               diff = compareOutput(file.getParentFile, fileBase, kind, logFile)
@@ -827,7 +880,7 @@ class Worker(val fileManager: FileManager) extends Actor {
       if (!logs.isEmpty)
         logs.get.writers match {
           case Some((swr, wr)) =>
-            printInfoEnd(succeeded, wr)           
+            printInfoEnd(succeeded, wr)
             wr.flush()
             swr.flush()
             NestUI.normal(swr.toString)
@@ -867,7 +920,7 @@ class Worker(val fileManager: FileManager) extends Actor {
         }
         parent ! result
       }
-    
+
       react {
         case 'timeout =>
           val swr = new StringWriter
