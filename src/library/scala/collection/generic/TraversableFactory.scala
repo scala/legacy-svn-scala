@@ -3,7 +3,7 @@
 /** A template for companion objects of Traversable and subclasses thereof.
  */
 abstract class TraversableFactory[CC[A] <: Traversable[A]] {
-  
+
   /** The builder for this kind of collection.
    */
   def newBuilder[A]: Builder[A, CC[A]]
