@@ -40,10 +40,6 @@ class PartestTask extends Task {
     jvmFiles = Some(input)
   }
 
-  def addConfiguredJvm5Tests(input: FileSet) {
-    jvm5Files = Some(input)
-  }
-
   def addConfiguredResidentTests(input: FileSet) {
     residentFiles = Some(input)
   }
@@ -119,7 +115,6 @@ class PartestTask extends Task {
   private var negFiles: Option[FileSet] = None
   private var runFiles: Option[FileSet] = None
   private var jvmFiles: Option[FileSet] = None
-  private var jvm5Files: Option[FileSet] = None
   private var residentFiles: Option[FileSet] = None
   private var scriptFiles: Option[FileSet] = None
   private var shootoutFiles: Option[FileSet] = None
@@ -159,7 +154,6 @@ class PartestTask extends Task {
   private def getNegFiles      = getFiles(negFiles)
   private def getRunFiles      = getFiles(runFiles)
   private def getJvmFiles      = getFilesAndDirs(jvmFiles)
-  private def getJvm5Files     = getFilesAndDirs(jvm5Files)
   private def getResidentFiles = getFiles(residentFiles)
   private def getScriptFiles   = getFiles(scriptFiles)
   private def getShootoutFiles = getFiles(shootoutFiles)
@@ -263,13 +257,6 @@ class PartestTask extends Task {
       allFailures += failures
     }
 
-    if (getJvm5Files.size > 0) {
-      log("Compiling and running files")
-      val (successes, failures) = runTestsForFiles(getJvm5Files, "jvm5")
-      allSucesses += successes
-      allFailures += failures
-    }
-    
     if (getResidentFiles.size > 0) {
       log("Running resident compiler scenarii")
       val (successes, failures) = runTestsForFiles(getResidentFiles, "res")
