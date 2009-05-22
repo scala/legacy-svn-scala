@@ -234,9 +234,10 @@ self =>
       unit.needOnly = 
         if (pos == NoPosition) PackageDef(nme.EMPTY, List()) setPos(
         else 
+
+      typerPhase.applyPhase(unit)
         
 */      
-      typerPhase.applyPhase(unit)
     }
   }
 
