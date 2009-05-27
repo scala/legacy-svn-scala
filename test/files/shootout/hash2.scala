@@ -25,7 +25,7 @@ object hash2 {
 
 
       while (n>0) {
-         for (val each <- table1.elements){
+         for (val each <- table1.iterator){
             val key = each._1;
             val c1 = each._2;
 

@@ -70,7 +70,7 @@ object knucleotide {
    def writeFrequencies(j: Int) = {
       val bag = generateFrequencies(j)
       val n = sequence.length - j + 1.0
-      val sortedValues = bag.elements.toList.sort(
+      val sortedValues = bag.iterator.toList.sort(
          (a,b) => if (a.value == b.value) a.key > b.key
                   else a.value > b.value )
 
@@ -90,7 +90,7 @@ object knucleotide {
 class HashBag[A] extends HashTable[A] {
    protected type Entry = Counter[A]
    protected def entryKey(e: Entry) = e.key
-   def elements = entries
+   def iterator = entries
 
    def +=(elem: A): Unit = {
       var bucket = table(index(elemHashCode(elem))).asInstanceOf[Entry]
