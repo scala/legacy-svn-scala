@@ -38,6 +38,8 @@ trait IterableTemplate[+A, +This <: IterableTemplate[A, This] with Iterable[A]] 
    *  @return the new iterator
    */
   def iterator: Iterator[A]
+  
+  @deprecated def elements = iterator
 
   /** Apply a function <code>f</code> to all elements of this
    *  traversable object.
