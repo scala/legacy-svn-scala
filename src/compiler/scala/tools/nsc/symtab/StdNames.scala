@@ -91,7 +91,7 @@ trait StdNames {
     val MODULE_SUFFIX = newTermName("$module")
     val LOCALDUMMY_PREFIX = newTermName(LOCALDUMMY_PREFIX_STRING)
     val SELECTOR_DUMMY = newTermName("<unapply-selector>")
-    
+
     val MODULE_INSTANCE_FIELD = newTermName("MODULE$")
 
     def isLocalName(name: Name) = name.endsWith(LOCAL_SUFFIX)
@@ -269,6 +269,7 @@ trait StdNames {
     val forceBoxedArray = newTermName("forceBoxedArray")
     val checkInitialized = newTermName("checkInitialized")
     val classOf = newTermName("classOf")
+    val copy = newTermName("copy")
     val dottype = newTermName(".type")
     val drop = newTermName("drop")
     val elem = newTermName("elem")
