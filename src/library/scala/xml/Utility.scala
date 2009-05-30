@@ -81,10 +81,9 @@ object Utility extends AnyRef with parsing.TokenTests
 		  Elem(pre,lab,sort(md),scp, (child map sort):_*)
 	  case _ => n
   }
-													  
-  /** @deprecated a string might also be Atom(s) - define your own conversion
-   */
-  @deprecated def view(s: String): Text = Text(s)
+
+  @deprecated("a string might also be Atom(s) - define your own conversion")
+  def view(s: String): Text = Text(s)
 
   /**
    * Escapes the characters &lt; &gt; &amp; and &quot; from string.
