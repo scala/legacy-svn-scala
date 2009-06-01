@@ -330,7 +330,8 @@ object Settings
     def output(outputDirs: OutputDirs, default: String) =
       new OutputSetting(outputDirs, default)
   }
-  
+ 
+  implicit val SettingOrdering : Ordering[Setting] = Ordering.ordered;
   /** A base class for settings of all types.
    *  Subclasses each define a `value' field of the appropriate type.
    */
