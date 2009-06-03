@@ -672,6 +672,10 @@ self =>
   /** Returns a stream with all elements in this traversable object.
    */
   def toStream: Stream[A] = toList.toStream
+  
+  /** Returns a set with all unique elements in this traversable object.
+   */
+  def toSet[B >: A]: Set[B] = Set() ++ thisCollection
 
   /** Sort the traversable according to the comparison function
    *  <code>&lt;(e1: a, e2: a) =&gt; Boolean</code>,
