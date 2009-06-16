@@ -13,7 +13,8 @@ package scala.collection.generic
 
 import TraversableView.NoBuilder
 
-/** A non-strict projection of an iterable. 
+/** A non-strict projection of an iterable.
+ *
  * @author Sean McDirmid
  * @author Martin Odersky
  * @version 2.8

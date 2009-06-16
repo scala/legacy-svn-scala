@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: SingleLinkedList.scala 16893 2009-01-13 13:09:22Z cunei $
+// $Id$
 
 
 package scala.collection.generic
@@ -25,13 +25,13 @@ trait LinkedListTemplate[A, This >: Null <: Sequence[A] with LinkedListTemplate[
   var elem: A = _
   var next: This = _
 
-  override def isEmpty = false                                                                                                                                             
+  override def isEmpty = false
 
   override def length: Int = 1 + (if (next eq null) 0 else next.length)
 
   override def head: A = elem
 
-  override def tail: This = next                                                                                                                                             
+  override def tail: This = next
 
   def append(that: This): Unit =
     if (next eq null) next = that else next.append(that)
@@ -79,7 +79,7 @@ trait LinkedListTemplate[A, This >: Null <: Sequence[A] with LinkedListTemplate[
     }
   }
 
-  override def foreach[B](f: A => B): Unit = {
+  override def foreach[B](f: A => B) {
     var these = this
     while (these ne null) {
       f(these.elem);
