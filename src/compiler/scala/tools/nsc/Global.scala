@@ -307,12 +307,15 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     final def applyPhase(unit: CompilationUnit) {
       if (settings.debug.value) inform("[running phase " + name + " on " + unit + "]")
       val unit0 = currentRun.currentUnit
-      currentRun.currentUnit = unit
-      reporter.setSource(unit.source)
-      if (!cancelled(unit)) apply(unit)
-      currentRun.advanceUnit
-      assert(currentRun.currentUnit == unit)
-      currentRun.currentUnit = unit0
+      try {
+        currentRun.currentUnit = unit
+        reporter.setSource(unit.source)
+        if (!cancelled(unit)) apply(unit)
+        currentRun.advanceUnit
+      } finally {
+        assert(currentRun.currentUnit == unit)
+        currentRun.currentUnit = unit0
+      }
     }
   }
 
@@ -396,7 +399,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val runsAfter = List[String]("")
     val runsRightAfter = Some("tailcalls")
   } with SpecializeTypes 
-  
+
+  // phaseName = "erasure"
   object erasure extends {
     val global: Global.this.type = Global.this
     val runsAfter = List[String]("explicitouter")
