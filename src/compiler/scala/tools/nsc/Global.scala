@@ -831,13 +831,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       if (!dependencyAnalysis.off)
         dependencyAnalysis.saveDependencies()
     }
-    
-    // When all is said and done, if the dependencies file is 0 length
-    // delete it so people do not curse it with the vehemence with which
-    // they curse .DS_Store and the like.
-    def cleanupDependenciesFile() =
-      for (f <- dependencyAnalysis.dependenciesFile ; size <- f.sizeOption ; if size == 0)
-        f.delete
 
     /** Compile list of abstract files */
     def compileFiles(files: List[AbstractFile]) {
@@ -846,7 +839,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       } catch {
         case ex: IOException => error(ex.getMessage())
       }
-      finally cleanupDependenciesFile
     }
 
     /** Compile list of files given by their names */
@@ -867,7 +859,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       } catch {
         case ex: IOException => error(ex.getMessage())
       }
-      finally cleanupDependenciesFile
     }
 
     /** Compile abstract file until `globalPhase`, but at least
