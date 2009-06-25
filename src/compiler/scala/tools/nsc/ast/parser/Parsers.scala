@@ -81,7 +81,7 @@ self =>
     var smartParsing = false
 
     val syntaxErrors = new ListBuffer[(Int, String)]
-
+    
     def incompleteInputError(msg: String) {
       val offset = unit.source.asInstanceOf[BatchSourceFile].content.length - 1
       if (smartParsing) syntaxErrors += ((offset, msg))
@@ -305,8 +305,6 @@ self =>
         val msg =
           token2string(token) + " expected but " +token2string(in.token) + " found."
         syntaxErrorOrIncomplete(msg, true)
-        if (in.token == EOF) incompleteInputError(msg)
-        else syntaxError(in.offset, msg, false)
         if ((token == RPAREN || token == RBRACE || token == RBRACKET))
           if (in.parenBalance(token) + assumedClosingParens(token) < 0) 
             assumedClosingParens(token) += 1
