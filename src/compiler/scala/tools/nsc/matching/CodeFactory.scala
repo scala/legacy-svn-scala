@@ -109,11 +109,9 @@ trait CodeFactory {
   var nremoved = 0
   var nsubstituted = 0
 
-  final def squeezedBlock(vds: List[Tree], exp: Tree)(implicit theOwner: Symbol): Tree = 
-    if (settings_squeeze)
-      squeezedBlock1(vds, exp)
-    else
-      Block(vds,exp)
+  final def squeezedBlock(vds: List[Tree], exp: Tree)(implicit theOwner: Symbol): Tree =
+    if (settings_squeeze) Block(Nil, squeezedBlock1(vds, exp))
+    else                  Block(vds, exp)
   
   final def squeezedBlock1(vds: List[Tree], exp: Tree)(implicit theOwner: Symbol): Tree = {
     val tpe = exp.tpe
