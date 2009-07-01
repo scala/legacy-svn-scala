@@ -120,7 +120,7 @@ trait PatternNodes extends ast.TreeDSL
 
   def mkTypedBind(vs: List[Symbol], tpe: Type)      = mkBind(vs, tpe, WILD(tpe))
   def mkEmptyTreeBind(vs: List[Symbol], tpe: Type)  = mkBind(vs, tpe, EmptyTree)
-  def mkEqualsRef(xs: List[Type]) = typeRef(NoPrefix, EqualsPatternClass, xs)
+  def mkEqualsRef(xs: List[Type])                   = typeRef(NoPrefix, EqualsPatternClass, xs)
 
   def normalizedListPattern(pats: List[Tree], tptArg: Type): Tree = pats match {
     case Nil                            => gen.mkNil
@@ -138,7 +138,7 @@ trait PatternNodes extends ast.TreeDSL
       Apply(TypeTree(consType), List(x, normalizedListPattern(xs, tptArg))) setType resType
   }
 
-  // if Apply target !isType and takes no args, returns target prefix and symbol
+  // if Apply target !isType and takes no args, returns target prefix and symbol  
   object Apply_Value {
     def unapply(x: Any) = x match {
       case x @ Apply(fun, args) if !fun.isType && args.isEmpty  => Some(x.tpe.prefix, x.symbol)
@@ -146,7 +146,7 @@ trait PatternNodes extends ast.TreeDSL
     }
   }
 
-  // if Apply tpe !isCaseClass and Apply_Value says false, return the Apply target
+  // if Apply tpe !isCaseClass and Apply_Value says false, return the Apply target  
   object Apply_Function {
     /* see t301 */
     def isApplyFunction(o: Apply) = !o.tpe.isCaseClass || !Apply_Value.unapply(o).isEmpty
