@@ -104,8 +104,6 @@ trait PatternNodes extends ast.TreeDSL
       override def safeToString: String = "PseudoType("+o+")"
     }
   }
-
-  final def DBG(x: => String)   = if (settings.debug.value) Console.println(x)
     
   final def getDummies(i: Int): List[Tree] = List.fill(i)(EmptyTree)
 
