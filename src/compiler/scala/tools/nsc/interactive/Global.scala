@@ -15,7 +15,7 @@ import scala.tools.nsc.ast._
 class Global(settings: Settings, reporter: Reporter) 
   extends nsc.Global(settings, reporter) 
      with CompilerControl 
-     with Positions 
+     with RangePositions
      with ContextTrees 
      with RichCompilationUnits { 
 self =>
@@ -52,9 +52,6 @@ self =>
 
   // ----------- Overriding hooks in nsc.Global -----------------------
   
-  override def rangePos(source: SourceFile, start: Int, point: Int, end: Int) = 
-    new RangePosition(source, start, point, end)
-
   /** Called from typechecker, which signal hereby that a node has been completely typechecked.
    *  If the node is included in unit.targetPos, abandons run and returns newly attributed tree.
    *  Otherwise, if there's some higher priority work to be done, also abandons run with a FreshRunReq.
@@ -217,7 +214,7 @@ self =>
   def parse(unit: RichCompilationUnit): Unit = {
     currentTyperRun.compileLate(unit)
     validatePositions(unit.body)
-    println("parsed: [["+unit.body+"]]")
+    //println("parsed: [["+unit.body+"]]")
     unit.status = JustParsed
   }
 
