@@ -25,7 +25,10 @@ trait TreeDSL {
 
     // Create a conditional based on a partial function - for values not defined
     // on the partial, it is false.
-    def cond[T](x: T)(f: PartialFunction[T, Boolean]) = (f isDefinedAt x) && f(x)    
+    def cond[T](x: T)(f: PartialFunction[T, Boolean]) = (f isDefinedAt x) && f(x)
+    
+    // Applies a function to a value and then returns the value.
+    def applyAndReturn[T](f: T => Unit)(x: T): T = { f(x) ; x }
     
     // strip bindings to find what lies beneath
     final def unbind(x: Tree): Tree = x match {
