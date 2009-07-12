@@ -316,7 +316,7 @@ abstract class Inliners extends SubComponent {
                       concreteMethod = lookupImpl(concreteMethod, receiver)
                       if (settings.debug.value)
                         log("\tlooked up method: " + concreteMethod.fullNameString)
-                    } 
+                    }
 
                     if (shouldLoad(receiver, concreteMethod)) {
                       icodes.icode(receiver, true)
