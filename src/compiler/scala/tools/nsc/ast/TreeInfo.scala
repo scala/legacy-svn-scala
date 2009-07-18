@@ -275,6 +275,18 @@ abstract class TreeInfo {
     case Alternative(ts) => ts exists isSequenceValued
     case _ => false
   }
+  
+  /** The underlying pattern ignoring any bindings */
+  def unbind(x: Tree): Tree = x match {
+    case Bind(_, y) => unbind(y)
+    case y          => y
+  }
+  
+  /** Is this tree a Star(_) after removing bindings? */
+  def isStar(x: Tree) = unbind(x) match { 
+    case Star(_)  => true
+    case _        => false
+  }
 
   /** The method part of an application node
    */
