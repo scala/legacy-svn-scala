@@ -27,7 +27,21 @@ class SyncVar[A] {
     if (exception.isEmpty) value
     else throw exception.get
   }
-  
+
+  def get(timeout: Long): Option[A] = synchronized {
+    if (!isDefined) {
+      try {
+        wait(timeout)
+      } catch {
+        case _: InterruptedException =>
+      }
+    }
+    if (exception.isEmpty) {
+      if (isDefined) Some(value) else None
+    } else
+      throw exception.get
+  }
+
   def take() = synchronized {
     try {
       get
