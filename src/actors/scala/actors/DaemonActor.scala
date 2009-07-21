@@ -7,6 +7,8 @@
 \*                                                                      */ 
  
 package scala.actors 
+
+import scheduler.DaemonScheduler
  
 /** 
  * Base trait for actors with daemon semantics.
@@ -16,5 +18,5 @@ package scala.actors
  * @author Erik Engbrecht 
  */ 
 trait DaemonActor extends Actor { 
-  override def scheduler: IScheduler = DaemonScheduler 
+  override def scheduler: IScheduler = DaemonScheduler
 }
