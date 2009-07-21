@@ -5,6 +5,7 @@
 
 import scala.actors._
 import scala.actors.Actor._
+import scala.actors.scheduler.SingleThreadedScheduler
 
 object message {
   def main(args: Array[String]) = {
