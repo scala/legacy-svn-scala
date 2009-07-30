@@ -525,7 +525,7 @@ object Stream extends SequenceFactory[Stream] {
   @deprecated("use `iterate' instead.")
   def range(start: Int, end: Int, step: Int => Int): Stream[Int] =
     iterate(start, end - start)(step)
-   
+
   /**
    * Create an infinite stream containing the given element.
    *
