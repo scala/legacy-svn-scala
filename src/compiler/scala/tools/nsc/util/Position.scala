@@ -22,7 +22,7 @@ object Position {
  *
  *  INV1: A tree with an offset position never contains a child
  *        with a range position
- *  INV2: If the child of a tree with a range position also has a range position,  
+ *  INV2: If the child of a tree with a range position also has a range position,
  *        then the child's range is contained in the parent's range.
  *  INV3: Opaque range positions of children of the same node are non-overlapping
  *        (this means their overlap is at most a single point).
@@ -46,8 +46,8 @@ object Position {
  *  pos.endOrPoint
  *  pos.pointOrElse(default)
  *
- *  Theseare less strict about the kind of position on which they can be applied.
- * 
+ *  These are less strict about the kind of position on which they can be applied.
+ *
  *  The following conversion methods are often used:
  *
  *  pos.focus           converts a range position to an offset position, keeping its point;
