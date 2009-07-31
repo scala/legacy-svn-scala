@@ -61,6 +61,8 @@ class SimpleBuildManager(val settings: Settings) extends BuildManager {
     compiler.inform("Recompiling " + 
                     (if(settings.debug.value) toCompile.mkString(", ")
                      else toCompile.size + " files"))
+    
+    buildingFiles(toCompile)
 
     run.compileFiles(files.toList)
   }
