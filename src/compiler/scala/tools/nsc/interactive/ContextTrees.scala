@@ -24,7 +24,7 @@ trait ContextTrees { self: Global =>
     override def toString = "ContextTree("+pos+", "+children+")"
   }
 
-  /** Optionally return the smallest context that contains given `pos`, or None if none exists.
+  /** Optionally returns the smallest context that contains given `pos`, or None if none exists.
    */
   def locateContext(contexts: Contexts, pos: Position): Option[Context] = {
     if (contexts.isEmpty) None
@@ -49,7 +49,7 @@ trait ContextTrees { self: Global =>
       }
     }
   }
-    
+
   /** Insert a context at correct position into a buffer of context trees.
    *  If the `context` has a transparent position, add it multiple times
    *  at the positions of all its solid descendant trees.
