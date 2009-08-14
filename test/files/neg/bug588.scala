@@ -1,5 +1,5 @@
 abstract class Test0 {
-  def visit(f: Int => Unit): Boolean
+  def visit(f: Int => Unit): Boolean  
   def visit(f: Int => String): Boolean
 }
 trait Test {
