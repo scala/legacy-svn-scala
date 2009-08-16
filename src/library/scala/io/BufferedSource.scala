@@ -23,23 +23,20 @@ object BufferedSource
    * 
    *  @param  inputStream  the input stream from which to read
    *  @param  bufferSize   buffer size (defaults to Source.DefaultBufSize)
-   *  @param  reset        a () => Source which resets the stream (defaults to Source.NoReset)
+   *  @param  reset        a () => Source which resets the stream (if unset, reset() will throw an Exception)
    *  @param  codec        (implicit) a scala.io.Codec specifying behavior (defaults to Codec.default)
    *  @return              the buffered source
    */
   def fromInputStream(
     inputStream: InputStream,
     bufferSize: Int = DefaultBufSize,
-    reset: () => Source = null
+    reset: () => Source = null,
+    close: () => Unit = null
   )(implicit codec: Codec = Codec.default) =
   {
-    if (reset == null) new BufferedSource(inputStream, bufferSize, codec)
-    else {    
-      def _reset = reset        
-      new BufferedSource(inputStream, bufferSize, codec) {
-        override def reset = _reset()
-      }
-    }
+    new BufferedSource(inputStream, bufferSize, codec) .
+      withReset (reset) .
+      withClose (close)
   }
 }
 
@@ -54,7 +51,7 @@ class BufferedSource(
   bufferSize: Int,
   codec: Codec)
 extends Source
-{
+{  
   val decoder = codec.decoder
   decoder.reset
   decoder onMalformedInput codec.malformedAction
@@ -73,8 +70,6 @@ extends Source
       buf_char = getc
       c
     }
-  }
-  def close: Unit     = reader.close
-  def reset(): Source = NoReset()
+  }  
 }
 
