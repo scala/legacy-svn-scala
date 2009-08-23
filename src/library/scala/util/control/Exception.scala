@@ -142,6 +142,9 @@ object Exception
       def isDefinedAt(x: Throwable) = false
       def apply(x: Throwable) = throw x
     }
+
+  /** A Catch object which catches everything. */
+  final def allCatch[T]: Catch[T] = new Catch[T]({ case x => throw x }) withDesc "<everything>"
   
   /** The empty Catch object. */
   final val noCatch: Catch[Nothing] = new Catch(nothingCatcher) withDesc "<nothing>"
