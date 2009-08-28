@@ -185,7 +185,7 @@ abstract class ICodeReader extends ClassfileParser {
     }
   }
 
-  override def classNameToSymbol(name: Name) = { 
+  override def classNameToSymbol(name: Name) = {
     val sym = if (name == nothingName)
       definitions.NothingClass
     else if (name == nullName)
@@ -196,7 +196,7 @@ abstract class ICodeReader extends ClassfileParser {
       iface.owner.info // force the mixin type-transformer
       definitions.getClass(name)
     } else if (name.endsWith("$")) {
-      val sym = forceMangledName(name.subName(0, name.length -1), true)
+      val sym = forceMangledName(name.subName(0, name.length -1).decode, true)
       if (sym == NoSymbol)
         definitions.getModule(name.subName(0, name.length - 1))
       else sym
