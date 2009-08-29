@@ -428,7 +428,10 @@ sealed abstract class List[+A] extends LinearSequence[A]
 
     ms(this)
   }
-
+  
+  // !!! The above sort could be replaced by:
+  //   def sort(lt: (A, A) => Boolean): List[A] = super.sortWith(lt)
+  // except that it fails to find a ClassManifest.
 }
 
 /** The empty list.
