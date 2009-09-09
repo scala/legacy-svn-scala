@@ -818,6 +818,8 @@ self =>
   def addString(b: StringBuilder): StringBuilder = addString(b, "")
 
   override def toString = mkString(stringPrefix + "(", ", ", ")")
+  
+  def canEqualCollection(other: Any) = true
 
   /** Defines the prefix of this object's <code>toString</code> representation.
    */
