@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: ObjectArrayVector.scala 18589 2009-08-27 14:45:35Z odersky $
+// $Id: WrappedObjectArray.scala 18589 2009-08-27 14:45:35Z odersky $
 
 
 package scala.collection.mutable
@@ -15,19 +15,18 @@ import scala.reflect.ClassManifest
 import Predef._
 
 @serializable
-final class ObjectArrayVector[A <: AnyRef](val value: Array[AnyRef], val elemManifest: ClassManifest[A]) extends ArrayVector[A] {
+final class WrappedRefArray[A](val array: Array[AnyRef]) extends WrappedArray[A] {
 
-// @deprecated("creating array w/o manifest")
-    def this(value: Array[AnyRef]) = this(value, null) // !!! todo: remove
+  lazy val elemManifest = ClassManifest.classType[A](array.getClass.getComponentType)
 
-  def length: Int = value.length
+  def length: Int = array.length
 
-  def apply(index: Int): A = value(index).asInstanceOf[A]
+  def apply(index: Int): A = array(index).asInstanceOf[A]
 
   def update(index: Int, elem: A) { 
-    value(index) = elem 
+    array(index) = elem.asInstanceOf[AnyRef]
   }
 
-  def unbox(elemClass: Class[_]): AnyRef = value
+  def unbox(elemClass: Class[_]): AnyRef = array
 }
 

@@ -6,23 +6,19 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: LongArrayVector.scala 18572 2009-08-25 14:14:11Z odersky $
+// $Id: RichString.scala 18589 2009-08-27 14:45:35Z odersky $
 
 
-package scala.collection.mutable
-import scala.reflect.ClassManifest
+package scala.collection
+package immutable
 
-@serializable
-final class LongArrayVector(val value: Array[Long]) extends ArrayVector[Long] {
+class StringOps(override val repr: String) extends StringLike[String] {
 
-  def elemManifest = ClassManifest.Long
+  override protected[this] def thisCollection: WrappedString = new WrappedString(repr)
+  override protected[this] def toCollection(repr: String): WrappedString = new WrappedString(repr)
 
-  def length: Int = value.length
+  /** Creates a string builder buffer as builder for this class */
+  override protected[this] def newBuilder = new StringBuilder
 
-  def apply(index: Int): Long = value(index)
-
-  def update(index: Int, elem: Long) {
-    value(index) = elem
-  }
-  def unbox(elemClass: Class[_]): AnyRef = value
-}
+  override def toString = repr
+}  

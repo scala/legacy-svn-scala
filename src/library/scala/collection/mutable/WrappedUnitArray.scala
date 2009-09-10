@@ -6,23 +6,23 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: ShortArrayVector.scala 18572 2009-08-25 14:14:11Z odersky $
+// $Id: WrappedDoubleArray.scala 17680 2009-05-08 16:33:15Z odersky $
 
 
 package scala.collection.mutable
 import scala.reflect.ClassManifest
 
 @serializable
-final class ShortArrayVector(val value: Array[Short]) extends ArrayVector[Short] {
+final class WrappedUnitArray(val array: Array[Unit]) extends WrappedArray[Unit] {
 
-  def elemManifest = ClassManifest.Short
+  def elemManifest = ClassManifest.Unit
 
-  def length: Int = value.length
+  def length: Int = array.length
 
-  def apply(index: Int): Short = value(index)
+  def apply(index: Int): Unit = array(index)
 
-  def update(index: Int, elem: Short) {
-    value(index) = elem
+  def update(index: Int, elem: Unit) {
+    array(index) = elem
   }
-  def unbox(elemClass: Class[_]): AnyRef = value
+  def unbox(elemClass: Class[_]): AnyRef = array
 }
