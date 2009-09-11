@@ -956,15 +956,6 @@ object Interpreter {
     intLoop.repl()
     intLoop.closeInterpreter
   }
-  
-  /** Delete a directory tree recursively.  Use with care! */
-  private[nsc] def deleteRecursively(path: File): Unit =
-    if (path.exists) {
-      if (path.isDirectory)
-        path.listFiles foreach deleteRecursively
-          
-      path.delete
-    }
 
   /** Heuristically strip interpreter wrapper prefixes
    *  from an interpreter output string.
