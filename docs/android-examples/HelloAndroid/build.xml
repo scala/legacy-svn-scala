@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
-<project name="Snake" default="help">
+<project name="HelloAndroid" default="help">
 
     <!-- The local.properties file is created and updated by the 'android' tool.
          It contain the path to the SDK. It should *NOT* be checked in in Version
@@ -58,7 +58,7 @@
          targets are used.
     -->
     <setup import="false"/>
-    
+
     <import file="build-imported.xml"/>
 
 </project>

@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<project name="android" default="help">
+
+  <target name="uninstall" description="uninstall applications">
+    <ant dir="HelloAndroid" target="uninstall"/>
+    <ant dir="Snake" target="uninstall"/>
+    <ant dir="LunarLander" target="uninstall"/>
+  </target>
+
+  <target name="clean" description="clean up">
+    <ant dir="HelloAndroid" target="clean"/>
+    <ant dir="Snake" target="clean"/>
+    <ant dir="LunarLander" target="clean"/>
+  </target>
+
+  <target name="help">
+    <echo message="Android Ant Build. Available targets:"/>
+    <echo message="   help:      Display this help."/>
+    <echo message="   uninstall: Uninstall applications from a running emulator or device."/>
+    <echo message="   clean:     Clean up build files from projects."/> 
+  </target>
+
+</project>
