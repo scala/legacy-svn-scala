@@ -22,7 +22,7 @@ import scala.collection.generic._
  *  @author  Martin Odersky
  *  @version 2.8
  */
-@serializable
+@serializable @SerialVersionUID(1529165946227428979L)
 class ArrayBuffer[A](override protected val initialSize: Int) 
   extends Buffer[A] 
      with TraversableClass[A, ArrayBuffer]
@@ -151,15 +151,20 @@ class ArrayBuffer[A](override protected val initialSize: Int)
   override def clone(): ArrayBuffer[A] = new ArrayBuffer[A] ++= this
 
   def result: ArrayBuffer[A] = this
-  
+
   /** Defines the prefix of the string representation.
    */
   override def stringPrefix: String = "ArrayBuffer"
 }
 
-/* Factory object for `ArrayBuffer` class */
+/** Factory object for <code>ArrayBuffer</code> class.
+ *
+ *  @author  Martin Odersky
+ *  @version 2.8
+ */
 object ArrayBuffer extends SequenceFactory[ArrayBuffer] {
-  implicit def builderFactory[A]: BuilderFactory[A, ArrayBuffer[A], Coll] = new VirtualBuilderFactory[A]
+  implicit def builderFactory[A]: BuilderFactory[A, ArrayBuffer[A], Coll] =
+    new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, ArrayBuffer[A]] = new ArrayBuffer[A]
 }
 
