@@ -9,7 +9,8 @@
     android:layout_height="wrap_content" 
     android:text="Name: "
     />
-<TextView id="@+id/row_entry"
+<TextView
+    android:id="@+id/row_entry"
     android:layout_width="wrap_content" 
     android:layout_height="wrap_content"
     />

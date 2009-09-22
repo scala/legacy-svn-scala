@@ -2,15 +2,21 @@
 <project name="android" default="help">
 
   <target name="uninstall" description="uninstall applications">
-    <ant dir="HelloAndroid" target="uninstall"/>
-    <ant dir="Snake" target="uninstall"/>
+    <ant dir="FileBrowser" target="uninstall"/>
+    <ant dir="HelloActivity" target="uninstall"/>
     <ant dir="LunarLander" target="uninstall"/>
+    <ant dir="NotePad" target="uninstall"/>
+    <ant dir="PhoneDialer" target="uninstall"/>
+    <ant dir="Snake" target="uninstall"/>
   </target>
 
   <target name="clean" description="clean up">
-    <ant dir="HelloAndroid" target="clean"/>
-    <ant dir="Snake" target="clean"/>
+    <ant dir="FileBrowser" target="clean"/>
+    <ant dir="HelloActivity" target="clean"/>
     <ant dir="LunarLander" target="clean"/>
+    <ant dir="NotePad" target="clean"/>
+    <ant dir="PhoneDialer" target="clean"/>
+    <ant dir="Snake" target="clean"/>
   </target>
 
   <target name="help">

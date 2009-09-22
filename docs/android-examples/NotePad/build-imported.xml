@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
-<project name="imported" default="help">
+<project name="imported" default="install">
 
   <property environment="env"/>
 
@@ -127,13 +127,6 @@
   <target name="install" depends="debug">
     <echo message="Installing bin/${basename.apk} onto default emulator..."/>
     <exec executable="${adb.cmd}">
-      <arg line="install '${package.apk}'"/>
-    </exec>
-  </target>
-
-  <target name="reinstall" depends="debug">
-    <echo message="Reinstalling bin/${basename.apk} onto default emulator..."/>
-    <exec executable="${adb.cmd}">
       <arg line="install -r '${package.apk}'"/>
     </exec>
   </target>
@@ -148,8 +141,7 @@
     <echo message="Android Ant Build. Available targets:"/>
     <echo message="   help:      Display this help."/>
     <echo message="   debug:     Builds the application and sign it with a debug key."/>
-    <echo message="   install:   Install the debug package onto a running emulator or device."/>
-    <echo message="   reinstall: Reinstall the debug package onto a running emulator or device."/>
+    <echo message="   install:   (Re-)Install the debug package onto a running emulator or device."/>
     <echo message="   uninstall: Uninstall the application from a running emulator or device."/>
     <echo message="   clean:     Clean up build files from project."/> 
   </target>

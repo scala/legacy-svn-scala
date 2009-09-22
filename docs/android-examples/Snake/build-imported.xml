@@ -83,7 +83,7 @@
     </javac>
     <scalac
       srcdir="${basedir}/src" includes="**/*.scala"
-      destdir="${basedir}/bin/classes">
+      destdir="${basedir}/bin/classes" deprecation="on">
       <classpath>
         <pathelement location="${scala-library.jar}"/>
         <pathelement location="${android.jar}"/>

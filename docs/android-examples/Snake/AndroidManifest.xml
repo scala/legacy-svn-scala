@@ -14,4 +14,7 @@
             </intent-filter>
         </activity>
     </application>
+    <!-- our application is compatible only with devices -->
+    <!-- using the Android 1.1 (or greater) system image -->
+    <uses-sdk android:minSdkVersion="2" />
 </manifest> 

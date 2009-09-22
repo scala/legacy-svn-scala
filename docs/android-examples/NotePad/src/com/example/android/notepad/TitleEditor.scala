@@ -1,0 +1,89 @@
+package com.example.android.notepad
+
+import com.example.android.notepad.NotePad.Notes
+
+import _root_.android.app.Activity
+import _root_.android.content.ContentValues
+import _root_.android.database.Cursor
+import _root_.android.net.Uri
+import _root_.android.os.Bundle
+import _root_.android.view.View
+import _root_.android.widget.{Button, EditText}
+
+object TitleEditor {
+
+  /** This is a special intent action that means "edit the title of a note". */
+  final val EDIT_TITLE_ACTION = "com.android.notepad.action.EDIT_TITLE"
+
+  /** An array of the columns we are interested in. */
+  private final val PROJECTION = Array(Notes._ID, Notes.TITLE)
+
+  /** Index of the title column */
+  private final val COLUMN_INDEX_TITLE = 1
+}
+
+/** An activity that will edit the title of a note. Displays a floating
+ *  window with a text field.
+ */
+class TitleEditor extends Activity with View.OnClickListener {
+  import TitleEditor._ // companion object
+
+  /** Cursor which will provide access to the note whose title we are editing.
+   */
+  private var mCursor: Cursor = _
+
+  /** The EditText field from our UI. Keep track of this so we can extract the
+   *  text when we are finished.
+   */
+  private var mText: EditText = _
+
+  /** The content URI to the note that's being edited.
+   */
+  private var mUri: Uri = _
+
+  override def onCreate(savedInstanceState: Bundle) {
+    super.onCreate(savedInstanceState)
+
+    setContentView(R.layout.title_editor)
+
+    // Get the uri of the note whose title we want to edit
+    mUri = getIntent().getData()
+
+    // Get a cursor to access the note
+    mCursor = managedQuery(mUri, PROJECTION, null, null, null)
+
+    // Set up click handlers for the text field and button
+    mText = this.findViewById(R.id.title).asInstanceOf[EditText]
+    mText setOnClickListener this
+        
+    val b = findViewById(R.id.ok)
+    b setOnClickListener this
+  }
+
+  override protected def onResume() {
+    super.onResume()
+
+    // Initialize the text with the title column from the cursor
+    if (mCursor != null) {
+      mCursor.moveToFirst()
+      mText setText (mCursor getString COLUMN_INDEX_TITLE)
+    }
+  }
+
+  override protected def onPause() {
+    super.onPause()
+
+    if (mCursor != null) {
+      // Write the title back to the note 
+      val values = new ContentValues
+      values.put(Notes.TITLE, mText.getText.toString)
+      getContentResolver.update(mUri, values, null, null)
+    }
+  }
+
+  def onClick(v: View) {
+    // When the user clicks, just finish this activity.
+    // onPause will be called, and we save our data there.
+    finish()
+  }
+}
