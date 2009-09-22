@@ -63,10 +63,10 @@ abstract class Plugin {
  *  @author Lex Spoon
  *  @version 1.0, 2007-5-21
  */
-object Plugin
-{
+object Plugin {
+
   private val PluginXML = "scalac-plugin.xml"
-  
+
   /** Create a class loader with the specified file plus
    *  the loader that loaded the Scala compiler.
    */
@@ -78,7 +78,8 @@ object Plugin
   }
 
   /** Try to load a plugin description from the specified
-   *  file, returning None if it does not work. */
+   *  file, returning <code>None</code> if it does not work.
+   */
   private def loadDescription(jarfile: Path): Option[PluginDescription] =
     // XXX Return to this once we have some ARM support
     if (!jarfile.exists) None
@@ -86,13 +87,13 @@ object Plugin
       val jar = new JarFile(jarfile.jfile)
 
       try {
-        (jar getEntry PluginXML) match {
-          case null   => None
-          case entry  =>
+        jar getEntry PluginXML match {
+          case null  => None
+          case entry =>
             val in = jar getInputStream entry
             val packXML = XML load in
             in.close()
-          
+
             PluginDescription fromXML packXML
         }
       }
@@ -104,19 +105,21 @@ object Plugin
 
   type AnyClass = Class[_]
 
-  /** Loads a plugin class from the named jar file.  Returns None
-   *  if the jar file has no plugin in it or if the plugin
-   *  is badly formed.
+  /** Loads a plugin class from the named jar file.
+
+   *  @return <code>None</code> if the jar file has no plugin in it or
+   *                            if the plugin is badly formed.
    */
-  def loadFrom(jarfile: Path, loader: ClassLoader): Option[AnyClass] = {
-    val pluginInfo = loadDescription(jarfile).get
-    
-    try Some(loader loadClass pluginInfo.classname) catch {
-      case _: ClassNotFoundException =>
-        println("Warning: class not found for plugin in %s (%s)".format(jarfile, pluginInfo.classname))
-        None
+  def loadFrom(jarfile: Path, loader: ClassLoader): Option[AnyClass] =
+    loadDescription(jarfile) match {
+      case None => None
+      case Some(pdesc) =>
+        try Some(loader loadClass pdesc.classname) catch {
+        case _: Exception =>
+          println("Warning: class not found for plugin in %s (%s)".format(jarfile, pdesc.classname))
+          None
+      }
     }
-  }
 
   /** Load all plugins found in the argument list, both in the
    *  jar files explicitly listed, and in the jar files in the
@@ -135,7 +138,7 @@ object Plugin
       pdesc <- loadDescription(entry)
       if !(ignoring contains pdesc.name)
     } yield entry)
-    
+ 
     val loader = loaderFor(alljars)
     alljars map (loadFrom(_, loader)) flatten
   }

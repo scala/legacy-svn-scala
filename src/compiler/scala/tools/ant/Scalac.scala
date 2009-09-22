@@ -559,7 +559,7 @@ class Scalac extends MatchingTask {
 
     log("Scalac params = '" + addParams + "'", Project.MSG_DEBUG)
     settings.parseParams(addParams)
-  
+
     (settings, sourceFiles, javaOnly)
   }
 
