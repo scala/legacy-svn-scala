@@ -70,15 +70,24 @@ extends Node
    *  @param  updates MetaData with new and updated attributes
    *  @return a new symbol with updated attributes
    */
-  final def %(updates: MetaData): Elem = 
-    Elem(prefix, 
-         label, 
-         MetaData.update(attributes, scope, updates), 
-         scope,
-         child:_*)
+  final def %(updates: MetaData): Elem =
+    copy(attributes = MetaData.update(attributes, scope, updates))
+  
+  /** Returns a copy of this element with any supplied arguments replacing
+   *  this element's value for that field.
+   *
+   *  @return a new symbol with updated attributes
+   */
+  def copy(
+    prefix: String = this.prefix,
+    label: String = this.label,
+    attributes: MetaData = this.attributes,
+    scope: NamespaceBinding = this.scope,
+    child: Seq[Node] = this.child.toSeq
+  ): Elem = Elem(prefix, label, attributes, scope, child: _*)
 
-   /** Returns concatenation of <code>text(n)</code> for each child
-    *  <code>n</code>.
-    */
-   override def text = child map (_.text) mkString
+  /** Returns concatenation of <code>text(n)</code> for each child
+   *  <code>n</code>.
+   */
+  override def text = child map (_.text) mkString
 }
