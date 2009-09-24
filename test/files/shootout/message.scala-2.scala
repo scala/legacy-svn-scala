@@ -10,8 +10,7 @@ import scala.actors.scheduler.SingleThreadedScheduler
 object message {
   def main(args: Array[String]) = {
     val n = Integer.parseInt(args(0)); val nActors = 50; val finalSum = n * nActors
-    val sched = new SingleThreadedScheduler
-    Scheduler.impl = sched
+    Scheduler.impl = new SingleThreadedScheduler
 
     def beh(next: Actor, sum: Int) {
       react {
@@ -34,6 +33,6 @@ object message {
     val firstActor = actorChain(nActors, null)
     var i = n; while (i > 0) { firstActor ! 0; i = i-1 }
 
-    sched.shutdown()
+    Scheduler.shutdown()
   }
 }
