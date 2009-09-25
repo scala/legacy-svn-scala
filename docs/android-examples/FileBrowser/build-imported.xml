@@ -95,11 +95,8 @@
 
   <target name="dex" depends="compile" unless="dex.uptodate">
     <echo message="Converting compiled files and external libraries into bin/classes.dex..."/>
-    <!-- IMPORTANT !                                                 -->
-    <!-- in shell script /opt/android/platforms/android-1.5/tools/dx -->
-    <!-- add the following code on line 60: javaOpts="-Xmx768M"      -->
     <exec executable="${dx.cmd}">
-      <arg line="--dex --no-optimize --output='${classes.dex}' '${basedir}/bin/classes' '${scala-library.jar}'"/>
+      <arg line="-JXmx768M --dex --no-optimize --output='${classes.dex}' '${basedir}/bin/classes' '${scala-library.jar}'"/>
     </exec>
   </target>
 

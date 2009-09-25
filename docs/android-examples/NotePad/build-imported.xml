@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
-<project name="imported" default="install">
+<project name="imported" default="help">
 
   <property environment="env"/>
 
@@ -95,11 +95,8 @@
 
   <target name="dex" depends="compile" unless="dex.uptodate">
     <echo message="Converting compiled files and external libraries into bin/classes.dex..."/>
-    <!-- IMPORTANT !                                                 -->
-    <!-- in shell script /opt/android/platforms/android-1.5/tools/dx -->
-    <!-- add the following code on line 60: javaOpts="-Xmx768M"      -->
     <exec executable="${dx.cmd}">
-      <arg line="--dex --no-optimize --output='${classes.dex}' '${basedir}/bin/classes' '${scala-library.jar}'"/>
+      <arg line="-JXmx768M --dex --no-optimize --output='${classes.dex}' '${basedir}/bin/classes' '${scala-library.jar}'"/>
     </exec>
   </target>
 
@@ -127,6 +124,13 @@
   <target name="install" depends="debug">
     <echo message="Installing bin/${basename.apk} onto default emulator..."/>
     <exec executable="${adb.cmd}">
+      <arg line="install '${package.apk}'"/>
+    </exec>
+  </target>
+
+  <target name="reinstall" depends="debug">
+    <echo message="Reinstalling bin/${basename.apk} onto default emulator..."/>
+    <exec executable="${adb.cmd}">
       <arg line="install -r '${package.apk}'"/>
     </exec>
   </target>
@@ -141,7 +145,8 @@
     <echo message="Android Ant Build. Available targets:"/>
     <echo message="   help:      Display this help."/>
     <echo message="   debug:     Builds the application and sign it with a debug key."/>
-    <echo message="   install:   (Re-)Install the debug package onto a running emulator or device."/>
+    <echo message="   install:   Install the debug package onto a running emulator or device."/>
+    <echo message="   reinstall: Reinstall the debug package onto a running emulator or device."/>
     <echo message="   uninstall: Uninstall the application from a running emulator or device."/>
     <echo message="   clean:     Clean up build files from project."/> 
   </target>
