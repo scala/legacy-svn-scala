@@ -298,9 +298,9 @@ self: Analyzer =>
           isStable(info.pre)) {
 
         val itree = atPos(tree.pos.focus) {
-          if (info.pre == NoPrefix) Ident(info.name)
+          if (info.pre == NoPrefix) Ident(info.name) 
           else Select(gen.mkAttributedQualifier(info.pre), info.name)
-        }
+        } 
         //if (traceImplicits) println("typed impl?? "+info.name+":"+info.tpe+" ==> "+itree+" with "+wildPt)
         def fail(reason: String): SearchResult = {
           if (settings.XlogImplicits.value)
@@ -310,10 +310,11 @@ self: Analyzer =>
         try {
           val itree1 = 
             if (isView)
-              typed1(
+              typed1 (
                 atPos(itree.pos) (
                   Apply(itree, List(Ident("<argument>").setType(approximate(pt.typeArgs.head))))), 
-                  EXPRmode, approximate(pt.typeArgs.tail.head))
+                EXPRmode, approximate(pt.typeArgs.tail.head)
+              )
             else
               typed1(itree, EXPRmode, wildPt)
 
