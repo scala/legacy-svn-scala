@@ -218,7 +218,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean)
       
       Assign(Ident(_md), New(clazz, LL(attrArgs: _*)))
     }
-
+      
     def handlePrefixedAttribute(pre: String, key: String, value: Tree)  = mkAttributeTree(pre, key, value)
     def handleUnprefixedAttribute(key: String, value: Tree)             = mkAttributeTree(null, key, value)
 
