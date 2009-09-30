@@ -42,9 +42,8 @@ abstract class WrappedArray[T] extends Vector[T] with ArrayLike[T, WrappedArray[
 
   /** The underlying array */
   def array: Array[T]                                                                                                   
-
-  override def stringPrefix = "Array"
-
+  override def stringPrefix = "WrappedArray"
+ 
   /** Creates new builder for this collection ==> move to subclasses
    */
   override protected[this] def newBuilder: Builder[T, WrappedArray[T]] = 
