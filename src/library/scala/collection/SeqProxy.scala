@@ -11,18 +11,11 @@
 
 package scala.collection
 
-import generic._
-import TraversableView.NoBuilder
-
-/** A non-strict projection of an iterable. 
- * @author Sean McDirmid
- * @author Martin Odersky
- * @version 2.8
+/** This trait implements a proxy for sequence objects. It forwards
+ *  all calls to a different sequence object.
+ *
+ *  @author  Martin Odersky
+ *  @version 2.8
+ *  @since   2.8
  */
-trait SequenceView[+A, +Coll] extends SequenceViewLike[A, Coll, SequenceView[A, Coll]] 
-
-object SequenceView {
-  type Coll = TraversableView[_, C] forSome {type C <: Traversable[_]}
-  implicit def builderFactory[A]: BuilderFactory[A, SequenceView[A, Sequence[_]], Coll] = new BuilderFactory[A, SequenceView[A, Sequence[_]], Coll] { def apply(from: Coll) = new NoBuilder }
-}
-
+trait SeqProxy[+A] extends Seq[A] with SeqProxyLike[A, Seq[A]] 
