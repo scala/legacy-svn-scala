@@ -248,7 +248,7 @@ trait ParallelMatching extends ast.TreeDSL
       def tail = ps.tail
       def size = ps.length
       
-      def headType = head.matchingType
+      def headType = head.typeToMatch
       def isCaseHead = head.isCaseClass
       private val dummyCount = if (isCaseHead) headType.typeSymbol.caseFieldAccessors.length else 0
       def dummies = emptyPatterns(dummyCount)
@@ -664,7 +664,7 @@ trait ParallelMatching extends ast.TreeDSL
           def pMatchesS = matches(p, s)
           
           def alts[T](yes: T, no: T): T = if (p =:= s) yes else no
-          def isObjectTest              = pattern.isObject && (p =:= pattern.matchingType)
+          def isObjectTest              = pattern.isObject && (p =:= pattern.typeToMatch)
 
           lazy val dummy          = (j, pats.dummies)
           lazy val pass           = (j, pattern)
@@ -1049,6 +1049,10 @@ trait ParallelMatching extends ast.TreeDSL
       assert((tpe ne NoType) && (scrutTree.tpe ne NoType))    
       def useEqTest         = tpe.termSymbol.isModule || (tpe.prefix eq NoPrefix)
 
+      //         case SingleType(_, _) | ThisType(_) | SuperType(_, _) =>
+      //           val cmpOp = if (targ.tpe <:< AnyValClass.tpe) Any_equals else Object_eq
+      // Apply(Select(qual, cmpOp), List(gen.mkAttributedQualifier(targ.tpe)))
+      
       typer typed (tpe match {
         case ct: ConstantType => ct.value match {
             case v @ Constant(null) if scrutTree.tpe.isAnyRef   => scrutTree ANY_EQ NULL
