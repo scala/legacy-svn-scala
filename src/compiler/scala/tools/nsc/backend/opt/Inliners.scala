@@ -47,10 +47,10 @@ abstract class Inliners extends SubComponent {
   class Inliner {
 
     val fresh = new HashMap[String, Int]
-    
+
     /* fresh name counter */
     var count = 0
-    
+
     def freshName(s: String) = fresh.get(s) match {
       case Some(count) =>
         fresh(s) = count + 1
