@@ -521,6 +521,10 @@ trait Symbols {
     /** Does this symbol denote the primary constructor of its enclosing class? */
     final def isPrimaryConstructor =
       isConstructor && owner.primaryConstructor == this
+      
+    /** Does this symbol denote an auxiliary constructor of its enclosing class? */
+    final def isAuxiliaryConstructor =
+      isConstructor && !isPrimaryConstructor
 
     /** Is this symbol a synthetic apply or unapply method in a companion object of a case class? */
     final def isCaseApplyOrUnapply = 
