@@ -416,7 +416,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val runsAfter = List[String]("tailcalls")
     val runsRightAfter = None
   } with ExplicitOuter
- 
+                                                             
   // phaseName = "specialize"
   object specializeTypes extends {
     val global: Global.this.type = Global.this
