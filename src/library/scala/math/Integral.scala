@@ -9,17 +9,19 @@
 // $Id$
 
 
-package scala
+package scala.math
 
 /**
  * @since 2.8
  */
-trait Fractional[T] extends Numeric[T] {
-  def div(x: T, y: T): T
+trait Integral[T] extends Numeric[T] {
+  def quot(x: T, y: T): T
+  def rem(x: T, y: T): T
   
-  class FractionalOps(lhs: T) extends Ops(lhs) {
-    def /(rhs: T) = div(lhs, rhs)
+  class IntegralOps(lhs: T) extends Ops(lhs) {
+    def /(rhs: T) = quot(lhs, rhs)
+    def %(rhs: T) = rem(lhs, rhs)
+    def /%(rhs: T) = (quot(lhs, rhs), rem(lhs, rhs))
   }
-  override implicit def mkNumericOps(lhs: T): FractionalOps =
-    new FractionalOps(lhs)
+  override implicit def mkNumericOps(lhs: T): IntegralOps = new IntegralOps(lhs)
 }
