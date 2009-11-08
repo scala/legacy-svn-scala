@@ -598,6 +598,12 @@ trait Symbols {
     final def isLocalClass: Boolean =
       isClass && (isAnonymousClass || isRefinementClass || isLocal ||
                   !owner.isPackageClass && owner.isLocalClass)
+    
+    /** Is this class or type defined as a structural refinement type?
+     */
+    final def isStructuralRefinement: Boolean =
+      (isClass || isType || isModule) && info.normalize/*.underlying*/.isStructuralRefinement
+    
 
     /** Is this symbol a member of class `clazz'
      */
