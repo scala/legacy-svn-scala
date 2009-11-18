@@ -29,7 +29,7 @@ object regexdna {
          ,"agggtaa[cgt]|[acg]ttaccct"
          )
 
-      for (val v <- variants){
+      for (v <- variants){
          var count = 0
          m = Pattern.compile(v).matcher(sequence)
          while (m.find()) count = count + 1
@@ -51,7 +51,7 @@ object regexdna {
             ,Pair("Y", "(c|t)")
          )
 
-      for (val iub <- codes){
+      for (iub <- codes){
          iub match { 
             case Pair(code,alternative) => 
                sequence = Pattern.compile(code).matcher(sequence).replaceAll(alternative)
@@ -64,7 +64,7 @@ object regexdna {
 
    def readFully() = {
       val blockSize = 10240
-      val block = new Array[char](blockSize)
+      val block = new Array[Char](blockSize)
       val buffer = new StringBuffer(blockSize)
       val r = new InputStreamReader(System.in)
 
