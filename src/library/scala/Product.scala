@@ -40,6 +40,9 @@ trait Product extends Equals {
     def hasNext = c < cmax
     def next() = { val result = productElement(c); c += 1; result }
   }
+  
+  @deprecated("use productIterator instead")
+  def productElements: Iterator[Any] = productIterator
 
   /** 
    *  By default the empty string. Implementations may override this
