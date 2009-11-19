@@ -81,8 +81,8 @@ class Worker(val fileManager: FileManager) extends Actor {
         val filesPathLen = filesdir.getAbsolutePath.length
         file.getAbsolutePath.substring(filesPathLen)
       }
-    }
-    NestUI.normal("[...]"+name+List.toString(List.fill(totalWidth-name.length)(' ')), printer)
+    }    
+    NestUI.normal("[...]"+name+(List.fill(totalWidth-name.length)(' ')).mkString, printer)
   }
 
   def printInfoEnd(success: Boolean, printer: PrintWriter) {
