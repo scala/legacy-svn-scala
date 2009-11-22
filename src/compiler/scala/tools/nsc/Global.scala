@@ -374,11 +374,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val runsAfter = List[String]("uncurry")
     val runsRightAfter = None
   } with TailCalls
- 
- //  object checkDefined extends {
- //    val global: Global.this.type = Global.this
- //  } with CheckDefined
- 
+
   // phaseName = "explicitouter"
   object explicitOuter extends {
     val global: Global.this.type = Global.this
