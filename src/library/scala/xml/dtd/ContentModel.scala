@@ -50,12 +50,10 @@ object ContentModel extends WordExp {
   def buildString(r: RegExp): String = sbToString(buildString(r, _))
 
   /* precond: rs.length >= 1 */
-  private def buildString(rs: Seq[RegExp], sb: StringBuilder, sep: Char) {    
-    val it = rs.iterator
-    val fst = it.next
-    buildString(fst, sb)
-    for (z <- it) {
-      sb.append(sep)
+  private def buildString(rs: Seq[RegExp], sb: StringBuilder, sep: Char) {
+    buildString(rs.head, sb)
+    for (z <- rs.tail) {
+      sb append sep
       buildString(z, sb)
     }
     sb
@@ -121,7 +119,7 @@ case class MIXED(r: ContentModel.RegExp) extends DFAContentModel {
   }
 }
 
-case class  ELEMENTS(r: ContentModel.RegExp) extends DFAContentModel {
+case class ELEMENTS(r: ContentModel.RegExp) extends DFAContentModel {
   override def buildString(sb: StringBuilder): StringBuilder =  
     ContentModel.buildString(r, sb)
 }
