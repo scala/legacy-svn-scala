@@ -2148,7 +2148,11 @@ trait Typers { self: Analyzer =>
         val pre = fun.symbol.tpe.prefix
 
         var sym = fun.symbol filter { alt =>
-          isApplicableSafe(context.undetparams, followApply(pre.memberType(alt)), argtypes, pt)
+          // must use pt as expected type, not WildcardType (a tempting quick fix to #2665)
+          // now fixed by using isWeaklyCompatible in exprTypeArgs
+          // TODO: understand why exactly -- some types were not inferred anymore (`ant clean quick.bin` failed)
+          // (I had expected inferMethodAlternative to pick up the slack introduced by using WildcardType here)
+          isApplicableSafe(context.undetparams, followApply(pre.memberType(alt)), argtypes, pt) 
         }
         if (sym hasFlag OVERLOADED) {
           val sym1 = sym filter (alt => {
