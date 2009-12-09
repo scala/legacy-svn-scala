@@ -18,6 +18,8 @@ abstract class Comment {
   /** */
   def body: Body
   /* author|deprecated|param|return|see|since|throws|version|todo|tparam */
+
+  def short: Inline
   
   /** */
   def authors: List[Body]
