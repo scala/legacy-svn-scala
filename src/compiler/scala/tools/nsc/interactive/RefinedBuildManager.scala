@@ -126,7 +126,11 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
               case Some(oldSym) =>
                 changesOf(oldSym) = changeSet(oldSym, sym)
               case _ =>
-                // a new top level definition, no need to process
+                // a new top level definition
+                changesOf(sym) =
+                    sym.info.parents.filter(_.typeSymbol hasFlag Flags.SEALED).map(
+                      p => changeChangeSet(p.typeSymbol,
+                                           sym+" extends a sealed "+p.typeSymbol))
             }
           }
           // Create a change for the top level classes that were removed
@@ -145,7 +149,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
 
     update0(files)
   }
-  
+
   // Attempt to break the cycling reference deps as soon as possible and reduce
   // the number of compilations to minimum without having too coarse grained rules
   private def checkCycles(files: Set[AbstractFile], initial: Set[AbstractFile],
