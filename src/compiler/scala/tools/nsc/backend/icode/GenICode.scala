@@ -1621,9 +1621,10 @@ abstract class GenICode extends SubComponent  {
       override def equals(other: Any) = f == other;
     }
 
-    def duplicateFinalizer(ctx: Context, finalizer: Tree) =
-      (new DuplicateLabels(ctx.labels.keySet))(ctx, finalizer)
-
+    def duplicateFinalizer(boundLabels: collection.Set[Symbol], targetCtx: Context, finalizer: Tree) =  {
+      (new DuplicateLabels(boundLabels))(targetCtx, finalizer)
+    }
+    
     /**
      * The Context class keeps information relative to the current state
      * in code generation
@@ -1863,7 +1864,11 @@ abstract class GenICode extends SubComponent  {
         var tmp: Local = null
         val kind = toTypeKind(tree.tpe)
         val guardResult = kind != UNIT && mayCleanStack(finalizer)
-        
+        // we need to save bound labels before any code generation is performed on
+        // the current context (otherwise, any new lables in the finalizer that need to
+        // be duplicated would be incorrectly considered bound -- see #2850).
+        val boundLabels: collection.Set[Symbol] = Set.empty ++ labels.keySet
+
         if (guardResult) {
           tmp = this.makeLocal(tree.pos, tree.tpe, "tmp")
         }
@@ -1875,11 +1880,11 @@ abstract class GenICode extends SubComponent  {
 
           if (guardResult) {
             ctx1.bb.emit(STORE_LOCAL(tmp))
-            val ctx2 = genLoad(duplicateFinalizer(ctx1, finalizer), ctx1, UNIT)
+            val ctx2 = genLoad(duplicateFinalizer(boundLabels, ctx1, finalizer), ctx1, UNIT)
             ctx2.bb.emit(LOAD_LOCAL(tmp))
             ctx2
           } else
-            genLoad(duplicateFinalizer(ctx1, finalizer), ctx1, UNIT)
+            genLoad(duplicateFinalizer(boundLabels, ctx1, finalizer), ctx1, UNIT)
         } else ctx
 
 
