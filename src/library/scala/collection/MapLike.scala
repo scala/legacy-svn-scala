@@ -52,7 +52,7 @@ import PartialFunction._
  *  @define mayNotTerminateInf
  */
 trait MapLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
-  extends PartialFunction[A, B]
+  extends PartialFunction[A, B] 
      with IterableLike[(A, B), This] 
      with Subtractable[A, This] { 
 self =>

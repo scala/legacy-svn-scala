@@ -18,7 +18,7 @@ import mutable.Builder
  *  $seqInfo
  *  @tparam A    the element type of the $coll
  */
-trait Seq[+A] extends PartialFunction[Int, A]
+trait Seq[+A] extends PartialFunction[Int, A] 
                       with Iterable[A] 
                       with GenericTraversableTemplate[A, Seq]
                       with SeqLike[A, Seq[A]] {
