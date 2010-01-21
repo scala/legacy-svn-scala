@@ -22,6 +22,9 @@ trait InteractiveReader {
     }
     catching(handler) { readOneLine(prompt) }
   }
+  
+  // overide if history is available
+  def history: Option[History] = None
     
   // hack necessary for OSX jvm suspension because read calls are not restarted after SIGTSTP
   private def restartSystemCall(e: Exception): Boolean =
