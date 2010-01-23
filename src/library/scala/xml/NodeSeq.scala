@@ -80,14 +80,14 @@ abstract class NodeSeq extends immutable.Seq[Node] with SeqLike[Node, NodeSeq] {
    *  @return     ...
    */
   def \(that: String): NodeSeq = {
+    def fail = throw new IllegalArgumentException(that)
     def atResult = {
-      def fail = throw new IllegalArgumentException(that)
       lazy val y = this(0)
       val attr = 
         if (that.length == 1) fail
         else if (that(1) == '{') {
           val i = that indexOf '}'
-          if (i == -1) fail            
+          if (i == -1) fail                  
           val (uri, key) = (that.substring(2,i), that.substring(i+1, that.length()))
           if (uri == "" || key == "") fail
           else y.attribute(uri, key)
@@ -104,6 +104,7 @@ abstract class NodeSeq extends immutable.Seq[Node] with SeqLike[Node, NodeSeq] {
       NodeSeq fromSeq (this flatMap (_.child) filter cond)
       
     that match {
+      case ""                                         => fail
       case "_"                                        => makeSeq(!_.isAtom)
       case _ if (that(0) == '@' && this.length == 1)  => atResult
       case _                                          => makeSeq(_.label == that)
