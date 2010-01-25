@@ -61,7 +61,7 @@ class Regex(regex: String, groupNames: String*) {
   /** Return all matches of this regexp in given character sequence as an iterator 
    */
   def findAllIn(source: java.lang.CharSequence) = new Regex.MatchIterator(source, this, groupNames)
-
+  
   /** Return optionally first matching string of this regexp in given character sequence,
    *  None if it does not exist.
    */
@@ -287,6 +287,11 @@ object Regex {
   /** An extractor object for Matches, yielding the matched string */
   object Match {
     def unapply(m: Match): Some[String] = Some(m.matched)
+  }
+  
+  /** An extractor object that yields groups in the match. */
+  object Groups {
+    def unapplySeq(m: Match): Option[Seq[String]] = if (m.groupCount > 0) Some(1 to m.groupCount map m.group) else None
   }
 
   /** A class to step through a sequence of regex matches
