@@ -76,6 +76,13 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
   /** the compiler to compile expressions with */
   val compiler: Global = newCompiler(settings, reporter)
+  
+  /** have to be careful completion doesn't start querying global before it's ready */
+  private var _initialized = false
+  def isInitialized = _initialized
+  private[nsc] def setInitialized = {
+    _initialized = true
+  }
 
   import compiler.{ Traverser, CompilationUnit, Symbol, Name, Type }
   import compiler.definitions
@@ -187,7 +194,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   private def methodByName(c: Class[_], name: String): reflect.Method =
     c.getMethod(name, classOf[Object])
   
-  protected def parentClassLoader: ClassLoader = this.getClass.getClassLoader()  
+  protected def parentClassLoader: ClassLoader = this.getClass.getClassLoader()
+  def getInterpreterClassLoader() = classLoader
 
   // Set the current Java "context" class loader to this interpreter's class loader
   def setContextClassLoader() = classLoader.setAsContext()
@@ -939,7 +947,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     beQuietDuring {
       this.bind("interpreter", "scala.tools.nsc.Interpreter", this)
       this.bind("global", "scala.tools.nsc.Global", compiler)
-      interpret("""import interpreter.{ mkType, mkTree, mkTrees, eval }""", true)
+      interpret("""import interpreter.{ mkType, mkTree, mkTrees, eval }""", false)
     }
     
     """** Power User mode enabled - BEEP BOOP      **
@@ -967,17 +975,20 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   private def requestForIdent(line: String): Option[Request] =
     requestForName(newTermName(line))
     
-  private def typeForIdent(id: String): Option[String] =
+  def typeForIdent(id: String): Option[String] =
     requestForIdent(id) map (_ typeOf newTermName(id))
 
   def methodsOf(name: String) =
     evalExpr[List[String]](methodsCode(name)) map (x => NameTransformer.decode(getOriginalName(x)))
   
-  def completionAware(name: String) =
-    evalExpr[Option[CompletionAware]](asCompletionAwareCode(name))
+  def completionAware(name: String) = {
+    // XXX working around "object is not a value" crash, i.e.
+    // import java.util.ArrayList ; ArrayList.<tab>
+    clazzForIdent(name) flatMap (_ => evalExpr[Option[CompletionAware]](asCompletionAwareCode(name)))
+  }
     
-  def extractionValueForIdent(id: String): AnyRef =
-    requestForIdent(id).get.extractionValue
+  def extractionValueForIdent(id: String): Option[AnyRef] =
+    requestForIdent(id) map (_.extractionValue)
   
   /** Executes code looking for a manifest of type T.
    */
@@ -1006,8 +1017,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     evalExpr[Option[CompletionAware]](code)
   }
 
-  def clazzForIdent(id: String): Class[_] =
-    extractionValueForIdent(id).getClass
+  def clazzForIdent(id: String): Option[Class[_]] =
+    extractionValueForIdent(id) map (_.getClass)
 
   private def methodsCode(name: String) =
     "%s.%s(%s)".format(classOf[ReflectionCompletion].getName, "methodsOf", name)
@@ -1059,11 +1070,19 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       case _ => None
     }
   }
+
+  /** Another entry point for tab-completion, ids in scope */
+  private def unqualifiedIdNames() = partialFlatMap(allHandlers) {
+    case x: AssignHandler => List(x.helperName)
+    case x: ValHandler    => List(x.vname)
+    case x: ModuleHandler => List(x.name)
+    case x: DefHandler    => List(x.name)
+    case x: ImportHandler => x.importedNames
+  } filterNot isSynthVarName
   
   /** Another entry point for tab-completion, ids in scope */
-  def unqualifiedIds(): List[String] =
-    allValueGeneratingNames map (_.toString) sortWith (_ < _) filterNot isSynthVarName
-   
+  def unqualifiedIds() = (unqualifiedIdNames() map (_.toString)).removeDuplicates sortWith (_ < _)
+
   /** For static/object method completion */ 
   def getClassObject(path: String): Option[Class[_]] = classLoader tryToLoadClass path
   
@@ -1124,7 +1143,7 @@ object Interpreter {
   case class DebugParam[T](name: String, param: T)(implicit m: Manifest[T]) {
     val manifest = m
     val typeStr = {
-      val str = manifest.toString
+      val str = manifest.toString      
       // I'm sure there are more to be discovered...
       val regexp1 = """(.*?)\[(.*)\]""".r
       val regexp2str = """.*\.type#"""
