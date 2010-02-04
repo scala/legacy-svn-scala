@@ -175,14 +175,19 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
         System.exit(1)
     }
   }
-
+  
+  def toStatistics[A](results: Iterable[(A, Int)]): (Int, Int) = 
+    results
+      .map { case (file, resultCode) => if (resultCode == 0) (1, 0) else (0, 1) }
+      .reduceLeft((res1, res2) => (res1._1 + res2._1, res1._2 + res2._2))
+  
   def runTests(testSet: TestSet): (Int, Int) = {
     val TestSet(loc, filter, kind, msg) = testSet
     val files = fileManager.getFiles(loc, true, filter)
     if (!files.isEmpty) {
       NestUI.verbose("test files: "+files)
       NestUI.outline("\n"+msg+"\n")
-      runTestsForFiles(files, kind)
+      toStatistics(runTestsForFiles(files, kind))
     } else {
       NestUI.verbose("test dir empty\n")
       (0, 0)
@@ -223,7 +228,7 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
         Predef.exit(1)
       } else {
         NestUI.outline("\nTesting individual files\n")
-        runTestsForFiles(testFiles, fstKind)
+        toStatistics(runTestsForFiles(testFiles, fstKind))
       }
     } else (0, 0)
 
