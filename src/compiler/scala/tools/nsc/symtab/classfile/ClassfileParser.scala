@@ -428,7 +428,7 @@ abstract class ClassfileParser {
         superType :: ifaces
       }
     }
-    
+
     if (c != clazz && externalName.toString.indexOf("$") < 0 && (clazz eq NoSymbol) && (c ne NoSymbol))
       clazz = c
     
