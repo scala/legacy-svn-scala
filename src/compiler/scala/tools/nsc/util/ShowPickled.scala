@@ -14,6 +14,7 @@ import java.lang.Double.longBitsToDouble
 
 import symtab.{Flags, Names}
 import symtab.classfile.{PickleBuffer, PickleFormat}
+import interpreter.ByteCode.scalaSigBytesForPath
 
 object ShowPickled extends Names {
 
@@ -192,18 +193,27 @@ object ShowPickled extends Names {
 
     for (i <- 0 until index.length) printEntry(i)
   }
+  
+  def fromBytes(what: String, data: => Array[Byte]): Boolean = {
+    try {
+      val pickle = new PickleBuffer(data, 0, data.length)
+      Console.println(what + ": ")
+      printFile(pickle, Console.out)
+      true
+    }
+    catch {
+      case _: Exception => false
+    }
+  }
+  
+  def fromFile(path: String) = fromBytes(path, io.File(path).toByteArray)
+  def fromName(name: String) = fromBytes(name, scalaSigBytesForPath(name) getOrElse Array())
 
   def main(args: Array[String]) {
-    val file = new File(args(0))
-    try {
-      val stream = new FileInputStream(file)
-      val data = new Array[Byte](stream.available())
-      stream.read(data)
-      val pickle = new PickleBuffer(data, 0, data.length)
-      printFile(pickle, Console.out)
-    } catch {
-      case ex: IOException =>
-        Console.println("cannot read " + file + ": " + ex.getMessage())
+    args foreach { arg =>
+      val res = fromFile(arg) || fromName(arg)
+      if (!res)
+        Console.println("Cannot read " + arg)
     }
   }
 }
