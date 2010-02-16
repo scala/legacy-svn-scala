@@ -12,6 +12,7 @@ import Modifier.{ isPrivate, isProtected, isStatic }
 import scala.reflect.NameTransformer
 import scala.collection.mutable.HashMap
 import ReflectionCompletion._
+import Completion.{ excludeMethods }
 
 trait ReflectionCompletion extends CompletionAware {
   def clazz: Class[_]
@@ -38,15 +39,26 @@ trait ReflectionCompletion extends CompletionAware {
   lazy val (staticMethods, instanceMethods) = clazz.getMethods.toList partition (x => isStatic(x.getModifiers))
   lazy val (staticFields, instanceFields) = clazz.getFields.toList partition (x => isStatic(x.getModifiers))  
   
-  def isScalaClazz(cl: Class[_]) = allInterfacesFor(cl) exists (_.getName == "scala.ScalaObject")
+  /** Oops, mirror classes don't descend from scalaobject.
+   */
+  def isScalaClazz(cl: Class[_]) = {
+    (allInterfacesFor(cl) exists (_.getName == "scala.ScalaObject")) ||
+    (classForName(cl.getName + "$").isDefined)
+  }
   def allInterfacesFor(cl: Class[_]): List[Class[_]] = allInterfacesFor(cl, Nil)
-  
-  // methods to leave out of completion
-  val excludeMethods = List("hashCode", "equals", "wait", "notify", "notifyAll")  
-  
+
   private def allInterfacesFor(cl: Class[_], acc: List[Class[_]]): List[Class[_]] = {
     if (cl == null) acc.distinct
     else allInterfacesFor(cl.getSuperclass, acc ::: cl.getInterfaces.toList)
+  }
+}
+
+/** An instance completion which hides a few useless members.
+ */
+class PackageObjectCompletion(clazz: Class[_]) extends InstanceCompletion(clazz) {
+  override lazy val completions = memberCompletions
+  override def filterNotFunction(s: String) = {
+    super.filterNotFunction(s) || (s == "getClass") || (s == "toString")
   }
 }
 
@@ -70,9 +82,7 @@ class InstanceCompletion(val clazz: Class[_]) extends ReflectionCompletion {
 /** The complementary class to InstanceCompletion.  It has logic to deal with
  *  java static members and scala companion object members.
  */
-class StaticCompletion(val clazz: Class[_]) extends ReflectionCompletion {  
-  def this(name: String) = this(classForName(name.replace('/', '.')).get)
-
+class StaticCompletion(val clazz: Class[_]) extends ReflectionCompletion {
   protected def visibleMembers = whichMethods ::: whichFields
   lazy val completions = memberCompletions
   
