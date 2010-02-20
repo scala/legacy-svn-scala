@@ -101,6 +101,10 @@ class ScalacFork extends MatchingTask with TaskArgs {
     
     java setClasspath compilerPath
     java setClassname MainClass
+    
+    // if compilationPath is set, set -Dscala.home so the compilerPath is not 
+    // used by scala
+    compilationPath foreach (_ => java.createJvmarg() setValue "-Dscala.home=")
 
     // dump the arguments to a file and do  "java @file"
     val tempArgFile = io.File.makeTemp("scalacfork")
