@@ -58,7 +58,7 @@ object MainGenericRunner {
       val code = 
         if (settings.loadfiles.isDefault) dashe
         else slurp + "\n" + dashe
-      
+
       exitCond(ScriptRunner.runCommand(settings, code, fullArgs))
     }
     else command.thingToRun match {

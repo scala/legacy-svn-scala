@@ -335,7 +335,7 @@ object ScriptRunner
     settings: GenericRunnerSettings,
     command: String,
 		scriptArgs: List[String]) : Boolean =
-	{	  
+	{    
     val scriptFile = File.makeTemp("scalacmd", ".scala")
     // save the command to the file
     scriptFile writeAll List(command)
