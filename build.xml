@@ -1416,10 +1416,11 @@ BOOTRAPING TEST AND TEST SUITE
       </runtests>
       <jvmtests dir="${test.dir}/files/jvm" includes="*.scala"/>
       <residenttests dir="${test.dir}/files/res" includes="*.res"/>
-      <!-- <scripttests dir="${test.dir}/files/script" includes="*.scala"/> -->
       <buildmanagertests dir="${test.dir}/files/buildmanager" includes="*"/>
       <shootouttests dir="${test.dir}/files/shootout" includes="*.scala"/>
       <scalaptests dir="${test.dir}/files/scalap" includes="**/*.scala"/>
+	  <!-- <scalachecktests dir="${test.dir}/files/scalacheck" includes="**/*.scala"/> -->
+      <!-- <scripttests dir="${test.dir}/files/script" includes="*.scala"/> -->
     </partest>
   </target>
 

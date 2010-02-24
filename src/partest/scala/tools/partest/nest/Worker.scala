@@ -449,6 +449,9 @@ class Worker(val fileManager: FileManager) extends Actor {
           val outURL = outDir.getCanonicalFile.toURI.toURL
           val classpath: List[URL] =
             List(outURL, scalacheckURL, latestCompFile.toURI.toURL, latestLibFile.toURI.toURL, latestPartestFile.toURI.toURL).distinct
+          
+          NestUI.debug("scalacheck urls")
+          classpath foreach (x => NestUI.debug(x.toString))
 
           val logWriter = new PrintStream(new FileOutputStream(logFile))
           
