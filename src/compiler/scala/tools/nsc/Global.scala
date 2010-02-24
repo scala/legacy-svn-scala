@@ -548,13 +548,16 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
  
   /* The set of phase objects that is the basis for the compiler phase chain */
   protected val phasesSet : HashSet[SubComponent] = new HashSet[SubComponent]
+  
+  /** The names of the phases. */
+  lazy val phaseNames = {
+    new Run // force some initialization
+    phaseDescriptors map (_.phaseName)
+  }
 
   /** A description of the phases that will run */
-  def phaseDescriptions: String = {
-    new Run // force some initialization
-    
-    phaseDescriptors map (_.phaseName) mkString "\n" // todo: + " - " + phase.description
-  }
+  def phaseDescriptions: String =     
+    phaseNames mkString "\n" // todo: + " - " + phase.description
 
   // ----------- Runs ---------------------------------------
 
