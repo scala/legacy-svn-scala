@@ -86,5 +86,9 @@ class Document extends NodeSeq with pull.XMLEvent {
   // methods for NodeSeq
 
   def theSeq: Seq[Node] = this.docElem
-
+  
+  override def canEqual(other: Any) = other match {
+    case _: Document  => true
+    case _            => false
+  }
 }
