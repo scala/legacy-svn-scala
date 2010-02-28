@@ -173,6 +173,11 @@ object ScalaRunTime {
     case y: Product if x.productArity == y.productArity => x.productIterator sameElements y.productIterator
     case _                                              => false
   }
+  
+  /** Just a stub for now, but I think this is where the Predef.hash
+   *  methods should be.
+   */
+  @inline def hash(x: Any): Int = Predef.hash(x)
 
   /** Given any Scala value, convert it to a String.
    *
