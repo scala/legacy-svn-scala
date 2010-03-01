@@ -76,7 +76,7 @@ methcall object Test extends Application {
 }  
 moments object Test extends Application {
   for(val n <- List(25,75,125,200)) {
-    System.setIn(new java.io.FileInputStream(System.getProperty("scalatest.cwd")+"/moments-input"+n+".txt"))
+    System.setIn(new java.io.FileInputStream(System.getProperty("partest.cwd")+"/moments-input"+n+".txt"))
     moments.main(Array(n.toString)) 
   }
 } 
@@ -119,20 +119,20 @@ recursive object Test extends Application {
 } 
 regexdna object Test extends Application {
   for(val n <- List(100000,300000,500000)) {
-    System.setIn(new java.io.FileInputStream(System.getProperty("scalatest.cwd")+"/regexdna-input"+n+".txt"))
+    System.setIn(new java.io.FileInputStream(System.getProperty("partest.cwd")+"/regexdna-input"+n+".txt"))
     regexdna.main(Array(n.toString)) 
   }
 } 
 regexmatch object Test extends Application {
   for(val n <- List(100,6000,9000,12000)) {
-    System.setIn(new java.io.FileInputStream(System.getProperty("scalatest.cwd")+"/regexmatch-input"+n+".txt"))
+    System.setIn(new java.io.FileInputStream(System.getProperty("partest.cwd")+"/regexmatch-input"+n+".txt"))
     regexmatch.main(Array(n.toString)) 
   }
 } 
 
 revcomp object Test extends Application {
   for(val n <- List(25000,250000,2500000)) {
-    System.setIn(new java.io.FileInputStream(System.getProperty("scalatest.cwd")+"/revcomp-input"+n+".txt"))
+    System.setIn(new java.io.FileInputStream(System.getProperty("partest.cwd")+"/revcomp-input"+n+".txt"))
     revcomp.main(Array(n.toString)) 
   }
 } 
@@ -155,7 +155,7 @@ spellcheck inputfile=../../website/desc/spellcheck-input.txt
 
 object Test extends Application {
   for(val n <- List(2500,25000,250000)) {
-    System.setIn(new java.io.FileInputStream(System.getProperty("scalatest.cwd")+"/knucleotide-input"+n+".txt"))
+    System.setIn(new java.io.FileInputStream(System.getProperty("partest.cwd")+"/knucleotide-input"+n+".txt"))
     knucleotide.main(Array(n.toString)) 
   }
 } 
@@ -165,7 +165,7 @@ strcat object Test extends Application {
 } 
 sumcol object Test extends Application {
   for(val n <- List(400,700,1000,8000)) {
-    System.setIn(new java.io.FileInputStream(System.getProperty("scalatest.cwd")+"/sumcol-input"+n+".txt"))
+    System.setIn(new java.io.FileInputStream(System.getProperty("partest.cwd")+"/sumcol-input"+n+".txt"))
     sumcol.main(Array(n.toString)) 
   }
 } 
@@ -196,7 +196,7 @@ wordfreq inputfile=../../website/desc/wordfreq-input.txt
 
 object Test extends Application {
   for(val n <- List(2500,25000,250000)) {
-    System.setIn(new java.io.FileInputStream(System.getProperty("scalatest.cwd")+"/knucleotide-input"+n+".txt"))
+    System.setIn(new java.io.FileInputStream(System.getProperty("partest.cwd")+"/knucleotide-input"+n+".txt"))
     knucleotide.main(Array(n.toString)) 
   }
 } 

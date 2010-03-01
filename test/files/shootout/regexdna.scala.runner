@@ -1,5 +1,5 @@
 object Test extends Application {
-  val base = System.getProperty("scalatest.cwd")+java.io.File.separator+"regexdna-input"
+  val base = System.getProperty("partest.cwd")+java.io.File.separator+"regexdna-input"
   for (n <- List(100000,300000,500000)) {
     System.setIn(new java.io.FileInputStream(base+n+".txt"))
     regexdna.main(Array(n.toString)) 

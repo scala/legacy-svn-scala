@@ -32,15 +32,15 @@ trait FileManager {
     val res = diffWriter.toString
     if (res startsWith "No") "" else res
   }
+  
+  def testRootDir: Directory
+  def testRootPath: String
 
   var JAVACMD: String
   var JAVAC_CMD: String
 
   var CLASSPATH: String
   var LATEST_LIB: String
-  var LIB_DIR: String = ""
-
-  val TESTROOT: String
 
   var showDiff = false
   var showLog = false
