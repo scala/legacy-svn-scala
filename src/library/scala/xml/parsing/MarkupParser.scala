@@ -36,7 +36,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
   type ElementType  = NodeSeq
   type AttributesType = (MetaData, NamespaceBinding)
   type NamespaceType = NamespaceBinding
-  
+
   def truncatedError(msg: String): Nothing = throw FatalError(msg)
   def errorNoEnd(tag: String) = throw FatalError("expected closing tag of " + tag)
   
