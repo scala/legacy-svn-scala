@@ -72,6 +72,8 @@ abstract class GenJVM extends SubComponent {
    */
   class BytecodeGenerator {
     import JAccessFlags._
+    
+    def debugLevel = settings.debuginfo.indexOfChoice
 
     val MIN_SWITCH_DENSITY = 0.7
     val INNER_CLASSES_FLAGS =
@@ -112,9 +114,9 @@ abstract class GenJVM extends SubComponent {
 
     val fjbgContext = new FJBGContext(49, 0)
 
-    val emitSource = settings.debuginfo.level >= 1
-    val emitLines  = settings.debuginfo.level >= 2
-    val emitVars   = settings.debuginfo.level >= 3
+    val emitSource = debugLevel >= 1
+    val emitLines  = debugLevel >= 2
+    val emitVars   = debugLevel >= 3
 
     /** Write a class to disk, adding the Scala signature (pickled type information) and
      *  inner classes.
