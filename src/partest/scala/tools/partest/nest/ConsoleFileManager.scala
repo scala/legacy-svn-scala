@@ -22,10 +22,7 @@ import PathResolver.{ Environment, Defaults }
 import RunnerUtils._
 
 
-class ConsoleFileManager extends FileManager {
-  implicit private def temporaryPath2File(x: Path): File = x.jfile
-  implicit private def temporaryFile2Path(x: File): Path = Path(x)
-  
+class ConsoleFileManager extends FileManager {  
   var testBuild: Option[String] = PartestDefaults.testBuild
   def testBuildFile = testBuild map (testParent / _)
   
