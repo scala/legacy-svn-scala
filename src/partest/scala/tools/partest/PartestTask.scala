@@ -68,6 +68,10 @@ class PartestTask extends Task with CompilationPathProperty {
   def addConfiguredScalapTests(input: FileSet) {
     scalapFiles = Some(input)
   }
+  
+  def setSrcDir(input: String) {
+    srcDir = Some(input)
+  }
 
   def setClasspath(input: Path) {
     if (classpath.isEmpty)
@@ -122,6 +126,7 @@ class PartestTask extends Task with CompilationPathProperty {
   }
 
   private var classpath: Option[Path] = None
+  private var srcDir: Option[String] = None
   private var javacmd: Option[File] = None
   private var javaccmd: Option[File] = None
   private var showDiff: Boolean = false
@@ -156,9 +161,11 @@ class PartestTask extends Task with CompilationPathProperty {
 
   private def getFilesAndDirs(fileSet: Option[FileSet]): Array[File] = fileSet match {
     case None     => Array()
-    case Some(fs) => 
-      val fileTests = getFiles(Some(fs))
-      val dirTests: Iterator[io.Path] = fileSetToDir(fs).dirs filterNot (x => (x hasExtension "svn") || (x hasExtension "obj"))
+    case Some(fs) =>
+      def shouldExclude(name: String) = (name endsWith ".obj") || (name startsWith ".")
+    
+      val fileTests = getFiles(Some(fs)) filterNot (x => shouldExclude(x.getName))
+      val dirTests: Iterator[io.Path] = fileSetToDir(fs).dirs filterNot (x => shouldExclude(x.name))
       val dirResult = dirTests.toList.toArray map (_.jfile)
       
       dirResult ++ fileTests
@@ -178,6 +185,8 @@ class PartestTask extends Task with CompilationPathProperty {
   override def execute() {
     if (isPartestDebug)
       setProp("partest.debug", "true")
+    
+    srcDir foreach (x => setProp("partest.srcdir", x))
     
     val classpath = this.compilationPath getOrElse error("Mandatory attribute 'compilationPath' is not set.")
     
