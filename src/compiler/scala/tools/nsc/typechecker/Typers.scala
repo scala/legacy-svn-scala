@@ -534,7 +534,7 @@ trait Typers { self: Analyzer =>
     def constrTyperIf(inConstr: Boolean): Typer =  
       if (inConstr) {
         assert(context.undetparams.isEmpty)
-        newTyper(context.makeConstructorContext) 
+        newTyper(context.makeConstructorContext)
       } else this
 
     /** The typer for a label definition. If this is part of a template we
@@ -3599,7 +3599,7 @@ trait Typers { self: Analyzer =>
           reallyExists(sym) &&
           ((mode & PATTERNmode | FUNmode) != (PATTERNmode | FUNmode) || !sym.isSourceMethod)
         }
-           
+        
         if (defSym == NoSymbol) {
           var defEntry: ScopeEntry = null // the scope entry of defSym, if defined in a local scope
 
@@ -3616,7 +3616,7 @@ trait Typers { self: Analyzer =>
             defEntry = cx.scope.lookupEntry(name)
             if ((defEntry ne null) && qualifies(defEntry.sym)) {
               defSym = defEntry.sym
-            } 
+            }
             else {
               cx = cx.enclClass
               defSym = pre.member(name) filter (
