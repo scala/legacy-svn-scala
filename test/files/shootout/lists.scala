@@ -14,12 +14,12 @@ object lists {
 
       while (n > 0) {
          var L1 = new ListBuffer[Int]();
-         i=0; while (i < nSize){ L1 + i; i=i+1; } 
+         i=0; while (i < nSize){ L1 += i; i=i+1; } 
          var L2 = L1.clone().asInstanceOf[ListBuffer[Int]];
          var L3 = new ListBuffer[Int]();
-         while (L2.length > 0) L3 + L2.remove(0); 
+         while (L2.length > 0) L3 += L2.remove(0); 
          i = L3.length;
-         while (i > 0){ i=i-1; L2 + L3.remove(i); }
+         while (i > 0){ i=i-1; L2 += L3.remove(i); }
 
          Console println(L2 length);
          n = n - 1;
