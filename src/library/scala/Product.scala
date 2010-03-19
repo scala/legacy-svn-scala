@@ -28,6 +28,9 @@ trait Product extends Equals {
    *  @return  The element <code>n</code> elements after the first element
    */
   def productElement(n: Int): Any
+
+  // !!! This will be disabled pending reimplementation, but it can't be removed
+  // until starr forgets about it.
   
   /** Returns the name of the field at the given index from the definition
    *  of the class.
