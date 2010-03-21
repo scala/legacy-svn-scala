@@ -12,7 +12,7 @@ import java.util.jar.{ JarEntry, JarFile }
 import java.util.concurrent.ConcurrentHashMap
 import util.ScalaClassLoader.getSystemLoader
 
-object ByteCode {  
+object ByteCode {
   /** Until I figure out why I can't get scalap onto the classpath such
    *  that the compiler will bootstrap, we have to use reflection.
    */
@@ -34,8 +34,8 @@ object ByteCode {
   def scalaSigBytesForPath(path: String) =
     for {
       module <- DECODER
-      method <- decoderMethod("scalaSigBytes", classOf[String])
-      names <- method.invoke(module, path).asInstanceOf[Option[Array[Byte]]]
+      method <- decoderMethod("scalaSigBytes", classOf[String], classOf[ClassLoader])
+      names <- method.invoke(module, path, this.getClass.getClassLoader).asInstanceOf[Option[Array[Byte]]]
     }
     yield names  
   
