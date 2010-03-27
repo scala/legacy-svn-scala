@@ -104,8 +104,6 @@ final class ListBuffer[A]
     len += 1
     this
   }
-  
-  override def ++=(elems: Traversable[A]): this.type = if (elems ne this) super.++=(elems) else super.++=(elems.toList)
 
   /** Clears the buffer contents.
    */
