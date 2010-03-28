@@ -42,7 +42,10 @@ trait LayoutContainer extends Container.Wrapper {
   protected def areValid(c: Constraints): (Boolean, String)
   /**
    * Adds a component with the given constraints to the underlying layout 
-   * manager and the component peer.
+   * manager and the component peer. This method needs to interact properly 
+   * with method `constraintsFor`, i.e., it might need to remove previously
+   * held components in order to maintain layout consistency. See `BorderPanel`
+   * for an example.
    */
   protected def add(comp: Component, c: Constraints)
   
@@ -53,14 +56,14 @@ trait LayoutContainer extends Container.Wrapper {
    * 
    * layout(myComponent) = myConstraints
    * 
-   * also ensures that myComponent is properly add to this container.
+   * also ensures that myComponent is properly added to this container.
    */
   def layout: Map[Component, Constraints] = new Map[Component, Constraints] {
     def -= (c: Component): this.type = { _contents -= c; this }
     def += (cl: (Component, Constraints)): this.type = { update(cl._1, cl._2); this }
     override def update (c: Component, l: Constraints) {
       val (v, msg) = areValid(l)
-      if (!v) throw new IllegalArgumentException(msg) 
+      if (!v) throw new IllegalArgumentException(msg)
       add(c, l)
       this
     }
