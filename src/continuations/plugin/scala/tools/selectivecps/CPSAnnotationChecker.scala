@@ -381,8 +381,8 @@ abstract class CPSAnnotationChecker extends CPSUtils {
 
     override def addAnnotations(tree: Tree, tpe: Type): Type = {
       if (!cpsEnabled) { 
-        if (tpe.hasAnnotation(MarkerCPSTypes)) 
-          global.reporter.error(tree.pos, "this code must be compiled with the Scala continuations plugin enabled") 
+        if (tpe.annotations.nonEmpty && tpe.hasAnnotation(MarkerCPSTypes))
+          global.reporter.error(tree.pos, "this code must be compiled with the Scala continuations plugin enabled")
         return tpe 
       } 
 
