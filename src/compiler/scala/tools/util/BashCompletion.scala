@@ -111,7 +111,7 @@ _scala_commands
         }
     }
   
-  def create(cmds: List[String]) = {
+  def create(cmds: List[String]) = {    
     interpolate(completionTemplate,
       "PROGRAMS"          -> (cmds map commandForName mkString ""),
       "OPTIONS"           -> (settingNames mkString " "),
