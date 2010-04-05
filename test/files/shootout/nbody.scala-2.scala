@@ -24,7 +24,7 @@ abstract class NBodySystem {
             + bodies(i).vy * bodies(i).vy
             + bodies(i).vz * bodies(i).vz )
 
-         for (val j <- Iterator.range(i+1,bodies.length)) {
+         for (j <- Iterator.range(i+1,bodies.length)) {
             val dx = bodies(i).x - bodies(j).x
             val dy = bodies(i).y - bodies(j).y
             val dz = bodies(i).z - bodies(j).z

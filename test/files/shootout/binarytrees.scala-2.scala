@@ -20,7 +20,7 @@ object binarytrees {
          val iterations = 1 << (maxDepth - depth + minDepth)
 
          var sum = 0
-         for (val i <- Iterator.range(1,iterations+1))
+         for (i <- Iterator.range(1,iterations+1))
             sum = sum + new Tree(i,depth).isum + new Tree(-i,depth).isum
 
          print(iterations*2 + "\t trees", depth, sum)
