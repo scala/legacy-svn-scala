@@ -27,7 +27,7 @@ trait IterableViewLike[+A,
 extends Iterable[A] with IterableLike[A, This] with TraversableView[A, Coll] with TraversableViewLike[A, Coll, This]  
 { self =>
 
-  trait Transformed[+B] extends IterableView[B, Coll] with super.Transformed[B] 
+  trait Transformed[+B] extends IterableView[B, Coll] with super.Transformed[B]
 
   trait Forced[B] extends Transformed[B] with super.Forced[B] {
     override def iterator = forced.iterator

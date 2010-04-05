@@ -16,7 +16,8 @@ import generic._
 
 /** A subtrait of <code>collection.LinearSeq</code> which represents sequences
  *  that can be mutated.
- *
+ *  $linearSeqInfo
+ * 
  *  @since 2.8
  */
 trait LinearSeq[A] extends Seq[A] 
