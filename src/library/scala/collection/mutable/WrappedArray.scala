@@ -40,7 +40,14 @@ abstract class WrappedArray[T] extends IndexedSeq[T] with ArrayLike[T, WrappedAr
   def update(index: Int, elem: T): Unit
 
   /** The underlying array */
-  def array: Array[T]                                                                                                   
+  def array: Array[T]                       
+
+  override def toArray[U >: T : ClassManifest]: Array[U] =
+    if (implicitly[ClassManifest[U]].erasure eq array.getClass.getComponentType)
+      array.asInstanceOf[Array[U]]
+    else 
+      super.toArray[U]
+                                                                            
   override def stringPrefix = "WrappedArray"
   
   /** Clones this object, including the underlying Array. */
