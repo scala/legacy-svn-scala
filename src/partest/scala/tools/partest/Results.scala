@@ -9,7 +9,6 @@ import scala.collection.immutable
 
 trait Results {
   self: Universe =>
-  
 
   /** A collection of tests for a Worker.
    */
