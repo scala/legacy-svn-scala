@@ -44,12 +44,12 @@ object NotePad {
     final val NOTE = "note"
 
     /** The timestamp for when the note was created
-     *  <P>Type: INTEGER (long from System.curentTimeMillis())</P>
+     *  <P>Type: INTEGER (long from System.currentTimeMillis())</P>
      */
     final val CREATED_DATE = "created"
 
     /** The timestamp for when the note was last modified
-     *  <P>Type: INTEGER (long from System.curentTimeMillis())</P>
+     *  <P>Type: INTEGER (long from System.currentTimeMillis())</P>
      */
     final val MODIFIED_DATE = "modified"
   }

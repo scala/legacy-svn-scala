@@ -156,10 +156,10 @@ AlertDialog.show(
         case RELATIVE =>
           /* On relative Mode, we have to cut the
            * current-path at the beginning */
-          val currentPathStringLenght = currentDirectory.getAbsolutePath.length
+          val currentPathStringLength = currentDirectory.getAbsolutePath.length
           directoryEntries.add(new IconifiedText(
                                    currentFile.getAbsolutePath.
-                                   substring(currentPathStringLenght),
+                                   substring(currentPathStringLength),
                                    currentIcon))
       }
     }
