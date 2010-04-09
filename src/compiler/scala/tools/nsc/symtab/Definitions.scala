@@ -85,7 +85,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     lazy val AnyValCompanionClass = getClass("scala.runtime.AnyValCompanion").setFlag(SEALED | ABSTRACT | TRAIT)
 
     // the scala value classes
-    lazy val UnitClass    =
+    lazy val UnitClass    =                             
       newClass(ScalaPackageClass, nme.Unit, anyvalparam).setFlag(ABSTRACT | FINAL)
     
     lazy val ByteClass    = newValueClass(nme.Byte, 'B', 2)
