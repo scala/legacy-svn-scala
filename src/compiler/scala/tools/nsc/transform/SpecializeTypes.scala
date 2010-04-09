@@ -1064,7 +1064,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
                 log("call: " + call)
                 localTyper.typed(
                   treeCopy.DefDef(tree, mods, name, tparams, vparamss, tpt, 
-                              maybeCastTo(symbol.info.finalResultType, 
+                              maybeCastTo(symbol.info.finalResultType,
                                           target.info.subst(target.info.typeParams, targs).finalResultType,
                                           call)))
 */
@@ -1087,7 +1087,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
                 val fun = Apply(Select(This(symbol.owner), original),
                                 makeArguments(original, vparamss.head))
 
-                println(" ** " + symbol.tpe.finalResultType + " : " + symbol.owner.thisType.memberType(symbol).finalResultType)
                 maybeCastTo(symbol.owner.thisType.memberType(symbol).finalResultType,
                             symbol.owner.thisType.memberType(original).finalResultType, 
                             fun)
