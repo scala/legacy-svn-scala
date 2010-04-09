@@ -28,7 +28,7 @@ object ListSet extends SetFactory[ListSet] {
  *  structure. Instances of <code>ListSet</code> represent
  *  empty sets; they can be either created by calling the constructor
  *  directly, or by applying the function <code>ListSet.empty</code>.
- *
+ *  
  *  @author  Matthias Zenger
  *  @version 1.0, 09/07/2003
  *  @since   1
@@ -84,7 +84,9 @@ class ListSet[A] extends Set[A]
    *  @throws Predef.NoSuchElementException
    */
   protected def next: ListSet[A] = throw new NoSuchElementException("Next of an empty set");
-
+  
+  /** Represents an entry in the `ListSet`.
+   */
   @serializable
   protected class Node(override protected val elem: A) extends ListSet[A] {
 
