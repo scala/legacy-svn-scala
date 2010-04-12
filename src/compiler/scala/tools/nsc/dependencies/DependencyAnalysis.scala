@@ -142,7 +142,8 @@ trait DependencyAnalysis extends SubComponent with Files {
               dependencies.emits(source, nameToFile(unit.source.file, name))
           }
         }
-       
+
+        dependencies.reset(source)
         for (d <- unit.depends; if (d.sourceFile != null)){
           dependencies.depends(source, d.sourceFile);
         }
