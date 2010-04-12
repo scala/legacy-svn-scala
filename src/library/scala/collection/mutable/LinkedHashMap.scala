@@ -25,7 +25,7 @@ object LinkedHashMap extends MutableMapFactory[LinkedHashMap] {
 
 /** This class implements mutable maps using a hashtable.
  *  The iterator and all traversal methods of this class visit elements in the order they were inserted.
- *
+ *  
  *  @tparam A    the type of the keys contained in this hash map.
  *  @tparam B    the type of the values assigned to keys in this hash map.
  *  

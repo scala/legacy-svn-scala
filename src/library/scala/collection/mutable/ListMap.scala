@@ -15,7 +15,7 @@ package mutable
 import generic._
 
 /** A simple mutable map backed by a list.
- *
+ * 
  *  @tparam A    the type of the keys contained in this list map.
  *  @tparam B    the type of the values assigned to keys in this list map.
  *  

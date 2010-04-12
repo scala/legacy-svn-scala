@@ -14,7 +14,9 @@ package mutable
 import generic._
 
 /** The canonical builder for mutable Sets.
- *
+ *  
+ *  @tparam A      The type of the elements that will be contained in this set.
+ *  @tparam Coll   The type of the actual collection this set builds.
  *  @param empty   The empty element of the collection.
  *  @since 2.8
  */

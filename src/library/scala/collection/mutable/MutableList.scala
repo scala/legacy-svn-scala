@@ -16,12 +16,11 @@ import generic._
 import immutable.{List, Nil}
 
 // !!! todo: convert to LinkedListBuffer?
-/** <p>
- *    This class is used internally to represent mutable lists. It is the
- *     basis for the implementation of the classes
- *     <code>Stack</code>, and <code>Queue</code>.
- *  </p>
- *
+/** 
+ *  This class is used internally to represent mutable lists. It is the
+ *  basis for the implementation of the classes
+ *  `Stack`, and `Queue`.
+ *  
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
  *  @version 2.8
