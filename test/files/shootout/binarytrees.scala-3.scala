@@ -9,7 +9,7 @@ object binarytrees {
    def main(args: Array[String]) = {
       val n = try { Integer.parseInt(args(0)) } catch { case _ => 1 }
       val minDepth = 4
-      val maxDepth = math.max(minDepth+2,n)
+      val maxDepth = Math.max(minDepth+2,n)
 
       print("stretch tree", maxDepth+1, new Tree(0,maxDepth+1).isum)
 

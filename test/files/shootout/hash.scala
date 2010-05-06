@@ -11,10 +11,10 @@ object hash {
       var count = 0;
       val table = new HashMap[String,Int]();
 
-      for (i <- Iterator.range(1,n+1)) 
+      for (val i <- Iterator.range(1,n+1)) 
          table += (Integer.toString(i, 16) -> i)
 
-      for (i <- Iterator.range(1,n+1)) 
+      for (val i <- Iterator.range(1,n+1)) 
          if (table contains Integer.toString(i, 10)) 
             count = count + 1;
 
