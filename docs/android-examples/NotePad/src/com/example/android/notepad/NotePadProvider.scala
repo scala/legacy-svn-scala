@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2007 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.example.android.notepad
 
 import com.example.android.notepad.NotePad.Notes
@@ -8,6 +24,7 @@ import _root_.android.content.res.Resources
 import _root_.android.database.{Cursor, SQLException}
 import _root_.android.database.sqlite.{SQLiteDatabase, SQLiteOpenHelper, SQLiteQueryBuilder}
 import _root_.android.net.Uri
+import _root_.android.provider.LiveFolders
 import _root_.android.text.TextUtils
 import _root_.android.util.Log
 
@@ -30,10 +47,22 @@ object NotePadProvider {
 
   private final val NOTES = 1
   private final val NOTE_ID = 2
+  private final val LIVE_FOLDER_NOTES = 3
 
   private final val sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH)
   sUriMatcher.addURI(NotePad.AUTHORITY, "notes", NOTES)
   sUriMatcher.addURI(NotePad.AUTHORITY, "notes/#", NOTE_ID)
+  sUriMatcher.addURI(NotePad.AUTHORITY, "live_folders/notes", LIVE_FOLDER_NOTES)
+
+  // Support for Live Folders.
+  private object _LiveFolders {
+    // workaround for inherited constants from Java interfaces
+    val _ID = _root_.android.provider.BaseColumns._ID
+  }
+  private val sLiveFolderProjectionMap = new HashMap[String, String]()
+  sLiveFolderProjectionMap.put(_LiveFolders._ID, Notes._ID + " AS " + _LiveFolders._ID)
+  sLiveFolderProjectionMap.put(LiveFolders.NAME, Notes.TITLE + " AS " + LiveFolders.NAME)
+  // TODO Add more columns here for more robust Live Folders.
 
   /** This class helps open, create, and upgrade the database file.
    */
@@ -76,16 +105,18 @@ class NotePadProvider extends ContentProvider {
                      selection: String, selectionArgs: Array[String],
                      sortOrder: String): Cursor = {
     val qb = new SQLiteQueryBuilder
+    qb setTables NOTES_TABLE_NAME
 
     sUriMatcher `match` uri match {
       case NOTES =>
-        qb setTables NOTES_TABLE_NAME
         qb setProjectionMap sNotesProjectionMap
 
       case NOTE_ID =>
-        qb setTables NOTES_TABLE_NAME
         qb setProjectionMap sNotesProjectionMap
-       qb.appendWhere(Notes._ID + "=" + uri.getPathSegments().get(1))
+        qb.appendWhere(Notes._ID + "=" + uri.getPathSegments().get(1))
+
+      case LIVE_FOLDER_NOTES =>
+        qb setProjectionMap sLiveFolderProjectionMap
 
       case _ =>
         throw new IllegalArgumentException("Unknown URI " + uri)
@@ -107,9 +138,10 @@ class NotePadProvider extends ContentProvider {
 
   override def getType(uri: Uri): String =
     sUriMatcher `match` uri match {
-      case NOTES   => Notes.CONTENT_TYPE
-      case NOTE_ID => Notes.CONTENT_ITEM_TYPE
-      case _       => throw new IllegalArgumentException("Unknown URI " + uri)
+      case NOTES |
+           LIVE_FOLDER_NOTES => Notes.CONTENT_TYPE
+      case NOTE_ID           => Notes.CONTENT_ITEM_TYPE
+      case _                 => throw new IllegalArgumentException("Unknown URI " + uri)
     }
 
   override def insert(uri: Uri, initialValues: ContentValues): Uri = {
@@ -121,7 +153,7 @@ class NotePadProvider extends ContentProvider {
       if (initialValues != null) new ContentValues(initialValues)
       else new ContentValues()
 
-    val now = System.currentTimeMillis
+    val now = System.currentTimeMillis.toDouble
 
     // Make sure that the fields are all set
     if (! (values containsKey NotePad.Notes.CREATED_DATE))

@@ -2,8 +2,13 @@
 <project name="android" default="help">
 
   <target name="uninstall" description="uninstall applications">
+    <ant dir="ContactManager" target="uninstall"/>
+    <ant dir="CubeLiveWallpapaer" target="uninstall"/>
     <ant dir="FileBrowser" target="uninstall"/>
+    <ant dir="GestureBuilder" target="uninstall"/>
     <ant dir="HelloActivity" target="uninstall"/>
+    <ant dir="Home" target="uninstall"/>
+    <ant dir="JetBoy" target="uninstall"/>
     <ant dir="LunarLander" target="uninstall"/>
     <ant dir="NotePad" target="uninstall"/>
     <ant dir="PhoneDialer" target="uninstall"/>
@@ -11,8 +16,13 @@
   </target>
 
   <target name="clean" description="clean up">
+    <ant dir="ContactManager" target="clean"/>
+    <ant dir="CubeLiveWallpaper" target="clean"/>
     <ant dir="FileBrowser" target="clean"/>
+    <ant dir="GestureBuilder" target="clean"/>
     <ant dir="HelloActivity" target="clean"/>
+    <ant dir="Home" target="clean"/>
+    <ant dir="JetBoy" target="clean"/>
     <ant dir="LunarLander" target="clean"/>
     <ant dir="NotePad" target="clean"/>
     <ant dir="PhoneDialer" target="clean"/>

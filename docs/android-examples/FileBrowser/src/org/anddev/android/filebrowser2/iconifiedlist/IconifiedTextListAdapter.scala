@@ -15,7 +15,7 @@
  */
 package org.anddev.android.filebrowser2.iconifiedlist
 
-import scala.collection.jcl.ArrayList
+import scala.collection.mutable.ArrayBuffer
 
 import _root_.android.content.Context
 import _root_.android.widget.BaseAdapter
@@ -30,11 +30,11 @@ class IconifiedTextListAdapter(context: Context) extends BaseAdapter {
   /** Remember our context so we can use it when constructing views. */
   private var mContext: Context = context
 
-  private var mItems = new ArrayList[IconifiedText]
+  private var mItems = new ArrayBuffer[IconifiedText]
 
-  def addItem(it: IconifiedText) { mItems add it }
+  def addItem(it: IconifiedText) { mItems += it }
 
-  def setListItems(lit: ArrayList[IconifiedText]) { mItems = lit }
+  def setListItems(lit: ArrayBuffer[IconifiedText]) { mItems = lit }
 
   /** @return The number of items in the */
   def getCount: Int = mItems.size
