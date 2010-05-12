@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: $
-
 
 package com.example.android.contactmanager;
 
