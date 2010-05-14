@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
-<project name="build-scala" default="install">
+<project name="build-scala">
 
   <!-- Scala SDK (www.scala-lang.org) -->
   <property name="scala-compiler.jar" value="${scala.dir}/lib/scala-compiler.jar" />
