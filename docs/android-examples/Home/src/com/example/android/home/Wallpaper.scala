@@ -70,10 +70,10 @@ class Wallpaper extends Activity
   }
 
   def onItemSelected(parent: AdapterView[_], v: View, position: Int, id: Long) {
-    getWindow.setBackgroundDrawableResource(IMAGE_IDS(position))
+    getWindow setBackgroundDrawableResource IMAGE_IDS(position)
   }
     
-  def onItemClick(parent: AdapterView[_], v: View, position: Int, id: Int) {
+  def onItemClick(parent: AdapterView[_], v: View, position: Int, id: Long) {
     selectWallpaper(position)
   }
 
@@ -88,7 +88,7 @@ class Wallpaper extends Activity
     }
     mIsWallpaperSet = true
     try {
-      val stream = getResources.openRawResource(IMAGE_IDS(position))
+      val stream = getResources openRawResource IMAGE_IDS(position)
       setWallpaper(stream)
       setResult(Activity.RESULT_OK)
       finish()

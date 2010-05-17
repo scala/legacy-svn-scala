@@ -54,7 +54,7 @@ In particular:
 
   Unix:                         Windows:
      sdk.dir=/opt/android          sdk.dir=c:\\Progra~1\\Android
-     scala.dir=/opt/opt/scala      sdk.dir=c:\\Progra~1\\Scala
+     scala.dir=/opt/scala          sdk.dir=c:\\Progra~1\\Scala
      yguard.dir=/opt/yguard        sdk.dir=c:\\Progra~1\\yguard-3.2.0.1
 
 * The "default.properties" file defines the default API level of an Android
@@ -132,22 +132,48 @@ bytecode. Concretely, we have two choices :
    list).
 
    Application     <myapp>.jar   scala-library_shr.jar     classes.dex
-   (Scala+Java)   (entry point)  (orig. 3900 classes)   (Android bytecode)
+   (in Scala)      (entry point)  (orig. 3900 classes)   (Android bytecode)
    -----------------------------------------------------------------------
-   ContactManager     32K          303K (410 classes)         248K
-   CubeLiveWallpaper  31K          340K (446 classes)         278K 
+   ApiDemos          982K          361K (482 classes)         785K
+   ContactManager     32K          303K (410 classes)         246K
+   CubeLiveWallpaper  31K          347K (469 classes)         279K 
    FileBrowser        22K          371K (471 classes)         292K
    GestureBuilder     44K          410K (520 classes)         341K
    HelloActivity       4K            2K (  2 classes)           3K
-   JetBoy             45K          316K (422 classes)         285K
-   LunarLander        28K          359K (464 classes)         301K
-   NotePad            36K          299K (407 classes)         252K
+   Home               54K          321K (439 classes)         289K
+   JetBoy             45K          320K (446 classes)         280K
+   LunarLander        28K          363K (481 classes)         299K
+   NotePad            36K          299K (431 classes)         250K
    PhoneDialer         6K          292K (401 classes)         215K
-   Snake              41K          369K (472 classes)         307K
+   Snake              41K          375K (496 classes)         305K
 
    NB. The above files are generated into the "bin" output directory; the
    "yshrinklog.xml" logging file provides more information about the shrinking
    task of YGuard.
+
+   We now compare the build times and sizes of our Android applications
+   (written in Scala) with the orginal examples (written in Java) from the
+   Android distribution :
+
+   Application        classes.dex   <app>-debug.apk(1)  build time(2)
+                    (Scala / Java)   (Scala / Java)    (Scala / Java)
+   ------------------------------------------------------------------
+   ApiDemos           785K / 468K     2337K / 2174K    8m 18s / 19s
+   ContactManager     246K /  17K      103K /   25K    8m 24s /  8s
+   CubeLiveWallpaper  279K /  15K      109K /   19K    8m 10s /  5s
+   GestureBuilder     341K /  20K      132K /   28K    8m 23s /  5s
+   Home               289K /  32K      342K /  247K    9m 21s /  6s
+   JetBoy             280K /  24K     1628K / 1530K    7m 44s / 13s
+   LunarLander        299K /  18K      221K /  120K    7m 50s /  5s
+   NotePad            250K /  21K      114K /   48K    9m 10s /  3s
+   Snake              305K /  14K      118K /   18K    8m 12s /  4s
+
+   (1) Sizes of application packages include bytecode and resources.
+   (2) Elapsed times for Scala builds include YGuard processing time.
+
+   NB. The above results were measured with YGuard 3.2.0.1 on a 2.0 GHz
+   Pentium M with 2 GB of memory, using Sun JDK 1.6.0_20 and Scala 2.8.0_RC2
+   on Ubuntu 8.04 Linux.
 
 
 Have fun!

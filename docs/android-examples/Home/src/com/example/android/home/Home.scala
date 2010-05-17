@@ -19,6 +19,7 @@ package com.example.android.home
 import _root_.android.app.{Activity, ActivityManager, SearchManager}
 import _root_.android.content.{BroadcastReceiver, ComponentName, Context,
                                Intent, IntentFilter}
+import _root_.android.content.Context.ACTIVITY_SERVICE
 import _root_.android.content.pm.{ActivityInfo, PackageManager, ResolveInfo}
 import _root_.android.graphics.{Bitmap, Canvas, Paint, PaintFlagsDrawFilter,
                                 PixelFormat, Rect, ColorFilter}
@@ -31,10 +32,11 @@ import _root_.android.widget.{AdapterView, ArrayAdapter, CheckBox,
                               GridView, TextView}
 
 import java.io.{IOException, FileReader, File, FileNotFoundException}
+import java.util.Collections
 
 import org.xmlpull.v1.{XmlPullParser, XmlPullParserException}
 
-import scala.collection.mutable.{ArrayBuffer, LinkedList}
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 object Home {
   /**
@@ -66,7 +68,7 @@ object Home {
 
   private var mWallpaperChecked: Boolean = _
   private var mApplications: ArrayBuffer[ApplicationInfo] = _
-  private var mFavorites: LinkedList[ApplicationInfo] = _
+  private var mFavorites: ListBuffer[ApplicationInfo] = _
 
   @throws(classOf[XmlPullParserException])
   @throws(classOf[IOException])
@@ -120,7 +122,7 @@ object Home {
 }
 
 class Home extends Activity {
-  import Home._  // companion object
+  import Activity._, Home._  // companion object
 
   private final val mWallpaperReceiver: BroadcastReceiver =
     new WallpaperIntentReceiver
@@ -202,7 +204,7 @@ class Home extends Activity {
   }
 
   override protected def onSaveInstanceState(outState: Bundle) {
-    super.onSaveInstanceState(outState);
+    super.onSaveInstanceState(outState)
     outState.putBoolean(KEY_SAVE_GRID_OPENED, mGrid.getVisibility == View.VISIBLE)
   }
 
@@ -212,7 +214,7 @@ class Home extends Activity {
    * wallpaper.
    */
   private def registerIntentReceivers() {
-    val filter = new IntentFilter(Intent.ACTION_WALLPAPER_CHANGED)
+    var filter = new IntentFilter(Intent.ACTION_WALLPAPER_CHANGED)
     registerReceiver(mWallpaperReceiver, filter)
 
     filter = new IntentFilter(Intent.ACTION_PACKAGE_ADDED)
@@ -229,7 +231,7 @@ class Home extends Activity {
     if (mGrid == null) {
       mGrid = findViewById(R.id.all_apps).asInstanceOf[GridView]
     }
-    mGrid setAdapter new ApplicationsAdapter(this, mApplications)
+    mGrid setAdapter new ApplicationsAdapter(this, mApplications.toArray)
     mGrid setSelection 0
 
     if (mApplicationsStack == null) {
@@ -264,7 +266,7 @@ class Home extends Activity {
             Log.e(LOG_TAG, "Failed to clear wallpaper " + e)
         }
       } else {
-        getWindow.setBackgroundDrawable(new ClippedDrawable(wallpaper))
+        getWindow setBackgroundDrawable new ClippedDrawable(wallpaper)
       }
       mWallpaperChecked = true
     }
@@ -278,11 +280,11 @@ class Home extends Activity {
     if (!isLaunching || mFavorites == null) {
 
       if (mFavorites == null) {
-         mFavorites = new LinkedList[ApplicationInfo]
+         mFavorites = new ListBuffer[ApplicationInfo]
       } else {
          mFavorites.clear()
       }
-      mApplicationsStack setFavorites mFavorites
+      mApplicationsStack setFavorites mFavorites.toList
             
       val intent = new Intent(Intent.ACTION_MAIN, null)
       intent addCategory Intent.CATEGORY_LAUNCHER
@@ -299,16 +301,8 @@ class Home extends Activity {
 
         beginDocument(parser, TAG_FAVORITES)
 
-        var stop = false
-        while (!stop) {
-          nextElement(parser)
-
-          val name = parser.getName
-          if (!TAG_FAVORITE.equals(name)) {
-            stop = true
-          }
-
-          if (!stop) {
+        nextElement(parser)
+        while (TAG_FAVORITE equals parser.getName) {
           val favoritePackage = parser.getAttributeValue(null, TAG_PACKAGE)
           val favoriteClass = parser.getAttributeValue(null, TAG_CLASS)
 
@@ -316,13 +310,13 @@ class Home extends Activity {
           intent setComponent cn
           intent setFlags Intent.FLAG_ACTIVITY_NEW_TASK
 
-          val info = getApplicationInfo(packageManager, intent)
+          val info = Home.getApplicationInfo(packageManager, intent)
           if (info != null) {
             info.intent = intent
-            mFavorites +: info
+            mFavorites prepend info
           }
-          }
-        }
+          nextElement(parser)
+        } //while
       } catch {
         case e: FileNotFoundException =>
           Log.e(LOG_TAG, "Couldn't find or open favorites file " + favFile)
@@ -333,7 +327,7 @@ class Home extends Activity {
       }
     }
 
-    mApplicationsStack setFavorites mFavorites
+    mApplicationsStack setFavorites mFavorites.toList
   }
 
   /**
@@ -355,7 +349,7 @@ class Home extends Activity {
       if (Intent.ACTION_MAIN.equals(intent.getAction) &&
           !intent.hasCategory(Intent.CATEGORY_HOME)) {
 
-        val info = getApplicationInfo(manager, intent)
+        val info = Home.getApplicationInfo(manager, intent)
         if (info != null) {
           info.intent = intent
           if (!mFavorites.contains(info)) {
@@ -365,7 +359,7 @@ class Home extends Activity {
       }
     }
 
-    mApplicationsStack setRecents recents 
+    mApplicationsStack setRecents recents.toList
   }
 
   override def onWindowFocusChanged(hasFocus: Boolean) {
@@ -409,14 +403,14 @@ class Home extends Activity {
     super.onCreateOptionsMenu(menu)
 
     menu.add(0, MENU_WALLPAPER_SETTINGS, 0, R.string.menu_wallpaper)
-             .setIcon(android.R.drawable.ic_menu_gallery)
-             .setAlphabeticShortcut('W')
+        .setIcon(android.R.drawable.ic_menu_gallery)
+        .setAlphabeticShortcut('W')
     menu.add(0, MENU_SEARCH, 0, R.string.menu_search)
-            .setIcon(android.R.drawable.ic_search_category_default)
-            .setAlphabeticShortcut(SearchManager.MENU_KEY)
+        .setIcon(android.R.drawable.ic_search_category_default)
+        .setAlphabeticShortcut(SearchManager.MENU_KEY)
     menu.add(0, MENU_SETTINGS, 0, R.string.menu_settings)
-            .setIcon(android.R.drawable.ic_menu_preferences)
-            .setIntent(new Intent(android.provider.Settings.ACTION_SETTINGS))
+        .setIcon(android.R.drawable.ic_menu_preferences)
+        .setIntent(new Intent(android.provider.Settings.ACTION_SETTINGS))
 
     true
   }
@@ -470,9 +464,9 @@ class Home extends Activity {
         application.setActivity(new ComponentName(
             info.activityInfo.applicationInfo.packageName,
             info.activityInfo.name),
-            Intent.FLAG_ACTIVITY_NEW_TASK
-            | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
-            application.icon = info.activityInfo.loadIcon(manager);
+            Intent.FLAG_ACTIVITY_NEW_TASK |
+            Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
+        application.icon = info.activityInfo loadIcon manager
 
         mApplications += application
       }
@@ -488,11 +482,11 @@ class Home extends Activity {
     }
     mBlockAnimation = true
 
-    mShowApplicationsCheck.toggle();
+    mShowApplicationsCheck.toggle()
 
     if (mShowLayoutAnimation == null) {
-       mShowLayoutAnimation = AnimationUtils.loadLayoutAnimation(
-               this, R.anim.show_applications);
+      mShowLayoutAnimation =
+        AnimationUtils.loadLayoutAnimation(this, R.anim.show_applications)
     }
 
     // This enables a layout animation; if you uncomment this code, you need
@@ -502,8 +496,8 @@ class Home extends Activity {
 //  mGrid.startLayoutAnimation()
 
     if (animate) {
-      mGridEntry.setAnimationListener(new ShowGrid())
-      mGrid.startAnimation(mGridEntry)
+      mGridEntry setAnimationListener new ShowGrid
+      mGrid startAnimation mGridEntry
     }
 
     mGrid setVisibility View.VISIBLE
@@ -527,9 +521,9 @@ class Home extends Activity {
     mShowApplicationsCheck.toggle()
 
     if (mHideLayoutAnimation == null) {
-      mHideLayoutAnimation = AnimationUtils.loadLayoutAnimation(
-              this, R.anim.hide_applications);
-      }
+      mHideLayoutAnimation =
+        AnimationUtils.loadLayoutAnimation(this, R.anim.hide_applications)
+    }
 
     mGridExit setAnimationListener new HideGrid
     mGrid startAnimation mGridExit
@@ -548,7 +542,7 @@ class Home extends Activity {
    */
   private class WallpaperIntentReceiver extends BroadcastReceiver {
     override def onReceive(context: Context, intent: Intent) {
-      getWindow.setBackgroundDrawable(new ClippedDrawable(getWallpaper))
+      getWindow setBackgroundDrawable new ClippedDrawable(getWallpaper)
     }
   }
 
@@ -567,7 +561,8 @@ class Home extends Activity {
   /**
    * GridView adapter to show the list of all installed applications.
    */
-  private class ApplicationsAdapter(context: Context, apps: ArrayBuffer[ApplicationInfo]) extends ArrayAdapter(context, 0, apps) {
+  private class ApplicationsAdapter(context: Context, apps: Array[ApplicationInfo])
+  extends ArrayAdapter(context, 0, apps) {
     private val mOldBounds = new Rect
 
     override def getView(position: Int, convertView: View,
@@ -583,17 +578,17 @@ class Home extends Activity {
       var icon = info.icon
 
       if (!info.filtered) {
-        //final Resources resources = getContext().getResources();
-        var width = 42;//(int) resources.getDimension(android.R.dimen.app_icon_size)
-        var height = 42;//(int) resources.getDimension(android.R.dimen.app_icon_size)
+        //val resources = getContext.getResources
+        var width = 42 //resources.getDimension(android.R.dimen.app_icon_size).toInt
+        var height = 42 //resources.getDimension(android.R.dimen.app_icon_size).toInt
 
         val iconWidth = icon.getIntrinsicWidth
         val iconHeight = icon.getIntrinsicHeight
 
         if (icon.isInstanceOf[PaintDrawable]) {
           val painter = icon.asInstanceOf[PaintDrawable]
-          painter.setIntrinsicWidth(width)
-          painter.setIntrinsicHeight(height)
+          painter setIntrinsicWidth width
+          painter setIntrinsicHeight height
         }
 
         if (width > 0 && height > 0 && 
@@ -655,7 +650,7 @@ class Home extends Activity {
     }
 
     def onAnimationEnd(animation: Animation) {
-      mBlockAnimation = false;
+      mBlockAnimation = false
     }
 
     def onAnimationRepeat(animation: Animation) {
@@ -704,11 +699,11 @@ class Home extends Activity {
     private val mWallpaper = wallpaper
 
     override def setBounds(left: Int, top: Int, right: Int, bottom: Int) {
-      super.setBounds(left, top, right, bottom);
+      super.setBounds(left, top, right, bottom)
       // Ensure the wallpaper is as large as it really is, to avoid
       // stretching it at drawing time
       mWallpaper.setBounds(left, top, left + mWallpaper.getIntrinsicWidth,
-             top + mWallpaper.getIntrinsicHeight)
+                           top + mWallpaper.getIntrinsicHeight)
     }
 
     def draw(canvas: Canvas) {

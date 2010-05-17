@@ -2,6 +2,7 @@
 <project name="android" default="help">
 
   <target name="uninstall" description="uninstall applications">
+    <ant dir="ApiDemos" target="uninstall"/>
     <ant dir="ContactManager" target="uninstall"/>
     <ant dir="CubeLiveWallpapaer" target="uninstall"/>
     <ant dir="FileBrowser" target="uninstall"/>
@@ -16,6 +17,7 @@
   </target>
 
   <target name="clean" description="clean up">
+    <ant dir="ApiDemos" target="clean"/>
     <ant dir="ContactManager" target="clean"/>
     <ant dir="CubeLiveWallpaper" target="clean"/>
     <ant dir="FileBrowser" target="clean"/>

@@ -58,7 +58,7 @@ class ApplicationInfo {
     intent setFlags launchFlags
   }
 
-  override def equals(o: AnyRef): Boolean =
+  override def equals(o: Any): Boolean =
     if (this == o)
       true
     else o match {
