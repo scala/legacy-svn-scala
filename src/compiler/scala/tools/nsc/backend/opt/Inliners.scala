@@ -442,7 +442,10 @@ abstract class Inliners extends SubComponent {
       usesNonPublics.get(callee) match {
         case Some(b) =>
           callsNonPublic = b
-        case None => 
+        case None =>
+          // Avoiding crashing the compiler if there are open blocks.
+          if (callee.code.blocks exists (x => !x.closed)) return false
+          
           breakable {
             for (b <- callee.code.blocks; i <- b)
               i match {
