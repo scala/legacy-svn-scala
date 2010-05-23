@@ -5,7 +5,7 @@
  
 package scala.tools
 
-package object cmd {
+package object cmd {  
   def returning[T](x: T)(f: T => Unit): T = { f(x) ; x }
 
   private[cmd] def debug(msg: String) = println(msg)
