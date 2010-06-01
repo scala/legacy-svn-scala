@@ -343,7 +343,9 @@ self =>
   override def take(n: Int): Stream[A] =
     if (n <= 0 || isEmpty) Stream.Empty
     else new Stream.Cons(head, if (n == 1) Stream.empty else tail take (n-1))
-
+  
+  override def splitAt(n: Int): (Stream[A], Stream[A]) = (take(n), drop(n))
+  
   /** A substream starting at index `from`
    *  and extending up to (but not including) index `until`.
    *
