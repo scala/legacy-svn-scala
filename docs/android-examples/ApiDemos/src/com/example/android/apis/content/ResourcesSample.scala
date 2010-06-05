@@ -20,11 +20,11 @@ package com.example.android.apis.content
 // class is in a sub-package.
 import com.example.android.apis.R
 
-import _root_.android.app.Activity
-import _root_.android.content.Context
-import _root_.android.content.res.Resources
-import _root_.android.os.Bundle
-import _root_.android.widget.TextView
+import android.app.Activity
+import android.content.Context
+import android.content.res.Resources
+import android.os.Bundle
+import android.widget.TextView
 
 
 /**

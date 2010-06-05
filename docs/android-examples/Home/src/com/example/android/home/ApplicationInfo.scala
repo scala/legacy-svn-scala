@@ -16,8 +16,8 @@
 
 package com.example.android.home
 
-import _root_.android.content.{ComponentName, Intent}
-import _root_.android.graphics.drawable.Drawable
+import android.content.{ComponentName, Intent}
+import android.graphics.drawable.Drawable
 
 /**
  * Represents a launchable application. An application is made of a name

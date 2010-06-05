@@ -20,14 +20,14 @@ import java.util.Collections
 
 import scala.collection.mutable.ArrayBuffer
 
-import _root_.android.app.{AlertDialog, ListActivity}
-import _root_.android.content.{DialogInterface, Intent}
-import _root_.android.content.DialogInterface.{OnCancelListener, OnClickListener}
-import _root_.android.graphics.drawable.Drawable
-import _root_.android.net.Uri
-import _root_.android.os.Bundle
-import _root_.android.view.View
-import _root_.android.widget.ListView
+import android.app.{AlertDialog, ListActivity}
+import android.content.{DialogInterface, Intent}
+import android.content.DialogInterface.{OnCancelListener, OnClickListener}
+import android.graphics.drawable.Drawable
+import android.net.Uri
+import android.os.Bundle
+import android.view.View
+import android.widget.ListView
 
 import iconifiedlist.{IconifiedText, IconifiedTextListAdapter}
 
@@ -113,7 +113,7 @@ AlertDialog.show(
   private def openFile(aFile: File) {
     try {
       val myIntent = new Intent(
-        _root_.android.content.Intent.ACTION_VIEW,
+        android.content.Intent.ACTION_VIEW,
         Uri.parse("file://" + aFile.getAbsolutePath))
       startActivity(myIntent)
     } catch {
@@ -139,6 +139,11 @@ AlertDialog.show(
           getString(R.string.up_one_level),
           getDrawable(R.drawable.uponelevel))
 
+    val endingImage = getResources.getStringArray(R.array.fileEndingImage)
+    val endingWeb = getResources.getStringArray(R.array.fileEndingWebText)
+    val endingPackage = getResources.getStringArray(R.array.fileEndingPackage)
+    val endingAudio = getResources.getStringArray(R.array.fileEndingAudio)
+
     var currentIcon: Drawable = null
     for (currentFile <- files) {
       if (currentFile.isDirectory)
@@ -148,21 +153,17 @@ AlertDialog.show(
         /* Determine the Icon to be used,
          * depending on the FileEndings defined in:
          * res/values/fileendings.xml. */
-        if (checkEndsWithInStringArray(fileName, getResources.
-                                       getStringArray(R.array.fileEndingImage))) {
-          currentIcon = getDrawable(R.drawable.image)
-        } else if (checkEndsWithInStringArray(fileName, getResources.
-                                        getStringArray(R.array.fileEndingWebText))) {
-          currentIcon = getDrawable(R.drawable.webtext)
-        } else if (checkEndsWithInStringArray(fileName, getResources.
-                                        getStringArray(R.array.fileEndingPackage))) {
-          currentIcon = getDrawable(R.drawable.packed)
-        } else if (checkEndsWithInStringArray(fileName, getResources.
-                                        getStringArray(R.array.fileEndingAudio))) {
-          currentIcon = getDrawable(R.drawable.audio)
-        } else {
-          currentIcon = getDrawable(R.drawable.text)
-        }                   
+        currentIcon =
+          if (checkEndsWithInStringArray(fileName, endingImage))
+            getDrawable(R.drawable.image)
+          else if (checkEndsWithInStringArray(fileName, endingWeb))
+            getDrawable(R.drawable.webtext)
+          else if (checkEndsWithInStringArray(fileName, endingPackage))
+            getDrawable(R.drawable.packed)
+          else if (checkEndsWithInStringArray(fileName, endingAudio))
+            getDrawable(R.drawable.audio)
+          else
+            getDrawable(R.drawable.text)                 
       }
       displayMode match {
         case ABSOLUTE =>

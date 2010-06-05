@@ -16,11 +16,11 @@
 
 package com.example.android.apis.media
 
-import _root_.android.app.Activity
-import _root_.android.media.MediaPlayer
-import _root_.android.os.Bundle
-import _root_.android.util.Log
-import _root_.android.widget.{TextView, Toast}
+import android.app.Activity
+import android.media.MediaPlayer
+import android.os.Bundle
+import android.util.Log
+import android.widget.{TextView, Toast}
 
 import com.example.android.apis.R
 

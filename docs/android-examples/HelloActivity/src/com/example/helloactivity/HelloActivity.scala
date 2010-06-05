@@ -16,9 +16,9 @@
 
 package com.example.helloactivity
 
-import _root_.android.app.Activity
-import _root_.android.os.Bundle
-import _root_.android.widget.TextView
+import android.app.Activity
+import android.os.Bundle
+import android.widget.TextView
 
 class HelloActivity extends Activity {
 

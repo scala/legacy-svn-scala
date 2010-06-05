@@ -16,12 +16,12 @@
 
 package com.android.gesture.builder
 
-import _root_.android.app.Activity
-import _root_.android.app.Activity._
-import _root_.android.os.{Bundle, Environment}
-import _root_.android.view.{View, MotionEvent}
-import _root_.android.gesture.{Gesture, GestureLibrary, GestureOverlayView}
-import _root_.android.widget.{TextView, Toast}
+import android.app.Activity
+import android.app.Activity._
+import android.gesture.{Gesture, GestureLibrary, GestureOverlayView}
+import android.os.{Bundle, Environment}
+import android.view.{View, MotionEvent}
+import android.widget.{TextView, Toast}
 
 import java.io.File
 

@@ -15,7 +15,7 @@
  */
 package org.anddev.android.filebrowser2.iconifiedlist
 
-import _root_.android.graphics.drawable.Drawable
+import android.graphics.drawable.Drawable
 
 /**
  *  Based on Steven Osborn's tutorial on anddev.org

@@ -16,20 +16,19 @@
 
 package com.example.android.home
 
-import _root_.android.app.{Activity, ActivityManager, SearchManager}
-import _root_.android.content.{BroadcastReceiver, ComponentName, Context,
-                               Intent, IntentFilter}
-import _root_.android.content.Context.ACTIVITY_SERVICE
-import _root_.android.content.pm.{ActivityInfo, PackageManager, ResolveInfo}
-import _root_.android.graphics.{Bitmap, Canvas, Paint, PaintFlagsDrawFilter,
-                                PixelFormat, Rect, ColorFilter}
-import _root_.android.graphics.drawable.{BitmapDrawable, Drawable, PaintDrawable}
-import _root_.android.os.{Bundle, Environment}
-import _root_.android.util.{Log, Xml}
-import _root_.android.view.{KeyEvent, LayoutInflater, Menu, MenuItem, View, ViewGroup}
-import _root_.android.view.animation.{Animation, AnimationUtils, LayoutAnimationController}
-import _root_.android.widget.{AdapterView, ArrayAdapter, CheckBox,
-                              GridView, TextView}
+import android.app.{Activity, ActivityManager, SearchManager}
+import android.content.{BroadcastReceiver, ComponentName, Context,
+                        Intent, IntentFilter}
+import android.content.Context.ACTIVITY_SERVICE
+import android.content.pm.{ActivityInfo, PackageManager, ResolveInfo}
+import android.graphics.{Bitmap, Canvas, Paint, PaintFlagsDrawFilter,
+                         PixelFormat, Rect, ColorFilter}
+import android.graphics.drawable.{BitmapDrawable, Drawable, PaintDrawable}
+import android.os.{Bundle, Environment}
+import android.util.{Log, Xml}
+import android.view.{KeyEvent, LayoutInflater, Menu, MenuItem, View, ViewGroup}
+import android.view.animation.{Animation, AnimationUtils, LayoutAnimationController}
+import android.widget.{AdapterView, ArrayAdapter, CheckBox, GridView, TextView}
 
 import java.io.{IOException, FileReader, File, FileNotFoundException}
 import java.util.Collections

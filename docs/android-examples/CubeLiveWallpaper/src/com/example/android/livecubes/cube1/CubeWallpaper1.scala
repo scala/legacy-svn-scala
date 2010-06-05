@@ -16,11 +16,11 @@
 
 package com.example.android.livecubes.cube1
 
-import _root_.android.graphics.{Canvas, Paint, Rect}
-import _root_.android.os.{Handler, SystemClock}
-import _root_.android.service.wallpaper.WallpaperService
-import _root_.android.util.Log;
-import _root_.android.view.{MotionEvent, SurfaceHolder}
+import android.graphics.{Canvas, Paint, Rect}
+import android.os.{Handler, SystemClock}
+import android.service.wallpaper.WallpaperService
+import android.util.Log;
+import android.view.{MotionEvent, SurfaceHolder}
 
 /*
  * This animated wallpaper draws a rotating wireframe cube.
@@ -87,8 +87,8 @@ class CubeWallpaper1 extends WallpaperService {
     override def onSurfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
       super.onSurfaceChanged(holder, format, width, height)
       // store the center of the surface, so we can draw the cube in the right spot
-      mCenterX = width/2.0f
-      mCenterY = height/2.0f
+      mCenterX = width / 2.0f
+      mCenterY = height / 2.0f
       drawFrame()
     }
 
@@ -154,7 +154,7 @@ class CubeWallpaper1 extends WallpaperService {
     def drawCube(c: Canvas) {
       c.save()
       c.translate(mCenterX, mCenterY)
-      c.drawColor(0xff000000)
+      c drawColor 0xff000000
       drawLine(c, -400, -400, -400,  400, -400, -400)
       drawLine(c,  400, -400, -400,  400,  400, -400)
       drawLine(c,  400,  400, -400, -400,  400, -400)

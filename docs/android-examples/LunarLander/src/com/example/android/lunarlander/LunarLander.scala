@@ -16,11 +16,11 @@
  
 package com.example.android.lunarlander
 
-import _root_.android.app.Activity
-import _root_.android.os.Bundle
-import _root_.android.util.Log
-import _root_.android.view.{Menu, MenuItem, Window}
-import _root_.android.widget.TextView
+import android.app.Activity
+import android.os.Bundle
+import android.util.Log
+import android.view.{Menu, MenuItem, Window}
+import android.widget.TextView
 
 /** <p>
  *    This is a simple LunarLander activity that houses a single LunarView.

@@ -16,20 +16,21 @@
 
 package com.example.android.contactmanager
 
-import _root_.android.accounts.{Account, AccountManager, AuthenticatorDescription, OnAccountsUpdateListener}
-import _root_.android.app.Activity
-import _root_.android.content.{ContentProviderOperation, Context}
-import _root_.android.content.pm.PackageManager
-import _root_.android.graphics.drawable.Drawable
-import _root_.android.os.Bundle
-import _root_.android.provider.ContactsContract
-import _root_.android.util.Log
-import _root_.android.view.{LayoutInflater, View, ViewGroup}
-import _root_.android.widget.{AdapterView, ArrayAdapter, Button, EditText, ImageView, Spinner, TextView, Toast}
-import _root_.android.widget.AdapterView.OnItemSelectedListener
+import android.accounts.{Account, AccountManager, AuthenticatorDescription,
+                         OnAccountsUpdateListener}
+import android.app.Activity
+import android.content.{ContentProviderOperation, Context}
+import android.content.pm.PackageManager
+import android.graphics.drawable.Drawable
+import android.os.Bundle
+import android.provider.ContactsContract
+import android.util.Log
+import android.view.{LayoutInflater, View, ViewGroup}
+import android.widget.{AdapterView, ArrayAdapter, Button, EditText, ImageView,
+                       Spinner, TextView, Toast}
+import android.widget.AdapterView.OnItemSelectedListener
 
-import java.util.ArrayList
-import java.util.Iterator
+import java.util.{ArrayList, Iterator}
 
 object ContactAdder {
   final val TAG =

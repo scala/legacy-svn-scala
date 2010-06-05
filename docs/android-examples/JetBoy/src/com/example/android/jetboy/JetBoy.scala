@@ -19,11 +19,11 @@
 
 package com.example.android.jetboy
 
-import _root_.android.app.Activity
-import _root_.android.os.Bundle
-import _root_.android.util.Log
-import _root_.android.view.{KeyEvent, View}
-import _root_.android.widget.{Button, TextView}
+import android.app.Activity
+import android.os.Bundle
+import android.util.Log
+import android.view.{KeyEvent, View}
+import android.widget.{Button, TextView}
 
 class JetBoy extends Activity with View.OnClickListener {
 

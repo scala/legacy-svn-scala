@@ -16,11 +16,11 @@
 
 package com.example.android.lunarlander
 
-import _root_.android.content.Context
-import _root_.android.os.{Bundle, Handler, Message}
-import _root_.android.util.AttributeSet;
-import _root_.android.view.{KeyEvent, SurfaceHolder, SurfaceView, View}
-import _root_.android.widget.TextView
+import android.content.Context
+import android.os.{Bundle, Handler, Message}
+import android.util.AttributeSet;
+import android.view.{KeyEvent, SurfaceHolder, SurfaceView, View}
+import android.widget.TextView
 
 
 /** View that draws, takes keystrokes, etc. for a simple LunarLander game.

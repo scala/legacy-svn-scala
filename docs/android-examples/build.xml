@@ -1,10 +1,40 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <project name="android" default="help">
 
+  <target name="debug" description="build applications in debug mode">
+    <ant dir="ApiDemos" target="debug"/>
+    <ant dir="ContactManager" target="debug"/>
+    <ant dir="CubeLiveWallpaper" target="debug"/>
+    <ant dir="FileBrowser" target="debug"/>
+    <ant dir="GestureBuilder" target="debug"/>
+    <ant dir="HelloActivity" target="debug"/>
+    <ant dir="Home" target="debug"/>
+    <ant dir="JetBoy" target="debug"/>
+    <ant dir="LunarLander" target="debug"/>
+    <ant dir="NotePad" target="debug"/>
+    <ant dir="PhoneDialer" target="debug"/>
+    <ant dir="Snake" target="debug"/>
+  </target>
+
+  <target name="release" description="build applications in release mode">
+    <ant dir="ApiDemos" target="release"/>
+    <ant dir="ContactManager" target="release"/>
+    <ant dir="CubeLiveWallpaper" target="release"/>
+    <ant dir="FileBrowser" target="release"/>
+    <ant dir="GestureBuilder" target="release"/>
+    <ant dir="HelloActivity" target="release"/>
+    <ant dir="Home" target="release"/>
+    <ant dir="JetBoy" target="release"/>
+    <ant dir="LunarLander" target="release"/>
+    <ant dir="NotePad" target="release"/>
+    <ant dir="PhoneDialer" target="release"/>
+    <ant dir="Snake" target="release"/>
+  </target>
+
   <target name="uninstall" description="uninstall applications">
     <ant dir="ApiDemos" target="uninstall"/>
     <ant dir="ContactManager" target="uninstall"/>
-    <ant dir="CubeLiveWallpapaer" target="uninstall"/>
+    <ant dir="CubeLiveWallpaper" target="uninstall"/>
     <ant dir="FileBrowser" target="uninstall"/>
     <ant dir="GestureBuilder" target="uninstall"/>
     <ant dir="HelloActivity" target="uninstall"/>
@@ -34,6 +64,8 @@
   <target name="help">
     <echo message="Android Ant Build. Available targets:"/>
     <echo message="   help:      Display this help."/>
+    <echo message="   debug:     Build applications in debug mode."/>
+    <echo message="   release:   Build applications in release mode."/>
     <echo message="   uninstall: Uninstall applications from a running emulator or device."/>
     <echo message="   clean:     Clean up build files from projects."/> 
   </target>

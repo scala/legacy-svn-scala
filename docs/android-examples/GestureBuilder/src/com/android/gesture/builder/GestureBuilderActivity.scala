@@ -16,17 +16,17 @@
 
 package com.android.gesture.builder
 
-import _root_.android.app.{Dialog, AlertDialog, ListActivity}
-import _root_.android.app.Activity._
-import _root_.android.os.{AsyncTask, Bundle, Environment}
-import _root_.android.view.{ContextMenu, View, MenuItem, LayoutInflater, ViewGroup}
-import _root_.android.gesture.{Gesture, GestureLibrary, GestureLibraries}
-import _root_.android.widget.{AdapterView, ArrayAdapter, EditText, TextView, Toast}
-import _root_.android.content.{Context, DialogInterface, Intent}
-import _root_.android.content.res.Resources
-import _root_.android.text.TextUtils
-import _root_.android.graphics.Bitmap
-import _root_.android.graphics.drawable.{BitmapDrawable, Drawable}
+import android.app.{Dialog, AlertDialog, ListActivity}
+import android.app.Activity._
+import android.content.{Context, DialogInterface, Intent}
+import android.content.res.Resources
+import android.graphics.Bitmap
+import android.graphics.drawable.{BitmapDrawable, Drawable}
+import android.os.{AsyncTask, Bundle, Environment}
+import android.view.{ContextMenu, View, MenuItem, LayoutInflater, ViewGroup}
+import android.gesture.{Gesture, GestureLibrary, GestureLibraries}
+import android.text.TextUtils
+import android.widget.{AdapterView, ArrayAdapter, EditText, TextView, Toast}
 
 import java.util.Comparator
 import java.io.File

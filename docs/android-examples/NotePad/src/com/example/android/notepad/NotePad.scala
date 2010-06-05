@@ -16,8 +16,8 @@
 
 package com.example.android.notepad
 
-import _root_.android.net.Uri
-import _root_.android.provider.BaseColumns
+import android.net.Uri
+import android.provider.BaseColumns
 
 /** Convenience definitions for <code>NotePadProvider</code>.
  */

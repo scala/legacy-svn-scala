@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
-<project name="build-scala" default="install">
+<project name="build-scala">
 
   <!-- Scala SDK (www.scala-lang.org) -->
   <property name="scala-compiler.jar" value="${scala.dir}/lib/scala-compiler.jar" />
@@ -9,7 +9,7 @@
   <!-- Ant generated files -->
   <property name="scala-library_shr.jar" value="${out.dir}/scala-library_shr.jar" />
   <property name="myapp.jar" value="${out.dir}/${ant.project.name}.jar" />
-  
+
   <path id="scala.path">
     <pathelement path="${scala-compiler.jar}" />
     <pathelement path="${scala-library.jar}" />
@@ -18,6 +18,8 @@
     resource="scala/tools/ant/antlib.xml"
     classpathref="scala.path"
   />
+  <property prefix="scala" resource="library.properties" classpathref="scala.path" />
+  <echo message="Scala Version: ${scala.version.number}" level="info" />
   <taskdef
     name="yguard" classname="com.yworks.yguard.YGuardTask"
     classpath="${yguard.jar}"

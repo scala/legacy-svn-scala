@@ -18,8 +18,8 @@ package com.example.android.apis.text
 
 import com.example.android.apis.R
 
-import _root_.android.app.Activity
-import _root_.android.os.Bundle
+import android.app.Activity
+import android.os.Bundle
 
 class Marquee extends Activity {
   override protected def onCreate(savedInstanceState: Bundle) {

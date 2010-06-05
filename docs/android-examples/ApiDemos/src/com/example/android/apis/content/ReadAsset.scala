@@ -20,13 +20,11 @@ package com.example.android.apis.content
 // class is in a sub-package.
 import com.example.android.apis.R
 
-import _root_.android.app.Activity
-import _root_.android.os.Bundle
-import _root_.android.widget.TextView
+import android.app.Activity
+import android.os.Bundle
+import android.widget.TextView
 
-import java.io.IOException
-import java.io.InputStream
-
+import java.io.{IOException, InputStream}
 
 /**
  * Demonstration of styled text resources.

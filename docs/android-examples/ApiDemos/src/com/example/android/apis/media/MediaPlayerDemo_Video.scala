@@ -18,14 +18,14 @@ package com.example.android.apis.media
 
 import com.example.android.apis.R
 
-import _root_.android.app.Activity
-import _root_.android.media.{AudioManager, MediaPlayer}
-import _root_.android.media.MediaPlayer.{OnBufferingUpdateListener, OnCompletionListener,
+import android.app.Activity
+import android.media.{AudioManager, MediaPlayer}
+import android.media.MediaPlayer.{OnBufferingUpdateListener, OnCompletionListener,
                                   OnPreparedListener, OnVideoSizeChangedListener}
-import _root_.android.os.Bundle
-import _root_.android.util.Log
-import _root_.android.view.{SurfaceHolder, SurfaceView}
-import _root_.android.widget.Toast
+import android.os.Bundle
+import android.util.Log
+import android.view.{SurfaceHolder, SurfaceView}
+import android.widget.Toast
 
 object MediaPlayerDemo_Video {
   private final val TAG = "MediaPlayerDemo"

@@ -25,9 +25,9 @@ free software distributions (tested versions and download sites are given in
 parenthesis) :
 
 1) Sun Java SDK 1.6 or newer (1.6.0_20 , www.sun.com/java/jdk/)
-2) Scala SDK 2.7.5 or newer  (2.8.0_RC2, www.scala-lang.org/downloads/)
+2) Scala SDK 2.7.5 or newer  (2.8.0_RC3, www.scala-lang.org/downloads/)
 3) Android SDK 1.5 or newer  (2.1      , developer.android.com/sdk/)
-4) Apache Ant 1.7.0 or newer (1.7.1    , ant.apache.org/)
+4) Apache Ant 1.7.0 or newer (1.8.1    , ant.apache.org/)
 5) YGuard 2.3 or newer       (2.3.0.1  , www.yworks.com/products/yguard/)
 
 NB. In this document we rely on Ant tasks featured by the Scala SDK, the

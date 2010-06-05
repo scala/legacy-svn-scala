@@ -16,13 +16,13 @@
 
 package com.example.android.phonedialer
 
-import _root_.android.app.ListActivity
-import _root_.android.content.{ContentUris, Intent}
-import _root_.android.database.Cursor
-import _root_.android.os.Bundle
-import _root_.android.provider.Contacts.{People, PeopleColumns, Phones}
-import _root_.android.widget.{ListAdapter, ListView, SimpleCursorAdapter}
-import _root_.android.view.View
+import android.app.ListActivity
+import android.content.{ContentUris, Intent}
+import android.database.Cursor
+import android.os.Bundle
+import android.provider.Contacts.{People, PeopleColumns, Phones}
+import android.widget.{ListAdapter, ListView, SimpleCursorAdapter}
+import android.view.View
 
 /**
  *  Based on YouTube demo by Dan Morrill

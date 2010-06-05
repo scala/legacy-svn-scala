@@ -18,15 +18,15 @@ package com.example.android.notepad
 
 import com.example.android.notepad.NotePad.Notes
 
-import _root_.android.content.{ContentProvider, ContentUris, ContentValues, Context}
-import _root_.android.content.UriMatcher
-import _root_.android.content.res.Resources
-import _root_.android.database.{Cursor, SQLException}
-import _root_.android.database.sqlite.{SQLiteDatabase, SQLiteOpenHelper, SQLiteQueryBuilder}
-import _root_.android.net.Uri
-import _root_.android.provider.LiveFolders
-import _root_.android.text.TextUtils
-import _root_.android.util.Log
+import android.content.{ContentProvider, ContentUris, ContentValues, Context}
+import android.content.UriMatcher
+import android.content.res.Resources
+import android.database.{Cursor, SQLException}
+import android.database.sqlite.{SQLiteDatabase, SQLiteOpenHelper, SQLiteQueryBuilder}
+import android.net.Uri
+import android.provider.LiveFolders
+import android.text.TextUtils
+import android.util.Log
 
 import java.util.HashMap // note: setProjectionMap expects a Java map
 
@@ -57,7 +57,7 @@ object NotePadProvider {
   // Support for Live Folders.
   private object _LiveFolders {
     // workaround for inherited constants from Java interfaces
-    val _ID = _root_.android.provider.BaseColumns._ID
+    val _ID = android.provider.BaseColumns._ID
   }
   private val sLiveFolderProjectionMap = new HashMap[String, String]()
   sLiveFolderProjectionMap.put(_LiveFolders._ID, Notes._ID + " AS " + _LiveFolders._ID)
@@ -164,7 +164,7 @@ class NotePadProvider extends ContentProvider {
 
     if (! (values containsKey NotePad.Notes.TITLE)) {
       val r = Resources.getSystem()
-      values.put(NotePad.Notes.TITLE, r.getString(_root_.android.R.string.untitled))
+      values.put(NotePad.Notes.TITLE, r.getString(android.R.string.untitled))
     }
 
     if (! (values containsKey NotePad.Notes.NOTE))

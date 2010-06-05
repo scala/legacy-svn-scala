@@ -16,9 +16,9 @@
 
 package com.example.android.apis.appwidget
 
-import _root_.android.appwidget.AppWidgetManager
-import _root_.android.content.{BroadcastReceiver, Context, Intent}
-import _root_.android.util.Log
+import android.appwidget.AppWidgetManager
+import android.content.{BroadcastReceiver, Context, Intent}
+import android.util.Log
 
 import java.util.ArrayList
 

@@ -16,12 +16,12 @@
 
 package com.example.android.apis.appwidget
 
-import _root_.android.appwidget.{AppWidgetManager, AppWidgetProvider}
-import _root_.android.content.{ComponentName, Context}
-import _root_.android.content.pm.PackageManager
-import _root_.android.os.SystemClock
-import _root_.android.util.Log
-import _root_.android.widget.RemoteViews
+import android.appwidget.{AppWidgetManager, AppWidgetProvider}
+import android.content.{ComponentName, Context}
+import android.content.pm.PackageManager
+import android.os.SystemClock
+import android.util.Log
+import android.widget.RemoteViews
 
 // Need the following import to get access to the app resources, since this
 // class is in a sub-package.

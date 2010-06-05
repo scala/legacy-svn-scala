@@ -215,12 +215,21 @@ class Sensors extends Activity {
 
   override protected def onResume() {
     super.onResume()
-    val sensors = mSensorManager.getSensorList(Sensor.TYPE_LIGHT)
-    mSensorManager.registerListener(mGraphView, sensors.get(0),
+    /* deprecated API (SensorListener)
+    mSensorManager.registerListener(mGraphView,
             SensorManager.SENSOR_ACCELEROMETER | 
             SensorManager.SENSOR_MAGNETIC_FIELD | 
             SensorManager.SENSOR_ORIENTATION |
             SensorManager.SENSOR_DELAY_FASTEST)
+    */
+    val sensors = mSensorManager.getSensorList(
+      Sensor.TYPE_ACCELEROMETER | Sensor.TYPE_MAGNETIC_FIELD |
+      Sensor.TYPE_ORIENTATION)
+    val it = sensors.iterator()
+    while (it.hasNext) {
+      mSensorManager.registerListener(mGraphView, it.next(),
+        SensorManager.SENSOR_DELAY_FASTEST)
+    }
   }
     
   override protected def onStop() {

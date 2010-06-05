@@ -16,14 +16,12 @@
 
 package com.example.android.snake
 
-import _root_.android.content.Context
-import _root_.android.content.res.TypedArray
-import _root_.android.graphics.Bitmap
-import _root_.android.graphics.Canvas
-import _root_.android.graphics.Paint
-import _root_.android.graphics.drawable.Drawable
-import _root_.android.util.AttributeSet
-import _root_.android.view.View
+import android.content.Context
+import android.content.res.TypedArray
+import android.graphics.{Bitmap, Canvas, Paint}
+import android.graphics.drawable.Drawable
+import android.util.AttributeSet
+import android.view.View
 
 /** TileView: a View-variant designed for handling arrays of "icons" or other
  *  drawables.
@@ -42,7 +40,6 @@ extends View(context, attrs, defStyle) {
 
   private var mXOffset = 0
   private var mYOffset = 0
-
 
   /** A hash that maps integer handles specified by the subclasser to the
    *  drawable that will be used for that reference

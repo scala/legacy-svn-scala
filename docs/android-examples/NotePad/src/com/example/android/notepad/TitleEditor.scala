@@ -18,13 +18,13 @@ package com.example.android.notepad
 
 import com.example.android.notepad.NotePad.Notes
 
-import _root_.android.app.Activity
-import _root_.android.content.ContentValues
-import _root_.android.database.Cursor
-import _root_.android.net.Uri
-import _root_.android.os.Bundle
-import _root_.android.view.View
-import _root_.android.widget.{Button, EditText}
+import android.app.Activity
+import android.content.ContentValues
+import android.database.Cursor
+import android.net.Uri
+import android.os.Bundle
+import android.view.View
+import android.widget.{Button, EditText}
 
 object TitleEditor {
 

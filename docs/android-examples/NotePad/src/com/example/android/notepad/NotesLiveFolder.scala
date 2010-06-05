@@ -16,12 +16,12 @@
 
 package com.example.android.notepad
 
-import _root_.android.app.Activity
-import _root_.android.app.Activity._
-import _root_.android.content.Intent
-import _root_.android.net.Uri
-import _root_.android.os.Bundle
-import _root_.android.provider.LiveFolders
+import android.app.Activity
+import android.app.Activity._
+import android.content.Intent
+import android.net.Uri
+import android.os.Bundle
+import android.provider.LiveFolders
 
 object NotesLiveFolder {
   /**

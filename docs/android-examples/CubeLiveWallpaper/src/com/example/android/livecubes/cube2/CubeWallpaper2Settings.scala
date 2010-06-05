@@ -18,9 +18,9 @@ package com.example.android.livecubes.cube2
 
 import com.example.android.livecubes.R
 
-import _root_.android.content.SharedPreferences
-import _root_.android.os.Bundle
-import _root_.android.preference.PreferenceActivity
+import android.content.SharedPreferences
+import android.os.Bundle
+import android.preference.PreferenceActivity
 
 class CubeWallpaper2Settings extends PreferenceActivity
   with SharedPreferences.OnSharedPreferenceChangeListener {

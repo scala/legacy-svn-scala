@@ -16,13 +16,13 @@
 
 package com.example.android.home
 
-import _root_.android.content.{Context, Intent}
-import _root_.android.content.res.TypedArray
-import _root_.android.graphics.{Canvas, Rect}
-import _root_.android.graphics.drawable.Drawable
-import _root_.android.util.AttributeSet
-import _root_.android.view.{View, ViewGroup, LayoutInflater}
-import _root_.android.widget.TextView
+import android.content.{Context, Intent}
+import android.content.res.TypedArray
+import android.graphics.{Canvas, Rect}
+import android.graphics.drawable.Drawable
+import android.util.AttributeSet
+import android.view.{View, ViewGroup, LayoutInflater}
+import android.widget.TextView
 
 /**
  * The ApplicationsStackLayout is a specialized layout used for the purpose of
@@ -194,18 +194,16 @@ extends ViewGroup(context, attrs) with View.OnClickListener {
     val childWidth = mButton.getMeasuredWidth
     val childHeight = mButton.getMeasuredHeight
 
-    childTop -= childHeight + mMarginBottom;
+    childTop -= childHeight + mMarginBottom
     mButton.layout(childLeft, childTop, childLeft + childWidth, childTop + childHeight)
     childTop -= mMarginTop
     mFavoritesEnd = childTop - mMarginBottom
 
     var oldChildTop = childTop
     childTop = stackApplications(mFavorites, childLeft, childTop)
-    if (childTop != oldChildTop) {
-      mFavoritesStart = childTop + mMarginTop
-    } else {
-      mFavoritesStart = -1
-    }
+    mFavoritesStart =
+      if (childTop != oldChildTop) childTop + mMarginTop
+      else -1
 
     stackApplications(mRecents, childLeft, childTop)
   }
@@ -224,11 +222,9 @@ extends ViewGroup(context, attrs) with View.OnClickListener {
 
     val oldChildLeft = childLeft
     childLeft = stackApplications(mFavorites, childLeft, childTop)
-    if (childLeft != oldChildLeft) {
-      mFavoritesStart = childLeft + mMarginLeft
-    } else {
-      mFavoritesStart = -1
-    }
+    mFavoritesStart =
+      if (childLeft != oldChildLeft) childLeft + mMarginLeft
+     else -1
 
     stackApplications(mRecents, childLeft, childTop)
   }

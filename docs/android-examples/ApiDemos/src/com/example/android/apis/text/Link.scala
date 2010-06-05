@@ -18,13 +18,13 @@ package com.example.android.apis.text
 
 import com.example.android.apis.R
 
-import _root_.android.app.Activity
-import _root_.android.graphics.Typeface
-import _root_.android.os.Bundle
-import _root_.android.text.{Html, SpannableString, Spanned}
-import _root_.android.text.method.LinkMovementMethod
-import _root_.android.text.style.{StyleSpan, URLSpan}
-import _root_.android.widget.TextView
+import android.app.Activity
+import android.graphics.Typeface
+import android.os.Bundle
+import android.text.{Html, SpannableString, Spanned}
+import android.text.method.LinkMovementMethod
+import android.text.style.{StyleSpan, URLSpan}
+import android.widget.TextView
 
 class Link extends Activity {
   override protected def onCreate(savedInstanceState: Bundle) {

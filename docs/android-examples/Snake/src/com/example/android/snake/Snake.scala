@@ -16,10 +16,10 @@
 
 package com.example.android.snake
 
-import _root_.android.app.Activity
-import _root_.android.os.Bundle
-import _root_.android.view.Window
-import _root_.android.widget.TextView
+import android.app.Activity
+import android.os.Bundle
+import android.view.Window
+import android.widget.TextView
 
 object Snake {
   private val ICICLE_KEY = "snake-view"

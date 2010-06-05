@@ -16,16 +16,16 @@
 
 package com.example.android.contactmanager
 
-import _root_.android.app.Activity
-import _root_.android.content.Intent
-import _root_.android.database.Cursor
-import _root_.android.net.Uri
-import _root_.android.os.Bundle
-import _root_.android.provider.ContactsContract
-import _root_.android.util.Log
-import _root_.android.view.View
-import _root_.android.widget.{Button, CheckBox, CompoundButton, ListView, SimpleCursorAdapter}
-import _root_.android.widget.CompoundButton.OnCheckedChangeListener
+import android.app.Activity
+import android.content.Intent
+import android.database.Cursor
+import android.net.Uri
+import android.os.Bundle
+import android.provider.ContactsContract
+import android.util.Log
+import android.view.View
+import android.widget.{Button, CheckBox, CompoundButton, ListView, SimpleCursorAdapter}
+import android.widget.CompoundButton.OnCheckedChangeListener
 
 object ContactManager {
   final val TAG = "ContactManager"
@@ -54,20 +54,20 @@ final class ContactManager extends Activity {
 
     // Initialize class properties
     mShowInvisible = false
-    mShowInvisibleControl.setChecked(mShowInvisible)
+    mShowInvisibleControl setChecked mShowInvisible
 
     // Register handler for UI elements
     mAddAccountButton.setOnClickListener(new View.OnClickListener() {
       def onClick(v: View) {
-        Log.d(TAG, "mAddAccountButton clicked");
-        launchContactAdder();
+        Log.d(TAG, "mAddAccountButton clicked")
+        launchContactAdder()
       }
     })
     mShowInvisibleControl.setOnCheckedChangeListener(new OnCheckedChangeListener() {
       def onCheckedChanged(buttonView: CompoundButton, isChecked: Boolean) {
-        Log.d(TAG, "mShowInvisibleControl changed: " + isChecked);
-        mShowInvisible = isChecked;
-        populateContactList();
+        Log.d(TAG, "mShowInvisibleControl changed: " + isChecked)
+        mShowInvisible = isChecked
+        populateContactList()
       }
     })
 
@@ -85,7 +85,7 @@ final class ContactManager extends Activity {
 
     val adapter = new SimpleCursorAdapter(this, R.layout.contact_entry, cursor,
       fields, Array(R.id.contactEntryText))
-    mContactList.setAdapter(adapter)
+    mContactList setAdapter adapter
   }
 
   /**

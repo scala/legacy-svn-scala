@@ -15,10 +15,10 @@
  */
 package org.anddev.android.filebrowser2.iconifiedlist
 
-import _root_.android.content.Context
-import _root_.android.graphics.drawable.Drawable
-import _root_.android.view.ViewGroup.LayoutParams
-import _root_.android.widget.{ImageView, LinearLayout, TextView}
+import android.content.Context
+import android.graphics.drawable.Drawable
+import android.view.ViewGroup.LayoutParams
+import android.widget.{ImageView, LinearLayout, TextView}
 
 /**
  *  Based on Steven Osborn's tutorial on anddev.org

@@ -17,9 +17,9 @@ package org.anddev.android.filebrowser2.iconifiedlist
 
 import scala.collection.mutable.ArrayBuffer
 
-import _root_.android.content.Context
-import _root_.android.widget.BaseAdapter
-import _root_.android.view.{View, ViewGroup}
+import android.content.Context
+import android.widget.BaseAdapter
+import android.view.{View, ViewGroup}
 
 /**
  *  Based on Steven Osborn's tutorial on anddev.org

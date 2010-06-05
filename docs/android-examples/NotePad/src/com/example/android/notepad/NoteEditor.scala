@@ -18,16 +18,16 @@ package com.example.android.notepad
 
 import com.example.android.notepad.NotePad.Notes
 
-import _root_.android.app.Activity
-import _root_.android.app.Activity._
-import _root_.android.content.{ComponentName, ContentValues, Context, Intent}
-import _root_.android.database.Cursor
-import _root_.android.graphics.{Canvas, Paint, Rect}
-import _root_.android.net.Uri
-import _root_.android.os.Bundle
-import _root_.android.util.{AttributeSet, Log}
-import _root_.android.view.{Menu, MenuItem}
-import _root_.android.widget.EditText
+import android.app.Activity
+import android.app.Activity._
+import android.content.{ComponentName, ContentValues, Context, Intent}
+import android.database.Cursor
+import android.graphics.{Canvas, Paint, Rect}
+import android.net.Uri
+import android.os.Bundle
+import android.util.{AttributeSet, Log}
+import android.view.{Menu, MenuItem}
+import android.widget.EditText
 
 object NoteEditor {
 
@@ -244,18 +244,18 @@ class NoteEditor extends Activity {
     if (mState == STATE_EDIT) {
       menu.add(0, REVERT_ID, 0, R.string.menu_revert)
           .setShortcut('0', 'r')
-          .setIcon(_root_.android.R.drawable.ic_menu_revert)
+          .setIcon(android.R.drawable.ic_menu_revert)
       if (!mNoteOnly) {
         menu.add(0, DELETE_ID, 0, R.string.menu_delete)
             .setShortcut('1', 'd')
-            .setIcon(_root_.android.R.drawable.ic_menu_delete)
+            .setIcon(android.R.drawable.ic_menu_delete)
       }
 
       // Build the menus that are shown when inserting.
     } else {
       menu.add(0, DISCARD_ID, 0, R.string.menu_discard)
           .setShortcut('0', 'd')
-          .setIcon(_root_.android.R.drawable.ic_menu_delete)
+          .setIcon(android.R.drawable.ic_menu_delete)
     }
 
     // If we are working on a full note, then append to the

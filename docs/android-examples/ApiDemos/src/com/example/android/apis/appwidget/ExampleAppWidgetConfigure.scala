@@ -16,16 +16,16 @@
 
 package com.example.android.apis.appwidget
 
-import _root_.android.app.Activity
-import _root_.android.app.Activity._
-import _root_.android.appwidget.AppWidgetManager
-import _root_.android.content.{Context, Intent, SharedPreferences}
-import _root_.android.os.Bundle
-import _root_.android.util.Log
-import _root_.android.view.View
-import _root_.android.widget.EditText
+import android.app.Activity
+import android.app.Activity._
+import android.appwidget.AppWidgetManager
+import android.content.{Context, Intent, SharedPreferences}
+import android.os.Bundle
+import android.util.Log
+import android.view.View
+import android.widget.EditText
 
-import java.util.ArrayList;
+import java.util.ArrayList
 
 // Need the following import to get access to the app resources, since this
 // class is in a sub-package.
@@ -51,8 +51,8 @@ object ExampleAppWidgetConfigure {
   // Read the prefix from the SharedPreferences object for this widget.
   // If there is no preference saved, get the default from a resource
   def loadTitlePref(context: Context, appWidgetId: Int): String = {
-    val prefs = context.getSharedPreferences(PREFS_NAME, 0);
-    val prefix = prefs.getString(PREF_PREFIX_KEY + appWidgetId, null);
+    val prefs = context.getSharedPreferences(PREFS_NAME, 0)
+    val prefix = prefs.getString(PREF_PREFIX_KEY + appWidgetId, null)
     if (prefix != null)
       prefix
     else

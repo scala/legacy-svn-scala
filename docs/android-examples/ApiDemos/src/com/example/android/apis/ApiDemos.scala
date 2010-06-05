@@ -16,12 +16,12 @@
 
 package com.example.android.apis
 
-import _root_.android.app.ListActivity
-import _root_.android.content.Intent
-import _root_.android.content.pm.{PackageManager, ResolveInfo}
-import _root_.android.os.Bundle
-import _root_.android.view.View
-import _root_.android.widget.{ListView, SimpleAdapter}
+import android.app.ListActivity
+import android.content.Intent
+import android.content.pm.{PackageManager, ResolveInfo}
+import android.os.Bundle
+import android.view.View
+import android.widget.{ListView, SimpleAdapter}
 
 import java.text.Collator
 import java.util.{ArrayList, Collections, Comparator, HashMap => JHashMap,
@@ -71,11 +71,8 @@ class ApiDemos extends ListActivity {
       return myData
 
     var prefixPath: Array[String] =
-      if (prefix equals "") {
-        null
-      } else {
-        prefix split "/"
-      }
+      if (prefix equals "") null
+      else prefix split "/"
         
     val len = list.size()
         

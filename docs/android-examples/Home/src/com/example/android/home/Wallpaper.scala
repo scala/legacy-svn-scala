@@ -16,13 +16,13 @@
 
 package com.example.android.home
 
-import _root_.android.app.Activity
-import _root_.android.content.Context
-import _root_.android.os.Bundle
-import _root_.android.util.Log
-import _root_.android.view.{MotionEvent, View, ViewGroup, Window}
-import _root_.android.widget.{AdapterView, BaseAdapter, Gallery, ImageView}
-import _root_.android.widget.Gallery.LayoutParams
+import android.app.Activity
+import android.content.Context
+import android.os.Bundle
+import android.util.Log
+import android.view.{MotionEvent, View, ViewGroup, Window}
+import android.widget.{AdapterView, BaseAdapter, Gallery, ImageView}
+import android.widget.Gallery.LayoutParams
 
 import java.io.{IOException, InputStream}
 

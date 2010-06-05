@@ -18,17 +18,17 @@ package com.example.android.notepad
 
 import com.example.android.notepad.NotePad.Notes
 
-import _root_.android.app.Activity._
-import _root_.android.app.ListActivity
-import _root_.android.content.{ComponentName, ContentUris, Intent}
-import _root_.android.database.Cursor
-import _root_.android.net.Uri
-import _root_.android.os.Bundle
-import _root_.android.util.Log
-import _root_.android.view.{ContextMenu, Menu, MenuItem, View}
-import _root_.android.view.ContextMenu.ContextMenuInfo
-import _root_.android.widget.{AdapterView, ListView, SimpleCursorAdapter}
-import _root_.android.widget.AdapterView.AdapterContextMenuInfo
+import android.app.Activity._
+import android.app.ListActivity
+import android.content.{ComponentName, ContentUris, Intent}
+import android.database.Cursor
+import android.net.Uri
+import android.os.Bundle
+import android.util.Log
+import android.view.{ContextMenu, Menu, MenuItem, View}
+import android.view.ContextMenu.ContextMenuInfo
+import android.widget.{AdapterView, ListView, SimpleCursorAdapter}
+import android.widget.AdapterView.AdapterContextMenuInfo
 
 object NotesList {
   private final val TAG = "NotesList"
@@ -72,7 +72,7 @@ class NotesList extends ListActivity {
 
     // Used to map notes entries from the database to views
     val adapter = new SimpleCursorAdapter(this, R.layout.noteslist_item, cursor,
-                                          Array(Notes.TITLE), Array(_root_.android.R.id.text1))
+                                          Array(Notes.TITLE), Array(android.R.id.text1))
     setListAdapter(adapter)
   }
 
@@ -82,8 +82,8 @@ class NotesList extends ListActivity {
     // This is our one standard application action -- inserting a
     // new note into the list.
     menu.add(0, MENU_ITEM_INSERT, 0, R.string.menu_insert)
-                .setShortcut('3', 'a')
-                .setIcon(_root_.android.R.drawable.ic_menu_add)
+        .setShortcut('3', 'a')
+        .setIcon(android.R.drawable.ic_menu_add)
 
     // Generate any additional actions that can be performed on the
     // overall list.  In a normal install, there are no additional
@@ -91,8 +91,9 @@ class NotesList extends ListActivity {
     // our menu with their own actions.
     val intent = new Intent(null, getIntent().getData())
     intent addCategory Intent.CATEGORY_ALTERNATIVE
-    menu.addIntentOptions(Menu.CATEGORY_ALTERNATIVE, 0, 0,
-                new ComponentName(this, classOf[NotesList]), null, intent, 0, null)
+    menu.addIntentOptions(
+      Menu.CATEGORY_ALTERNATIVE, 0, 0,
+      new ComponentName(this, classOf[NotesList]), null, intent, 0, null)
     true
   }
 

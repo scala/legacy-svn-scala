@@ -20,15 +20,15 @@
 
 package com.example.android.jetboy
 
-import _root_.android.content.Context
-import _root_.android.content.res.Resources
-import _root_.android.graphics.{Bitmap, BitmapFactory, Canvas}
-import _root_.android.media.JetPlayer
-import _root_.android.media.JetPlayer.OnJetEventListener
-import _root_.android.os.{Bundle, Handler, Message}
-import _root_.android.util.{AttributeSet, Log}
-import _root_.android.view.{KeyEvent, SurfaceHolder, SurfaceView, View}
-import _root_.android.widget.{Button, TextView}
+import android.content.Context
+import android.content.res.Resources
+import android.graphics.{Bitmap, BitmapFactory, Canvas}
+import android.media.JetPlayer
+import android.media.JetPlayer.OnJetEventListener
+import android.os.{Bundle, Handler, Message}
+import android.util.{AttributeSet, Log}
+import android.view.{KeyEvent, SurfaceHolder, SurfaceView, View}
+import android.widget.{Button, TextView}
 
 import java.util.{Timer, TimerTask, Vector}
 import java.util.concurrent.ConcurrentLinkedQueue

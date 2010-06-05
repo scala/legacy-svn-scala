@@ -16,18 +16,18 @@
 
 package com.example.android.lunarlander
 
-import _root_.android.content.Context
-import _root_.android.graphics.{Bitmap, BitmapFactory, Canvas, Paint, RectF}
-import _root_.android.graphics.drawable.Drawable
-import _root_.android.os.{Bundle, Handler, Message}
-import _root_.android.view.{KeyEvent, SurfaceHolder, View}
+import android.content.Context
+import android.graphics.{Bitmap, BitmapFactory, Canvas, Paint, RectF}
+import android.graphics.drawable.Drawable
+import android.os.{Bundle, Handler, Message}
+import android.view.{KeyEvent, SurfaceHolder, View}
 
 
 private[lunarlander] object LunarThread {
 
   /** Difficulty setting constants */
   object Difficulty extends Enumeration {
-  val EASY, HARD, MEDIUM = Value
+    val EASY, HARD, MEDIUM = Value
   }
   type Difficulty = Difficulty.Value
 
@@ -44,7 +44,7 @@ private[lunarlander] object LunarThread {
 
   /** State-tracking constants */
   object State extends Enumeration {
-  val LOSE, PAUSE, READY, RUNNING, WIN = Value
+    val LOSE, PAUSE, READY, RUNNING, WIN = Value
   }
   type State = State.Value
 
@@ -158,7 +158,7 @@ private[lunarlander] class LunarThread(mSurfaceHolder: SurfaceHolder,
   private var mRotating = 0
 
   /** Indicate whether the surface has been created & is ready to draw */
-  private var mRun = false;
+  private var mRun = false
 
   /** Scratch rect object. */
   private var mScratchRect = new RectF(0, 0, 0, 0)

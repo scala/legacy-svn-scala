@@ -17,9 +17,10 @@
 package com.example.android.apis.media
 
 import com.example.android.apis.R
-import _root_.android.app.Activity
-import _root_.android.os.Bundle
-import _root_.android.widget.{MediaController, Toast, VideoView}
+
+import android.app.Activity
+import android.os.Bundle
+import android.widget.{MediaController, Toast, VideoView}
 
 class VideoViewDemo extends Activity {
 

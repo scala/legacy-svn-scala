@@ -18,11 +18,11 @@ package com.example.android.apis.animation
 
 import com.example.android.apis.R
 
-import _root_.android.app.Activity
-import _root_.android.os.Bundle
-import _root_.android.widget.{ListView, ArrayAdapter, AdapterView, ImageView}
-import _root_.android.view.{View, ViewGroup}
-import _root_.android.view.animation.{Animation, AccelerateInterpolator,
+import android.app.Activity
+import android.os.Bundle
+import android.widget.{ListView, ArrayAdapter, AdapterView, ImageView}
+import android.view.{View, ViewGroup}
+import android.view.animation.{Animation, AccelerateInterpolator,
                                DecelerateInterpolator}
 
 /**
