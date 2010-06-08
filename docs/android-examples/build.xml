@@ -1,8 +1,8 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <project name="android" default="help">
 
     <description>
-        Builds the Android applications targeted to the Scala platform.
+Builds the Android applications targeted to the Scala platform.
     </description>
 
     <!-- Setting-up Ant contrib tasks -->
@@ -30,6 +30,11 @@
         <ant.dirs target="release"/>
     </target>
 
+    <target name="install" description="install applications">
+        <!--<confirm message="Is the Android emulator up and ready ?" />-->
+        <ant.dirs target="install"/>
+    </target>
+
     <target name="uninstall" description="uninstall applications">
         <ant.dirs target="uninstall"/>
     </target>
@@ -46,22 +51,24 @@
         <echo message="   release:       Build applications in release mode."/>
         <echo message="   uninstall:     Uninstall applications from a running emulator or device."/>
         <echo message="   clean:         Clean up build files from projects."/>
-        <echo message="   setenv:        Update software locations to current environment."/>
+        <echo message="Available advanced targets:"/>
+        <echo message="   setenv:        Update build.properties files according to current environment."/>
     </target>
 
     <target name="setenv">
         <condition property="prop.file" value="${basedir}/ant-windows.properties">
            <and>
-               <os family="unix" />
+               <os family="windows" />
                <available file="${basedir}/ant-windows.properties" />
            </and>
         </condition>
         <condition property="prop.file" value="${basedir}/ant-unix.properties">
            <and>
-               <os family="windows" />
+               <os family="unix" />
                <available file="${basedir}/ant-unix.properties" />
            </and>
         </condition>
+        <echo message="Reading environment settings from ${prop.file}" level="verbose" />
         <!--<property file="${prop.file}" prefix="os" /> -->
         <loadproperties srcfile="${prop.file}" prefix="os" >
             <filterchain>
@@ -74,23 +81,23 @@
         <echo message="prop.file=${prop.file}" level="debug" />
         <if><isset property="prop.file" />
         <then>
-            <for list="Snake" param="dir"><sequential>
-                <loadfile
-                    srcfile="@{dir}/build.properties"
-                    property="toto">
-                    <filterchain>
-                        <tokenfilter>
-    <replaceregex pattern="^sdk\.dir=.*$" replace="sdk.dir=${os.sdk.dir}" flags="gi"/>
-    <replaceregex pattern="^scala\.dir=.*$" replace="scala.dir=${os.scala.dir}" flags="gi"/>
-    <replaceregex pattern="^yguard\.dir=.*$" replace="yguard.dir=${os.yguard.dir}" flags="gi"/>
-                        </tokenfilter>
-                    </filterchain>
-                </loadfile>
-                <echo message="${toto}" file="@{dir}/build.properties" />
+            <for list="${dirs}" param="dir"><sequential>
+                <replaceproperty
+                    name="sdk.dir"
+                    value="${os.sdk.dir}"
+                    dir="@{dir}"/>
+                <replaceproperty
+                    name="scala.dir"
+                    value="${os.scala.dir}"
+                    dir="@{dir}"/>
+                <replaceproperty
+                    name="yguard.dir"
+                    value="${os.yguard.dir}"
+                    dir="@{dir}"/>
             </sequential></for>
         </then>
         <else>
-           <echo message="The setenv task needs a configuration file" />
+            <echo message="The setenv task needs a configuration file" />
         </else>
         </if>
     </target>
@@ -103,6 +110,33 @@
                     <ant dir="@{dir}" target="@{target}" />
                 </sequential>
             </for>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="replaceproperty">
+        <attribute name="name" />
+        <attribute name="value" />
+        <attribute name="dir" />
+        <sequential>
+            <replaceregexp byline="true">
+                <regexp pattern="^@{name}=(.*)"/>
+                <substitution expression="@{name}=@{value}"/>
+                <fileset dir="@{dir}" includes="build.properties"/>
+            </replaceregexp>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="confirm">
+        <attribute name="message" />
+        <sequential>
+            <input message="@{message}"
+                validargs="y,n"
+                addproperty="do.confirm"
+            />
+            <condition property="do.abort">
+               <equals arg1="n" arg2="${do.confirm}"/>
+            </condition>
+            <fail if="do.abort">Build aborted by user.</fail>    
         </sequential>
     </macrodef>
 
