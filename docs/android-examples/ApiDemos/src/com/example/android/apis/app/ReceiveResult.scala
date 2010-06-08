@@ -22,14 +22,14 @@ import java.util.Map
 
 import com.example.android.apis.R
 
-import _root_.android.app.Activity
-import _root_.android.app.Activity._
-import _root_.android.content.Intent
-import _root_.android.text.Editable
-import _root_.android.os.Bundle
-import _root_.android.view.View
-import _root_.android.view.View.OnClickListener
-import _root_.android.widget.{Button, TextView}
+import android.app.Activity
+import android.app.Activity._
+import android.content.Intent
+import android.text.Editable
+import android.os.Bundle
+import android.view.View
+import android.view.View.OnClickListener
+import android.widget.{Button, TextView}
 
 /**
  * Shows how an activity can send data to its launching activity when done.y.
@@ -132,7 +132,7 @@ class ReceiveResult extends Activity {
         // text in 'data' as its result.
       } else {
         text append "(okay "
-        text append java.lang.Integer.toString(resultCode)
+        text append resultCode.toString
         text append ") "
         if (data != null) {
           text append data.getAction

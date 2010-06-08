@@ -39,6 +39,7 @@ import android.widget.TextView
  *                 and in the layout xml files.
  */
 class ResourcesSample extends Activity {
+
   override protected def onCreate(savedInstanceState: Bundle) {
     super.onCreate(savedInstanceState)
 

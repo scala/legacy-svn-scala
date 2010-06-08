@@ -18,15 +18,15 @@ package com.example.android.apis.app
 
 import com.example.android.apis.R
 
-import _root_.android.app.Activity
-import _root_.android.app.Activity._
-import _root_.android.content.Intent
-import _root_.android.content.pm.{PackageManager, ResolveInfo}
-import _root_.android.os.Bundle
-import _root_.android.speech.RecognizerIntent
-import _root_.android.view.View
-import _root_.android.view.View.OnClickListener
-import _root_.android.widget.{ArrayAdapter, Button, ListView}
+import android.app.Activity
+import android.app.Activity._
+import android.content.Intent
+import android.content.pm.{PackageManager, ResolveInfo}
+import android.os.Bundle
+import android.speech.RecognizerIntent
+import android.view.View
+import android.view.View.OnClickListener
+import android.widget.{ArrayAdapter, Button, ListView}
 
 /**
  * Sample code that invokes the speech recognition intent API.

@@ -27,17 +27,8 @@ import java.text.Collator
 import java.util.{ArrayList, Collections, Comparator, HashMap => JHashMap,
                   List => JList, Map => JMap}
 
-object ApiDemos {
-  private final val sDisplayNameComparator = new Comparator[JMap[String, AnyRef]] {
-    private final val collator = Collator.getInstance
-
-    def compare(map1: JMap[String, AnyRef], map2: JMap[String, AnyRef]): Int = {
-      collator.compare(map1 get "title", map2 get "title")
-    }
-  }
-}
-
 class ApiDemos extends ListActivity {
+  import ApiDemos._  // companion object
 
   override def onCreate(savedInstanceState: Bundle) {
     super.onCreate(savedInstanceState)
@@ -107,7 +98,7 @@ class ApiDemos extends ListActivity {
       }
     }
 
-    Collections.sort(myData, ApiDemos.sDisplayNameComparator)
+    Collections.sort(myData, sDisplayNameComparator)
         
     myData
   }
@@ -125,18 +116,32 @@ class ApiDemos extends ListActivity {
     result
   }
 
-  protected def addItem(data: JList[JMap[String, AnyRef]], name: String, intent: Intent) {
+  protected def addItem(data: JList[JMap[String, AnyRef]],
+                        name: String, intent: Intent) {
     val temp = new JHashMap[String, Object]
     temp.put("title", name)
     temp.put("intent", intent)
     data add temp
   }
 
-  override protected def onListItemClick(l: ListView, v: View, position: Int, id: Long) {
+  override protected def onListItemClick(l: ListView, v: View,
+                                         position: Int, id: Long) {
     val map = l.getItemAtPosition(position).asInstanceOf[JMap[String, AnyRef]]
 
     val intent = map.get("intent").asInstanceOf[Intent]
     startActivity(intent)
+  }
+
+}
+
+object ApiDemos {
+
+  private final val sDisplayNameComparator = new Comparator[JMap[String, AnyRef]] {
+    private final val collator = Collator.getInstance
+
+    def compare(map1: JMap[String, AnyRef], map2: JMap[String, AnyRef]): Int = {
+      collator.compare(map1 get "title", map2 get "title")
+    }
   }
 
 }

@@ -16,13 +16,13 @@
 
 package com.example.android.apis.app
 
-import _root_.android.app.{Activity, AlertDialog, Dialog, ProgressDialog}
-import _root_.android.content.DialogInterface
-import _root_.android.content.DialogInterface._
-import _root_.android.os.{Bundle, Handler, Message}
-import _root_.android.view.{LayoutInflater, View}
-import _root_.android.view.View.OnClickListener
-import _root_.android.widget.Button
+import android.app.{Activity, AlertDialog, Dialog, ProgressDialog}
+import android.content.DialogInterface
+import android.content.DialogInterface._
+import android.os.{Bundle, Handler, Message}
+import android.view.{LayoutInflater, View}
+import android.view.View.OnClickListener
+import android.widget.Button
 
 import com.example.android.apis.R
 

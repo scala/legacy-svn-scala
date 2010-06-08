@@ -20,8 +20,8 @@ package com.example.android.apis.app
 // class is in a sub-package.
 import com.example.android.apis.R
 
-import _root_.android.content.{BroadcastReceiver, Context, Intent}
-import _root_.android.widget.Toast
+import android.content.{BroadcastReceiver, Context, Intent}
+import android.widget.Toast
 
 /**
  * This is an example of implement an {@link BroadcastReceiver} for an alarm that

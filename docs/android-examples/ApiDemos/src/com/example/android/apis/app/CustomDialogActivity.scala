@@ -20,8 +20,8 @@ package com.example.android.apis.app
 // class is in a sub-package.
 import com.example.android.apis.R
 
-import _root_.android.app.Activity
-import _root_.android.os.Bundle
+import android.app.Activity
+import android.os.Bundle
 
 /**
  * <h3>Dialog Activity</h3>

@@ -20,13 +20,13 @@ package com.example.android.apis.app
 // class is in a sub-package.
 import com.example.android.apis.R
 
-import _root_.android.app.{Activity, AlarmManager, PendingIntent}
-import _root_.android.content.Intent
-import _root_.android.content.Context._
-import _root_.android.os.{Bundle, SystemClock}
-import _root_.android.view.View
-import _root_.android.view.View.OnClickListener
-import _root_.android.widget.{Button, Toast}
+import android.app.{Activity, AlarmManager, PendingIntent}
+import android.content.Intent
+import android.content.Context._
+import android.os.{Bundle, SystemClock}
+import android.view.View
+import android.view.View.OnClickListener
+import android.widget.{Button, Toast}
 
 
 /**

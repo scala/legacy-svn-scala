@@ -16,12 +16,12 @@
 
 package com.example.android.apis.app
 
-import _root_.android.app.Activity
-import _root_.android.os.Bundle
-import _root_.android.speech.tts.TextToSpeech
-import _root_.android.util.Log
-import _root_.android.view.View
-import _root_.android.widget.Button
+import android.app.Activity
+import android.os.Bundle
+import android.speech.tts.TextToSpeech
+import android.util.Log
+import android.view.View
+import android.widget.Button
 
 import com.example.android.apis.R
 

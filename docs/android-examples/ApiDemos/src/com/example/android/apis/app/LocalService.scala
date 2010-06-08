@@ -16,14 +16,13 @@
 
 package com.example.android.apis.app
 
-import _root_.android.app.{Notification, NotificationManager,
-                           PendingIntent, Service}
-import _root_.android.app.Service._
-import _root_.android.content.Intent
-import _root_.android.content.Context._
-import _root_.android.os.{Binder, IBinder, Parcel}
-import _root_.android.util.Log
-import _root_.android.widget.Toast
+import android.app.{Notification, NotificationManager, PendingIntent, Service}
+import android.app.Service._
+import android.content.Intent
+import android.content.Context._
+import android.os.{Binder, IBinder, Parcel}
+import android.util.Log
+import android.widget.Toast
 
 // Need the following import to get access to the app resources, since this
 // class is in a sub-package.

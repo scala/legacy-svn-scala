@@ -18,9 +18,9 @@ package com.example.android.apis.app
 
 import com.example.android.apis.R
 
-import _root_.android.app.{Activity, NotificationManager}
-import _root_.android.content.Context._
-import _root_.android.os.Bundle
+import android.app.{Activity, NotificationManager}
+import android.content.Context._
+import android.os.Bundle
 
 /**
  * This activity is run as the click activity for {@link IncomingMessage}.

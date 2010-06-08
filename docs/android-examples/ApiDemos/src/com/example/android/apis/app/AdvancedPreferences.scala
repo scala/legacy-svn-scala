@@ -18,11 +18,11 @@ package com.example.android.apis.app
 
 import com.example.android.apis.R
 
-import _root_.android.content.SharedPreferences
-import _root_.android.content.SharedPreferences.OnSharedPreferenceChangeListener
-import _root_.android.os.{Bundle, Handler}
-import _root_.android.preference.{PreferenceActivity, CheckBoxPreference}
-import _root_.android.widget.Toast
+import android.content.SharedPreferences
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener
+import android.os.{Bundle, Handler}
+import android.preference.{PreferenceActivity, CheckBoxPreference}
+import android.widget.Toast
 
 /**
  * Example that shows finding a preference from the hierarchy and a custom

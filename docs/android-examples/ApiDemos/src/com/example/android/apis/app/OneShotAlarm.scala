@@ -16,8 +16,8 @@
 
 package com.example.android.apis.app
 
-import _root_.android.content.{Context, Intent, BroadcastReceiver}
-import _root_.android.widget.Toast
+import android.content.{Context, Intent, BroadcastReceiver}
+import android.widget.Toast
 
 // Need the following import to get access to the app resources, since this
 // class is in a sub-package.

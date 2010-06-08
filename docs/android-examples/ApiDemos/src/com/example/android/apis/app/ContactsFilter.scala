@@ -18,15 +18,14 @@ package com.example.android.apis.app
 
 // Need the following import to get access to the app resources, since this
 // class is in a sub-package.
-import _root_.android.app.Activity
-import _root_.android.content.{ComponentName, Context}
-import _root_.android.os.{Bundle, RemoteException}
-import _root_.android.view.View
-import _root_.android.view.View.OnClickListener
-import _root_.android.widget.Button
-
 import com.example.android.apis.R
 
+import android.app.Activity
+import android.content.{ComponentName, Context}
+import android.os.{Bundle, RemoteException}
+import android.view.View
+import android.view.View.OnClickListener
+import android.widget.Button
 
 /**
  * Front-end for launching {@link ContactsFilterInstrumentation} example

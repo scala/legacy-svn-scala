@@ -20,13 +20,12 @@ package com.example.android.apis.app
 // class is in a sub-package.
 import com.example.android.apis.R
 
-import _root_.android.app.{Activity, NotificationManager}
-import _root_.android.content.Intent
-import _root_.android.content.Context._
-import _root_.android.os.Bundle
-import _root_.android.view.{Gravity, View, ViewGroup, WindowManager}
-import _root_.android.widget.{ImageButton, LinearLayout, RelativeLayout}
-
+import android.app.{Activity, NotificationManager}
+import android.content.Intent
+import android.content.Context._
+import android.os.Bundle
+import android.view.{Gravity, View, ViewGroup, WindowManager}
+import android.widget.{ImageButton, LinearLayout, RelativeLayout}
 
 /**
  * Activity used by StatusBarNotification to show the notification to the user.

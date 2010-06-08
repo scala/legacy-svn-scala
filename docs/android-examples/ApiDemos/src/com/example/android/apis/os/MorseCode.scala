@@ -79,7 +79,7 @@ class MorseCode extends Activity {
   }
 
   /** Called when the button is pushed */
-  val mClickListener = new View.OnClickListener() {
+  private val mClickListener = new View.OnClickListener() {
     def onClick(v: View) {
       // Get the text out of the view
       val text = mTextView.getText.toString

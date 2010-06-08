@@ -18,7 +18,7 @@ package com.example.android.apis.app
 
 import com.example.android.apis.R
 
-import _root_.android.app.Activity
+import android.app.Activity
 import android.content.{ComponentName, Context, Intent, ServiceConnection}
 import android.os.{Bundle, RemoteException, Handler, IBinder, Message, Process}
 import android.view.View

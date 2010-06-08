@@ -18,10 +18,10 @@ package com.example.android.apis.app
 
 import com.example.android.apis.{ApiDemosApplication, R}
 
-import _root_.android.app.Application
-import _root_.android.content.SharedPreferences
-import _root_.android.os.Bundle
-import _root_.android.preference.{PreferenceActivity, PreferenceManager}
+import android.app.Application
+import android.content.SharedPreferences
+import android.os.Bundle
+import android.preference.{PreferenceActivity, PreferenceManager}
 
 /**
  * This activity is an example of a simple settings screen that has default

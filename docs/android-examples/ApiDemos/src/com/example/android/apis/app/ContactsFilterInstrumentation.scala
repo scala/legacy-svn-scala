@@ -16,13 +16,11 @@
 
 package com.example.android.apis.app
 
-import _root_.android.app.{Activity, Instrumentation}
-import _root_.android.content.Intent
-import _root_.android.os.Bundle
-import _root_.android.view.KeyEvent
-import _root_.android.util.Log
-
-import java.util.Map;
+import android.app.{Activity, Instrumentation}
+import android.content.Intent
+import android.os.Bundle
+import android.view.KeyEvent
+import android.util.Log
 
 /**
  * This is an example implementation of the {@link android.app.Instrumentation}
@@ -31,6 +29,7 @@ import java.util.Map;
  * process, for controlling and monitoring what it does.
  */
 class ContactsFilterInstrumentation extends Instrumentation {
+
   override def onCreate(arguments: Bundle) {
     super.onCreate(arguments)
 

@@ -18,14 +18,14 @@ package com.example.android.apis.app
 
 // Need the following import to get access to the app resources, since this
 // class is in a sub-package.
-import _root_.android.app.Activity
-import _root_.android.content.Intent
-import _root_.android.os.{Bundle, Process}
-import _root_.android.view.View
-import _root_.android.view.View.OnClickListener
-import _root_.android.widget.Button
-
 import com.example.android.apis.R
+
+import android.app.Activity
+import android.content.Intent
+import android.os.{Bundle, Process}
+import android.view.View
+import android.view.View.OnClickListener
+import android.widget.Button
 
 /**
  * Example of explicitly starting the {@link ServiceStartArguments}.

@@ -20,13 +20,13 @@ package com.example.android.apis.app
 // class is in a sub-package.
 import com.example.android.apis.R
 
-import _root_.android.app.{Activity, AlarmManager, PendingIntent}
-import _root_.android.content.Intent
-import _root_.android.content.Context._
-import _root_.android.os.{Bundle, SystemClock}
-import _root_.android.view.View
-import _root_.android.view.View.OnClickListener
-import _root_.android.widget.{Button, Toast}
+import android.app.{Activity, AlarmManager, PendingIntent}
+import android.content.Intent
+import android.content.Context._
+import android.os.{Bundle, SystemClock}
+import android.view.View
+import android.view.View.OnClickListener
+import android.widget.{Button, Toast}
 
 import java.util.Calendar
 
@@ -119,7 +119,7 @@ class AlarmController extends Activity {
       val intent = new Intent(AlarmController.this, classOf[RepeatingAlarm])
       val sender =
         PendingIntent.getBroadcast(AlarmController.this, 0, intent, 0)
-            
+
       // We want the alarm to go off 30 seconds from now.
       var firstTime = SystemClock.elapsedRealtime
       firstTime += 15*1000
@@ -146,7 +146,7 @@ class AlarmController extends Activity {
       val intent = new Intent(AlarmController.this, classOf[RepeatingAlarm])
       val sender =
         PendingIntent.getBroadcast(AlarmController.this, 0, intent, 0)
-            
+
       // And cancel the alarm.
       val am = getSystemService(ALARM_SERVICE).asInstanceOf[AlarmManager]
       am.cancel(sender)

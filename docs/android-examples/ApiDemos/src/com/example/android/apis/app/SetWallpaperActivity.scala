@@ -22,14 +22,14 @@ import com.example.android.apis.R
 
 import java.io.IOException
 
-import _root_.android.app.{Activity, WallpaperManager}
-import _root_.android.graphics.{Color, PorterDuff}
-import _root_.android.graphics.drawable.Drawable
-import _root_.android.os.Bundle
-import _root_.android.view.View
-import _root_.android.view.WindowManager
-import _root_.android.view.View.OnClickListener
-import _root_.android.widget.{Button, ImageView}
+import android.app.{Activity, WallpaperManager}
+import android.graphics.{Color, PorterDuff}
+import android.graphics.drawable.Drawable
+import android.os.Bundle
+import android.view.View
+import android.view.WindowManager
+import android.view.View.OnClickListener
+import android.widget.{Button, ImageView}
 
 /**
  * <h3>SetWallpaper Activity</h3>

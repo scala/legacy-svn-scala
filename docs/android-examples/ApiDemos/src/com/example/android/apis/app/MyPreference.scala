@@ -18,13 +18,13 @@ package com.example.android.apis.app
 
 import com.example.android.apis.R
 
-import _root_.android.content.Context
-import _root_.android.content.res.TypedArray
-import _root_.android.os.{Parcel, Parcelable}
-import _root_.android.preference.Preference
-import _root_.android.util.AttributeSet
-import _root_.android.view.View
-import _root_.android.widget.TextView
+import android.content.Context
+import android.content.res.TypedArray
+import android.os.{Parcel, Parcelable}
+import android.preference.Preference
+import android.util.AttributeSet
+import android.view.View
+import android.widget.TextView
 
 /**
  * This is an example of a custom preference type. The preference counts the

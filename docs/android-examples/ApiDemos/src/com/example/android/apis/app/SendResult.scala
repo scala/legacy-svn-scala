@@ -20,14 +20,13 @@ package com.example.android.apis.app
 // class is in a sub-package.
 import com.example.android.apis.R
 
-import _root_.android.app.Activity
-import _root_.android.app.Activity._
-import _root_.android.content.Intent
-import _root_.android.os.Bundle
-import _root_.android.view.View
-import _root_.android.view.View.OnClickListener
-import _root_.android.widget.Button
-
+import android.app.Activity
+import android.app.Activity._
+import android.content.Intent
+import android.os.Bundle
+import android.view.View
+import android.view.View.OnClickListener
+import android.widget.Button
 
 /**
  * Example of receiving a result from another activity.

@@ -24,11 +24,11 @@ import android.app.Activity
 import android.os.Bundle
 import android.widget.TextView
 
-
 /**
  * Demonstration of styled text resources.
  */
 class StyledText extends Activity {
+
   override protected def onCreate(savedInstanceState: Bundle) {
     super.onCreate(savedInstanceState)
 

@@ -18,8 +18,8 @@ package com.example.android.apis.app
 
 import com.example.android.apis.R
 
-import _root_.android.os.Bundle
-import _root_.android.preference.PreferenceActivity
+import android.os.Bundle
+import android.preference.PreferenceActivity
 
 class PreferenceDependencies extends PreferenceActivity {
 

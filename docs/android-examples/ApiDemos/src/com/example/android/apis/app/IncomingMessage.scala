@@ -18,13 +18,13 @@ package com.example.android.apis.app
 
 import com.example.android.apis.R
 
-import _root_.android.app.{Activity, Notification, NotificationManager, PendingIntent}
-import _root_.android.content.{Context, Intent}
-import _root_.android.content.Context._
-import _root_.android.os.Bundle
-import _root_.android.view.{LayoutInflater, View}
-import _root_.android.view.View.OnClickListener
-import _root_.android.widget.{Button, TextView, Toast}
+import android.app.{Activity, Notification, NotificationManager, PendingIntent}
+import android.content.{Context, Intent}
+import android.content.Context._
+import android.os.Bundle
+import android.view.{LayoutInflater, View}
+import android.view.View.OnClickListener
+import android.widget.{Button, TextView, Toast}
 
 class IncomingMessage extends Activity {
   override protected def onCreate(savedInstanceState: Bundle) {

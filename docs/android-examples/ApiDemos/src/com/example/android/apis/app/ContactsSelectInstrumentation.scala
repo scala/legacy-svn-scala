@@ -16,12 +16,12 @@
 
 package com.example.android.apis.app
 
-import _root_.android.app.{Activity, Instrumentation}
-import _root_.android.content.{Intent, IntentFilter}
-import _root_.android.os.{Bundle, IBinder}
-import _root_.android.view.KeyEvent
-import _root_.android.provider.Contacts
-import _root_.android.util.Log
+import android.app.{Activity, Instrumentation}
+import android.content.{Intent, IntentFilter}
+import android.os.{Bundle, IBinder}
+import android.view.KeyEvent
+import android.provider.Contacts
+import android.util.Log
 
 import java.util.Map;
 

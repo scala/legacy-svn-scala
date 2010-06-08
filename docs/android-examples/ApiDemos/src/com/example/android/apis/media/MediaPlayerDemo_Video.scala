@@ -27,17 +27,6 @@ import android.util.Log
 import android.view.{SurfaceHolder, SurfaceView}
 import android.widget.Toast
 
-object MediaPlayerDemo_Video {
-  private final val TAG = "MediaPlayerDemo"
-
-  private final val MEDIA = "media"
-  private final val LOCAL_AUDIO = 1
-  private final val STREAM_AUDIO = 2
-  private final val RESOURCES_AUDIO = 3
-  private final val LOCAL_VIDEO = 4
-  private final val STREAM_VIDEO = 5
-}
-
 class MediaPlayerDemo_Video extends Activity
                                with OnBufferingUpdateListener
                                with OnCompletionListener
@@ -201,4 +190,15 @@ class MediaPlayerDemo_Video extends Activity
     holder.setFixedSize(mVideoWidth, mVideoHeight)
     mMediaPlayer.start()
   }
+}
+
+object MediaPlayerDemo_Video {
+  private final val TAG = "MediaPlayerDemo"
+
+  private final val MEDIA = "media"
+  private final val LOCAL_AUDIO = 1
+  private final val STREAM_AUDIO = 2
+  private final val RESOURCES_AUDIO = 3
+  private final val LOCAL_VIDEO = 4
+  private final val STREAM_VIDEO = 5
 }

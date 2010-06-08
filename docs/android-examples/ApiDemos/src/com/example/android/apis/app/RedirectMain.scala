@@ -18,13 +18,13 @@ package com.example.android.apis.app
 
 import com.example.android.apis.R
 
-import _root_.android.app.Activity
-import _root_.android.app.Activity._
-import _root_.android.content.{Intent, SharedPreferences}
-import _root_.android.os.Bundle
-import _root_.android.view.View
-import _root_.android.view.View.OnClickListener
-import _root_.android.widget.{Button, TextView}
+import android.app.Activity
+import android.app.Activity._
+import android.content.{Intent, SharedPreferences}
+import android.os.Bundle
+import android.view.View
+import android.view.View.OnClickListener
+import android.widget.{Button, TextView}
 
 /**
  * Entry into our redirection example, describing what will happen.

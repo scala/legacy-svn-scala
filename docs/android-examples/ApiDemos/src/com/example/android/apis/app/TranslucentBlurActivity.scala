@@ -20,10 +20,9 @@ package com.example.android.apis.app
 // class is in a sub-package.
 import com.example.android.apis.R
 
-import _root_.android.app.Activity
-import _root_.android.os.Bundle
-import _root_.android.view.WindowManager
-
+import android.app.Activity
+import android.os.Bundle
+import android.view.WindowManager
 
 /**
  * <h3>Fancy Blur Activity</h3>

@@ -20,12 +20,11 @@ package com.example.android.apis.app
 // class is in a sub-package.
 import com.example.android.apis.R
 
-import _root_.android.app.{Notification, NotificationManager,
-                           PendingIntent, Service}
-import _root_.android.content.Intent
-import _root_.android.content.Context._
-import _root_.android.os.{Binder, IBinder, Parcel, RemoteException}
-import _root_.android.widget.Toast
+import android.app.{Notification, NotificationManager, PendingIntent, Service}
+import android.content.Intent
+import android.content.Context._
+import android.os.{Binder, IBinder, Parcel, RemoteException}
+import android.widget.Toast
 
 /**
  * This is an example of implementing an application service that will run in
@@ -93,7 +92,7 @@ class AlarmService_Service extends Service {
   private def showNotification() {
     // In this sample, we'll use the same text for the ticker and the
     // expanded notification
-    val text = getText(R.string.alarm_service_started);
+    val text = getText(R.string.alarm_service_started)
 
     // Set the icon, scrolling text and timestamp
     val notification = new Notification(R.drawable.stat_sample, text,

@@ -18,20 +18,20 @@ package com.example.android.apis.app
 
 import com.example.android.apis.R
 
-import _root_.android.app.Activity
-import _root_.android.content.{Intent, SharedPreferences}
-import _root_.android.os.Bundle
-import _root_.android.preference.PreferenceManager
-import _root_.android.view.{View, ViewGroup}
-import _root_.android.view.View.OnClickListener
-import _root_.android.widget.{Button, LinearLayout, TextView, Toast}
-import _root_.android.widget.LinearLayout.LayoutParams
+import android.app.Activity
+import android.content.{Intent, SharedPreferences}
+import android.os.Bundle
+import android.preference.PreferenceManager
+import android.view.{View, ViewGroup}
+import android.view.View.OnClickListener
+import android.widget.{Button, LinearLayout, TextView, Toast}
+import android.widget.LinearLayout.LayoutParams
 
 /**
  * Demonstrates launching a PreferenceActivity and grabbing a value it saved.
  */
 object LaunchingPreferences {
-  private final val REQUEST_CODE_PREFERENCES = 1;
+  private final val REQUEST_CODE_PREFERENCES = 1
 }
 
 class LaunchingPreferences extends Activity with OnClickListener {

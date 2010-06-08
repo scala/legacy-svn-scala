@@ -24,7 +24,7 @@ import android.os.Bundle
 import android.view.{Menu, MenuInflater, MenuItem, ViewGroup}
 import android.widget.{ArrayAdapter, FrameLayout, LinearLayout, Spinner,
                        TextView, Toast}
-import _root_.android.widget.LinearLayout.LayoutParams
+import android.widget.LinearLayout.LayoutParams
 
 /**
  * Demonstrates inflating menus from XML. There are different menu XML resources

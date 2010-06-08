@@ -18,14 +18,14 @@ package com.example.android.apis.app
 
 import com.example.android.apis.R
 
-import _root_.android.app.{Activity, Notification, NotificationManager, PendingIntent}
-import _root_.android.app.Activity._
-import _root_.android.content.Intent
-import _root_.android.content.Context._
-import _root_.android.os.Bundle
-import _root_.android.view.View
-import _root_.android.view.View.OnClickListener
-import _root_.android.widget.{Button, RemoteViews}
+import android.app.{Activity, Notification, NotificationManager, PendingIntent}
+import android.app.Activity._
+import android.content.Intent
+import android.content.Context._
+import android.os.Bundle
+import android.view.View
+import android.view.View.OnClickListener
+import android.widget.{Button, RemoteViews}
 
 /**
  * Demonstrates adding notifications to the status bar

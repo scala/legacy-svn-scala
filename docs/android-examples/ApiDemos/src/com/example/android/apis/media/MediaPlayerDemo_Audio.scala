@@ -24,17 +24,6 @@ import android.widget.{TextView, Toast}
 
 import com.example.android.apis.R
 
-object MediaPlayerDemo_Audio {
-  private final val TAG = "MediaPlayerDemo"
-
-  private final val MEDIA = "media"
-  private final val LOCAL_AUDIO = 1
-  private final val STREAM_AUDIO = 2
-  private final val RESOURCES_AUDIO = 3
-  private final val LOCAL_VIDEO = 4
-  private final val STREAM_VIDEO = 5
-}
-
 class MediaPlayerDemo_Audio extends Activity {
   import MediaPlayerDemo_Audio._  // companion object
 
@@ -100,4 +89,15 @@ class MediaPlayerDemo_Audio extends Activity {
     }
 
   }
+}
+
+object MediaPlayerDemo_Audio {
+  private final val TAG = "MediaPlayerDemo"
+
+  private final val MEDIA = "media"
+  private final val LOCAL_AUDIO = 1
+  private final val STREAM_AUDIO = 2
+  private final val RESOURCES_AUDIO = 3
+  private final val LOCAL_VIDEO = 4
+  private final val STREAM_VIDEO = 5
 }

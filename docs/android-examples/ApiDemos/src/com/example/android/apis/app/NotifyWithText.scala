@@ -18,12 +18,12 @@ package com.example.android.apis.app
 
 import com.example.android.apis.R
 
-import _root_.android.app.Activity
-import _root_.android.widget.Button
-import _root_.android.os.Bundle
-import _root_.android.view.View
-import _root_.android.view.View.OnClickListener
-import _root_.android.widget.Toast
+import android.app.Activity
+import android.widget.Button
+import android.os.Bundle
+import android.view.View
+import android.view.View.OnClickListener
+import android.widget.Toast
 
 /**
  * When you push the button on this Activity, it creates a {@link Toast} object and
