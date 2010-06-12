@@ -1,0 +1,49 @@
+#!/bin/sh
+
+##############################################################################
+# Copyright 2009-2010, LAMP/EPFL
+#
+# This is free software; see the distribution for copying conditions.
+# There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.
+##############################################################################
+
+if [ -z "$ANDROID_SDK_HOME" ] ; then
+    ANDROID_SDK_HOME=$HOME/.android
+fi
+if [ -z "$ANDROID_SDK_ROOT" ] ; then
+    ANDROID_SDK_ROOT=/opt/android/
+fi
+if [ -z "$ANDROID_API_LEVEL" ] ; then
+    API_LEVEL=8
+else
+    API_LEVEL="$ANDROID_API_LEVEL"
+fi
+
+IMAGES_DIR=$ANDROID_SDK_ROOT/add-ons/addon_google_apis_google_inc_$API_LEVEL/images
+SYSTEM=$IMAGES_DIR/system.img
+RAMDISK=$IMAGES_DIR/ramdisk.img
+USERDATA=$IMAGES_DIR/userdata.img
+
+EMULATOR=$ANDROID_SDK_ROOT/tools/emulator
+
+if [ -z "$ANDROID_EMULATOR_OPTS" ] ; then
+    EMULATOR_OPTS="-no-boot-anim -no-skin -no-jni -memory 1024"
+else
+    EMULATOR_OPTS="$ANDROID_EMULATOR_OPTS"
+fi
+
+if [ -z "$ANDROID_AVD" ] ; then
+    AVD="2.2_128M_HVGA"
+else
+    AVD="$ANDROID_AVD"
+fi
+
+if [ ! -f "$ANDROID_SDK_HOME/avd/$AVD.ini" ] ; then
+    echo "Error: Device '$AVD' is unknown."
+    echo "  We cannot execute $EMULATOR"
+    exit 1
+fi
+
+$EMULATOR -system $SYSTEM -ramdisk $RAMDISK -init-data $USERDATA \
+    $EMULATOR_OPTS -avd $AVD

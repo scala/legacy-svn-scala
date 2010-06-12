@@ -12,7 +12,7 @@ Note that the description below applies to both the Unix and Windows
 environments.
 
 All Android examples have been run successfully on the virtual Android device
-"2.1_128M_HVGA" configured as follows: 2.1 target, 128M SD card and HVGA skin
+"2.2_128M_HVGA" configured as follows: 2.2 target, 128M SD card and HVGA skin
 (for more details see the documentation page
 $ANDROID_HOME/docs/guide/developing/tools/avd.html).
 
@@ -26,7 +26,7 @@ parenthesis) :
 
 1) Sun Java SDK 1.6 or newer (1.6.0_20 , www.sun.com/java/jdk/)
 2) Scala SDK 2.7.5 or newer  (2.8.0_RC3, www.scala-lang.org/downloads/)
-3) Android SDK 1.5 or newer  (2.1      , developer.android.com/sdk/)
+3) Android SDK 1.5 or newer  (2.2      , developer.android.com/sdk/)
 4) Apache Ant 1.7.0 or newer (1.8.1    , ant.apache.org/)
 5) YGuard 2.3 or newer       (2.3.0.1  , www.yworks.com/products/yguard/)
 
@@ -55,7 +55,7 @@ In particular:
   Unix:                         Windows:
      sdk.dir=/opt/android          sdk.dir=c:\\Progra~1\\Android
      scala.dir=/opt/scala          sdk.dir=c:\\Progra~1\\Scala
-     yguard.dir=/opt/yguard        sdk.dir=c:\\Progra~1\\yguard-3.2.0.1
+     yguard.dir=/opt/yguard        sdk.dir=c:\\Progra~1\\YGuard
 
 * The "default.properties" file defines the default API level of an Android
   (for more details see the documentation page
@@ -85,16 +85,17 @@ Project Build
 -------------
 
 First we make sure the Android emulator is up and running; if not we start it
-using the shell command (let us assume the existence of the "2.1_128M_HVGA"
+using the shell command (let us assume the existence of the "2.2_128M_HVGA"
 virtual device) :
 
-   android-examples> emulator -no-boot-anim -no-jni -avd 2.1_128M_HVGA &
+   android-examples> emulator -no-boot-anim -no-jni -avd 2.2_128M_HVGA &
 
 Then we move for instance to the "Snake" project directory and execute one of
 the following Ant targets :
 
    android-examples> cd Snake
    Snake> ant clean
+   Snake> ant scala-compile
    Snake> ant debug
    Snake> ant install
    (now let us play with our application on the emulator !)
@@ -131,7 +132,7 @@ bytecode. Concretely, we have two choices :
    time consuming (to be improved e.g. using a compiler generated dependency
    list).
 
-   Application     <myapp>.jar   scala-library_shr.jar     classes.dex
+   Application     <myapp>.jar  scala-library-shrinked.jar  classes.dex
    (in Scala)      (entry point)  (orig. 3900 classes)   (Android bytecode)
    -----------------------------------------------------------------------
    ApiDemos          982K          361K (482 classes)         785K
@@ -172,7 +173,7 @@ bytecode. Concretely, we have two choices :
    (2) Elapsed times for Scala builds include YGuard processing time.
 
    NB. The above results were measured with YGuard 3.2.0.1 on a 2.0 GHz
-   Pentium M with 2 GB of memory, using Sun JDK 1.6.0_20 and Scala 2.8.0_RC2
+   Pentium M with 2 GB of memory, using Sun JDK 1.6.0_20 and Scala 2.8.0_RC3
    on Ubuntu 8.04 Linux.
 
 
