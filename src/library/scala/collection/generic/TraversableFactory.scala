@@ -216,7 +216,7 @@ abstract class TraversableFactory[CC[X] <: Traversable[X] with GenericTraversabl
   }
 
   /** Produces a $coll containing repeated applications of a function to a start value.
-   *
+   *  
    *  @param start the start value of the $coll
    *  @param len   the number of elements contained inthe $coll
    *  @param f     the function that's repeatedly applied
