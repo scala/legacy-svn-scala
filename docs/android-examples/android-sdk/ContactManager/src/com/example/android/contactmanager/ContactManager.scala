@@ -21,7 +21,10 @@ import android.content.Intent
 import android.database.Cursor
 import android.net.Uri
 import android.os.Bundle
+import android.provider.BaseColumns
+import android.provider.Contacts.PeopleColumns
 import android.provider.ContactsContract
+import android.provider.ContactsContract.ContactsColumns
 import android.util.Log
 import android.view.View
 import android.widget.{Button, CheckBox, CompoundButton, ListView, SimpleCursorAdapter}
@@ -48,28 +51,28 @@ final class ContactManager extends Activity {
     setContentView(R.layout.contact_manager)
 
     // Obtain handles to UI objects
-    mAddAccountButton = findViewById(R.id.addContactButton).asInstanceOf[Button]
-    mContactList = findViewById(R.id.contactList).asInstanceOf[ListView]
-    mShowInvisibleControl = findViewById(R.id.showInvisible).asInstanceOf[CheckBox]
+    mAddAccountButton = findView(R.id.addContactButton)
+    mContactList = findView(R.id.contactList)
+    mShowInvisibleControl = findView(R.id.showInvisible)
 
     // Initialize class properties
     mShowInvisible = false
     mShowInvisibleControl setChecked mShowInvisible
 
     // Register handler for UI elements
-    mAddAccountButton.setOnClickListener(new View.OnClickListener() {
+    mAddAccountButton setOnClickListener new View.OnClickListener() {
       def onClick(v: View) {
         Log.d(TAG, "mAddAccountButton clicked")
         launchContactAdder()
       }
-    })
-    mShowInvisibleControl.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+    }
+    mShowInvisibleControl setOnCheckedChangeListener new OnCheckedChangeListener() {
       def onCheckedChanged(buttonView: CompoundButton, isChecked: Boolean) {
         Log.d(TAG, "mShowInvisibleControl changed: " + isChecked)
         mShowInvisible = isChecked
         populateContactList()
       }
-    })
+    }
 
     // Populate the contact list
     populateContactList()
@@ -81,7 +84,7 @@ final class ContactManager extends Activity {
   private def populateContactList() {
     // Build adapter with contact entries
     val cursor = getContacts()
-    val fields = Array(ContactsContract2.Data.DISPLAY_NAME)
+    val fields = Array(PeopleColumns.DISPLAY_NAME)
 
     val adapter = new SimpleCursorAdapter(this, R.layout.contact_entry, cursor,
       fields, Array(R.id.contactEntryText))
@@ -96,14 +99,11 @@ final class ContactManager extends Activity {
   private def getContacts(): Cursor = {
     // Run query
     val uri = ContactsContract.Contacts.CONTENT_URI
-    val projection = Array(
-      ContactsContract2.Contacts._ID,
-      ContactsContract2.Contacts.DISPLAY_NAME
-    )
+    val projection = Array(BaseColumns._ID, PeopleColumns.DISPLAY_NAME)
     val selection = ContactsContract2.Contacts.IN_VISIBLE_GROUP + " = '" +
                     (if (mShowInvisible) "0" else "1") + "'"
     var selectionArgs: Array[String] = Array()
-    val sortOrder = ContactsContract2.Contacts.DISPLAY_NAME + " COLLATE LOCALIZED ASC"
+    val sortOrder = PeopleColumns.DISPLAY_NAME + " COLLATE LOCALIZED ASC"
 
     managedQuery(uri, projection, selection, selectionArgs, sortOrder)
   }
@@ -115,4 +115,8 @@ final class ContactManager extends Activity {
     val i = new Intent(this, classOf[ContactAdder])
     startActivity(i)
   }
+
+  @inline
+  private final def findView[V <: View](id: Int) =
+    findViewById(id).asInstanceOf[V]
 }

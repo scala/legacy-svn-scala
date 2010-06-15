@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="android" default="help">
+
+    <description>
+Builds the Scala applications targeted to the Android platform.
+    </description>
+
+    <property file="build.properties" />
+    <property name="configs.dir" value="${basedir}/configs" />
+
+    <!-- Setting-up Ant contrib tasks -->
+    <taskdef
+        resource="net/sf/antcontrib/antlib.xml"
+        classpath="${ant-contrib.jar}"
+    />
+
+    <!-- Building list of project directories -->
+    <pathconvert property="dirs" pathsep=",">
+        <path>
+            <!-- TODO re-enable WindWaves example -->
+            <dirset dir="${basedir}" includes="*"
+                    excludes="bin,configs,WindWaves" />
+        </path>
+    </pathconvert>
+
+    <target name="scala-compile" description="compile applications">
+        <ant.dirs target="scala-compile" />
+    </target>
+
+    <target name="debug" description="build applications in debug mode">
+        <ant.dirs target="debug" />
+    </target>
+
+    <target name="release" description="build applications in release mode">
+        <ant.dirs target="release"/>
+    </target>
+
+    <target name="install" description="install applications">
+        <!--<confirm message="Is the Android emulator up and ready ?" />-->
+        <ant.dirs target="install"/>
+    </target>
+
+    <target name="uninstall" description="Uninstalls the application from a running emulator or device.">
+        <ant.dirs target="uninstall"/>
+    </target>
+
+    <target name="clean" description="Removes output files created by other targets.">
+        <ant.dirs target="clean"/>
+    </target>
+
+    <target name="check-maps" description="Checks configuration settings of projects using the Google APIs">
+        <for list="${dirs}" param="dir">
+            <sequential>
+                <basename property="@{dir}.basename" file="@{dir}" />
+                <check.maps dir="@{dir}" name="${@{dir}.basename}" />
+            </sequential>
+        </for>
+    </target>
+
+    <target name="help">
+        <echo message="Android Ant Build. Available targets:"/>
+        <echo message="   help:          Displays this help."/>
+        <echo message="   clean:         Removes output files created by other targets."/>
+        <echo message="   compile:       Compiles project's .java files into .class files."/>
+        <echo message="   scala-compile: Compiles project's .scala files into .class files."/>
+        <echo message="   debug:         Builds the application and signs it with a debug key."/>
+        <echo message="   release:       Builds the application. The generated apk file must be"/>
+        <echo message="                  signed before it is published."/>
+        <echo message="   uninstall:     Uninstalls the application from a running emulator or"/>
+        <echo message="                  device."/>
+        <echo message="Available advanced targets:"/>
+        <echo message="   setenv:        Updates build files in project directories with"/>
+        <echo message="                  Scala-specific data stored in the configs directory."/>
+        <echo message="   check-maps:    Checks configuration settings of projects"/>
+        <echo message="                  depending on the Google APIs."/>
+    </target>
+
+    <target name="setenv">
+        <condition property="prop.file" value="${configs.dir}/ant-windows.properties">
+            <and>
+                <os family="windows" />
+                <available file="${configs.dir}/ant-windows.properties" />
+            </and>
+        </condition>
+        <condition property="prop.file" value="${configs.dir}/ant-unix.properties">
+            <and>
+                <os family="unix" />
+                <available file="${configs.dir}/ant-unix.properties" />
+            </and>
+        </condition>
+        <echo message="Reading configuration settings from ${prop.file}" level="verbose" />
+        <!--<property file="${prop.file}" prefix="os" /> -->
+        <loadproperties srcfile="${prop.file}" prefix="os" >
+            <filterchain>
+                <expandproperties/>
+            </filterchain>
+        </loadproperties>
+        <property name="os.sdk.dir" value="" />
+        <property name="os.scala.dir" value="" />
+        <property name="os.yguard.dir" value="" />
+        <echo message="prop.file=${prop.file}" level="debug" />
+        <if><isset property="prop.file" />
+        <then>
+            <for list="${dirs}" param="dir"><sequential>
+                <replaceproperty
+                    name="sdk.dir"
+                    value="${os.sdk.dir}"
+                    dir="@{dir}"/>
+                <replaceproperty
+                    name="scala.dir"
+                    value="${os.scala.dir}"
+                    dir="@{dir}"/>
+                <replaceproperty
+                    name="yguard.dir"
+                    value="${os.yguard.dir}"
+                    dir="@{dir}"/>
+                <update.scala dir="@{dir}" />
+            </sequential></for>
+        </then>
+        <else>
+            <echo message="The setenv task needs a configuration file" />
+        </else>
+        </if>
+    </target>
+
+    <macrodef name="check.maps">
+        <attribute name="dir" />
+        <attribute name="name" />
+        <sequential>
+            <echo message="    dir=@{dir}, name=@{name}" level="verbose" taskname="check-maps" />
+            <property
+                file="@{dir}/default.properties"
+                prefix="@{name}.default" />
+            <condition property="@{name}.requires.maps"><and>
+                <isset property="@{name}.default.target" />
+                <or>
+                    <contains string="${@{name}.default.target}" substring=":Google APIs:" />
+                    <matches string="${@{name}.default.target}" pattern="^(2|4|6|8)" />
+                </or>
+            </and></condition>
+            <echo message="    requires.maps=${@{name}.requires.maps} (${@{name}.default.target})"
+                  level="verbose" taskname="check-maps" />
+            <xmlproperty
+                file="@{dir}/AndroidManifest.xml"
+                includeSemanticAttribute="true"
+                collapseAttributes="true"
+                keeproot="false" prefix="@{name}" />
+            <condition property="@{name}.uses.maps"><and>
+                <isset property="@{name}.application.uses-library.android:name" />
+               <contains
+                    string="${@{name}.application.uses-library.android:name}"
+                    substring="com.google.android.maps" />
+            </and></condition>
+            <echo message="    uses.maps=${@{name}.uses.maps}"
+                  level="verbose" taskname="check-maps" />
+            <if>
+                <and>
+                    <isset property="@{name}.requires.maps" />
+                    <not><isset property="@{name}.uses.maps" /></not>
+                </and>
+                <then>
+                    <echo message="@{name}: Mismatch between default.properties and AndroidExample.xml (Google Maps)." taskname="check-maps" />
+                </then>
+            </if>
+            <exec executable="adb" outputproperty="system.libs" resultproperty="x">
+                <arg line="shell ls /system/framework/" />
+            </exec>
+            <condition property="@{name}.provides.maps">
+               <contains
+                   string="${system.libs}"
+                   substring="com.google.android.maps.jar" />
+            </condition>
+            <echo message="    provides.maps=${@{name}.provides.maps}"
+                  level="verbose" taskname="check-maps" />
+            <if>
+                <and>
+                    <isset property="@{name}.uses.maps" />
+                    <not><isset property="@{name}.provides.maps" /></not>
+                </and>
+                <then>
+                    <echo message="@{name}: Mismatch between target '${@{name}.default.target}' and active emulator configuration (Google Maps)." taskname="check-maps" />
+                </then>
+            </if>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="ant.dirs">
+        <attribute name="target" />
+        <sequential>
+            <for list="${dirs}" param="dir">
+                <sequential>
+                    <ant dir="@{dir}" target="@{target}" />
+                </sequential>
+            </for>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="replaceproperty">
+        <attribute name="name" />
+        <attribute name="value" />
+        <attribute name="dir" />
+        <sequential>
+            <replaceregexp byline="true">
+                <regexp pattern="^@{name}=(.*)"/>
+                <substitution expression="@{name}=@{value}"/>
+                <fileset dir="@{dir}" includes="build.properties"/>
+            </replaceregexp>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="update.scala">
+        <attribute name="dir" />
+        <sequential>
+            <condition property="files.differ" value="${configs.dir}/build-scala.xml">
+                <and>
+                    <available file="${configs.dir}/build-scala.xml" />
+                    <available file="@{dir}/build-scala.xml" />
+                    <not>
+                        <filesmatch file1="${configs.dir}/build-scala.xml"
+                                    file2="@{dir}/build-scala.xml"
+                                    textfile="true" />
+                    </not>
+                </and>
+            </condition>
+            <if>
+                <isset property="files.differ" />
+                <then>
+                     <echo message="Updating file @{dir}/build-scala.xml." />
+                     <copy file="${configs.dir}/build-scala.xml"
+                           tofile="@{dir}/build-scala.xml" />
+                </then>
+            </if>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="confirm">
+        <attribute name="message" />
+        <sequential>
+            <input message="@{message}"
+                validargs="y,n"
+                addproperty="do.confirm"
+            />
+            <condition property="do.abort">
+               <equals arg1="n" arg2="${do.confirm}"/>
+            </condition>
+            <fail if="do.abort">Build aborted by user.</fail>    
+        </sequential>
+    </macrodef>
+
+</project>

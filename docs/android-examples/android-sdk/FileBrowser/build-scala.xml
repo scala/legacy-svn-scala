@@ -35,6 +35,9 @@
     <target name="scala-compile" depends="compile"
         description="Compiles project's .scala files into .class files"
         if="myapp.containsScala" unless="myapp.isUpToDate">
+        <condition property="logging" value="verbose" else="none">
+            <istrue value="${verbose}" />
+        </condition>
         <property prefix="scala"
             resource="compiler.properties"
             classpathref="scala.path" />
@@ -44,10 +47,10 @@
         <scalac
             srcdir="${source.dir}" includes="**/*.scala"
             destdir="${out.classes.dir}"
-            addparams="${scalac.addparams}">
+            logging="${logging}" addparams="${scalac.addparams}">
             <classpath>
+                <path refid="android.target.classpath" />
                 <pathelement location="${scala-library.jar}" />
-                <pathelement location="${android.jar}" />
                 <pathelement location="${out.classes.dir}" />
             </classpath>
         </scalac>
