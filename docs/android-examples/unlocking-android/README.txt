@@ -95,12 +95,12 @@ First we make sure the Android emulator is up and running; if not we start it
 using the shell command (let us assume the existence of the "2.2_128M_HVGA"
 virtual device) :
 
-   android-examples> emulator -no-boot-anim -no-jni -avd 2.2_128M_HVGA &
+   unlocking-android> emulator -no-boot-anim -no-jni -avd 2.2_128M_HVGA &
 
 Then we move for instance to the "Snake" project directory and execute one of
 the following Ant targets :
 
-   android-examples> cd BounceyBall
+   unlocking-android> cd BounceyBall
    Snake> ant clean
    Snake> ant scala-compile
    Snake> ant debug

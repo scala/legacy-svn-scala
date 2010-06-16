@@ -102,18 +102,26 @@ Builds the Scala applications targeted to the Android platform.
         <if><isset property="prop.file" />
         <then>
             <for list="${dirs}" param="dir"><sequential>
-                <replaceproperty
-                    name="sdk.dir"
-                    value="${os.sdk.dir}"
-                    dir="@{dir}"/>
-                <replaceproperty
-                    name="scala.dir"
-                    value="${os.scala.dir}"
-                    dir="@{dir}"/>
-                <replaceproperty
-                    name="yguard.dir"
-                    value="${os.yguard.dir}"
-                    dir="@{dir}"/>
+                <if>
+                    <not><available file="@{dir}/local.properties"/></not>
+                <then>
+                    <echo message="sdk.dir=${os.sdk.dir}${line.separator}scala.dir=${os.scala.dir}${line.separator}yguard.dir=${os.yguard.dir}${line.separator}"
+                          file="@{dir}/local.properties" />
+                </then>
+                <else>
+                    <replaceproperty
+                        name="sdk.dir"
+                        value="${os.sdk.dir}"
+                        file="@{dir}/local.properties"/>
+                    <replaceproperty
+                        name="scala.dir"
+                        value="${os.scala.dir}"
+                        file="@{dir}/local.properties"/>
+                    <replaceproperty
+                        name="yguard.dir"
+                        value="${os.yguard.dir}"
+                        file="@{dir}/local.properties"/>
+                </else></if>
                 <update.scala dir="@{dir}" />
             </sequential></for>
         </then>
@@ -198,12 +206,12 @@ Builds the Scala applications targeted to the Android platform.
     <macrodef name="replaceproperty">
         <attribute name="name" />
         <attribute name="value" />
-        <attribute name="dir" />
+        <attribute name="file" />
         <sequential>
             <replaceregexp byline="true">
                 <regexp pattern="^@{name}=(.*)"/>
                 <substitution expression="@{name}=@{value}"/>
-                <fileset dir="@{dir}" includes="build.properties"/>
+                <fileset file="@{file}"/>
             </replaceregexp>
         </sequential>
     </macrodef>
