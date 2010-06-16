@@ -27,7 +27,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       <script type="text/javascript" src={ relativeLinkTo{List("tools.tooltip.js", "lib")} }></script>
       <script type="text/javascript" src={ relativeLinkTo{List("template.js", "lib")} }></script>
     </xml:group>
-    
+
   val valueMembers =
     (tpl.methods ::: tpl.values ::: (tpl.templates filter { tpl => tpl.isObject || tpl.isPackage })) sortBy (_.name)
   
@@ -226,6 +226,14 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
         case dtpl: DocTemplateEntity if (isSelf && !dtpl.subClasses.isEmpty) =>
           <div class="block">
             known subclasses: { templatesToHtml(dtpl.subClasses, xml.Text(", ")) }
+          </div>
+        case _ => NodeSeq.Empty
+      }
+    } ++
+    { mbr match {
+        case dtpl: DocTemplateEntity if (isSelf && !dtpl.selfType.isEmpty) =>
+          <div class="block">
+            self type: { typeToHtml(dtpl.selfType.get, hasLinks = true) }
           </div>
         case _ => NodeSeq.Empty
       }
