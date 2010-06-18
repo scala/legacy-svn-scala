@@ -61,13 +61,10 @@ The shell scripts are located in the "bin/" directory.
         commands (see note below) and the boot class path of the Dalvik-VM is
         extended with the splitted Scala libraries.
 
-      The generated .img files are kept in the "configs/images/" directory
-      (they are then used by the shell scripts "emulator" and "emulator-maps"):
-
-        ramdisk-android-3.img      ramdisk-android-7.img 
-        ramdisk-android-4.img      ramdisk-android-8.img
-        ramdisk-google_apis_3.img  ramdisk-google_apis_7.img
-        ramdisk-google_apis_4.img  ramdisk-google_apis_8.img
+      The generated ramdisk.img files are kept in the directory
+      "$ANDROID_SDK_HOME/.android/avd" and can thus be shared between all
+      Android projects (they are then used by the shell scripts "emulator"
+      and "emulator-maps").
 
 
 Ant build scripts
