@@ -6,7 +6,7 @@ Builds the Scala applications targeted to the Android platform.
     </description>
 
     <property file="build.properties" />
-    <property name="configs.dir" value="${basedir}/configs" />
+    <property name="configs.ant.dir" value="${basedir}/configs/ant" />
 
     <!-- Setting-up Ant contrib tasks -->
     <taskdef
@@ -76,16 +76,16 @@ Builds the Scala applications targeted to the Android platform.
     </target>
 
     <target name="setenv">
-        <condition property="prop.file" value="${configs.dir}/ant-windows.properties">
+        <condition property="prop.file" value="${configs.ant.dir}/ant-windows.properties">
             <and>
                 <os family="windows" />
-                <available file="${configs.dir}/ant-windows.properties" />
+                <available file="${configs.ant.dir}/ant-windows.properties" />
             </and>
         </condition>
-        <condition property="prop.file" value="${configs.dir}/ant-unix.properties">
+        <condition property="prop.file" value="${configs.ant.dir}/ant-unix.properties">
             <and>
                 <os family="unix" />
-                <available file="${configs.dir}/ant-unix.properties" />
+                <available file="${configs.ant.dir}/ant-unix.properties" />
             </and>
         </condition>
         <echo message="Reading configuration settings from ${prop.file}" level="verbose" />
@@ -219,12 +219,12 @@ Builds the Scala applications targeted to the Android platform.
     <macrodef name="update.scala">
         <attribute name="dir" />
         <sequential>
-            <condition property="files.differ" value="${configs.dir}/build-scala.xml">
+            <condition property="files.differ" value="${configs.ant.dir}/build-scala.xml">
                 <and>
-                    <available file="${configs.dir}/build-scala.xml" />
+                    <available file="${configs.ant.dir}/build-scala.xml" />
                     <available file="@{dir}/build-scala.xml" />
                     <not>
-                        <filesmatch file1="${configs.dir}/build-scala.xml"
+                        <filesmatch file1="${configs.ant.dir}/build-scala.xml"
                                     file2="@{dir}/build-scala.xml"
                                     textfile="true" />
                     </not>
@@ -234,7 +234,7 @@ Builds the Scala applications targeted to the Android platform.
                 <isset property="files.differ" />
                 <then>
                      <echo message="Updating file @{dir}/build-scala.xml." />
-                     <copy file="${configs.dir}/build-scala.xml"
+                     <copy file="${configs.ant.dir}/build-scala.xml"
                            tofile="@{dir}/build-scala.xml" />
                 </then>
             </if>

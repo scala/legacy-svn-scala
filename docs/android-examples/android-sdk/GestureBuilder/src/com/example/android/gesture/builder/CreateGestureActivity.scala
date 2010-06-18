@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.gesture.builder
+package com.example.android.gesture.builder
 
 import android.app.Activity
 import android.app.Activity._

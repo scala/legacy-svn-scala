@@ -98,13 +98,13 @@ final class ContactAdder extends Activity with OnAccountsUpdateListener {
     setContentView(R.layout.contact_adder)
 
     // Obtain handles to UI objects
-    mAccountSpinner = findViewById(R.id.accountSpinner).asInstanceOf[Spinner]
-    mContactNameEditText = findViewById(R.id.contactNameEditText).asInstanceOf[EditText]
-    mContactPhoneEditText = findViewById(R.id.contactPhoneEditText).asInstanceOf[EditText]
-    mContactEmailEditText = findViewById(R.id.contactEmailEditText).asInstanceOf[EditText]
-    mContactPhoneTypeSpinner = findViewById(R.id.contactPhoneTypeSpinner).asInstanceOf[Spinner]
-    mContactEmailTypeSpinner = findViewById(R.id.contactEmailTypeSpinner).asInstanceOf[Spinner]
-    mContactSaveButton = findViewById(R.id.contactSaveButton).asInstanceOf[Button]
+    mAccountSpinner = findView(R.id.accountSpinner)
+    mContactNameEditText = findView(R.id.contactNameEditText)
+    mContactPhoneEditText = findView(R.id.contactPhoneEditText)
+    mContactEmailEditText = findView(R.id.contactEmailEditText)
+    mContactPhoneTypeSpinner = findView(R.id.contactPhoneTypeSpinner)
+    mContactEmailTypeSpinner = findView(R.id.contactEmailTypeSpinner)
+    mContactSaveButton = findView(R.id.contactSaveButton)
 
     // Prepare model for account spinner
     mAccounts = new ArrayList[AccountData]()
@@ -352,4 +352,8 @@ final class ContactAdder extends Activity with OnAccountsUpdateListener {
       convertView1
     }
   }
+
+  @inline
+  private final def findView[V <: View](id: Int) =
+    findViewById(id).asInstanceOf[V]
 }

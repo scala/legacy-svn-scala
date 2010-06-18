@@ -14,17 +14,22 @@ http://www.scala-lang.org/
 
 In the following we describe the build and installation of our Android
 applications written in Scala (and in Java) using the Apache Ant build tool.
-Note that the description below applies to both the Unix and Windows
+Note that the build instructions below apply to both the Unix and Windows
 environments.
 
 All Android examples have been run successfully on the virtual Android device
 "2.2_128M_HVGA" configured as follows: 2.2 target, 128M SD card and HVGA skin
 (for more details see the documentation page
-$ANDROID_HOME/docs/guide/developing/tools/avd.html).
+$ANDROID_SDK_ROOT/docs/guide/developing/tools/avd.html).
+
+NB. The file INSTALL.txt gives VERY USEFUL informations about the small
+development framework (directories "bin/" and "configs/") included in this
+software distribution; in particular it permits to greatly improve the build
+time of Android applications written in Scala.
 
 
-Technical Requirements
-----------------------
+Software Requirements
+---------------------
 
 In order to build/run our Android examples we need to install the following
 free software distributions (tested versions and download sites are given in
@@ -46,13 +51,13 @@ Project Structure
 
 The project structure of an Android application follows the directory layout
 prescribed by the Android system (for more details see the documentation page
-$ANDROID_HOME/docs/guide/developing/other-ide.html#CreatingAProject).
+$ANDROID_SDK_ROOT/docs/guide/developing/other-ide.html#CreatingAProject).
 
 In particular:
 
 * The "AndroidManifest.xml" file contains essential information the Android
   system needs to run the application's code (for more details see the docu-
-  mentation page $ANDROID_HOME/docs/guide/topics/manifest/manifest-intro.html)
+  mentation page $ANDROID_SDK_ROOT/docs/guide/topics/manifest/manifest-intro.html)
 
 * The "build.properties" file defines customizable Ant properties for the
   Android build system; in our case we need to define at least the following
@@ -65,7 +70,7 @@ In particular:
 
 * The "default.properties" file defines the default API level of an Android
   (for more details see the documentation page
-  $ANDROID_HOME/docs/guide/appendix/api-levels.html).
+  $ANDROID_SDK_ROOT/docs/guide/appendix/api-levels.html).
 
 * The "build.xml" Ant build script defines targets such as "clean", "install"
   and "uninstall" and has been slightly modified to handle also Scala source
@@ -79,8 +84,8 @@ In particular:
         <dex-helper />
     </target>
 
-* The "build-scala.xml" Ant build script defines the target "scala-compile"
-  which essentially invokes two Ant tasks : the "<scalac>" task generates
+* The "build-scala.xml" Ant build script defines the targets "scala-compile"
+  and "scala-shrink" where respectively the "<scalac>" Ant task generates
   Java bytecode from the Scala source files and the "<yguard>" task creates a
   shrinked version of the Scala standard library by removing the unreferenced
   code (see next section for more details). Those two tasks are featured by
@@ -90,22 +95,25 @@ In particular:
 Project Build
 -------------
 
-First we make sure the Android emulator is up and running; if not we start it
+We assume here the Android emulator is up and running; if not we start it
 using the shell command (let us assume the existence of the "2.2_128M_HVGA"
 virtual device) :
 
-   android-examples> emulator -no-boot-anim -no-jni -avd 2.2_128M_HVGA &
+   android-sdk> emulator -no-boot-anim -no-jni -avd 2.2_128M_HVGA &
 
 Then we move for instance to the "Snake" project directory and execute one of
 the following Ant targets :
 
-   android-examples> cd Snake
+   android-sdk> cd Snake
    Snake> ant clean
    Snake> ant scala-compile
    Snake> ant debug
    Snake> ant install
    (now let us play with our application on the emulator !)
    Snake> ant uninstall
+
+
+================================================================================
 
 
 Note about YGuard

@@ -16,7 +16,7 @@
  -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.android.gesture.builder">
+    package="com.example.android.gesture.builder">
 
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 

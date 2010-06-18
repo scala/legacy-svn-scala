@@ -1,0 +1,17 @@
+ANDROID_ASSETS=/system/app
+ANDROID_BOOTLOGO=1
+ANDROID_DATA=/data
+ANDROID_PROPERTY_WORKSPACE=9,32768
+ANDROID_ROOT=/system
+ASEC_MOUNTPOINT=/mnt/asec
+BOOTCLASSPATH=/system/framework/core.jar:/system/framework/ext.jar:/system/framework/framework.jar:/system/framework/android.policy.jar:/system/framework/services.jar:/data/framework/scala-library.jar:/data/framework/scala-collection.jar:/data/framework/scala-actors.jar
+EXTERNAL_STORAGE=/mnt/sdcard
+IFS=' 	
+'
+LD_LIBRARY_PATH=/system/lib
+OPTIND=1
+PATH=/bin:/sbin:/system/sbin:/system/bin:/system/xbin
+PS1='# '
+PS2='> '
+PS4='+ '
+_=bash

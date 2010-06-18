@@ -57,9 +57,23 @@
         <touch file="${out.dir}/classes.complete" verbose="no"/>
     </target>
 
-    <target name="scala-shrink" depends="scala-compile"
+    <target name="-adb-test" unless="myapp.isuptodate">
+        <echo
+            message="Checking if Scala libraries are installed on emulator or device..."
+            taskname="-adb-test" />
+        <exec executable="${adb}" failonerror="false" outputproperty="adb.out">
+            <arg line="${adb.device.arg}" />
+            <arg line="shell /bin/ls -s /data/framework/scala-*.jar" />
+        </exec>
+        <condition property="scala-shrink.notRequired"><or>
+            <contains string="${adb.out}" substring="/data/framework/scala-" />
+        </or></condition>
+        <echo message="${adb.out}" taskname="-adb-test" />
+    </target>
+
+    <target name="scala-shrink" depends="scala-compile, -adb-test"
         description="Shrink code size of Scala library"
-        if="myapp.containsScala">
+        if="myapp.containsScala" unless="scala-shrink.notRequired">
         <property
             name="scala-library-shrinked.jar"
             value="${out.dir}/scala-library-shrinked.jar" />

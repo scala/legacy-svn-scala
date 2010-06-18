@@ -15,7 +15,7 @@ http://www.scala-lang.org/
 
 In the following we describe the build and installation of our Android
 applications written in Scala (and in Java) using the Apache Ant build tool.
-Note that the description below applies to both the Unix and Windows
+Note that the build instructions below apply to both the Unix and Windows
 environments.
 
 All Android examples have been run successfully on the virtual Android device
@@ -23,16 +23,21 @@ All Android examples have been run successfully on the virtual Android device
 (for more details see the documentation page
 $ANDROID_HOME/docs/guide/developing/tools/avd.html).
 
+NB. The file INSTALL.txt gives VERY USEFUL informations about the small
+development framework (directories "bin/" and "configs/") included in this
+software distribution; in particular it permits to greatly improve the build
+time of Android applications written in Scala.
 
-Technical Requirements
-----------------------
+
+Software Requirements
+---------------------
 
 In order to build/run our Android examples we need to install the following
 free software distributions (tested versions and download sites are given in
 parenthesis) :
 
 1) Sun Java SDK 1.6 or newer (1.6.0_20 , www.sun.com/java/jdk/)
-2) Scala SDK 2.7.5 or newer  (2.8.0_RC4, www.scala-lang.org/downloads/)
+2) Scala SDK 2.7.5 or newer  (2.8.0_RC5, www.scala-lang.org/downloads/)
 3) Android SDK 1.5 or newer  (2.2      , developer.android.com/sdk/)
 4) Apache Ant 1.7.0 or newer (1.8.1    , ant.apache.org/)
 5) YGuard 2.3 or newer       (2.3.0.1  , www.yworks.com/products/yguard/)
@@ -80,8 +85,8 @@ In particular:
         <dex-helper />
     </target>
 
-* The "build-scala.xml" Ant build script defines the target "scala-compile"
-  which essentially invokes two Ant tasks : the "<scalac>" task generates
+* The "build-scala.xml" Ant build script defines the targets "scala-compile"
+  and "scala-shrink" where respectively the "<scalac>" Ant task generates
   Java bytecode from the Scala source files and the "<yguard>" task creates a
   shrinked version of the Scala standard library by removing the unreferenced
   code (see next section for more details). Those two tasks are featured by
@@ -91,7 +96,7 @@ In particular:
 Project Build
 -------------
 
-First we make sure the Android emulator is up and running; if not we start it
+We assume here the Android emulator is up and running; if not we start it
 using the shell command (let us assume the existence of the "2.2_128M_HVGA"
 virtual device) :
 
@@ -107,6 +112,9 @@ the following Ant targets :
    Snake> ant install
    (now let us play with our application on the emulator !)
    Snake> ant uninstall
+
+
+================================================================================
 
 
 Note about YGuard
@@ -138,26 +146,6 @@ bytecode. Concretely, we have two choices :
    obfuscator tool; the result is size efficient while the proccessing is quite
    time consuming (to be improved e.g. using a compiler generated dependency
    list).
-
-   Application     <myapp>.jar  scala-library-shrinked.jar  classes.dex
-   (in Scala)      (entry point)  (orig. 3900 classes)   (Android bytecode)
-   -----------------------------------------------------------------------
-   ApiDemos          982K          361K (482 classes)         785K
-   ContactManager     32K          303K (410 classes)         246K
-   CubeLiveWallpaper  31K          347K (469 classes)         279K 
-   FileBrowser        22K          371K (471 classes)         292K
-   GestureBuilder     44K          410K (520 classes)         341K
-   HelloActivity       4K            2K (  2 classes)           3K
-   Home               54K          321K (439 classes)         289K
-   JetBoy             45K          320K (446 classes)         280K
-   LunarLander        28K          363K (481 classes)         299K
-   NotePad            36K          299K (431 classes)         250K
-   PhoneDialer         6K          292K (401 classes)         215K
-   Snake              41K          375K (496 classes)         305K
-
-   NB. The above files are generated into the "bin" output directory; the
-   "yshrinklog.xml" logging file provides more information about the shrinking
-   task of YGuard.
 
 
 Have fun!
