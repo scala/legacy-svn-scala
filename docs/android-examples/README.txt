@@ -14,7 +14,7 @@ following sources:
      Please read the file README.txt in the "android-sdk" subdirectory.
 
 
-   * Unlocking Android book (http://www.manning.com/ableson/)
+   * Unlocking Android book (http://code.google.com/p/unlocking-android/)
 
      The subdirectory is named "unlocking-android".
 

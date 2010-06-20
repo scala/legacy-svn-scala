@@ -50,8 +50,6 @@ done;
 ROOT=`dirname "$SOURCE"`/..
 ROOT=`cd "$ROOT" > /dev/null && pwd`
 
-IMAGES_DIR=$ROOT/configs/images
-
 ##############################################################################
 ## Set up emulator options
 

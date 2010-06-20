@@ -29,12 +29,6 @@ set ANDROID_SDK_ROOT=%ProgramFiles%\android-sdk-win32
 set _EMULATOR=%ANDROID_SDK_ROOT%\tools\emulator.exe
 if not exist "%_EMULATOR%" goto error2
 
-if "%ANDROID_EMULATOR_OPTS%"=="" (
-  set _EMULATOR_OPTS=-no-boot-anim -no-skin
-) else (
-  set _EMULATOR_OPTS=%ANDROID_EMULATOR_OPTS%
-)
-
 if "%ANDROID_AVD%"=="" (
   set _AVD=2.2_128M_HVGA
 ) else (
@@ -42,6 +36,17 @@ if "%ANDROID_AVD%"=="" (
 )
 
 if not exist "%ANDROID_SDK_HOME%\androi~1\avd\%_AVD%.ini" goto error3
+set _AVD_HOME=%ANDROID_SDK_HOME%\androi~1\avd
+
+if "%ANDROID_EMULATOR_OPTS%"=="" (
+  set _EMULATOR_OPTS=-no-boot-anim -no-skin
+  if exist "%_AVD_HOME%\%_AVD%.avd-custom\ramdisk.img%" (
+    set _RAMDISK=%_AVD_HOME%\%_AVD%.avd-custom\ramdisk.img
+  )
+)
+if not "%_RAMDISK"=="" (
+  set _EMULATOR_OPTS=%_EMULATOR_OPTS% -ramdisk "%_RAMDISK%"
+)
 
 rem echo "%_EMULATOR%" %_EMULATOR_OPTS% -avd %_AVD%
 "%_EMULATOR%" %_EMULATOR_OPTS% -avd %_AVD%
