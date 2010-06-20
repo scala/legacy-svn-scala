@@ -60,7 +60,7 @@ if [ ! -x "$EMULATOR" ] ; then
 fi
 
 if [ -z "$ANDROID_AVD" ] ; then
-    AVD="2.2_128M_HVGA"
+    AVD="2.2_128M_HVGA_Google_API"
 else
     AVD="$ANDROID_AVD"
 fi
