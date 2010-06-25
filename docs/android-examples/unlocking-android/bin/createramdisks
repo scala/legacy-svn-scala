@@ -138,7 +138,7 @@ done
 
 unzip $EMULATOR_DIR/busybox.zip -d $TMP_DIR/ > /dev/null
 
-for dir in `find $AVD_HOME -name "*.avd"` "" ; do
+for dir in `find $AVD_HOME -type d -name "*.avd"` "" ; do
   [ -z "$dir" ] && continue
   TARGET_PATH=`grep "image.sysdir.1" "$dir/config.ini" | sed 's/.*=\(.*\)/\1/'`
   SOURCE=$ANDROID_SDK_ROOT/${TARGET_PATH}ramdisk.img
@@ -160,13 +160,13 @@ for dir in `find $AVD_HOME -name "*.avd"` "" ; do
     echo "root::0:0:root:/home:/bin/ash" > usr/local/etc/passwd && \
     echo "root::0:" > usr/local/etc/group && \
     cp init.rc init.rc.ORIG && \
-    sed 's/ro remount/rw remount/g;s/\(symlink \/sys\/kernel\/debug \/d\)/\1\n    symlink \/data\/local \/home\n    symlink \/cache \/tmp\n    symlink \/usr\/local\/etc\/passwd \/system\/etc\/passwd\n    symlink \/usr\/local\/etc\/group \/system\/etc\/group\n    symlink \/usr\/local\/etc\/profile \/system\/etc\/profile/g;s/\(framework\/services.jar\)/\1\:\/data\/framework\/scala-library.jar:\/data\/framework\/scala-collection.jar:\/data\/framework\/scala-actors.jar/g' init.rc.ORIG > init.rc \
+    sed 's/ro remount/rw remount/g;s/\(symlink \/sys\/kernel\/debug \/d\)/\1\n    symlink \/data\/local \/home\n    symlink \/cache \/tmp\n    symlink \/usr\/local\/etc\/passwd \/system\/etc\/passwd\n    symlink \/usr\/local\/etc\/group \/system\/etc\/group\n    symlink \/usr\/local\/etc\/profile \/system\/etc\/profile/g;s/\(export PATH\) \/sbin/\1 \/bin:\/sbin/g;s/\(\/system\/framework\/services.jar\)/\1:\/data\/framework\/scala-library.jar:\/data\/framework\/scala-collection.jar:\/data\/framework\/scala-actors.jar/g' init.rc.ORIG > init.rc \
   )
   ( \
     cd $RAMDISK_DIR/bin && \
     for applet in `cat $EMULATOR_DIR/busybox.applets` "" ; do
       [ -z "$applet" ] && continue
-      ln -s /bin/busybox $applet
+      ln -s busybox $applet
     done \
   )
   CUSTOM_AVD_DIR=$dir-custom
@@ -185,6 +185,6 @@ done
 
 rm -rf $TMP_DIR/* > /dev/null
 
-echo "Ramdisk .img files were successfully generated"
+echo "Customized ramdisk.img files were successfully generated"
 echo "(use emulator option \"-ramdisk <file>\")"
 

@@ -1,0 +1,163 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<project name="build-scala">
+
+    <!-- This file is imported by the main Ant script. -->
+
+    <!-- Scala SDK (www.scala-lang.org) -->
+    <property name="scala-compiler.jar" value="${scala.dir}/lib/scala-compiler.jar" />
+    <property name="scala-library.jar" value="${scala.dir}/lib/scala-library.jar" />
+    <!-- ProGuard (www.proguard.com) -->
+    <property name="proguard.jar" value="${proguard.dir}/lib/proguard.jar" />
+
+    <property name="myapp.jar" value="${out.absolute.dir}/${ant.project.name}.jar" />
+
+    <path id="scala.path">
+        <pathelement path="${scala-compiler.jar}" />
+        <pathelement path="${scala-library.jar}" />
+    </path>
+    <taskdef
+        resource="scala/tools/ant/antlib.xml"
+        classpathref="scala.path" />
+
+    <resourcecount property="scala.files.count">
+        <fileset dir="${source.dir}" includes="**/*.scala" />
+    </resourcecount>
+    <condition property="myapp.containsScala">
+        <not><equals arg1="${scala.files.count}" arg2="0" /></not>
+    </condition>
+
+    <uptodate property="myapp.isuptodate" targetfile="${out.dir}/classes.complete">
+        <srcfiles dir="${source.dir}" includes="**/*.scala,**/*.java" />
+        <srcfiles dir="${resource.dir}" />
+    </uptodate>
+
+    <target name="scala-compile" depends="compile"
+        description="Compiles project's .scala files into .class files"
+        if="myapp.containsScala" unless="myapp.isuptodate">
+        <condition property="logging" value="verbose" else="none">
+            <istrue value="${verbose}" />
+        </condition>
+        <property prefix="scala"
+            resource="compiler.properties"
+            classpathref="scala.path" />
+        <echo
+            message="Scala version ${scala.version.number} - http://scala-lang.org"
+            level="info" taskname="scalac" />
+        <scalac
+            srcdir="${source.dir}" includes="**/*.scala"
+            destdir="${out.classes.dir}"
+            logging="${logging}" addparams="${scalac.addparams}">
+            <classpath>
+                <path refid="android.target.classpath" />
+                <pathelement location="${scala-library.jar}" />
+                <pathelement location="${out.classes.dir}" />
+            </classpath>
+        </scalac>
+        <touch file="${out.dir}/classes.complete" verbose="no"/>
+    </target>
+
+    <target name="-adb-test" unless="myapp.isuptodate">
+        <echo
+            message="Checking if Scala libraries are installed on emulator or device..." />
+        <exec executable="${adb}" failonerror="false" outputproperty="adb.out">
+            <arg line="${adb.device.arg}" />
+            <arg line="shell /bin/ls -s /data/framework/scala-*.jar" />
+        </exec>
+        <condition property="framework.isavailable">
+            <contains string="${adb.out}" substring="/data/framework/scala-" />
+        </condition>
+        <echo message="${adb.out}" taskname="adb" />
+    </target>
+
+    <target name="-shrink-if-test" depends="-adb-test">
+        <condition property="do.not.shrink"><or>
+            <isset property="framework.isavailable" />
+            <isset property="myapp.isuptodate" />
+        </or></condition>
+    </target>
+
+    <target name="-shrink" depends="-shrink-if-test" unless="do.not.shrink">
+        <taskdef resource="proguard/ant/task.properties"
+                 classpath="${proguard.jar}" />
+        <property
+            name="proguard.conf"
+            value="${out.dir}/proguard.conf" />
+        <echo message="Generating configuration file ${proguard.conf}" />
+        <package-prefix property="myapp.package" />
+        <proguard-helper property="injars" prefix="-injars"
+            path="${out.classes.dir}${path.separator}${scala-library.jar}(!META-INF/MANIFEST.MF,!library.properties)" />
+        <proguard-helper property="outjars" prefix="-outjars"
+            path="${myapp.jar}" />
+        <pathconvert property="target.path" refid="android.target.classpath" />
+        <proguard-helper property="libraryjars" prefix="-libraryjars"
+            path="${target.path}" />
+        <copy file="${basedir}/proguard.conf" todir="${out.dir}">
+            <filterchain>
+                <replacetokens>
+                    <token key="INJARS" value="${injars}"/>
+                    <token key="OUTJARS" value="${outjars}"/>
+                    <token key="LIBRARYJARS" value="${libraryjars}"/>
+                    <token key="MYAPP_PACKAGE" value="${myapp.package}"/>
+                </replacetokens>
+            </filterchain>
+        </copy>
+        <proguard configuration="${proguard.conf}"/>
+        <zip destfile="${out.dir}/classes.zip" basedir="${out.classes.dir}" />
+    </target>
+
+    <target name="scala-shrink" depends="scala-compile, -shrink"
+        description="Shrink the Scala library code">
+        <unjar src="${myapp.jar}" dest="${out.classes.dir}" />
+    </target>
+
+    <!-- extract the first two package names (Android naming convention) -->
+    <macrodef name="package-prefix">
+        <attribute name="property" />
+        <sequential>
+            <tempfile property="temp.file" destdir="${out.dir}"
+                deleteonexit="true" />
+            <xmlproperty file="{basedir}/AndroidManifest.xml" />
+            <echo message="${manifest.package}" file="${temp.file}" />
+            <loadfile srcfile="${temp.file}" property="@{property}">
+                <filterchain>
+                    <tokenfilter>
+                        <stringtokenizer/>
+                        <replaceregex pattern="([^.]+\.[^.]+\.).*" replace="\1**"/>
+                    </tokenfilter>
+                </filterchain>
+            </loadfile>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="proguard-helper">
+        <attribute name="property" />
+        <attribute name="prefix" />
+        <attribute name="path" />
+        <sequential>
+            <tempfile property="temp.file" destdir="${out.dir}"
+                deleteonexit="true" />
+            <echo message="@{path}" file="${temp.file}" />
+            <loadfile srcfile="${temp.file}" property="@{property}.list">
+                <filterchain>
+                    <replacestring from="${path.separator}" to="${line.separator}"/>
+                    <replaceregex pattern="(.*)" replace="@{prefix} \1" />
+                </filterchain>
+            </loadfile>
+            <property name="@{property}" value="${@{property}.list}" />
+        </sequential>
+    </macrodef>
+
+    <!-- restore original state of the 'classes' directory -->
+    <macrodef name="scala-helper">
+        <sequential>
+            <delete includeemptydirs="true" quiet="true">
+                <fileset dir="${out.classes.dir}" includes="**/*"/>
+            </delete>
+            <unzip dest="${out.classes.dir}">
+                <fileset file="${out.dir}/classes.zip"/>
+            </unzip>
+            <delete file="${out.dir}/classes.zip" quiet="true" />
+        </sequential>
+    </macrodef>
+
+</project>

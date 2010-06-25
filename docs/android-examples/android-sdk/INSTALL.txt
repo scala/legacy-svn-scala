@@ -26,6 +26,7 @@ The installation directory is organized as follows :
                 ant-windows.properties
                 ant-unix.properties
                 build-scala.xml
+                proguard.conf
             emulator/
                 busybox.applets
                 busybox.txt
@@ -127,7 +128,7 @@ project team (http://scala-lang.org/node/89).
 
 Concretely, we find Java system libraries in the following two directories
 (which are respectively read-only and read-write directories) when running
-the Android emulator running with a customized ramdisk image (2):
+the Android emulator running with a customized ramdisk image:
 
 $ adb shell /bin/ls -s /system/framework /data/framework
 /data/framework:
@@ -144,20 +145,24 @@ $ adb shell /bin/ls -s /system/framework /data/framework
 4668 framework-res.apk         607 services.jar
    9 framework-tests.jar         4 svc.jar
 
-$ adb shell set | /bin/grep BOOTCLASSPATH
+We check that the value of the environment variable BOOTCLASSPATH is correclty
+extended with the pre-installed Scala libraries. 
+
+$ adb shell echo '$BOOTCLASSPATH'
 BOOTCLASSPATH=/system/framework/core.jar:/system/framework/ext.jar:\
     /system/framework/framework.jar:/system/framework/android.policy.jar:\
     /system/framework/services.jar:/data/framework/scala-library.jar:\
     /data/framework/scala-collection.jar:/data/framework/scala-actors.jar
 
+And we have direct access to the BusyBox commands (e.g. "/bin/ls") thanks to
+the modified PATH variable: 
+
+$ adb shell echo '$PATH'
+/bin:/sbin:/system/sbin:/system/bin:/system/xbin
 
 (1) Brault's article was published in Linux Magazine 112 under the french
     title "Les dessous d'Android" (sept. 2009) and is also available at the
     address http://www.unixgarden.com/index.php/embarque/les-dessous-dandroid.
-
-(2) The shell commands "/bin/ls" and "/bin/grep" are BusyBox commands and
-    the value of the environment variable BOOTCLASSPATH was extended with
-    the generated Scala libraries.
 
 
 Have fun!

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <project name="ApiDemos" default="debug">
 
     <!-- The local.properties file is created and updated by the 'android' tool.
@@ -69,6 +69,7 @@
     <!-- Converts this project's .class files into .dex files -->
     <target name="-dex" depends="compile, scala-compile, scala-shrink">
         <dex-helper />
+        <scala-helper />
     </target>
 
 </project>

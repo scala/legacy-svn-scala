@@ -11,12 +11,14 @@ following sources:
 
    * Android SDK (http://developer.android.com/sdk/).
 
-     Please read the file README.txt in the "android-sdk" subdirectory.
+     Please read the file README.txt in the "android-sdk" subdirectory for
+     detailed instructions.
 
 
    * Unlocking Android book (http://code.google.com/p/unlocking-android/)
 
-     The subdirectory is named "unlocking-android".
+     Please read the file README.txt in the "unlocking-androidk" subdirectory
+     for detailed instructions.
 
      That book is authored by Frank Ableson, Charlie Collins and Robi Sen,
      and is published at Manning Publications Co. (ISBN 978-1-933988-67-2).

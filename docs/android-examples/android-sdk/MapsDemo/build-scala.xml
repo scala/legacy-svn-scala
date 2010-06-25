@@ -6,8 +6,8 @@
     <!-- Scala SDK (www.scala-lang.org) -->
     <property name="scala-compiler.jar" value="${scala.dir}/lib/scala-compiler.jar" />
     <property name="scala-library.jar" value="${scala.dir}/lib/scala-library.jar" />
-    <!-- YGuard SDK (www.yworks.com/products/yguard) -->
-    <property name="yguard.jar" value="${yguard.dir}/lib/yguard.jar" />
+    <!-- ProGuard (www.proguard.com) -->
+    <property name="proguard.jar" value="${proguard.dir}/lib/proguard.jar" />
 
     <path id="scala.path">
         <pathelement path="${scala-compiler.jar}" />
@@ -16,9 +16,6 @@
     <taskdef
         resource="scala/tools/ant/antlib.xml"
         classpathref="scala.path" />
-    <taskdef
-        name="yguard" classname="com.yworks.yguard.YGuardTask"
-        classpath="${yguard.jar}" />
 
     <resourcecount property="scala.files.count">
         <fileset dir="${source.dir}" includes="**/*.scala" />
@@ -57,26 +54,57 @@
         <touch file="${out.dir}/classes.complete" verbose="no"/>
     </target>
 
-    <target name="scala-shrink" depends="scala-compile"
+    <target name="-adb-test" unless="myapp.isuptodate">
+        <echo
+            message="Checking if Scala libraries are installed on emulator or device..." />
+        <exec executable="${adb}" failonerror="false" outputproperty="adb.out">
+            <arg line="${adb.device.arg}" />
+            <arg line="shell /bin/ls -s /data/framework/scala-*.jar" />
+        </exec>
+        <condition property="do.not.shrink"><or>
+            <contains string="${adb.out}" substring="/data/framework/scala-" />
+        </or></condition>
+        <echo message="${adb.out}" taskname="adb" />
+    </target>
+
+    <target name="scala-shrink" depends="scala-compile, -adb-test"
         description="Shrink code size of Scala library"
-        if="myapp.containsScala">
-        <property
-            name="scala-library-shrinked.jar"
-            value="${out.dir}/scala-library-shrinked.jar" />
+        if="myapp.containsScala" unless="do.not.shrink">
+        <taskdef resource="proguard/ant/task.properties"
+                 classpath="${proguard.jar}" />
         <property
             name="myapp.jar"
-            value="${out.dir}/${ant.project.name}.jar" />
-        <jar destfile="${myapp.jar}" basedir="${out.classes.dir}" />
-        <yguard>
-            <inoutpair in="${scala-library.jar}" out="${scala-library-shrinked.jar}" />
-            <externalclasses>
-                <pathelement location="${android.jar}" />
-            </externalclasses>
-            <shrink logfile="${out.dir}/yshrinklog.xml">
-                <entrypointjar name="${myapp.jar}" />
-            </shrink>
-        </yguard>
-        <unjar src="${scala-library-shrinked.jar}" dest="${out.classes.dir}" />
+            value="${out.absolute.dir}/${ant.project.name}.jar" />
+        <property
+            name="myapp.pkg"
+            value="${out.dir}/${ant.project.name}.pkg" />
+        <property
+            name="proguard.conf"
+            value="${out.dir}/proguard.conf" />
+        <echo message="Creating configuration file ${proguard.conf}" />
+        <xmlproperty file="{basedir}/AndroidManifest.xml" />
+        <echo message="${manifest.package}" file="${myapp.pkg}" />
+        <loadfile srcfile="${myapp.pkg}" property="myapp.package">
+            <filterchain>
+                <tokenfilter>
+                    <stringtokenizer/>
+                    <replaceregex pattern="([^.]+\.[^.]+).*" replace="\1"/>
+                </tokenfilter>
+            </filterchain>
+        </loadfile>
+        <copy file="${basedir}/proguard.conf" todir="${out.dir}">
+            <filterchain>
+                <replacetokens>
+                    <token key="OUT_CLASSES_DIR" value="${out.classes.dir}"/>
+                    <token key="SCALA_LIBRARY_JAR" value="${scala-library.jar}"/>
+                    <token key="MYAPP_JAR" value="${myapp.jar}"/>
+                    <token key="ANDROID_JAR" value="${android.jar}"/>
+                    <token key="MYAPP_PACKAGE" value="${myapp.package}"/>
+                </replacetokens>
+            </filterchain>
+        </copy>
+        <proguard configuration="${proguard.conf}"/>
+        <unjar src="${myapp.jar}" dest="${out.classes.dir}" />
     </target>
 
 </project>

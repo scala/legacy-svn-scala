@@ -69,6 +69,7 @@
     <!-- Converts this project's .class files into .dex files -->
     <target name="-dex" depends="compile, scala-compile, scala-shrink">
         <dex-helper />
+        <scala-helper />
     </target>
 
 </project>

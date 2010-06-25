@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="android" default="help">
+<project name="android-sdk" default="help">
 
     <description>
 Builds the Scala applications targeted to the Android platform.
@@ -17,9 +17,9 @@ Builds the Scala applications targeted to the Android platform.
     <!-- Building list of project directories -->
     <pathconvert property="dirs" pathsep=",">
         <path>
-            <!-- TODO re-enable Mapsdemo example -->
+            <!-- TODO re-enable examples MapsDemo and Wiktionary-->
             <dirset dir="${basedir}" includes="*"
-                    excludes="bin,configs,MapsDemo" />
+                    excludes="bin,configs,MapsDemo,Wiktionary" />
         </path>
     </pathconvert>
 
@@ -97,7 +97,7 @@ Builds the Scala applications targeted to the Android platform.
         </loadproperties>
         <property name="os.sdk.dir" value="" />
         <property name="os.scala.dir" value="" />
-        <property name="os.yguard.dir" value="" />
+        <property name="os.proguard.dir" value="" />
         <echo message="prop.file=${prop.file}" level="debug" />
         <if><isset property="prop.file" />
         <then>
@@ -105,7 +105,7 @@ Builds the Scala applications targeted to the Android platform.
                 <if>
                     <not><available file="@{dir}/local.properties"/></not>
                 <then>
-                    <echo message="sdk.dir=${os.sdk.dir}${line.separator}scala.dir=${os.scala.dir}${line.separator}yguard.dir=${os.yguard.dir}${line.separator}"
+                    <echo message="sdk.dir=${os.sdk.dir}${line.separator}scala.dir=${os.scala.dir}${line.separator}proguard.dir=${os.proguard.dir}${line.separator}"
                           file="@{dir}/local.properties" />
                 </then>
                 <else>
@@ -118,8 +118,8 @@ Builds the Scala applications targeted to the Android platform.
                         value="${os.scala.dir}"
                         file="@{dir}/local.properties"/>
                     <replaceproperty
-                        name="yguard.dir"
-                        value="${os.yguard.dir}"
+                        name="proguard.dir"
+                        value="${os.proguard.dir}"
                         file="@{dir}/local.properties"/>
                 </else></if>
                 <update.scala dir="@{dir}" />
@@ -219,23 +219,31 @@ Builds the Scala applications targeted to the Android platform.
     <macrodef name="update.scala">
         <attribute name="dir" />
         <sequential>
-            <condition property="files.differ" value="${configs.ant.dir}/build-scala.xml">
+            <conditional.copy
+                file="${configs.ant.dir}/build-scala.xml"
+                tofile="@{dir}/build-scala.xml" />
+            <conditional.copy
+                file="${configs.ant.dir}/proguard.conf"
+                tofile="@{dir}/proguard.conf" />
+        </sequential>
+    </macrodef>
+
+    <macrodef name="conditional.copy">
+        <attribute name="file" />
+        <attribute name="tofile" />
+        <sequential>
+            <if>
                 <and>
-                    <available file="${configs.ant.dir}/build-scala.xml" />
-                    <available file="@{dir}/build-scala.xml" />
+                    <available file="@{file}" />
                     <not>
-                        <filesmatch file1="${configs.ant.dir}/build-scala.xml"
-                                    file2="@{dir}/build-scala.xml"
+                        <filesmatch file1="@{file}"
+                                    file2="@{tofile}"
                                     textfile="true" />
                     </not>
                 </and>
-            </condition>
-            <if>
-                <isset property="files.differ" />
                 <then>
-                     <echo message="Updating file @{dir}/build-scala.xml." />
-                     <copy file="${configs.ant.dir}/build-scala.xml"
-                           tofile="@{dir}/build-scala.xml" />
+                    <echo message="Updating file @{tofile}" />
+                    <copy file="@{file}" tofile="@{tofile}" />
                 </then>
             </if>
         </sequential>

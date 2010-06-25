@@ -36,14 +36,14 @@ free software distributions (tested versions and download sites are given in
 parenthesis) :
 
 1) Sun Java SDK 1.6 or newer (1.6.0_20 , www.sun.com/java/jdk/)
-2) Scala SDK 2.7.5 or newer  (2.8.0_RC5, www.scala-lang.org/downloads/)
+2) Scala SDK 2.7.5 or newer  (2.8.0_RC6, www.scala-lang.org/downloads/)
 3) Android SDK 1.5 or newer  (2.2      , developer.android.com/sdk/)
 4) Apache Ant 1.7.0 or newer (1.8.1    , ant.apache.org/)
-5) YGuard 2.3 or newer       (2.3.0.1  , www.yworks.com/products/yguard/)
+5) ProGuard 4.4 or newer     (4.5      , www.proguard.com/)
 
 NB. In this document we rely on Ant tasks featured by the Scala SDK, the
-Android SDK and the YGuard obfuscator tool (we will say more about YGuard when
-we look at the modified Ant build script).
+Android SDK and the ProGuard shrinker and obfuscator tool (we will say more
+about ProGuard when we look at the modified Ant build script).
 
 
 Project Structure
@@ -63,10 +63,10 @@ In particular:
   Android build system; in our case we need to define at least the following
   properties (please adapt the respective values to your own environment):
 
-  Unix:                         Windows:
-     sdk.dir=/opt/android          sdk.dir=c:\\Progra~1\\Android
-     scala.dir=/opt/scala          sdk.dir=c:\\Progra~1\\Scala
-     yguard.dir=/opt/yguard        sdk.dir=c:\\Progra~1\\YGuard
+  Unix:                                Windows:
+     sdk.dir=/opt/android-sdk-linux_86    sdk.dir=c:/Progra~1/android-sdk-win32
+     scala.dir=/opt/scala                 scala.dir=c:/Progra~1/Scala
+     proguard.dir=/opt/proguard           proguard.dir=c:/Progra~1/ProGuard
 
 * The "default.properties" file defines the default API level of an Android
   (for more details see the documentation page
@@ -86,10 +86,10 @@ In particular:
 
 * The "build-scala.xml" Ant build script defines the targets "scala-compile"
   and "scala-shrink" where respectively the "<scalac>" Ant task generates
-  Java bytecode from the Scala source files and the "<yguard>" task creates a
+  Java bytecode from the Scala source files and the "<proguard>" task creates a
   shrinked version of the Scala standard library by removing the unreferenced
   code (see next section for more details). Those two tasks are featured by
-  the Scala and YGuard software distributions respectively.
+  the Scala and ProGuard software distributions respectively.
 
 
 Project Build
@@ -116,8 +116,8 @@ the following Ant targets :
 ================================================================================
 
 
-Note about YGuard
------------------
+Note about ProGuard
+-------------------
 
 The main issue when building an Android application written in Scala is related
 to the code integration of the Scala standard library into the generated Android
@@ -141,30 +141,26 @@ bytecode. Concretely, we have two choices :
 
 2) We find a (possibly efficient) way to shrink the size of the Scala standard
    library by removing the library code not referenced by our Android
-   application. Our current solution relies on YGuard, a free Ant-aware
-   obfuscator tool; the result is size efficient while the proccessing is quite
-   time consuming (to be improved e.g. using a compiler generated dependency
-   list).
+   application. Our solution relies on ProGuard, a free Ant-aware obfuscator
+   tool written by Eric Lafortune; the ProGuard shrinker is fast and generates
+   much smaller Java bytecode archives.
 
-   Application     <myapp>.jar  scala-library-shrinked.jar  classes.dex
-   (in Scala)      (entry point)  (orig. 3900 classes)   (Android bytecode)
+   Application     <myapp>.jar   Scala library classes    classes.dex
+   (in Scala)                    (orig. 4151 classes)  (Android bytecode)
    -----------------------------------------------------------------------
-   ApiDemos          982K          361K (482 classes)         785K
-   ContactManager     32K          303K (410 classes)         246K
-   CubeLiveWallpaper  31K          347K (469 classes)         279K 
-   FileBrowser        22K          371K (471 classes)         292K
-   GestureBuilder     44K          410K (520 classes)         341K
-   HelloActivity       4K            2K (  2 classes)           3K
-   Home               54K          321K (439 classes)         289K
-   JetBoy             45K          320K (446 classes)         280K
-   LunarLander        28K          363K (481 classes)         299K
-   NotePad            36K          299K (431 classes)         250K
-   PhoneDialer         6K          292K (401 classes)         215K
-   Snake              41K          375K (496 classes)         305K
-
-   NB. The above files are generated into the "bin" output directory; the
-   "yshrinklog.xml" logging file provides more information about the shrinking
-   task of YGuard.
+   ApiDemos          1169K           409 classes             872K
+   ContactManager     362K           362 classes             286K
+   CubeLiveWallpaper  351K           353 classes             279K 
+   FileBrowser        438K           433 classes             346K
+   GestureBuilder      44K           403 classes             337K
+   HelloActivity        3K             0 classes               2K
+   Home               385K           365 classes             314K
+   JetBoy             380K           369 classes             311K
+   LunarLander        431K           427 classes             351K
+   NotePad            356K           356 classes             282K
+   PhoneDialer        326K           349 classes             256K
+   SearchableDict     380K           380 classes             301K
+   Snake              447K           428 classes             353K
 
    We now compare the build times and sizes of our Android applications
    (written in Scala) with the orginal examples (written in Java) from the
@@ -173,21 +169,22 @@ bytecode. Concretely, we have two choices :
    Application        classes.dex   <app>-debug.apk(1)  build time(2)
                     (Scala / Java)   (Scala / Java)    (Scala / Java)
    ------------------------------------------------------------------
-   ApiDemos           785K / 468K     2337K / 2174K    8m 18s / 19s
-   ContactManager     246K /  17K      103K /   25K    8m 24s /  8s
-   CubeLiveWallpaper  279K /  15K      109K /   19K    8m 10s /  5s
-   GestureBuilder     341K /  20K      132K /   28K    8m 23s /  5s
-   Home               289K /  32K      342K /  247K    9m 21s /  6s
-   JetBoy             280K /  24K     1628K / 1530K    7m 44s / 13s
-   LunarLander        299K /  18K      221K /  120K    7m 50s /  5s
-   NotePad            250K /  21K      114K /   48K    9m 10s /  3s
-   Snake              305K /  14K      118K /   18K    8m 12s /  4s
+   ApiDemos           872K / 468K     2688K / 2174K     1m18s / 18s
+   ContactManager     286K /  17K      127K /   25K       37s /  5s
+   CubeLiveWallpaper  297K /  15K      120K /   19K       38s /  5s
+   GestureBuilder     337K /  20K      144K /   28K       40s /  5s
+   Home               314K /  32K      359K /  247K       40s /  6s
+   JetBoy             311K /  24K     1647K / 1530K       47s / 13s
+   LunarLander        351K /  18K      250K /  120K       39s /  5s
+   NotePad            282K /  21K      132K /   48K       38s /  5s
+   SearchableDict     301K /  15K      153K /   44K       45s /  4s
+   Snake              353K /  14K      147K /   18K       46s /  4s
 
    (1) Sizes of application packages include bytecode and resources.
-   (2) Elapsed times for Scala builds include YGuard processing time.
+   (2) Elapsed times for Scala builds include ProGuard processing time.
 
-   NB. The above results were measured with YGuard 3.2.0.1 on a 2.0 GHz
-   Pentium M with 2 GB of memory, using Sun JDK 1.6.0_20 and Scala 2.8.0_RC5
+   NB. The above results were measured with ProGuard 4.5 on a 2.0 GHz
+   Pentium M with 2 GB of memory, using Sun JDK 1.6.0_20 and Scala 2.8.0_RC6
    on Ubuntu 8.04 Linux.
 
 
