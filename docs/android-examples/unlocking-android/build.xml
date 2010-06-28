@@ -82,6 +82,13 @@ Builds the Scala applications targeted to the Android platform.
                 <available file="${configs.ant.dir}/ant-windows.properties" />
             </and>
         </condition>
+                <condition property="prop.file" value="${configs.ant.dir}/ant-mac.properties">
+            <and>
+                <os family="unix" />
+                <os family="mac" />
+                <available file="${configs.ant.dir}/ant-mac.properties" />
+            </and>
+        </condition>
         <condition property="prop.file" value="${configs.ant.dir}/ant-unix.properties">
             <and>
                 <os family="unix" />
