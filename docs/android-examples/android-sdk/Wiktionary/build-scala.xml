@@ -26,7 +26,7 @@
         <not><equals arg1="${scala.files.count}" arg2="0" /></not>
     </condition>
 
-    <uptodate property="myapp.isuptodate" targetfile="${out.dir}/classes.complete">
+    <uptodate property="myapp.isuptodate" targetfile="${out.dir}/myapp.complete">
         <srcfiles dir="${source.dir}" includes="**/*.scala,**/*.java" />
         <srcfiles dir="${resource.dir}" />
     </uptodate>
@@ -46,17 +46,18 @@
         <scalac
             srcdir="${source.dir}" includes="**/*.scala"
             destdir="${out.classes.dir}"
+            bootclasspathref="android.target.classpath"
             logging="${logging}" addparams="${scalac.addparams}">
             <classpath>
-                <path refid="android.target.classpath" />
                 <pathelement location="${scala-library.jar}" />
                 <pathelement location="${out.classes.dir}" />
+                <fileset dir="${external.libs.absolute.dir}" includes="*.jar" />
             </classpath>
         </scalac>
-        <touch file="${out.dir}/classes.complete" verbose="no"/>
+        <touch file="${out.dir}/myapp.complete" verbose="no"/>
     </target>
 
-    <target name="-adb-test" unless="myapp.isuptodate">
+    <target name="-shrink-if-test">
         <echo
             message="Checking if Scala libraries are installed on emulator or device..." />
         <exec executable="${adb}" failonerror="false" outputproperty="adb.out">
@@ -66,17 +67,14 @@
         <condition property="framework.isavailable">
             <contains string="${adb.out}" substring="/data/framework/scala-" />
         </condition>
-        <echo message="${adb.out}" taskname="adb" />
-    </target>
-
-    <target name="-shrink-if-test" depends="-adb-test">
         <condition property="do.not.shrink"><or>
             <isset property="framework.isavailable" />
             <isset property="myapp.isuptodate" />
         </or></condition>
+        <echo message="${adb.out}" taskname="adb" />
     </target>
 
-    <target name="-shrink" depends="-shrink-if-test" unless="do.not.shrink">
+    <target name="scala-shrink" depends="-shrink-if-test" unless="do.not.shrink">
         <taskdef resource="proguard/ant/task.properties"
                  classpath="${proguard.jar}" />
         <property
@@ -88,9 +86,9 @@
             path="${out.classes.dir}${path.separator}${scala-library.jar}(!META-INF/MANIFEST.MF,!library.properties)" />
         <proguard-helper property="outjars" prefix="-outjars"
             path="${myapp.jar}" />
-        <pathconvert property="target.path" refid="android.target.classpath" />
+        <pathconvert property="libraryjars.path" refid="android.target.classpath" />
         <proguard-helper property="libraryjars" prefix="-libraryjars"
-            path="${target.path}" />
+            path="${libraryjars.path}" />
         <copy file="${basedir}/proguard.conf" todir="${out.dir}">
             <filterchain>
                 <replacetokens>
@@ -102,13 +100,31 @@
             </filterchain>
         </copy>
         <proguard configuration="${proguard.conf}"/>
-        <zip destfile="${out.dir}/classes.zip" basedir="${out.classes.dir}" />
+        <touch file="${out.dir}/myapp.complete" verbose="no"/>
     </target>
 
-    <target name="scala-shrink" depends="scala-compile, -shrink"
-        description="Shrink the Scala library code">
-        <unjar src="${myapp.jar}" dest="${out.classes.dir}" />
-    </target>
+    <macrodef name="scala-dex-helper">
+        <element name="external-libs" optional="yes" />
+        <element name="extra-parameters" optional="yes" />
+        <sequential>
+            <condition property="dex.input" value="${myapp.jar}"
+                       else="${out.classes.absolute.dir}"><and>
+                 <available file="${myapp.jar}" />
+                 <not><isset property="framework.isavailable" /></not>
+             </and></condition>
+         <echo>Converting compiled files and external libraries into ${intermediate.dex.file}...</echo>
+         <apply executable="${dx}" failonerror="true" parallel="true">
+             <arg value="--dex" />
+             <arg value="--output=${intermediate.dex.file}" />
+             <extra-parameters />
+             <arg line="${verbose.option}" />
+             <arg path="${dex.input}" />
+             <fileset dir="${external.libs.absolute.dir}" includes="*.jar" />
+             <path refid="android.libraries.jars" />
+             <external-libs />
+         </apply>
+       </sequential>
+    </macrodef>
 
     <!-- extract the first two package names (Android naming convention) -->
     <macrodef name="package-prefix">
@@ -144,19 +160,6 @@
                 </filterchain>
             </loadfile>
             <property name="@{property}" value="${@{property}.list}" />
-        </sequential>
-    </macrodef>
-
-    <!-- restore original state of the 'classes' directory -->
-    <macrodef name="scala-helper">
-        <sequential>
-            <delete includeemptydirs="true" quiet="true">
-                <fileset dir="${out.classes.dir}" includes="**/*"/>
-            </delete>
-            <unzip dest="${out.classes.dir}">
-                <fileset file="${out.dir}/classes.zip"/>
-            </unzip>
-            <delete file="${out.dir}/classes.zip" quiet="true" />
         </sequential>
     </macrodef>
 
