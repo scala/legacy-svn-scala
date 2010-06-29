@@ -42,10 +42,10 @@ class Stack[A] private (var elems: List[A]) extends scala.collection.Seq[A] with
    *  @return true, iff there is no element on the stack
    */
   override def isEmpty: Boolean = elems.isEmpty
-  
+
   /** The number of elements in the stack */
   override def length = elems.length
-  
+
   /** Retrieve n'th element from stack, where top of stack has index 0 */
   override def apply(index: Int) = elems(index)
 
@@ -55,15 +55,16 @@ class Stack[A] private (var elems: List[A]) extends scala.collection.Seq[A] with
    *  @return the stack with the new element on top.
    */
   def push(elem: A): this.type = { elems = elem :: elems; this }
-   
+
   /** Push two or more elements onto the stack. The last element
    *  of the sequence will be on top of the new stack.
    *
    *  @param   elems      the element sequence.
    *  @return the stack with the new elements on top.
    */
-  def push(elem1: A, elem2: A, elems: A*): this.type = this.push(elem1).push(elem2).pushAll(elems)
-   
+  def push(elem1: A, elem2: A, elems: A*): this.type =
+    this.push(elem1).push(elem2).pushAll(elems)
+
   /** Push all elements in the given traversable object onto
    *  the stack. The last element in the traversable object
    *  will be on top of the new stack.
@@ -121,10 +122,10 @@ class Stack[A] private (var elems: List[A]) extends scala.collection.Seq[A] with
    */
   @migration(2, 8, "Stack iterator and foreach now traverse in FIFO order.")
   override def toList: List[A] = elems
-  
+
   @migration(2, 8, "Stack iterator and foreach now traverse in FIFO order.")
   override def foreach[U](f: A => U): Unit = super.foreach(f)
-  
+
   /** This method clones the stack.
    *
    *  @return  a stack with the same elements.
@@ -134,5 +135,5 @@ class Stack[A] private (var elems: List[A]) extends scala.collection.Seq[A] with
 
 // !!! TODO - integrate
 object Stack {
-  def apply[A](xs: A*): Stack[A] = new Stack[A] ++= xs
+  def apply[A](xs: A*): Stack[A] = new Stack[A] pushAll xs
 }
