@@ -11,9 +11,6 @@ import scala.collection.parallel.Combiner
 
 
 
-
-
-
 // TODO uncomment when we add parallel vectors
 
 ///** An immutable variant of `ParallelSeq`.

@@ -7,9 +7,6 @@ import scala.collection.parallel.ParallelIterableLike
 import scala.collection.parallel.Combiner
 
 
-
-
-
 // TODO uncomment when we add parallel vectors
 
 ///** A template trait for immutable parallel iterable collections.
