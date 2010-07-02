@@ -74,7 +74,8 @@
         <echo message="${adb.out}" taskname="adb" />
     </target>
 
-    <target name="scala-shrink" depends="-shrink-if-test" unless="do.not.shrink">
+    <target name="scala-shrink" depends="-shrink-if-test" unless="do.not.shrink"
+            description="Shrink the Scala library code">
         <taskdef resource="proguard/ant/task.properties"
                  classpath="${proguard.jar}" />
         <property

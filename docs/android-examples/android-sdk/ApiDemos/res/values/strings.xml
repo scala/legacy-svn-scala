@@ -15,7 +15,7 @@
 -->
 
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="activity_sample_code">API Demos</string>
+    <string name="activity_sample_code">API Demos\n(Scala)</string>
 
     <!-- =============================== -->
     <!--  app/activity examples strings  -->

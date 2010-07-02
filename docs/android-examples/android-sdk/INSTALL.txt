@@ -21,12 +21,15 @@ The installation directory is organized as follows :
             createramdisks
             emulator
             emulator-maps
+            removeramdisks
         configs/
             ant/
-                ant-windows.properties
+                ant-mac.properties
                 ant-unix.properties
+                ant-windows.properties
                 build-scala.xml
                 proguard.conf
+                proguard-optimize.conf
             emulator/
                 busybox.applets
                 busybox.txt
@@ -50,7 +53,8 @@ The shell scripts are located in the "bin/" directory.
       device; furthermore they use custom ramdisk images when present (see
       the script "createramdisks" below).
 
-    * The "createramdisks" script performs the following tasks:
+    * The "createramdisks" script creates customized ramdisk images; in
+      particular it performs the following tasks:
 
       - it splits the Scala library ($SCALA_HOME/lib/scala-library.jar) into
         three smaller pieces as the dx tool fails to process a so large file,
@@ -66,6 +70,9 @@ The shell scripts are located in the "bin/" directory.
       "$ANDROID_SDK_HOME/.android/avd" and can thus be shared between all
       Android projects (they are then used by the shell scripts "emulator"
       and "emulator-maps").
+
+    * The "removeramdisks" script simply removes the customized ramdisk images
+      created using "createramdisks".
 
 
 Ant build scripts
@@ -102,8 +109,9 @@ and focus our attention on the "scala-compile" target and the advanced targets
       project's .scala files into .class files.
 
     * The target "setenv" uses the configuration settings found in the
-      directory "configs/ant/" and, when necessary, updates the two files
-      "local.properties" and "build-scala.xml" in each project directory.
+      directory "configs/ant/" and, when necessary, updates the three files
+      "local.properties", "build-scala.xml" and "proguard.conf" in each project
+      directory.
 
     * The target "check-maps" checks the consistency of the configuration
       settings for the Google's APIs (i.e. maps.jar) defined in the project

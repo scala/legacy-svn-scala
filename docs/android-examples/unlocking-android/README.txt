@@ -25,7 +25,7 @@ $ANDROID_HOME/docs/guide/developing/tools/avd.html).
 
 NB. The file INSTALL.txt gives VERY USEFUL informations about the small
 development framework (directories "bin/" and "configs/") included in this
-software distribution; in particular it permits to greatly improve the build
+software distribution; in particular it permits to greatly reduce the build
 time of Android applications written in Scala.
 
 
@@ -37,7 +37,7 @@ free software distributions (tested versions and download sites are given in
 parenthesis) :
 
 1) Sun Java SDK 1.6 or newer (1.6.0_20 , www.sun.com/java/jdk/)
-2) Scala SDK 2.7.5 or newer  (2.8.0_RC6, www.scala-lang.org/downloads/)
+2) Scala SDK 2.7.5 or newer  (2.8.0_RC7, www.scala-lang.org/downloads/)
 3) Android SDK 1.5 or newer  (2.2      , developer.android.com/sdk/)
 4) Apache Ant 1.7.0 or newer (1.8.1    , ant.apache.org/)
 5) ProGuard 4.4 or newer     (4.5      , www.proguard.com/)
@@ -65,7 +65,7 @@ In particular:
   properties (please adapt the respective values to your own environment):
 
   Unix:                                Windows:
-     sdk.dir=/opt/android-sdk-linux_86    sdk.dir=c:/Progra~1/android-sdk-win32
+     sdk.dir=/opt/android-sdk-linux_86    sdk.dir=c:/Progra~1/android-sdk-windows
      scala.dir=/opt/scala                 scala.dir=c:/Progra~1/Scala
      proguard.dir=/opt/proguard           proguard.dir=c:/Progra~1/ProGuard
 
@@ -82,7 +82,7 @@ In particular:
 
     <!-- Converts this project's .class files into .dex files -->
     <target name="-dex" depends="compile, scala-compile, scala-shrink">
-        <dex-helper />
+        <scala-dex-helper />
     </target>
 
 * The "build-scala.xml" Ant build script defines the targets "scala-compile"

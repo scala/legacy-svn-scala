@@ -17,9 +17,9 @@
 */
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-        package="com.example.android.searchabledict">
-
-    <uses-sdk android:minSdkVersion="4" />
+      package="com.example.android.searchabledict"
+      android:versionCode="1"
+      android:versionName="1.0">
 
     <application android:label="@string/app_name"
             android:icon="@drawable/ic_dictionary">
@@ -55,4 +55,5 @@
                 android:syncable="false" />
 
     </application>
+    <uses-sdk android:targetSdkVersion="7" android:minSdkVersion="4" />
 </manifest>

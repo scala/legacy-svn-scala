@@ -104,8 +104,8 @@ class Dictionary {
 
   private def addMatch(query: String, word: Word) {
     mDict get query match {
-      case Some(list) => list + word
-      case None => mDict(query) = new ListBuffer() + word
+      case Some(list) => list += word
+      case None => mDict(query) = new ListBuffer() += word
     }
   }
 

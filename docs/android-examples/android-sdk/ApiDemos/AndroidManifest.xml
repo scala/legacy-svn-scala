@@ -1784,7 +1784,7 @@
     </application>
     <!-- our application is compatible only with devices -->
     <!-- using the Android 2.0.1 (or greater) system image -->
-    <uses-sdk android:minSdkVersion="6" />
+    <uses-sdk android:targetSdkVersion="8" android:minSdkVersion="7" />
 
     <instrumentation android:name=".app.LocalSampleInstrumentation"
         android:targetPackage="com.example.android.apis"
