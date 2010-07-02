@@ -150,6 +150,12 @@ abstract class TreeInfo {
     if (name == nme.CONSTRUCTOR || name == nme.MIXIN_CONSTRUCTOR) => constr
     case _ :: stats1 => firstConstructor(stats1)
   }
+  
+  /** The arguments to the first constructor in `stats'. */
+  def firstConstructorArgs(stats: List[Tree]): List[Tree] = firstConstructor(stats) match {
+    case DefDef(_, _, _, args :: _, _, _) => args
+    case _                                => Nil
+  }
 
   /** The value definitions marked PRESUPER in this statement sequence */
   def preSuperFields(stats: List[Tree]): List[ValDef] = 
