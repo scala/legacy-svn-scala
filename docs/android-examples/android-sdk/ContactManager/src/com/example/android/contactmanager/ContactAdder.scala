@@ -16,6 +16,9 @@
 
 package com.example.android.contactmanager
 
+import scala.android.provider.ContactsContract
+import scala.android.provider.ContactsContract.CommonDataKinds.{Email, Phone, StructuredName}
+
 import android.accounts.{Account, AccountManager, AuthenticatorDescription,
                          OnAccountsUpdateListener}
 import android.app.Activity
@@ -23,9 +26,6 @@ import android.content.{ContentProviderOperation, Context}
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.os.Bundle
-import android.provider.Contacts.{OrganizationColumns, PeopleColumns}
-import android.provider.ContactsContract
-import android.provider.ContactsContract.CommonDataKinds.{Email, Phone}
 import android.util.Log
 import android.view.{LayoutInflater, View, ViewGroup}
 import android.widget.{AdapterView, ArrayAdapter, Button, EditText, ImageView,
@@ -47,10 +47,10 @@ object ContactAdder {
   //       Also, be aware that type IDs differ between Phone and Email, and
   //       MUST be computed separately.
   private final val mContactEmailTypes = Array(
-    Email.TYPE_HOME,
-    Email.TYPE_WORK,
-    Email.TYPE_MOBILE,
-    Email.TYPE_OTHER)
+    Phone.TYPE_HOME,
+    Phone.TYPE_WORK,
+    Phone.TYPE_MOBILE,
+    Phone.TYPE_OTHER)
   private final val mContactPhoneTypes = Array(
     Phone.TYPE_HOME,
     Phone.TYPE_WORK,
@@ -185,28 +185,28 @@ final class ContactAdder extends Activity with OnAccountsUpdateListener {
     //       coresponding entry in the ContactsContract.Contacts provider for us.
     val ops = new ArrayList[ContentProviderOperation]()
     ops.add(ContentProviderOperation.newInsert(ContactsContract.RawContacts.CONTENT_URI)
-                .withValue(ContactsContract2.RawContacts.ACCOUNT_TYPE, mSelectedAccount.getType)
-                .withValue(ContactsContract2.RawContacts.ACCOUNT_NAME, mSelectedAccount.getName)
+                .withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, mSelectedAccount.getType)
+                .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, mSelectedAccount.getName)
                 .build());
     ops.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
-                .withValueBackReference(ContactsContract2.Data.RAW_CONTACT_ID, 0)
-                .withValue(ContactsContract2.Data.MIMETYPE,
-                           ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)
-                .withValue(PeopleColumns.DISPLAY_NAME, name)
+                .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
+                .withValue(ContactsContract.Data.MIMETYPE,
+                           StructuredName.CONTENT_ITEM_TYPE)
+                .withValue(StructuredName.DISPLAY_NAME, name)
                 .build());
     ops.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
-                .withValueBackReference(ContactsContract2.Data.RAW_CONTACT_ID, 0)
-                .withValue(ContactsContract2.Data.MIMETYPE,
+                .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
+                .withValue(ContactsContract.Data.MIMETYPE,
                            Phone.CONTENT_ITEM_TYPE)
                 .withValue(Phone.NUMBER, phone)
-                .withValue(OrganizationColumns.TYPE, phoneType)
+                .withValue(Phone.TYPE, phoneType)
                 .build())
     ops.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
-                .withValueBackReference(ContactsContract2.Data.RAW_CONTACT_ID, 0)
-                .withValue(ContactsContract2.Data.MIMETYPE,
+                .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
+                .withValue(ContactsContract.Data.MIMETYPE,
                            Email.CONTENT_ITEM_TYPE)
-                .withValue(ContactsContract2.CommonDataKinds.Email.DATA, email)
-                .withValue(OrganizationColumns.TYPE, emailType)
+                .withValue(Email.DATA, email)
+                .withValue(Email.TYPE, emailType)
                 .build())
 
     // Ask the Contact provider to create a new contact

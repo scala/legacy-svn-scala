@@ -18,13 +18,13 @@ package com.example.android.apis.app
 
 import com.example.android.apis.R
 
+import scala.android.provider.ContactsContract.Contacts
+
 import android.app.ListActivity
 import android.content.Context
 import android.database.{CharArrayBuffer, Cursor}
 import android.os.Bundle
 import android.provider.BaseColumns
-import android.provider.Contacts.PeopleColumns
-import android.provider.ContactsContract.{Contacts, ContactsColumns, ContactStatusColumns}
 import android.view.{View, ViewGroup}
 import android.widget.{QuickContactBadge, ResourceCursorAdapter, TextView}
 
@@ -33,12 +33,12 @@ class QuickContactsDemo extends ListActivity {
 
   override def onCreate(savedInstanceState: Bundle) {
     super.onCreate(savedInstanceState)
-    val select = "((" + PeopleColumns.DISPLAY_NAME + " NOTNULL) AND (" +
-                 CONTACTS.HAS_PHONE_NUMBER + "=1) AND (" +
-                 PeopleColumns.DISPLAY_NAME + " != '' ))"
+    val select = "((" + Contacts.DISPLAY_NAME + " NOTNULL) AND (" +
+                 Contacts.HAS_PHONE_NUMBER + "=1) AND (" +
+                 Contacts.DISPLAY_NAME + " != '' ))"
     val c: Cursor = getContentResolver.query(Contacts.CONTENT_URI,
                 CONTACTS_SUMMARY_PROJECTION, select,
-                null, PeopleColumns.DISPLAY_NAME + " COLLATE LOCALIZED ASC")
+                null, Contacts.DISPLAY_NAME + " COLLATE LOCALIZED ASC")
     startManagingCursor(c)
     val adapter = new ContactListItemAdapter(this, R.layout.quick_contacts, c)
     setListAdapter(adapter)
@@ -79,14 +79,14 @@ class QuickContactsDemo extends ListActivity {
 object QuickContactsDemo {
 
   private final val CONTACTS_SUMMARY_PROJECTION = Array(
-    BaseColumns._ID, // 0
-    PeopleColumns.DISPLAY_NAME, // 1
-    PeopleColumns.STARRED, // 2
-    PeopleColumns.TIMES_CONTACTED, // 3
-    CONTACTS.CONTACT_PRESENCE, // 4
-    CONTACTS.PHOTO_ID, // 5
-    CONTACTS.LOOKUP_KEY, // 6
-    CONTACTS.HAS_PHONE_NUMBER  // 7
+    Contacts._ID, // 0
+    Contacts.DISPLAY_NAME, // 1
+    Contacts.STARRED, // 2
+    Contacts.TIMES_CONTACTED, // 3
+    Contacts.CONTACT_PRESENCE, // 4
+    Contacts.PHOTO_ID, // 5
+    Contacts.LOOKUP_KEY, // 6
+    Contacts.HAS_PHONE_NUMBER  // 7
   )
 
   private final val SUMMARY_ID_COLUMN_INDEX = 0

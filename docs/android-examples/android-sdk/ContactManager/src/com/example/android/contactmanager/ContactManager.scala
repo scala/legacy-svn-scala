@@ -16,15 +16,13 @@
 
 package com.example.android.contactmanager
 
+import scala.android.provider.ContactsContract
+
 import android.app.Activity
 import android.content.Intent
 import android.database.Cursor
 import android.net.Uri
 import android.os.Bundle
-import android.provider.BaseColumns
-import android.provider.Contacts.PeopleColumns
-import android.provider.ContactsContract
-import android.provider.ContactsContract.ContactsColumns
 import android.util.Log
 import android.view.View
 import android.widget.{Button, CheckBox, CompoundButton, ListView, SimpleCursorAdapter}
@@ -84,7 +82,7 @@ final class ContactManager extends Activity {
   private def populateContactList() {
     // Build adapter with contact entries
     val cursor = getContacts()
-    val fields = Array(PeopleColumns.DISPLAY_NAME)
+    val fields = Array(ContactsContract.Data.DISPLAY_NAME)
 
     val adapter = new SimpleCursorAdapter(this, R.layout.contact_entry, cursor,
       fields, Array(R.id.contactEntryText))
@@ -99,11 +97,11 @@ final class ContactManager extends Activity {
   private def getContacts(): Cursor = {
     // Run query
     val uri = ContactsContract.Contacts.CONTENT_URI
-    val projection = Array(BaseColumns._ID, PeopleColumns.DISPLAY_NAME)
-    val selection = ContactsContract2.Contacts.IN_VISIBLE_GROUP + " = '" +
+    val projection = Array(ContactsContract.Contacts._ID, ContactsContract.Contacts.DISPLAY_NAME)
+    val selection = ContactsContract.Contacts.IN_VISIBLE_GROUP + " = '" +
                     (if (mShowInvisible) "0" else "1") + "'"
     var selectionArgs: Array[String] = Array()
-    val sortOrder = PeopleColumns.DISPLAY_NAME + " COLLATE LOCALIZED ASC"
+    val sortOrder = ContactsContract.Contacts.DISPLAY_NAME + " COLLATE LOCALIZED ASC"
 
     managedQuery(uri, projection, selection, selectionArgs, sortOrder)
   }

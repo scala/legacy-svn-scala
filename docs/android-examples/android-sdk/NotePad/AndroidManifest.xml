@@ -110,5 +110,5 @@
 
     </application>
 
-    <uses-sdk android:targetSdkVersion="7" android:minSdkVersion="4"/>
+    <uses-sdk android:targetSdkVersion="4" android:minSdkVersion="4"/>
 </manifest>

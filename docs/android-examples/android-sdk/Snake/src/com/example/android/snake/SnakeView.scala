@@ -118,12 +118,12 @@ extends TileView(context, attrs, defStyle) {
   private def initSnakeView() {
     setFocusable(true)
 
-    val r = this.getContext().getResources()
-        
+    val r = this.getContext.getResources
+
     resetTiles(4)
-    loadTile(RED_STAR, r.getDrawable(R.drawable.redstar))
-    loadTile(YELLOW_STAR, r.getDrawable(R.drawable.yellowstar))
-    loadTile(GREEN_STAR, r.getDrawable(R.drawable.greenstar))
+    loadTile(RED_STAR, r getDrawable R.drawable.redstar)
+    loadTile(YELLOW_STAR, r getDrawable R.drawable.yellowstar)
+    loadTile(GREEN_STAR, r getDrawable R.drawable.greenstar)
   }
 
   private def initNewGame() {
