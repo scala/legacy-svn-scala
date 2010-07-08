@@ -394,9 +394,10 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
     
     /** Replace formal type parameter symbols with actual type arguments. 
      *
-     * Amounts to substitution except for higher-kinded types. (See overridden method in TypeRef) -- @M (contact adriaan.moors at cs.kuleuven.be)
+     * Amounts to substitution except for higher-kinded types. (See overridden method in TypeRef) -- @M
      */
-    def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]): Type = this.subst(formals, actuals)
+    def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]): Type =
+      if(formals.length == actuals.length) this.subst(formals, actuals) else ErrorType
 
     /** If this type is an existential, turn all existentially bound variables to type skolems.
      *  @param  owner    The owner of the created type skolems
@@ -1700,16 +1701,17 @@ A type's typeSymbol should never be inspected directly.
     // typerefs w/o type params that occur in java signatures/code are considered raw types, and are represented as existential types
     override def isHigherKinded = (args.isEmpty && !typeParamsDirect.isEmpty)
 
-    override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]): Type = 
+    override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]): Type =
       if (isHigherKinded) {
         val substTps = formals.intersect(typeParams)
-      
-        if (substTps.length == typeParams.length) 
+
+        if (substTps.length == typeParams.length)
           typeRef(pre, sym, actuals)
-        else // partial application (needed in infer when bunching type arguments from classes and methods together)
+        else if(formals.length == actuals.length) // partial application (needed in infer when bunching type arguments from classes and methods together)
           typeRef(pre, sym, dummyArgs).subst(formals, actuals)
-      } 
-      else 
+        else ErrorType
+      }
+      else
         super.instantiateTypeParams(formals, actuals)
 
 
@@ -1725,22 +1727,16 @@ A type's typeSymbol should never be inspected directly.
     override def remove(clazz: Symbol): Type = 
       if (sym == clazz && !args.isEmpty) args.head else this
 
-    def normalize0: Type = 
-      if (sym.isAliasType) { // beta-reduce 
-        if (sym.info.typeParams.length == args.length || !isHigherKinded) {
-          /* !isHigherKinded && sym.info.typeParams.length != args.length only happens when compiling e.g., 
-           `val x: Class' with -Xgenerics, while `type Class = java.lang.Class' had already been compiled without -Xgenerics */
-          val xform = transform(sym.info.resultType)
-          assert(xform ne this, this)
-          xform.normalize // cycles have been checked in typeRef
-        } else { // should rarely happen, if at all
-          PolyType(sym.info.typeParams, transform(sym.info.resultType).normalize)  // eta-expand -- for regularity, go through sym.info for typeParams
-          // @M TODO: should not use PolyType, as that's the type of a polymorphic value -- we really want a type *function*
-        }
-      } else if (isHigherKinded) {
+    def normalize0: Type =
+      if (isHigherKinded) {
         // @M TODO: should not use PolyType, as that's the type of a polymorphic value -- we really want a type *function*
         // @M: initialize (by sym.info call) needed (see test/files/pos/ticket0137.scala)
         PolyType(sym.info.typeParams, typeRef(pre, sym, dummyArgs)) // must go through sym.info for typeParams
+      } else if (sym.isAliasType) { // beta-reduce
+        if(sym.info.typeParams.length == args.length) // don't do partial application
+          transform(sym.info.resultType).normalize // cycles have been checked in typeRef
+        else
+          ErrorType
       } else if (sym.isRefinementClass) {
         sym.info.normalize // @MO to AM: OK?
         //@M I think this is okay, but changeset 12414 (which fixed #1241) re-introduced another bug (#2208)
