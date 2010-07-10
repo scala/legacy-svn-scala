@@ -1,0 +1,86 @@
+#!/bin/sh
+
+##############################################################################
+# Copyright 2009-2010, LAMP/EPFL
+#
+# This is free software; see the distribution for copying conditions.
+# There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.
+##############################################################################
+
+if [ -z "$ANDROID_SDK_HOME" ] ; then
+    ANDROID_SDK_HOME=$HOME
+fi
+
+if [ -z "$ANDROID_SDK_ROOT" ] ; then
+    # guess the location of the Android SDK installation directory
+    if [ -x "/opt/android-sdk-mac_86/tools/emulator" ] ; then
+        ANDROID_SDK_ROOT="/opt/android-sdk-mac_86"
+    elif [ -x "/opt/android-sdk-linux_86/tools/emulator" ] ; then
+        ANDROID_SDK_ROOT="/opt/android-sdk-linux_86"
+    fi
+    if [ -z "$ANDROID_SDK_ROOT" ] ; then
+        echo "Error: environment variable ANDROID_SDK_ROOT is undefined. It should point to your installation directory."
+        exit 1
+    fi
+else
+    # resolve possible symbolic links
+    while [ -h "$ANDROID_SDK_ROOT" ] ; do
+        LOOKUP=`ls -ld "$ANDROID_SDK_ROOT"`
+        TARGET=`expr "$LOOKUP" : '.*-> \(.*\)$'`
+        if expr "${TARGET:-.}/" : '/.*/$' > /dev/null ; then
+            ANDROID_SDK_ROOT=${TARGET:-.}
+        else
+            ANDROID_SDK_ROOT=`dirname "$ANDROID_SDK_ROOT"`/${TARGET:-.}
+        fi
+    done
+fi
+
+# find the root folder for this distribution
+SOURCE=$0;
+while [ -h "$SOURCE" ]; do
+    LOOKUP=`ls -ld "$SOURCE"`;
+    TARGET=`expr "$LOOKUP" : '.*-> \(.*\)$'`;
+    if expr "${TARGET:-.}/" : '/.*/$' > /dev/null; then
+        SOURCE=${TARGET:-.};
+    else
+        SOURCE=`dirname "$SOURCE"`/${TARGET:-.};
+    fi;
+done;
+ROOT=`dirname "$SOURCE"`/..
+ROOT=`cd "$ROOT" > /dev/null && pwd`
+
+##############################################################################
+## Set up emulator options
+
+EMULATOR=$ANDROID_SDK_ROOT/tools/emulator
+if [ ! -x "$EMULATOR" ] ; then
+    echo "Error: Emulator '$EMULATOR' is unknown."
+    exit 1
+fi
+
+if [ -z "$ANDROID_AVD" ] ; then
+    AVD="2.2_128M_HVGA"
+else
+    AVD="$ANDROID_AVD"
+fi
+
+AVD_HOME=$ANDROID_SDK_HOME/.android/avd
+if [ ! -f "$AVD_HOME/$AVD.ini" ] ; then
+    echo "Error: Device '$AVD' is unknown."
+    echo "  We cannot execute $EMULATOR."
+    exit 1
+fi
+
+if [ -z "$ANDROID_EMULATOR_OPTS" ] ; then
+    EMULATOR_OPTS="-no-boot-anim -no-skin"
+    if [ -f "$AVD_HOME/$AVD.avd-custom/ramdisk.img" ] ; then
+        RAMDISK=$AVD_HOME/$AVD.avd-custom/ramdisk.img
+        EMULATOR_OPTS="$EMULATOR_OPTS -ramdisk $RAMDISK"
+    fi
+else
+    EMULATOR_OPTS="$ANDROID_EMULATOR_OPTS"
+fi
+
+#echo exec $EMULATOR $EMULATOR_OPTS -avd $AVD
+exec $EMULATOR $EMULATOR_OPTS -avd $AVD

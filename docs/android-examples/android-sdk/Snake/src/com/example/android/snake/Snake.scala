@@ -57,7 +57,7 @@ class Snake extends Activity {
     } else {
       // We are being restored
       val map = savedInstanceState getBundle Snake.ICICLE_KEY
-      if (map != null) mSnakeView.restoreState(map)
+      if (map != null) mSnakeView restoreState map
       else mSnakeView setMode Mode.PAUSE
     }
   }

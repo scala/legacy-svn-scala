@@ -1,0 +1,190 @@
+#!/bin/sh
+
+##############################################################################
+# Copyright 2009-2010, LAMP/EPFL
+#
+# This is free software; see the distribution for copying conditions.
+# There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.
+##############################################################################
+
+if [ -z "$ANDROID_SDK_HOME" ] ; then
+    ANDROID_SDK_HOME=$HOME
+fi
+
+if [ -z "$ANDROID_SDK_ROOT" ] ; then
+    # guess the location of the Android SDK installation directory
+    if [ -x "/opt/android-sdk-mac_86/tools/emulator" ] ; then
+        ANDROID_SDK_ROOT="/opt/android-sdk-mac_86"
+    elif [ -x "/opt/android-sdk-linux_86/tools/emulator" ] ; then
+        ANDROID_SDK_ROOT="/opt/android-sdk-linux_86"
+    fi
+    if [ ! -d "$ANDROID_SDK_ROOT" ] ; then
+        echo "Error: environment variable ANDROID_SDK_ROOT is undefined. It should point to your installation directory."
+        exit 1
+    fi
+else
+    # resolve possible symbolic links
+    while [ -h "$ANDROID_SDK_ROOT" ] ; do
+        LOOKUP=`ls -ld "$ANDROID_SDK_ROOT"`
+        TARGET=`expr "$LOOKUP" : '.*-> \(.*\)$'`
+        if expr "${TARGET:-.}/" : '/.*/$' > /dev/null ; then
+            ANDROID_SDK_ROOT=${TARGET:-.}
+        else
+            ANDROID_SDK_ROOT=`dirname "$ANDROID_SDK_ROOT"`/${TARGET:-.}
+        fi
+    done
+fi
+
+# pick up the more recent version of the dx tool
+DX=""
+DX_LIST=`find $ANDROID_SDK_ROOT/platforms/ -name dx | sort -r`
+for i in $DX_LIST "" ; do
+    [ -z "$DX_LIST" ] && continue
+    if [ -x "$i" ] ; then
+        DX=$i; break
+    fi
+done
+if [ -z "$DX" ] ; then
+    echo "Error: dx tool $DX is unknown."
+    exit 1
+fi
+
+if [ -z "$SCALA_HOME" ] ; then
+    # guess the location of the Scala installation directory
+    if [ -f "/opt/scala/lib/scala-library.jar" ] ; then
+        SCALA_HOME="/opt/scala"
+    fi
+    if [ ! -d "$SCALA_HOME" ] ; then
+        echo "Error: environment variable SCALA_HOME is undefined. It should point to your installation directory."
+        exit 1
+    fi
+else
+    # resolve possible symbolic links
+    while [ -h "$SCALA_HOME" ] ; do
+        LOOKUP=`ls -ld "$SCALA_HOME"`
+        TARGET=`expr "$LOOKUP" : '.*-> \(.*\)$'`
+        if expr "${TARGET:-.}/" : '/.*/$' > /dev/null ; then
+            SCALA_HOME=${TARGET:-.}
+        else
+            SCALA_HOME=`dirname "$SCALA_HOME"`/${TARGET:-.}
+        fi
+    done
+fi
+
+# find the root folder for this distribution
+SOURCE=$0;
+while [ -h "$SOURCE" ]; do
+    LOOKUP=`ls -ld "$SOURCE"`;
+    TARGET=`expr "$LOOKUP" : '.*-> \(.*\)$'`;
+    if expr "${TARGET:-.}/" : '/.*/$' > /dev/null; then
+        SOURCE=${TARGET:-.};
+    else
+        SOURCE=`dirname "$SOURCE"`/${TARGET:-.};
+    fi;
+done;
+ROOT=`dirname "$SOURCE"`/..
+ROOT=`cd "$ROOT" > /dev/null && pwd`
+
+CONFIGS_DIR=$ROOT/configs
+EMULATOR_DIR=$CONFIGS_DIR/emulator
+
+AVD_HOME=$ANDROID_SDK_HOME/.android/avd
+if [ ! -d "$AVD_HOME" ] ; then
+    echo "Error: User directory $AVD_HOME not found"
+    exit 1
+fi
+TMP_DIR=$AVD_HOME/`basename "$0"`.tmp
+JVM_LIBS_DIR=$TMP_DIR/jvm-libs
+DEX_LIBS_DIR=$TMP_DIR/dex-libs
+RAMDISK_DIR=$TMP_DIR/ramdisk
+
+##############################################################################
+## Split the Scala library into three smaller pieces (orignal library is too
+## large for the dx tool) and convert them into dex files.
+
+[ -d "$DEX_LIBS_DIR" ] || mkdir -p $DEX_LIBS_DIR
+
+mkdir -p $JVM_LIBS_DIR/scala-library/scala \
+         $JVM_LIBS_DIR/scala-collection/scala \
+         $JVM_LIBS_DIR/scala-actors/scala
+( \
+  cd $JVM_LIBS_DIR/scala-library/ && \
+  echo "Generating scala-library.jar..." && \
+  ${JAR:=jar} xf $SCALA_HOME/lib/scala-library.jar && \
+  echo "Generating scala-collection.jar..." && \
+  cp library.properties $JVM_LIBS_DIR/scala-collection/ && \
+  cp -r META-INF $JVM_LIBS_DIR/scala-collection/ && \
+  cp -r scala/collection $JVM_LIBS_DIR/scala-collection/scala/ && \
+  echo "Generating scala-actors.jar..." && \
+  cp library.properties $JVM_LIBS_DIR/scala-actors/ && \
+  cp -r scala/actors $JVM_LIBS_DIR/scala-actors/scala/ && \
+  rm -rf scala/collection scala/actors \
+)
+
+for dir in "scala-library" "scala-collection" "scala-actors" ; do
+  echo "Converting $dir.jar into a dex file..."
+  ${JAR:=jar} cf $JVM_LIBS_DIR/${dir}.jar -C $JVM_LIBS_DIR/$dir .
+  $DX --dex --output=$DEX_LIBS_DIR/$dir.jar $JVM_LIBS_DIR/$dir.jar
+done
+
+##############################################################################
+## Create custom ramdisks with additional (pre-configured) software:
+## - the busybox tool provides more shell commands (see configs/busybox.txt)
+## - the splitted Scala libraries (see above) are appended to the boot class
+##   path of the Dalvik-VM.
+## Many thanks to Frédéric Brault for his installation notes !
+## (see http://www.unixgarden.com/index.php/embarque/les-dessous-dandroid)
+
+unzip $EMULATOR_DIR/busybox.zip -d $TMP_DIR/ > /dev/null
+
+for dir in `find $AVD_HOME -type d -name "*.avd"` "" ; do
+  [ -z "$dir" ] && continue
+  TARGET_PATH=`grep "image.sysdir.1" "$dir/config.ini" | sed 's/.*=\(.*\)/\1/'`
+  SOURCE=$ANDROID_SDK_ROOT/${TARGET_PATH}ramdisk.img
+  [ -d "$RAMDISK_DIR" ] && rm -rf $RAMDISK_DIR/* || mkdir -p $RAMDISK_DIR
+  CUSTOM_PATH=`basename "$dir"`-custom
+  echo "Generating $CUSTOM_PATH/ramdisk.img..."
+  cp $SOURCE $RAMDISK_DIR/ramdisk.img
+  ( \
+    cd $RAMDISK_DIR/ && gunzip -S.img ramdisk.img && \
+    cpio --quiet -i -F ramdisk && cpio --quiet -t -F ramdisk > ramdisk_list && \
+    mkdir bin && cp $TMP_DIR/busybox bin/ && \
+    chmod 755 bin/busybox && \
+    mkdir -p data/framework && \
+    cp $DEX_LIBS_DIR/scala-library.jar data/framework/ && \
+    cp $DEX_LIBS_DIR/scala-collection.jar data/framework/ && \
+    cp $DEX_LIBS_DIR/scala-actors.jar data/framework/ && \
+    mkdir -p usr/local/etc && \
+    cp $EMULATOR_DIR/profile usr/local/etc/profile && \
+    echo "root::0:0:root:/home:/bin/ash" > usr/local/etc/passwd && \
+    echo "root::0:" > usr/local/etc/group && \
+    cp init.rc init.rc.ORIG && \
+    sed 's/ro remount/rw remount/g;s/\(symlink \/sys\/kernel\/debug \/d\)/\1\n    symlink \/data\/local \/home\n    symlink \/cache \/tmp\n    symlink \/usr\/local\/etc\/passwd \/system\/etc\/passwd\n    symlink \/usr\/local\/etc\/group \/system\/etc\/group\n    symlink \/usr\/local\/etc\/profile \/system\/etc\/profile/g;s/\(export PATH\) \/sbin/\1 \/bin:\/sbin/g;s/\(\/system\/framework\/services.jar\)/\1:\/data\/framework\/scala-library.jar:\/data\/framework\/scala-collection.jar:\/data\/framework\/scala-actors.jar/g' init.rc.ORIG > init.rc \
+  )
+  ( \
+    cd $RAMDISK_DIR/bin && \
+    for applet in `cat $EMULATOR_DIR/busybox.applets` "" ; do
+      [ -z "$applet" ] && continue
+      ln -s busybox $applet
+    done \
+  )
+  CUSTOM_AVD_DIR=$dir-custom
+  [ -d "$CUSTOM_AVD_DIR" ] || mkdir -p $CUSTOM_AVD_DIR
+  ( \
+    cd $RAMDISK_DIR/ && \
+    find bin >> ramdisk_list && \
+    find data/framework >> ramdisk_list && \
+    find usr >> ramdisk_list && \
+    find system >> ramdisk_list && \
+    cat ramdisk_list | cpio --quiet -o -H newc -O ramdisk && \
+    gzip -S.img ramdisk && \
+    cp ramdisk.img $CUSTOM_AVD_DIR/ \
+  )
+done
+
+rm -rf $TMP_DIR/* > /dev/null
+
+echo "Customized ramdisk.img files were successfully generated"
+echo "(use emulator option \"-ramdisk <file>\")"
+

@@ -17,11 +17,16 @@ following sources:
 
    * Unlocking Android book (http://code.google.com/p/unlocking-android/)
 
-     Please read the file README.txt in the "unlocking-androidk" subdirectory
+     Please read the file README.txt in the "unlocking-android" subdirectory
      for detailed instructions.
 
      That book is authored by Frank Ableson, Charlie Collins and Robi Sen,
      and is published at Manning Publications Co. (ISBN 978-1-933988-67-2).
+
+   * "apps-for-android" project (http://code.google.com/p/apps-for-android/)
+
+     Please read the file README.txt in the "apps-for-android" subdirectory
+     for detailed instructions.
 
 
 For information about Scala as a language, you can visit the web site

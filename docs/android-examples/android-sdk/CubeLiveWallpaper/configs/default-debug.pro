@@ -19,5 +19,5 @@
 -keepattributes Exceptions,InnerClasses,Signature,Deprecated,
                 SourceFile,LineNumberTable,*Annotation*,EnclosingMethod
 
--keep public class @MYAPP_PACKAGE@.**
+-keep public class @MYAPP_PACKAGE@
 
