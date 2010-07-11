@@ -28,13 +28,18 @@ The installation directory is organized as follows :
                 ant-unix.properties
                 ant-windows.properties
                 build-scala.xml
-                proguard.conf
-                proguard-optimize.conf
             emulator/
                 busybox.applets
                 busybox.txt
                 busybox.zip
                 profile
+            proguard/
+                default-debug.pro
+                default-release.pro
+            scala/
+                build.properties
+                build.xml
+                src
         build.properties
         build.xml
         README.txt
@@ -109,9 +114,9 @@ and focus our attention on the "scala-compile" target and the advanced targets
       project's .scala files into .class files.
 
     * The target "setenv" uses the configuration settings found in the
-      directory "configs/ant/" and, when necessary, updates the three files
-      "local.properties", "build-scala.xml" and "proguard.conf" in each project
-      directory.
+      directory "configs/ant/" and, when necessary, updates the files
+      "local.properties", "build-scala.xml" and "configs/default-*.pro"
+      in each project directory.
 
     * The target "check-maps" checks the consistency of the configuration
       settings for the Google's APIs (i.e. maps.jar) defined in the project
