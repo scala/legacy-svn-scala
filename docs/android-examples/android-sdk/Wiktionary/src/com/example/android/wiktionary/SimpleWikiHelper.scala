@@ -100,8 +100,9 @@ object SimpleWikiHelper {
       // Read package name and version number from manifest
       val manager = context.getPackageManager
       val info = manager.getPackageInfo(context.getPackageName, 0)
-      sUserAgent = String.format(context.getString(R.string.template_user_agent),
-                    info.packageName, info.versionName)
+      sUserAgent =
+        String.format(context getString R.string.template_user_agent,
+                      info.packageName, info.versionName)
 
     } catch {
       case e: NameNotFoundException =>
@@ -171,9 +172,9 @@ object SimpleWikiHelper {
 
       // Check if server response is valid
       val status = response.getStatusLine
-      if (status.getStatusCode() != HTTP_STATUS_OK) {
-        throw new ApiException("Invalid response from server: " +
-                        status.toString)
+      if (status.getStatusCode != HTTP_STATUS_OK) {
+        throw new ApiException(
+          "Invalid response from server: " + status.toString)
       }
 
       // Pull content stream from response
@@ -183,17 +184,17 @@ object SimpleWikiHelper {
       val content = new ByteArrayOutputStream()
 
       // Read response into a buffered stream
-      var readBytes = inputStream.read(sBuffer)
+      var readBytes = inputStream read sBuffer
       while (readBytes != -1) {
         content.write(sBuffer, 0, readBytes)
-        readBytes = inputStream.read(sBuffer)
+        readBytes = inputStream read sBuffer
       }
 
       // Return result from buffered stream
-      new String(content.toByteArray());
+      new String(content.toByteArray)
     } catch {
       case e: IOException =>
-        throw new ApiException("Problem communicating with API", e);
+        throw new ApiException("Problem communicating with API", e)
     }
   }
 
