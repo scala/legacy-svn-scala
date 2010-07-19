@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
 	<name>OpenGLSquare</name>
-	<comment></comment>
+	<comment>
+		Unlocking Android book (http://code.google.com/p/unlocking-android/)
+	</comment>
 	<projects>
 	</projects>
 	<buildSpec>

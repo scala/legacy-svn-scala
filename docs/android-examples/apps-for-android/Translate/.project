@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>BounceyBall</name>
+	<name>Translate</name>
 	<comment>
-        Unlocking Android book (http://code.google.com/p/unlocking-android/)
-    </comment>
+		apps-for-android project (http://code.google.com/p/apps-for-android/)
+	</comment>
 	<projects>
 	</projects>
 	<buildSpec>

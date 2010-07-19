@@ -214,7 +214,7 @@ class MapViewActivity extends MapActivity {
     true
   }
 
-  override def onMenuItemSelected(featureId: Int, item: MenuItem): Boolean =
+  override def onMenuItemSelected(featureId: Int, item: MenuItem): Boolean = {
     item.getItemId match {
       case MENU_SET_MAP =>
         mapView setSatellite false
@@ -226,8 +226,9 @@ class MapViewActivity extends MapActivity {
         mapController animateTo getLastKnownPoint
         getBuoyData(getLastKnownPoint)
       case _ =>
-        super.onMenuItemSelected(featureId, item)
     }
+    super.onMenuItemSelected(featureId, item)
+  }
 
   // required by MapActivity for maps server to be notified if you are
   // displaying directions

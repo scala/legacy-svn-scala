@@ -21,7 +21,7 @@ Builds the Scala applications targeted to the Android platform.
         <path>
             <!-- TODO re-enable examples MapsDemo and Wiktionary -->
             <dirset dir="${basedir}" includes="*"
-                    excludes="bin,configs,MapsDemo,Wiktionary" />
+                    excludes=".metadata,bin,configs,MapsDemo,Wiktionary" />
         </path>
     </pathconvert>
 

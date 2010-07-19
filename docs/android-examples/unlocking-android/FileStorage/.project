@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>uad-FileStorage</name>
-	<comment></comment>
+	<name>FileStorage</name>
+	<comment>
+		Unlocking Android book (http://code.google.com/p/unlocking-android/)
+	</comment>
 	<projects>
 	</projects>
 	<buildSpec>
@@ -21,6 +23,11 @@
 			</arguments>
 		</buildCommand>
 		<buildCommand>
+			<name>ch.epfl.lamp.sdt.core.scalabuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+		<buildCommand>
 			<name>com.android.ide.eclipse.adt.ApkBuilder</name>
 			<arguments>
 			</arguments>
@@ -29,5 +36,6 @@
 	<natures>
 		<nature>com.android.ide.eclipse.adt.AndroidNature</nature>
 		<nature>org.eclipse.jdt.core.javanature</nature>
+		<nature>ch.epfl.lamp.sdt.core.scalanature</nature>
 	</natures>
 </projectDescription>

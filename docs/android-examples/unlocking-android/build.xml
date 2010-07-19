@@ -21,7 +21,7 @@ Builds the Scala applications targeted to the Android platform.
         <path>
             <!-- TODO re-enable WindWaves example -->
             <dirset dir="${basedir}" includes="*"
-                    excludes="bin,configs,WindWaves" />
+                    excludes=".metadata,bin,configs,WindWaves" />
         </path>
     </pathconvert>
 

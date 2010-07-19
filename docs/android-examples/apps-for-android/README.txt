@@ -35,11 +35,11 @@ In order to build/run our Android examples we need to install the following
 free software distributions (tested versions and download sites are given in
 parenthesis) :
 
-1) Sun Java SDK 1.6 or newer (1.6.0_20 , www.sun.com/java/jdk/)
-2) Scala SDK 2.7.5 or newer  (2.8.0_RC7, www.scala-lang.org/downloads/)
-3) Android SDK 1.5 or newer  (2.2      , developer.android.com/sdk/)
-4) Apache Ant 1.7.0 or newer (1.8.1    , ant.apache.org/)
-5) ProGuard 4.4 or newer     (4.5      , www.proguard.com/)
+1) Sun Java SDK 1.6 or newer (1.6.0_21   , www.sun.com/java/jdk/)
+2) Scala SDK 2.7.5 or newer  (2.8.0.final, www.scala-lang.org/downloads/)
+3) Android SDK 1.5 or newer  (2.2        , developer.android.com/sdk/)
+4) Apache Ant 1.7.0 or newer (1.8.1      , ant.apache.org/)
+5) ProGuard 4.4 or newer     (4.5.1      , www.proguard.com/)
 
 NB. In this document we rely on Ant tasks featured by the Scala SDK, the
 Android SDK and the ProGuard shrinker and obfuscator tool (we will say more
