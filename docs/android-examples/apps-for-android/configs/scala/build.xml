@@ -19,6 +19,24 @@ Builds the Scala libraries targeted to the Android platform.
             <not><available file="${sdk.dir}" /></not>
         </condition>
     </fail>
+    <property name="scala.dir" value="${env.SCALA_HOME}" />
+    <fail message="Android installation directory '${scala.dir}' not found">
+        <condition>
+            <not><available file="${scala.dir}" /></not>
+        </condition>
+    </fail>
+
+    <!-- Scala SDK (www.scala-lang.org) -->
+    <property name="scala-compiler.jar" value="${scala.dir}/lib/scala-compiler.jar" />
+    <property name="scala-library.jar" value="${scala.dir}/lib/scala-library.jar" />
+
+    <path id="scala.path">
+        <pathelement path="${scala-compiler.jar}" />
+        <pathelement path="${scala-library.jar}" />
+    </path>
+    <taskdef
+        resource="scala/tools/ant/antlib.xml"
+        classpathref="scala.path" />
 
     <target name="build">
         <build.api level="7" />
@@ -35,12 +53,28 @@ Builds the Scala libraries targeted to the Android platform.
                 name="android@{level}.jar"
                 value="${sdk.dir}/platforms/android-@{level}/android.jar" />
             <property
+                name="maps@{level}.jar"
+                value="${sdk.dir}/add-ons/addon_google_apis_google_inc_@{level}/libs/maps.jar" />
+            <property
                 name="scala-android@{level}.jar"
                 value="${out.api@{level}.dir}/scala-android.jar" />
             <mkdir dir="${out.api@{level}.dir}/classes" />
             <javac srcdir="${source.dir}/android-@{level}"
-                   destdir="${out.api@{level}.dir}/classes"
-                   classpath="${android@{level}.jar}" />
+                   destdir="${out.api@{level}.dir}/classes">
+                <classpath>
+                    <pathelement path="${android@{level}.jar}" />
+                    <pathelement path="${maps@{level}.jar}" />
+                </classpath>
+            </javac>
+            <scalac srcdir="${source.dir}/android-@{level}"
+                includes="**/*.scala" deprecation="true"
+                destdir="${out.api@{level}.dir}/classes">
+                <classpath>
+                    <path refid="scala.path" />
+                    <pathelement path="${android@{level}.jar}" />
+                    <pathelement path="${maps@{level}.jar}" />
+                </classpath>
+            </scalac>
             <jar destfile="${scala-android@{level}.jar}">
                 <fileset dir="${out.api@{level}.dir}/classes" />
                 <manifest>

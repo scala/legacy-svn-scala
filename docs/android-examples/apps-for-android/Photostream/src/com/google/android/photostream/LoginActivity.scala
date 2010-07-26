@@ -207,8 +207,8 @@ class LoginActivity extends Activity with View.OnKeyListener
   }
 
   private def onRemoveUser(id: String) {
-    val rows = mDatabase.delete(UserDatabase.TABLE_USERS, UserDatabase._ID + "=?",
-                Array(id))
+    val rows = mDatabase.delete(UserDatabase.TABLE_USERS,
+                                UserDatabase._ID + "=?", Array(id))
     if (rows > 0) {
       mAdapter.refresh()
     }
@@ -254,7 +254,7 @@ class LoginActivity extends Activity with View.OnKeyListener
     cursor.moveToFirst()
 
     val shortcutIntent = new Intent(PhotostreamActivity.ACTION)
-    shortcutIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+    shortcutIntent setFlags Intent.FLAG_ACTIVITY_CLEAR_TOP
     shortcutIntent.putExtra(PhotostreamActivity.EXTRA_NSID, user.id)
 
     // Sets the custom shortcut's title to the real name of the user. If no
@@ -262,7 +262,7 @@ class LoginActivity extends Activity with View.OnKeyListener
     val intent = new Intent()
     intent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
     var name = cursor.getString(cursor.getColumnIndexOrThrow(UserDatabase.COLUMN_REALNAME))
-    if (name == null || name.length() == 0) {
+    if (name == null || name.length == 0) {
       name = cursor.getString(cursor.getColumnIndexOrThrow(UserDatabase.COLUMN_USERNAME))
     }
     intent.putExtra(Intent.EXTRA_SHORTCUT_NAME, name)

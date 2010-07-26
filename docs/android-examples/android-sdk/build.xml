@@ -19,9 +19,8 @@ Builds the Scala applications targeted to the Android platform.
     <!-- Building list of project directories -->
     <pathconvert property="dirs" pathsep=",">
         <path>
-            <!-- TODO re-enable examples MapsDemo and Wiktionary -->
             <dirset dir="${basedir}" includes="*"
-                    excludes=".metadata,bin,configs,MapsDemo,Wiktionary" />
+                    excludes=".metadata,bin,configs" />
         </path>
     </pathconvert>
 

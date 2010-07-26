@@ -29,8 +29,8 @@ object ImageUtilities {
   private final val PHOTO_BORDER_WIDTH = 3.0f
   private final val PHOTO_BORDER_COLOR = 0xffffffff
 
-  private final val ROTATION_ANGLE_MIN = 2.5f;
-  private final val ROTATION_ANGLE_EXTRA = 5.5f;
+  private final val ROTATION_ANGLE_MIN = 2.5f
+  private final val ROTATION_ANGLE_EXTRA = 5.5f
 
   private final val sRandom = new Random()
   private final val sPaint =

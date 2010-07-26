@@ -263,7 +263,7 @@ class ViewPhotoActivity extends Activity
       params.leftMargin = offsetX
       mPhotoDate setLayoutParams params
 
-      mSwitcher.showNext();
+      mSwitcher.showNext()
       mContainer.startAnimation(AnimationUtils.loadAnimation(ViewPhotoActivity.this,
                     R.anim.fade_in))
       mContainer setVisibility View.VISIBLE
@@ -273,10 +273,10 @@ class ViewPhotoActivity extends Activity
   }
 
   /**
-   * Background task to crop a large version of the image. The cropped result will
-   * be set as a wallpaper. The tasks sarts by showing the progress bar, then
-   * downloads the large version of hthe photo into a temporary file and ends by
-   * sending an intent to the Camera application to crop the image.
+   * Background task to crop a large version of the image. The cropped result
+   * will be set as a wallpaper. The tasks sarts by showing the progress bar,
+   * then downloads the large version of hthe photo into a temporary file and
+   * ends by sending an intent to the Camera application to crop the image.
    */
   private class CropWallpaperTask extends UserTask[Flickr.Photo, Nothing, Boolean] {
     private var mFile: File = _
@@ -291,7 +291,7 @@ class ViewPhotoActivity extends Activity
 
       var out: OutputStream = null
       try {
-        out = openFileOutput(mFile.getName(), MODE_WORLD_READABLE | MODE_WORLD_WRITEABLE)
+        out = openFileOutput(mFile.getName, MODE_WORLD_READABLE | MODE_WORLD_WRITEABLE)
         Flickr.get.downloadPhoto(params(0), Flickr.PhotoSize.LARGE, out)
         success = true
       } catch {
@@ -321,7 +321,7 @@ class ViewPhotoActivity extends Activity
 
         val intent = new Intent("com.android.camera.action.CROP")
         intent.setClassName("com.android.camera", "com.android.camera.CropImage")
-        intent.setData(Uri.fromFile(mFile))
+        intent setData Uri.fromFile(mFile)
         intent.putExtra("outputX", width)
         intent.putExtra("outputY", height)
         intent.putExtra("aspectX", width)
@@ -389,17 +389,17 @@ class ViewPhotoActivity extends Activity
         intent.putExtra(RADAR_EXTRA_LONGITUDE, location.longitude)
 
         try {
-           startActivity(intent)
+          startActivity(intent)
         } catch {
-           case e: ActivityNotFoundException =>
-              Toast.makeText(ViewPhotoActivity.this,
-                             R.string.error_cannot_find_radar,
-                             Toast.LENGTH_SHORT).show()
+          case e: ActivityNotFoundException =>
+            Toast.makeText(ViewPhotoActivity.this,
+                           R.string.error_cannot_find_radar,
+                           Toast.LENGTH_SHORT).show()
         }
       } else {
         Toast.makeText(ViewPhotoActivity.this,
                        R.string.error_cannot_find_location,
-                       Toast.LENGTH_SHORT).show();
+                       Toast.LENGTH_SHORT).show()
       }
     }
 
@@ -428,7 +428,7 @@ object ViewPhotoActivity {
    */
   def show(context: Context, photo: Flickr.Photo) {
     val intent = new Intent(ACTION)
-    intent.putExtra(EXTRA_PHOTO, photo);
+    intent.putExtra(EXTRA_PHOTO, photo)
     context startActivity intent
   }
 

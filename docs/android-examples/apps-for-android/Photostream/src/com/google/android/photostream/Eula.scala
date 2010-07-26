@@ -32,6 +32,7 @@ import java.io.{BufferedReader, Closeable, InputStreamReader, IOException}
  * is invoked on your activity.
  */
 object Eula {
+
   private final val PREFERENCE_EULA_ACCEPTED = "eula.accepted"
   private final val PREFERENCES_EULA = "eula"
 

@@ -16,8 +16,8 @@
 
 package com.google.android.photostream
 
-import android.graphics.drawable.Drawable
 import android.graphics.{Bitmap, Canvas, ColorFilter, PixelFormat}
+import android.graphics.drawable.Drawable
 
 class FastBitmapDrawable(mBitmap: Bitmap) extends Drawable {
 

@@ -133,8 +133,9 @@ class MapViewActivity extends MapActivity {
     setContentView(R.layout.mapview_activity)
 
     mapView = findViewById(R.id.map_view).asInstanceOf[MapView]
+    mapView setBuiltInZoomControls true
     zoom = findViewById(R.id.zoom).asInstanceOf[ViewGroup]
-    zoom addView mapView.getZoomControls
+    zoom addView mapView
 
     defaultMarker = getResources.getDrawable(R.drawable.buoy)
     defaultMarker.setBounds(0, 0, defaultMarker.getIntrinsicWidth,
@@ -166,10 +167,10 @@ class MapViewActivity extends MapActivity {
     // just under the 100 nautical miles we are parsing the data for)
     // another to recenter the map, even when we move a short distance (1000 meters)
     if (locationProvider != null) {
-      locationManager.requestLocationUpdates(locationProvider.getName, 3000, 185000,
-        locationListenerGetBuoyData)
-      locationManager.requestLocationUpdates(locationProvider.getName, 3000, 1000,
-        locationListenerRecenterMap);
+      locationManager.requestLocationUpdates(
+        locationProvider.getName, 3000, 185000, locationListenerGetBuoyData)
+      locationManager.requestLocationUpdates(
+        locationProvider.getName, 3000, 1000, locationListenerRecenterMap)
     } else {
       Log.e(Constants.LOGTAG, " " + CLASSTAG + "  NO LOCATION PROVIDER AVAILABLE")
       Toast.makeText(this,
@@ -240,14 +241,14 @@ class MapViewActivity extends MapActivity {
     // last KNOWN may be null, if none set after power up, or in emulator
     // and not setup
     val lastKnownLocation =
-      locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+      locationManager getLastKnownLocation LocationManager.GPS_PROVIDER
     Log.i(Constants.LOGTAG, " " + CLASSTAG +
           "  lastKnownLocation - " + lastKnownLocation)
 
     // get lastKnown GeoPoint (either from lastKnownLocation, or prime the
     // pump manually)
     if (lastKnownLocation != null) {
-      lastKnownPoint = LocationHelper.getGeoPoint(lastKnownLocation)          
+      lastKnownPoint = LocationHelper getGeoPoint lastKnownLocation
     } else {
       Log.w(Constants.LOGTAG, " " + CLASSTAG +
             "  lastKnownLocation NULL - override to Golden Gate (gotta start somewhere)")
@@ -314,10 +315,12 @@ class MapViewActivity extends MapActivity {
 }
 
 object MapViewActivity {
+
   private final val CLASSTAG = classOf[MapViewActivity].getSimpleName
 
   private final val MENU_SET_SATELLITE = 1
   private final val MENU_SET_MAP = 2
   private final val MENU_BUOYS_FROM_MAP_CENTER = 3
   private final val MENU_BACK_TO_LAST_LOCATION = 4
+
 }

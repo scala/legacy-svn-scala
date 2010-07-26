@@ -38,7 +38,7 @@ class CheckUpdateService extends Service {
   private var mTask: CheckForUpdatesTask = _
 
   override def onStart(intent: Intent, startId: Int) {
-    super.onStart(intent, startId);
+    super.onStart(intent, startId)
     mTask = new CheckForUpdatesTask()
     mTask.execute()
   }
@@ -76,7 +76,7 @@ class CheckUpdateService extends Service {
         val idIndex = cursor getColumnIndexOrThrow UserDatabase._ID
         val realNameIndex = cursor getColumnIndexOrThrow UserDatabase.COLUMN_REALNAME
         val nsidIndex = cursor getColumnIndexOrThrow UserDatabase.COLUMN_NSID
-        val lastUpdateIndex = cursor.getColumnIndexOrThrow(UserDatabase.COLUMN_LAST_UPDATE)
+        val lastUpdateIndex = cursor getColumnIndexOrThrow UserDatabase.COLUMN_LAST_UPDATE
 
         val flickr = Flickr.get
 

@@ -134,6 +134,7 @@ abstract class UserTask[Params: ClassManifest, Progress, Result] {
       doInBackground(mParams: _*)
     }
   }
+
   private final val mFuture = new FutureTask[Result](mWorker) {
     override protected def done() {
       var message: Message = null
