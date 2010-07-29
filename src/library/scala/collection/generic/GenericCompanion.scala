@@ -36,7 +36,7 @@ abstract class GenericCompanion[+CC[X] <: Traversable[X]] {
    *  @tparam A      the type of the ${coll}'s elements
    */
   def empty[A]: CC[A] = newBuilder[A].result
- 
+
   /** Creates a $coll with the specified elements.
    *  @tparam A      the type of the ${coll}'s elements
    *  @param elems  the elements of the created $coll
@@ -48,3 +48,4 @@ abstract class GenericCompanion[+CC[X] <: Traversable[X]] {
     b.result
   }	
 }
+
