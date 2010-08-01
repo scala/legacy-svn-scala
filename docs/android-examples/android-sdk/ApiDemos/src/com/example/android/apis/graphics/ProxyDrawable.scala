@@ -20,12 +20,12 @@ import android.graphics.{Canvas, ColorFilter, PixelFormat}
 import android.graphics.drawable.Drawable
 
 class ProxyDrawable(target: Drawable) extends Drawable {
-    
+
   private var mProxy = target
   private var mMutated: Boolean = _
-    
+
   def getProxy: Drawable = mProxy
-    
+
   def setProxy(proxy: Drawable) {
     if (proxy != this) {
       mProxy = proxy

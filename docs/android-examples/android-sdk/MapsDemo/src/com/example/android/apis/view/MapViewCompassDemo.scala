@@ -79,7 +79,7 @@ class MapViewCompassDemo extends MapActivity {
       val height = getHeight
       val count = getChildCount
       for (i <- 0 until count) {
-        val view = getChildAt(i);
+        val view = getChildAt(i)
         val childWidth = view.getMeasuredWidth
         val childHeight = view.getMeasuredHeight
         val childLeft = (width - childWidth) / 2
@@ -141,7 +141,7 @@ class MapViewCompassDemo extends MapActivity {
   }
 
   override protected def onResume() {
-    super.onResume();
+    super.onResume()
     mSensorManager.registerListener(mRotateView,
       mSensorManager.getDefaultSensor(SensorManager.SENSOR_ORIENTATION),
       SensorManager.SENSOR_DELAY_UI)
@@ -359,7 +359,7 @@ object MapViewCompassDemo {
 
     override def drawArc(oval: RectF, startAngle: Float, sweepAngle: Float,
                          useCenter: Boolean, paint: Paint) {
-            delegate.drawArc(oval, startAngle, sweepAngle, useCenter, paint);
+      delegate.drawArc(oval, startAngle, sweepAngle, useCenter, paint);
     }
 
     override def drawRoundRect(rect: RectF, rx: Float, ry: Float, paint: Paint) {
@@ -445,7 +445,7 @@ object MapViewCompassDemo {
 
     override def drawText(text: Array[Char], index: Int, count: Int,
                  x: Float, y: Float, paint: Paint) {
-            delegate.drawText(text, index, count, x, y, paint)
+      delegate.drawText(text, index, count, x, y, paint)
     }
 
     override def drawText(text: String, x: Float, y: Float, paint: Paint) {
@@ -454,12 +454,12 @@ object MapViewCompassDemo {
 
     override def drawText(text: String, start: Int, end: Int, x: Float,
                  y: Float, paint: Paint) {
-            delegate.drawText(text, start, end, x, y, paint);
+      delegate.drawText(text, start, end, x, y, paint);
     }
 
     override def drawText(text: CharSequence, start: Int, end: Int,
                  x: Float, y: Float, paint: Paint) {
-            delegate.drawText(text, start, end, x, y, paint);
+      delegate.drawText(text, start, end, x, y, paint);
     }
 
     override def drawPosText(text: Array[Char], index: Int, count: Int,

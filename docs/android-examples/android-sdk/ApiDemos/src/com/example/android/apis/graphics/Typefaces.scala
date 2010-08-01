@@ -33,9 +33,9 @@ class Typefaces extends GraphicsActivity {
     private val mPaint = new Paint(Paint.ANTI_ALIAS_FLAG)
     private var mFace =
       Typeface.createFromAsset(getContext.getAssets, "fonts/samplefont.ttf")
-            
+
     mPaint setTextSize 64
-        
+
     override protected def onDraw(canvas: Canvas) {
       canvas drawColor Color.WHITE
 

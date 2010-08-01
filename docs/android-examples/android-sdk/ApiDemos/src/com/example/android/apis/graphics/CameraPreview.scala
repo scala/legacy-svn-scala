@@ -31,10 +31,10 @@ class CameraPreview extends Activity {
 
   override protected def onCreate(savedInstanceState: Bundle) {
     super.onCreate(savedInstanceState)
-        
+
     // Hide the window title.
     requestWindowFeature(Window.FEATURE_NO_TITLE)
-    
+
     // Create our Preview view and set it as the content of our activity.
     mPreview = new Preview(this)
     setContentView(mPreview)
@@ -79,7 +79,7 @@ class Preview(context: Context) extends SurfaceView(context)
   def surfaceChanged(holder: SurfaceHolder, format: Int, w: Int, h: Int) {
     // Now that the size is known, set up the camera parameters and begin
     // the preview.
-    val parameters = mCamera.getParameters()
+    val parameters = mCamera.getParameters
     parameters.setPreviewSize(w, h)
     mCamera setParameters parameters
     mCamera.startPreview()

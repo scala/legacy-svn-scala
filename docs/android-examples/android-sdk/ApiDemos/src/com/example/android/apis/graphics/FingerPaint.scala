@@ -37,16 +37,16 @@ class FingerPaint extends GraphicsActivity with OnColorChangedListener {
     mPaint setStrokeJoin Paint.Join.ROUND
     mPaint setStrokeCap Paint.Cap.ROUND
     mPaint setStrokeWidth 12
-        
+
     mEmboss = new EmbossMaskFilter(Array[Float](1, 1, 1), 0.4f, 6, 3.5f)
 
     mBlur = new BlurMaskFilter(8, BlurMaskFilter.Blur.NORMAL)
   }
-    
+
   private var mPaint: Paint = _
   private var mEmboss: MaskFilter = _
   private var mBlur: MaskFilter = _
-    
+
   def colorChanged(color: Int) {
     mPaint setColor color
   }
@@ -61,7 +61,7 @@ class FingerPaint extends GraphicsActivity with OnColorChangedListener {
 
   private class MyView(context: Context) extends View(context) {
     import MyView._  // companion object
-            
+
     private val mBitmap = Bitmap.createBitmap(320, 480, Bitmap.Config.ARGB_8888)
     private val mCanvas = new Canvas(mBitmap)
     private val mPath = new Path()
@@ -70,15 +70,15 @@ class FingerPaint extends GraphicsActivity with OnColorChangedListener {
     override protected def onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
       super.onSizeChanged(w, h, oldw, oldh)
     }
-        
+
     override protected def onDraw(canvas: Canvas) {
       canvas drawColor 0xFFAAAAAA
       canvas.drawBitmap(mBitmap, 0, 0, mBitmapPaint)
       canvas.drawPath(mPath, mPaint)
     }
-        
+
     private var mX, mY: Float = _
-        
+
     override def onTouchEvent(event: MotionEvent): Boolean = {
       def touch_start(x: Float, y: Float) {
         mPath.reset()
@@ -104,7 +104,7 @@ class FingerPaint extends GraphicsActivity with OnColorChangedListener {
       }
       val x = event.getX
       val y = event.getY
-            
+
       event.getAction match {
         case MotionEvent.ACTION_DOWN =>
           touch_start(x, y)
@@ -123,7 +123,7 @@ class FingerPaint extends GraphicsActivity with OnColorChangedListener {
 
   override def onCreateOptionsMenu(menu: Menu): Boolean = {
     super.onCreateOptionsMenu(menu)
-        
+
     menu.add(0, COLOR_MENU_ID, 0, "Color").setShortcut('3', 'c')
     menu.add(0, EMBOSS_MENU_ID, 0, "Emboss").setShortcut('4', 's')
     menu.add(0, BLUR_MENU_ID, 0, "Blur").setShortcut('5', 'z')
@@ -144,7 +144,7 @@ class FingerPaint extends GraphicsActivity with OnColorChangedListener {
     super.onPrepareOptionsMenu(menu)
     true
   }
-    
+
   override def onOptionsItemSelected(item: MenuItem): Boolean = {
     mPaint setXfermode null
     mPaint setAlpha 0xFF

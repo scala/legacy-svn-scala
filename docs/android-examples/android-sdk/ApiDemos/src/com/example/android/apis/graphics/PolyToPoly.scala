@@ -32,7 +32,7 @@ class PolyToPoly extends GraphicsActivity {
     super.onCreate(savedInstanceState)
     setContentView(new SampleView(this))
   }
-    
+
   private /*static*/ class SampleView(context: Context) extends View(context) {
     private val mPaint = new Paint(Paint.ANTI_ALIAS_FLAG)
     private val mMatrix = new Matrix()
@@ -43,7 +43,7 @@ class PolyToPoly extends GraphicsActivity {
     mPaint setTextSize 40
     mPaint setTextAlign Paint.Align.CENTER
     private val mFontMetrics = mPaint.getFontMetrics()
- 
+
     override protected def onDraw(canvas: Canvas) {
       def doDraw(canvas: Canvas, src: Array[Float], dst: Array[Float]) {
         canvas.save()
@@ -55,7 +55,7 @@ class PolyToPoly extends GraphicsActivity {
         canvas.drawRect(0, 0, 64, 64, mPaint)
         canvas.drawLine(0, 0, 64, 64, mPaint)
         canvas.drawLine(0, 64, 64, 0, mPaint)
-            
+
         mPaint setColor Color.RED
         mPaint setStyle Paint.Style.FILL
         // how to draw the text center on our square
@@ -64,7 +64,7 @@ class PolyToPoly extends GraphicsActivity {
         // centering in Y, we need to measure ascent/descent first
         val y = 64/2 - (mFontMetrics.ascent + mFontMetrics.descent)/2
         canvas.drawText(src.length/2 + "", x, y, mPaint)
-            
+
         canvas.restore()
       }
       val paint = mPaint

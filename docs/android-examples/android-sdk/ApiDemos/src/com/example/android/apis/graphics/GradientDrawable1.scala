@@ -29,4 +29,5 @@ class GradientDrawable1 extends GraphicsActivity {
     super.onCreate(savedInstanceState)
     setContentView(R.layout.shape_drawable_1)
   }
+
 }

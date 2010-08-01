@@ -404,9 +404,10 @@ extends SurfaceView(context, attrs) with SurfaceHolder.Callback {
 
       // JET info: make sure we flush the queue,
       // JET info: otherwise left over events from previous gameplay can hang around.
-      // JET info: ok, here we don't really need that but if you ever reuse a JetPlayer
-      // JET info: instance, clear the queue before reusing it, this will also clear any
-      // JET info: trigger clips that have been triggered but not played yet.
+      // JET info: ok, here we don't really need that but if you ever reuse a
+      // JET info: JetPlayer instance, clear the queue before reusing it, this
+      // JET info: will also clear any trigger clips that have been triggered
+      // JET info: but not played yet.
       mJet.clearQueue()
 
       // JET info: we are going to receive in this example all the JET callbacks
@@ -417,7 +418,7 @@ extends SurfaceView(context, attrs) with SurfaceHolder.Callback {
 
       // JET info: load the actual JET content the game will be playing,
       // JET info: it's stored as a raw resource in our APK, and is labeled "level1"
-      mJet.loadJetFile(mContext.getResources().openRawResourceFd(R.raw.level1))
+      mJet loadJetFile mContext.getResources.openRawResourceFd(R.raw.level1)
       // JET info: if our JET file was stored on the sdcard for instance, we would have used
       // JET info: mJet.loadJetFile("/sdcard/level1.jet")
 
@@ -466,7 +467,7 @@ extends SurfaceView(context, attrs) with SurfaceHolder.Callback {
         doDrawPlay(canvas)
       }// end state play block
     }
-        
+
     /**
      * Draws current state of the game Canvas.
      */
@@ -518,8 +519,9 @@ extends SurfaceView(context, attrs) with SurfaceHolder.Callback {
       canvas.drawBitmap(mShipFlying(mShipIndex), mJetBoyX, mJetBoyY, null)
 
       if (mLaserOn) {
-        canvas.drawBitmap(mLaserShot, mJetBoyX + mShipFlying(0).getWidth, mJetBoyY
-              + (mShipFlying(0).getHeight / 2), null)
+        canvas.drawBitmap(mLaserShot,
+                          mJetBoyX + mShipFlying(0).getWidth,
+                          mJetBoyY + (mShipFlying(0).getHeight / 2), null)
       }
 
       // tick tock
@@ -548,8 +550,8 @@ extends SurfaceView(context, attrs) with SurfaceHolder.Callback {
     }
 
     private def doAsteroidAnimation(canvas: Canvas) {
-      if ((mDangerWillRobinson == null | mDangerWillRobinson.size() == 0)
-               && (mExplosion != null && mExplosion.size() == 0))
+      if ((mDangerWillRobinson == null | mDangerWillRobinson.size == 0)
+               && (mExplosion != null && mExplosion.size == 0))
         return
 
       // Compute what percentage through a beat we are and adjust
@@ -560,7 +562,7 @@ extends SurfaceView(context, attrs) with SurfaceHolder.Callback {
       val animOffset = (ANIMATION_FRAMES_PER_BEAT * frameDelta / 428).toInt
 
       for (i <- (mDangerWillRobinson.size() - 1) until 0 by -1) {
-        val asteroid: Asteroid = mDangerWillRobinson.elementAt(i)
+        val asteroid: Asteroid = mDangerWillRobinson elementAt i
 
         if (!asteroid.mMissed)
           mJetBoyY = asteroid.mDrawY
@@ -849,7 +851,7 @@ extends SurfaceView(context, attrs) with SurfaceHolder.Callback {
      * have completed.
      */
     protected def updateExplosions(inputContext: Object) {
-      if (mExplosion == null | mExplosion.size() == 0)
+      if (mExplosion == null | mExplosion.size == 0)
         return
 
       for (i <- (mExplosion.size() - 1) to 0 by -1) {
@@ -895,8 +897,8 @@ extends SurfaceView(context, attrs) with SurfaceHolder.Callback {
       // the next measure when needed
       // and so we track beat count, after that we track hitStreak to
       // determine the music "intensity"
-      // if the intensity has go gone up, call a corresponding trigger clip, otherwise just
-      // execute the rest of the music bed change logic.
+      // if the intensity has go gone up, call a corresponding trigger clip,
+      // otherwise just execute the rest of the music bed change logic.
       if (mBeatCount == 1) {
 
         // do it back wards so you fall into the correct one
@@ -909,15 +911,15 @@ extends SurfaceView(context, attrs) with SurfaceHolder.Callback {
               mJet.triggerClip(7)
             }
             mCurrentBed = 7
-            // JET info: change the mute mask to update the way the music plays based
-            // JET info: on the player's skills.
+            // JET info: change the mute mask to update the way the music plays
+            // JET info: based on the player's skills.
             mJet.setMuteArray(muteMask(7), false)
           }
         } else if (mHitStreak > 24) {
           if (mCurrentBed != 6) {
             if (mCurrentBed < 6) {
-              // JET info: quite a few asteroids hit, trigger the clip with the guy's
-              // JET info: voice that encourages the player.
+              // JET info: quite a few asteroids hit, trigger the clip with
+              // JET info: the guy's voice that encourages the player.
               mJet.triggerClip(6)
             }
             mCurrentBed = 6
@@ -1064,7 +1066,8 @@ extends SurfaceView(context, attrs) with SurfaceHolder.Callback {
           // events in the queue
           mEventQueue.clear()
 
-          // And reset the key state so we don't think a button is pressed when it isn't
+          // And reset the key state so we don't think a button is pressed
+          // when it isn't
           mKeyContext = null
         }
 
@@ -1170,7 +1173,6 @@ extends SurfaceView(context, attrs) with SurfaceHolder.Callback {
       //Thanks again!
       msg setData b
       mHandler sendMessage msg
-
     }
 
     // JET info: JET event listener interface implementation:
@@ -1182,7 +1184,6 @@ extends SurfaceView(context, attrs) with SurfaceHolder.Callback {
      */
     def onJetNumQueuedSegmentUpdate(player: JetPlayer, nbSegments: Int) {
       //Log.i(TAG, "onJetNumQueuedUpdate(): nbSegs =" + nbSegments)
-
     }
 
     // JET info: JET event listener interface implementation:
@@ -1214,13 +1215,11 @@ extends SurfaceView(context, attrs) with SurfaceHolder.Callback {
     // JET info: JET event listener interface implementation:
     def onJetPauseUpdate(player: JetPlayer, paused: Int) {
       //Log.i(TAG, "onJetPauseUpdate(): paused =" + paused)
-
     }
 
     // JET info: JET event listener interface implementation:
     def onJetUserIdUpdate(player: JetPlayer, userId: Int, repeatCount: Int) {
       //Log.i(TAG, "onJetUserIdUpdate(): userId =" + userId + " repeatCount=" + repeatCount)
-
     }
 
   }//end thread class
@@ -1262,20 +1261,19 @@ extends SurfaceView(context, attrs) with SurfaceHolder.Callback {
    */
   def getThread: JetBoyThread =
     thread
-    
+
   /* Callback invoked when the surface dimensions change. */
   def surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
     thread.setSurfaceSize(width, height)
   }
 
-    
   def surfaceCreated(arg0: SurfaceHolder) {
     // start the thread here so that we don't busy-wait in run()
     // waiting for the surface to be created
     thread setRunning true
     thread.start()
   }
-    
+
   def surfaceDestroyed(arg0: SurfaceHolder) {
     var retry = true
     thread setRunning false

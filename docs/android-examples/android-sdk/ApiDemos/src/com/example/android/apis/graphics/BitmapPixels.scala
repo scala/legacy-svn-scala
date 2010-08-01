@@ -28,7 +28,7 @@ import android.view._
 import java.nio.{IntBuffer, ShortBuffer}
 
 class BitmapPixels extends GraphicsActivity {
-    
+
   override protected def onCreate(savedInstanceState: Bundle) {
     super.onCreate(savedInstanceState)
     setContentView(new SampleView(this))
@@ -77,7 +77,7 @@ class BitmapPixels extends GraphicsActivity {
       // now pack it in the correct order
       pack8888(r, g, b, a)
     }
-        
+
     private final def makeRamp(from: Int, to: Int, n: Int,
                                ramp8888: Array[Int],
                                ramp565: Array[Short],
@@ -103,51 +103,51 @@ class BitmapPixels extends GraphicsActivity {
         a += da
       }
     }
-        
+
     private final def makeBuffer(src: Array[Int], n: Int): IntBuffer = {
       val dst = IntBuffer.allocate(n*n)
       for (i <- 0 until n) {
-        dst.put(src)
+        dst put src
       }
       dst.rewind()
       dst
     }
-        
+
     private final def makeBuffer(src: Array[Short], n: Int): ShortBuffer = {
       val dst = ShortBuffer.allocate(n*n)
       for (i <- 0 until n) {
-        dst.put(src)
+        dst put src
       }
       dst.rewind()
       dst
     }
-        
+
   }
 
   private /*static*/ class SampleView(context: Context) extends View(context) {
     import SampleView._  // companion object
 
     setFocusable(true)
-            
+
     val N = 100
     val data8888 = new Array[Int](N)
     val data565 = new Array[Short](N)
     val data4444 = new Array[Short](N)
-            
+
     makeRamp(premultiplyColor(Color.RED), premultiplyColor(Color.GREEN),
              N, data8888, data565, data4444)
-            
+
     private val mBitmap1 = Bitmap.createBitmap(N, N, Bitmap.Config.ARGB_8888)
     private val mBitmap2 = Bitmap.createBitmap(N, N, Bitmap.Config.RGB_565)
     private val mBitmap3 = Bitmap.createBitmap(N, N, Bitmap.Config.ARGB_4444)
-            
+
     mBitmap1 copyPixelsFromBuffer makeBuffer(data8888, N)
     mBitmap2 copyPixelsFromBuffer makeBuffer(data565, N)
     mBitmap3 copyPixelsFromBuffer makeBuffer(data4444, N)
-        
+
     override protected def onDraw(canvas: Canvas) {
       canvas drawColor 0xFFCCCCCC        
-            
+
       var y = 10
       canvas.drawBitmap(mBitmap1, 10, y, null)
       y += mBitmap1.getHeight() + 10

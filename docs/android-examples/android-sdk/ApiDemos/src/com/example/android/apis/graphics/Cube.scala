@@ -37,14 +37,14 @@ class Cube {
   )
 
   val colors = Array(
-    0,    0,    0,  one,
-    one,    0,    0,  one,
-    one,  one,    0,  one,
-    0,  one,    0,  one,
-    0,    0,  one,  one,
-    one,    0,  one,  one,
+    0,    0,    0,    one,
+    one,  0,    0,    one,
+    one,  one,  0,    one,
+    0,    one,  0,    one,
+    0,    0,    one,  one,
+    one,  0,    one,  one,
     one,  one,  one,  one,
-    0,  one,  one,  one
+    0,    one,  one,  one
   )
 
   val indices = Array[Byte](
@@ -90,7 +90,7 @@ class Cube {
   }
 
   def draw(gl: GL10) {
-    gl.glFrontFace(GL10.GL_CW)
+    gl glFrontFace GL10.GL_CW
     gl.glVertexPointer(3, GL10.GL_FIXED, 0, mVertexBuffer)
     gl.glColorPointer(4, GL10.GL_FIXED, 0, mColorBuffer)
     gl.glDrawElements(GL10.GL_TRIANGLES, 36, GL10.GL_UNSIGNED_BYTE, mIndexBuffer)

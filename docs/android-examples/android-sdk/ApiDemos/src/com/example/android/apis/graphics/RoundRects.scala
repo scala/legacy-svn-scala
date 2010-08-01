@@ -45,7 +45,7 @@ class RoundRects extends GraphicsActivity {
     private val mPath = new Path
     private val mPaint = new Paint(Paint.ANTI_ALIAS_FLAG)
     private val mRect = new Rect(0, 0, 120, 120)
-            
+
     private val mDrawable = new GradientDrawable(
       GradientDrawable.Orientation.TL_BR,
       Array(0xFFFF0000, 0xFF00FF00, 0xFF0000FF))
@@ -53,7 +53,7 @@ class RoundRects extends GraphicsActivity {
     mDrawable.setGradientRadius(math.sqrt(2).toFloat * 60)
 
     setFocusable(true)
-        
+
     override protected def onDraw(canvas: Canvas) {
       mDrawable setBounds mRect
 
@@ -61,48 +61,48 @@ class RoundRects extends GraphicsActivity {
 
       canvas.save()
       canvas.translate(10, 10)
-      mDrawable.setGradientType(GradientDrawable.LINEAR_GRADIENT)
+      mDrawable setGradientType GradientDrawable.LINEAR_GRADIENT
       setCornerRadii(mDrawable, r, r, 0, 0)
-      mDrawable.draw(canvas)
+      mDrawable draw canvas
       canvas.restore()
 
       canvas.save()
       canvas.translate(10 + mRect.width + 10, 10)
-      mDrawable.setGradientType(GradientDrawable.RADIAL_GRADIENT)
+      mDrawable setGradientType GradientDrawable.RADIAL_GRADIENT
       setCornerRadii(mDrawable, 0, 0, r, r)
-      mDrawable.draw(canvas)
+      mDrawable draw canvas
       canvas.restore()
 
       canvas.translate(0, mRect.height + 10)
 
       canvas.save()
       canvas.translate(10, 10)
-      mDrawable.setGradientType(GradientDrawable.SWEEP_GRADIENT)
+      mDrawable setGradientType GradientDrawable.SWEEP_GRADIENT
       setCornerRadii(mDrawable, 0, r, r, 0)
-      mDrawable.draw(canvas)
+      mDrawable draw canvas
       canvas.restore()
 
       canvas.save()
       canvas.translate(10 + mRect.width + 10, 10)
-      mDrawable.setGradientType(GradientDrawable.LINEAR_GRADIENT)
+      mDrawable setGradientType GradientDrawable.LINEAR_GRADIENT
       setCornerRadii(mDrawable, r, 0, 0, r)
-      mDrawable.draw(canvas)
+      mDrawable draw canvas
       canvas.restore()
 
       canvas.translate(0, mRect.height() + 10)
 
       canvas.save()
       canvas.translate(10, 10)
-      mDrawable.setGradientType(GradientDrawable.RADIAL_GRADIENT)
+      mDrawable setGradientType GradientDrawable.RADIAL_GRADIENT
       setCornerRadii(mDrawable, r, 0, r, 0)
-      mDrawable.draw(canvas)
+      mDrawable draw canvas
       canvas.restore()
 
       canvas.save()
       canvas.translate(10 + mRect.width + 10, 10)
-      mDrawable.setGradientType(GradientDrawable.SWEEP_GRADIENT)
+      mDrawable setGradientType GradientDrawable.SWEEP_GRADIENT
       setCornerRadii(mDrawable, 0, r, 0, r)
-      mDrawable.draw(canvas)
+      mDrawable draw canvas
       canvas.restore()
     }
   }

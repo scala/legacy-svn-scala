@@ -30,17 +30,17 @@ object Xfermodes {
     val c = new Canvas(bm)
     val p = new Paint(Paint.ANTI_ALIAS_FLAG)
 
-    p.setColor(0xFFFFCC44)
+    p setColor 0xFFFFCC44
     c.drawOval(new RectF(0, 0, w*3/4, h*3/4), p)
     bm
   }
-    
+
   // create a bitmap with a rect, used for the "src" image
   def makeSrc(w: Int, h: Int): Bitmap = {
     val bm = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
     val c = new Canvas(bm)
     val p = new Paint(Paint.ANTI_ALIAS_FLAG)
-        
+
     p setColor 0xFF66AAFF
     c.drawRect(w/3, h/3, w*19/20, h*19/20, p)
     bm
@@ -49,7 +49,7 @@ object Xfermodes {
 
 class Xfermodes extends GraphicsActivity {
   import Xfermodes._  // companion object
- 
+
   override protected def onCreate(savedInstanceState: Bundle) {
     super.onCreate(savedInstanceState)
     setContentView(new SampleView(this))
@@ -78,7 +78,7 @@ class Xfermodes extends GraphicsActivity {
       new PorterDuffXfermode(PorterDuff.Mode.MULTIPLY),
       new PorterDuffXfermode(PorterDuff.Mode.SCREEN)
     )
-        
+
     private final val sLabels = Array(
       "Clear", "Src", "Dst", "SrcOver",
       "DstOver", "SrcIn", "DstIn", "SrcOut",
@@ -86,7 +86,7 @@ class Xfermodes extends GraphicsActivity {
       "Darken", "Lighten", "Multiply", "Screen"
     )
   }
-    
+
   private /*static*/ class SampleView(context: Context) extends View(context) {
     import SampleView._  // companion object
 

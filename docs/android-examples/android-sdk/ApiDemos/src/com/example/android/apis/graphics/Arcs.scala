@@ -84,16 +84,16 @@ object Arcs {
       canvas.drawRect(oval, mFramePaint)
       canvas.drawArc(oval, mStart, mSweep, useCenter, paint)
     }
-        
+
     override protected def onDraw(canvas: Canvas) {
       canvas drawColor Color.WHITE
-            
+
       drawArcs(canvas, mBigOval, mUseCenters(mBigIndex), mPaints(mBigIndex))
-            
+
       for (i <- 0 until mOvals.length) {
         drawArcs(canvas, mOvals(i), mUseCenters(i), mPaints(i))
       }
-            
+
       mSweep += SWEEP_INC
       if (mSweep > 360) {
         mSweep -= 360

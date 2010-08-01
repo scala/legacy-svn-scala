@@ -157,7 +157,7 @@ class LookupActivity extends Activity with AnimationListener {
   override def onOptionsItemSelected(item: MenuItem): Boolean =
     item.getItemId match {
       case R.id.lookup_search =>
-        onSearchRequested();
+        onSearchRequested()
         true
       case R.id.lookup_random =>
         startNavigating(null, true)
@@ -279,7 +279,7 @@ class LookupActivity extends Activity with AnimationListener {
       }
 
       if (parsedText == null) {
-        parsedText = getString(R.string.empty_result);
+        parsedText = getString(R.string.empty_result)
       }
 
       parsedText

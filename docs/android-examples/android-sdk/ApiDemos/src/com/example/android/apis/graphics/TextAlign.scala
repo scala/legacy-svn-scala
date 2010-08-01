@@ -53,11 +53,11 @@ class TextAlign extends GraphicsActivity {
     mPaint setAntiAlias true
     mPaint setTextSize 30
     mPaint setTypeface Typeface.SERIF
-    
+
     private var mX: Float = _
 
     private val mPos = buildTextPositions(POSTEXT, 0, mPaint)
-            
+
     private val mPath = new Path
     makePath(mPath)
 
@@ -93,42 +93,42 @@ class TextAlign extends GraphicsActivity {
 
       // draw the normal strings
 
-      p.setColor(0x80FF0000)
+      p setColor 0x80FF0000
       canvas.drawLine(x, y, x, y+DY*3, p)
-      p.setColor(Color.BLACK)
-            
+      p setColor Color.BLACK
+
       canvas.translate(0, DY)
-      p.setTextAlign(Paint.Align.LEFT)
+      p setTextAlign Paint.Align.LEFT
       canvas.drawText(TEXT_L, x, y, p)
 
       canvas.translate(0, DY)
-      p.setTextAlign(Paint.Align.CENTER)
+      p setTextAlign Paint.Align.CENTER
       canvas.drawText(TEXT_C, x, y, p)
 
       canvas.translate(0, DY)
-      p.setTextAlign(Paint.Align.RIGHT)
+      p setTextAlign Paint.Align.RIGHT
       canvas.drawText(TEXT_R, x, y, p)
-            
+
       canvas.translate(100, DY*2)
 
       // now draw the positioned strings
 
-      p.setColor(0xBB00FF00)
+      p setColor 0xBB00FF00
       for (i <- 0 until pos.length/2) {
         canvas.drawLine(pos(i*2+0), pos(i*2+1)-DY,
                         pos(i*2+0), pos(i*2+1)+DY*2, p)
       }
       p setColor Color.BLACK
 
-      p.setTextAlign(Paint.Align.LEFT)
+      p setTextAlign Paint.Align.LEFT
       canvas.drawPosText(POSTEXT, pos, p)
-            
+
       canvas.translate(0, DY)
-      p.setTextAlign(Paint.Align.CENTER)
+      p setTextAlign Paint.Align.CENTER
       canvas.drawPosText(POSTEXT, pos, p)
-            
+
       canvas.translate(0, DY)
-      p.setTextAlign(Paint.Align.RIGHT)
+      p setTextAlign Paint.Align.RIGHT
       canvas.drawPosText(POSTEXT, pos, p)
       
       // now draw the text on path
@@ -143,7 +143,7 @@ class TextAlign extends GraphicsActivity {
       canvas.drawPath(mPath, mPathPaint)
       p setTextAlign Paint.Align.CENTER
       canvas.drawTextOnPath(TEXTONPATH, mPath, 0, 0, p)
-            
+
       canvas.translate(0, DY*1.5f)
       canvas.drawPath(mPath, mPathPaint)
       p setTextAlign Paint.Align.RIGHT

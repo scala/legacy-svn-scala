@@ -60,7 +60,7 @@ class ColorMatrixSample extends GraphicsActivity {
         0, 0, 1, 0, translate,
         0, 0, 0, 1, 0)
     }
-        
+
     private def setContrastScaleOnly(cm: ColorMatrix, contrast: Float) {
       val scale = contrast + 1.f
       val translate = (-.5f * scale + .5f) * 255.f
@@ -92,16 +92,16 @@ class ColorMatrixSample extends GraphicsActivity {
 
       paint setColorFilter null
       canvas.drawBitmap(mBitmap, x, y, paint)
-            
+
       val cm = new ColorMatrix()
-            
+
       mAngle += 2
       if (mAngle > 180) {
         mAngle = 0
       }
-            
+
       //convert our animated angle [-180...180] to a contrast value of [-1..1]
-      val contrast = mAngle / 180.f;
+      val contrast = mAngle / 180.f
 
       setContrast(cm, contrast)
       paint setColorFilter new ColorMatrixColorFilter(cm)
@@ -114,7 +114,7 @@ class ColorMatrixSample extends GraphicsActivity {
       setContrastTranslateOnly(cm, contrast)
       paint setColorFilter new ColorMatrixColorFilter(cm)
       canvas.drawBitmap(mBitmap, x, y + 2*(mBitmap.getHeight + 10), paint)
-            
+
       invalidate()
     }
   }

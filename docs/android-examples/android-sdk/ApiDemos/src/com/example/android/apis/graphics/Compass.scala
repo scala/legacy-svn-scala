@@ -91,7 +91,7 @@ class Compass extends GraphicsActivity {
       val paint = mPaint
 
       canvas drawColor Color.WHITE
-            
+
       paint setAntiAlias true
       paint setColor Color.BLACK
       paint setStyle Paint.Style.FILL

@@ -101,7 +101,7 @@ object ColorPickerDialog {
 
     private def interpColor(colors: Array[Int], unit: Float): Int = {
       def ave(s: Int, d: Int, p: Float): Int =
-        s + java.lang.Math.round(p * (d - s))
+        s + math.round(p * (d - s))
 
       if (unit <= 0) {
         colors(0)
@@ -125,7 +125,7 @@ object ColorPickerDialog {
     }
 
     private def rotateColor(color: Int, rad: Float): Int = {
-      def floatToByte(x: Float): Int = java.lang.Math.round(x)
+      def floatToByte(x: Float): Int = math.round(x)
       def pinToByte(n: Int): Int =
         if (n < 0) 0 else if (n > 255) 255 else n
       val deg = rad * 180 / 3.1415927f
@@ -138,9 +138,9 @@ object ColorPickerDialog {
 
       cm.setRGB2YUV()
       tmp.setRotate(0, deg)
-      cm.postConcat(tmp)
+      cm postConcat tmp
       tmp.setYUV2RGB()
-      cm.postConcat(tmp)
+      cm postConcat tmp
 
       val a: Array[Float] = cm.getArray()
 
@@ -155,8 +155,8 @@ object ColorPickerDialog {
     override def onTouchEvent(event: MotionEvent): Boolean = {
       val x = event.getX - CENTER_X
       val y = event.getY - CENTER_Y
-      val inCenter = java.lang.Math.sqrt(x*x + y*y) <= CENTER_RADIUS
-            
+      val inCenter = math.sqrt(x*x + y*y) <= CENTER_RADIUS
+
       event.getAction match {
         case MotionEvent.ACTION_DOWN =>
           mTrackingCenter = inCenter
@@ -171,19 +171,19 @@ object ColorPickerDialog {
               invalidate()
             }
           } else {
-            val angle = java.lang.Math.atan2(y, x).toFloat
+            val angle = math.atan2(y, x).toFloat
             // need to turn angle [-PI ... PI] into unit [0....1]
             var unit = angle / (2*PI)
             if (unit < 0) {
               unit += 1
             }
-            mCenterPaint.setColor(interpColor(mColors, unit))
+            mCenterPaint setColor interpColor(mColors, unit)
             invalidate()
           }
         case MotionEvent.ACTION_UP =>
           if (mTrackingCenter) {
             if (inCenter) {
-              mListener.colorChanged(mCenterPaint.getColor)
+              mListener colorChanged mCenterPaint.getColor
             }
             mTrackingCenter = false    // so we draw w/o halo
             invalidate()

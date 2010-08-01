@@ -42,7 +42,7 @@ object Clipping {
     mPaint setTextSize 16
     mPaint setTextAlign Paint.Align.RIGHT
     setFocusable(true)
-        
+
     private def drawScene(canvas: Canvas) {
       canvas.clipRect(0, 0, 100, 100)
 
@@ -57,12 +57,12 @@ object Clipping {
       mPaint setColor Color.BLUE
       canvas.drawText("Clipping", 100, 30, mPaint)
     }
-        
+
     override protected def onDraw(canvas: Canvas) {
       canvas drawColor Color.GRAY
 
       canvas.save()
-      canvas.translate(10, 10);
+      canvas.translate(10, 10)
       drawScene(canvas)
       canvas.restore()
 
@@ -72,7 +72,7 @@ object Clipping {
       canvas.clipRect(30, 30, 70, 70, Region.Op.DIFFERENCE)
       drawScene(canvas)
       canvas.restore()
-        
+
       canvas.save()
       canvas.translate(10, 160)
       mPath.reset()

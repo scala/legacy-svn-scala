@@ -79,9 +79,9 @@ class ScaleToFit extends GraphicsActivity {
 
       setSrcR(index)
       mMatrix.setRectToRect(mSrcR, mDstR, stf)
-      canvas.concat(mMatrix)
+      canvas concat mMatrix
       drawSrcR(canvas, index)
-  
+
       canvas.restore()
 
       canvas.drawRect(mDstR, mHairPaint)

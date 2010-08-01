@@ -16,17 +16,16 @@
 
 package com.example.android.contactmanager
 
+import scala.android.app.Activity
 import scala.android.provider.ContactsContract
 
-import android.app.Activity
 import android.content.Intent
 import android.database.Cursor
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.View
-import android.widget.{Button, CheckBox, CompoundButton, ListView, SimpleCursorAdapter}
-import android.widget.CompoundButton.OnCheckedChangeListener
+import android.widget.{Button, CheckBox, ListView, SimpleCursorAdapter}
 
 object ContactManager {
   final val TAG = "ContactManager"
@@ -58,19 +57,16 @@ final class ContactManager extends Activity {
     mShowInvisibleControl setChecked mShowInvisible
 
     // Register handler for UI elements
-    mAddAccountButton setOnClickListener new View.OnClickListener() {
-      def onClick(v: View) {
-        Log.d(TAG, "mAddAccountButton clicked")
-        launchContactAdder()
-      }
+    mAddAccountButton setOnClickListener {
+      Log.d(TAG, "mAddAccountButton clicked")
+      launchContactAdder()
     }
-    mShowInvisibleControl setOnCheckedChangeListener new OnCheckedChangeListener() {
-      def onCheckedChanged(buttonView: CompoundButton, isChecked: Boolean) {
-        Log.d(TAG, "mShowInvisibleControl changed: " + isChecked)
-        mShowInvisible = isChecked
-        populateContactList()
-      }
-    }
+
+    mShowInvisibleControl setOnCheckedChangeListener ((isChecked: Boolean) => {
+      Log.d(TAG, "mShowInvisibleControl changed: " + isChecked)
+      mShowInvisible = isChecked
+      populateContactList()
+    })
 
     // Populate the contact list
     populateContactList()
@@ -114,7 +110,4 @@ final class ContactManager extends Activity {
     startActivity(i)
   }
 
-  @inline
-  private final def findView[V <: View](id: Int) =
-    findViewById(id).asInstanceOf[V]
 }

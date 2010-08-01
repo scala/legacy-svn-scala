@@ -37,7 +37,7 @@ class CreateBitmap extends GraphicsActivity {
     private final val WIDTH = 50
     private final val HEIGHT = 50
     private final val STRIDE = 64   // must be >= WIDTH
-    
+
     private def createColors(): Array[Int] = {
       val colors = new Array[Int](STRIDE * HEIGHT)
       for (y <- 0 until HEIGHT; x <- 0 until WIDTH) {
@@ -64,7 +64,7 @@ class CreateBitmap extends GraphicsActivity {
     import Bitmap._, SampleView._  // companion object
 
     setFocusable(true)
-            
+
     private val mColors = createColors()
     val colors = mColors
 
@@ -73,7 +73,7 @@ class CreateBitmap extends GraphicsActivity {
       Bitmap.createBitmap(colors, 0, STRIDE, WIDTH, HEIGHT, Config.ARGB_8888),
       Bitmap.createBitmap(colors, 0, STRIDE, WIDTH, HEIGHT, Config.RGB_565),
       Bitmap.createBitmap(colors, 0, STRIDE, WIDTH, HEIGHT, Config.ARGB_4444),
-            
+
       // these three will have their colors set later
       Bitmap.createBitmap(WIDTH, HEIGHT, Config.ARGB_8888),
       Bitmap.createBitmap(WIDTH, HEIGHT, Config.RGB_565),
@@ -82,18 +82,18 @@ class CreateBitmap extends GraphicsActivity {
     for (i <- 3 to 5) {
       mBitmaps(i).setPixels(colors, 0, STRIDE, 0, 0, WIDTH, HEIGHT)
     }
-            
+
     private val mPaint = new Paint()
     mPaint setDither true
-            
-            // now encode/decode using JPEG and PNG
+
+    // now encode/decode using JPEG and PNG
     private val mJPEG = new Array[Bitmap](mBitmaps.length)
     private val mPNG = new Array[Bitmap](mBitmaps.length)
     for (i <- 0 until mBitmaps.length) {
       mJPEG(i) = codec(mBitmaps(i), Bitmap.CompressFormat.JPEG, 80)
       mPNG(i) = codec(mBitmaps(i), Bitmap.CompressFormat.PNG, 0)
     }
-        
+
     override protected def onDraw(canvas: Canvas) {
       canvas drawColor Color.WHITE
 
@@ -103,7 +103,7 @@ class CreateBitmap extends GraphicsActivity {
         canvas.drawBitmap(mPNG(i), 160, 0, null)
         canvas.translate(0, mBitmaps(i).getHeight)
       }
-            
+
       // draw the color array directly, w/o craeting a bitmap object
       canvas.drawBitmap(mColors, 0, STRIDE, 0, 0, WIDTH, HEIGHT,
                         true, null)

@@ -26,7 +26,7 @@ import android.os.Bundle
  */
 class GLSurfaceViewActivity extends Activity {
   override protected def onCreate(savedInstanceState: Bundle) {
-    super.onCreate(savedInstanceState);
+    super.onCreate(savedInstanceState)
 
     // Create our Preview view and set it as the content of our
     // Activity

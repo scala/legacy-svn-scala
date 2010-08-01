@@ -19,7 +19,8 @@
 
 package com.example.android.jetboy
 
-import android.app.Activity
+import scala.android.app.Activity
+
 import android.os.Bundle
 import android.util.Log
 import android.view.{KeyEvent, View}
@@ -56,19 +57,19 @@ class JetBoy extends Activity with View.OnClickListener {
     setContentView(R.layout.main)
 
     // get handles to the JetView from XML and the JET thread.
-    mJetBoyView = findViewById(R.id.JetBoyView).asInstanceOf[JetBoyView]
+    mJetBoyView = findView(R.id.JetBoyView)
     mJetBoyThread = mJetBoyView.getThread
 
     // look up the happy shiny button
-    mButton = findViewById(R.id.Button01).asInstanceOf[Button]
+    mButton = findView(R.id.Button01)
     mButton setOnClickListener this
 
-    mButtonRetry = findViewById(R.id.Button02).asInstanceOf[Button]
+    mButtonRetry = findView(R.id.Button02)
     mButtonRetry setOnClickListener this
 
     // set up handles for instruction text and game timer text
-    mTextView = findViewById(R.id.text).asInstanceOf[TextView]
-    mTimerView = findViewById(R.id.timer).asInstanceOf[TextView]
+    mTextView = findView(R.id.text)
+    mTimerView = findView(R.id.timer)
 
     mJetBoyView setTimerView mTimerView
 
@@ -90,7 +91,6 @@ class JetBoy extends Activity with View.OnClickListener {
 
       mTextView setText R.string.helpText
       mJetBoyThread setGameState mJetBoyView.JetBoyThread.STATE_PLAY
-
     }
     // we have entered game play, now we about to start running
     else if (mJetBoyThread.getGameState == mJetBoyView.JetBoyThread.STATE_PLAY) {
@@ -98,7 +98,6 @@ class JetBoy extends Activity with View.OnClickListener {
       mTextView setVisibility View.INVISIBLE
       mTimerView setVisibility View.VISIBLE
       mJetBoyThread setGameState mJetBoyView.JetBoyThread.STATE_RUNNING
-
     }
     // this is a retry button
     else if (mButtonRetry equals v) {
@@ -113,12 +112,10 @@ class JetBoy extends Activity with View.OnClickListener {
       mButton setVisibility View.VISIBLE
 
       mJetBoyThread setGameState mJetBoyView.JetBoyThread.STATE_PLAY
-
     } else {
       Log.d("JB VIEW", "unknown click " + v.getId)
 
       Log.d("JB VIEW", "state is  " + mJetBoyThread.mState)
-
     }
   }
 

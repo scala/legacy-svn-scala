@@ -41,7 +41,7 @@ class PurgeableBitmap extends GraphicsActivity {
       val index = mView update this
       if (index > 0) {
         showAlertDialog(getDialogMessage(true, index))
-      } else if (index < 0){
+      } else if (index < 0) {
         mView.invalidate()
         showAlertDialog(getDialogMessage(false, -index))
       } else {
@@ -57,7 +57,7 @@ class PurgeableBitmap extends GraphicsActivity {
   override protected def onCreate(savedInstanceState: Bundle) {
     super.onCreate(savedInstanceState)
     mView = new PurgeableBitmapView(this, detectIfPurgeableRequest())
-    mRedrawHandler.sleep(0)
+    mRedrawHandler sleep 0
     setContentView(mView)
   }
 
@@ -65,7 +65,7 @@ class PurgeableBitmap extends GraphicsActivity {
     val pm = getPackageManager()
     var labelSeq: CharSequence = null
     try {
-      val info = pm.getActivityInfo(this.getComponentName(),
+      val info = pm.getActivityInfo(this.getComponentName,
               PackageManager.GET_META_DATA)
       labelSeq = info.loadLabel(pm)
     } catch {

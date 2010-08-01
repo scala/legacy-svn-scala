@@ -81,7 +81,7 @@ private[lunarlander] object LunarThread {
 private[lunarlander] class LunarThread(mSurfaceHolder: SurfaceHolder,
                                      mContext: Context,
                                      mHandler: Handler) extends Thread {
-  import LunarThread._
+  import LunarThread._  // companion object
 
   /** Member (state) fields
    */
@@ -460,45 +460,41 @@ private[lunarlander] class LunarThread(mSurfaceHolder: SurfaceHolder,
    */
   def doKeyDown(keyCode: Int, msg: KeyEvent): Boolean = {
     mSurfaceHolder synchronized {
-      var okStart = false
-      if (keyCode == KeyEvent.KEYCODE_DPAD_UP) okStart = true
-      if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) okStart = true
-      if (keyCode == KeyEvent.KEYCODE_S) okStart = true
+      lazy val okStart =
+        keyCode == KeyEvent.KEYCODE_DPAD_UP ||
+        keyCode == KeyEvent.KEYCODE_DPAD_DOWN ||
+        keyCode == KeyEvent.KEYCODE_S
 
-      var center = keyCode == KeyEvent.KEYCODE_DPAD_UP
-
-      if (okStart
-          && (mMode == State.READY || mMode == State.LOSE || mMode == State.WIN)) {
+      if ((mMode == State.READY || mMode == State.LOSE || mMode == State.WIN) &&
+          okStart) {
         // ready-to-start -> start
         doStart()
-        return true
+        true
       } else if (mMode == State.PAUSE && okStart) {
         // paused -> running
         unpause()
-        return true
-      } else if (mMode == State.RUNNING) {
+        true
+      } else if (mMode == State.RUNNING) keyCode match {
         // center/space -> fire
-        if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER
-            || keyCode == KeyEvent.KEYCODE_SPACE) {
+        case KeyEvent.KEYCODE_DPAD_CENTER | KeyEvent.KEYCODE_SPACE =>
           setFiring(true)
-          return true
-          // left/q -> left
-        } else if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT
-                   || keyCode == KeyEvent.KEYCODE_Q) {
+          true
+        // left/q -> left
+        case KeyEvent.KEYCODE_DPAD_LEFT | KeyEvent.KEYCODE_Q =>
           mRotating = -1
-          return true
-          // right/w -> right
-        } else if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT
-                   || keyCode == KeyEvent.KEYCODE_W) {
+          true
+        // right/w -> right
+        case KeyEvent.KEYCODE_DPAD_RIGHT| KeyEvent.KEYCODE_W =>
           mRotating = 1
-          return true
-          // up -> pause
-        } else if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+          true
+        // up -> pause
+        case KeyEvent.KEYCODE_DPAD_UP =>
           pause()
-          return true
-        }
-      }
-      return false
+          true
+        case _ =>
+          false
+      } else
+        false
     }
   }
 
@@ -576,15 +572,15 @@ private[lunarlander] class LunarThread(mSurfaceHolder: SurfaceHolder,
     if (mMode == State.LOSE) {
        mCrashedImage.setBounds(xLeft, yTop, xLeft + mLanderWidth, yTop
                     + mLanderHeight)
-       mCrashedImage.draw(canvas);
+       mCrashedImage.draw(canvas)
     } else if (mEngineFiring) {
        mFiringImage.setBounds(xLeft, yTop, xLeft + mLanderWidth, yTop
-                      + mLanderHeight);
-       mFiringImage.draw(canvas);
+                      + mLanderHeight)
+       mFiringImage.draw(canvas)
     } else {
        mLanderImage.setBounds(xLeft, yTop, xLeft + mLanderWidth, yTop
-                      + mLanderHeight);
-       mLanderImage.draw(canvas);
+                      + mLanderHeight)
+       mLanderImage.draw(canvas)
     }
     canvas.restore()
   }
@@ -656,8 +652,8 @@ private[lunarlander] class LunarThread(mSurfaceHolder: SurfaceHolder,
     mLastTime = now
 
     // Evaluate if we have landed ... stop the game
-    val yLowerBound = TARGET_PAD_HEIGHT + mLanderHeight / 2
-                  - TARGET_BOTTOM_PADDING;
+    val yLowerBound =
+      TARGET_PAD_HEIGHT + mLanderHeight / 2 - TARGET_BOTTOM_PADDING
     if (mY <= yLowerBound) {
       mY = yLowerBound
 

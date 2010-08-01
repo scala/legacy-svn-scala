@@ -52,25 +52,25 @@ object Regions {
     private final val mRect2 = new Rect()
 
     setFocusable(true)
-            
+
     mPaint setAntiAlias true
     mPaint setTextSize 16
     mPaint setTextAlign Paint.Align.CENTER
-           
+
     mRect1.set(10, 10, 100, 80)
     mRect2.set(50, 50, 130, 110)
 
     private def drawOriginalRects(canvas: Canvas, alpha: Int) {
-      mPaint.setStyle(Paint.Style.STROKE)
-      mPaint.setColor(Color.RED)
-      mPaint.setAlpha(alpha)
+      mPaint setStyle Paint.Style.STROKE
+      mPaint setColor Color.RED
+      mPaint setAlpha alpha
       drawCentered(canvas, mRect1, mPaint)
-      mPaint.setColor(Color.BLUE)
-      mPaint.setAlpha(alpha)
+      mPaint setColor Color.BLUE
+      mPaint setAlpha alpha
       drawCentered(canvas, mRect2, mPaint)
-            
+
       // restore style
-      mPaint.setStyle(Paint.Style.FILL)
+      mPaint setStyle Paint.Style.FILL
     }
 
     private def drawRgn(canvas: Canvas, color: Int, str: String, op: Region.Op) {

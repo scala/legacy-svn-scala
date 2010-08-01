@@ -26,9 +26,9 @@ class UnicodeChart extends GraphicsActivity {
 
   override protected def onCreate(savedInstanceState: Bundle) {
     super.onCreate(savedInstanceState)
- 
+
     requestWindowFeature(Window.FEATURE_NO_TITLE)
-        
+
     setContentView(new SampleView(this))
   }
 
@@ -66,17 +66,17 @@ class UnicodeChart extends GraphicsActivity {
         pos(index) = row * YMUL + YBASE; index += 1
       }
     }
-        
+
     private def computeX(index: Int): Float = (index >> 4) * 20 + 10f
 
     private def computeY(index: Int): Float = (index & 0xF) * YMUL + YMUL
-        
+
     private def drawChart(canvas: Canvas, base: Int) {
       val chars = mChars
       for (i <- 0 until chars.length) {
         val unichar = base + i
         chars(i) = unichar.toChar
-                
+
         canvas.drawText(Integer.toHexString(unichar),
                         computeX(i), computeY(i), mLabelPaint)
       }

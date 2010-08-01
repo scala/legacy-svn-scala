@@ -48,11 +48,11 @@ class Layers extends GraphicsActivity {
 
     override protected def onDraw(canvas: Canvas) {
       canvas drawColor Color.WHITE
-            
+
       canvas.translate(10, 10)
-            
+
       canvas.saveLayerAlpha(0, 0, 200, 200, 0x88, LAYER_FLAGS)
-            
+
       mPaint setColor Color.RED
       canvas.drawCircle(75, 75, 75, mPaint)
       mPaint setColor Color.BLUE

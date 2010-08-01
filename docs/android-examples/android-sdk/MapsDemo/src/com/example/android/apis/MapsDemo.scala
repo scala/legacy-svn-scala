@@ -31,7 +31,7 @@ class MapsDemo extends ListActivity {
 
   override def onCreate(savedInstanceState: Bundle) {
     super.onCreate(savedInstanceState)
-        
+
     setListAdapter(new SimpleAdapter(this, getData,
                 android.R.layout.simple_list_item_1, Array("title"),
                 Array(android.R.id.text1)))
@@ -51,9 +51,9 @@ class MapsDemo extends ListActivity {
      return myData
 
     var prefixPath: Array[String] = null
-        
+
     var len = list.size
-        
+
     //Map<String, Boolean> entries = new HashMap<String, Boolean>();
 
     for (i <- 0 until len) {
@@ -61,8 +61,8 @@ class MapsDemo extends ListActivity {
 
       val labelSeq = info loadLabel pm
 
-      if ("com.example.android.google.apis".equals(info.activityInfo.applicationInfo.packageName)) {
-        addItem(myData, labelSeq.toString(), activityIntent(
+      if ("com.example.android.google.apis" equals info.activityInfo.applicationInfo.packageName) {
+        addItem(myData, labelSeq.toString, activityIntent(
                         info.activityInfo.applicationInfo.packageName,
                         info.activityInfo.name))
       }
@@ -78,7 +78,7 @@ class MapsDemo extends ListActivity {
     result.setClassName(pkg, componentName)
     result
   }
-    
+
   protected def addItem(data: List[Map[String, AnyRef]], name: String, intent: Intent) {
     val temp = new HashMap[String, AnyRef]()
     temp.put("title", name)
@@ -97,10 +97,10 @@ class MapsDemo extends ListActivity {
 object MapsDemo {
 
   private final val sDisplayNameComparator = new Comparator[Map[String, AnyRef]]() {
-     private final val collator = Collator.getInstance
+    private final val collator = Collator.getInstance
 
-     def compare(map1: Map[String, AnyRef], map2: Map[String, AnyRef]): Int =
-       collator.compare(map1.get("title"), map2.get("title"))
+    def compare(map1: Map[String, AnyRef], map2: Map[String, AnyRef]): Int =
+      collator.compare(map1 get "title", map2 get "title")
 
   }
 }

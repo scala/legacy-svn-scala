@@ -108,7 +108,7 @@ class PictureLayout(context: Context, attrs: AttributeSet)
 
     val x = getWidth / 2
     val y = getHeight / 2
-        
+
     if (false) {
       canvas drawPicture mPicture
     } else {

@@ -27,28 +27,28 @@ class AnimateDrawable(target: Drawable, animation: Animation)
   private val mTransformation = new Transformation
 
   def this(target: Drawable) = this(target, null)
-    
+
   def getAnimation = mAnimation
-    
+
   def setAnimation(anim: Animation) { mAnimation = anim }
 
   def hasStarted: Boolean =
     mAnimation != null && mAnimation.hasStarted
-    
+
   def hasEnded: Boolean =
     mAnimation == null || mAnimation.hasEnded
-    
+
   override def draw(canvas: Canvas) {
     val dr: Drawable = getProxy
     if (dr != null) {
       val sc = canvas.save()
-      val anim = mAnimation;
+      val anim = mAnimation
       if (anim != null) {
         anim.getTransformation(
-          AnimationUtils.currentAnimationTimeMillis(), mTransformation)
-        canvas.concat(mTransformation.getMatrix)
+          AnimationUtils.currentAnimationTimeMillis, mTransformation)
+        canvas concat mTransformation.getMatrix
       }
-      dr.draw(canvas)
+      dr draw canvas
       canvas restoreToCount sc
     }
   }

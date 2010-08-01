@@ -18,7 +18,7 @@ package com.example.android.apis.graphics
 
 import android.app.Activity
 import android.os.Bundle
-import android.view.{View, ViewGroup, Window}
+import android.view.View
 
 class GraphicsActivity extends Activity {
 
@@ -33,7 +33,7 @@ class GraphicsActivity extends Activity {
       vg
     } else
       view
-        
+
     super.setContentView(view1)
   }
 }

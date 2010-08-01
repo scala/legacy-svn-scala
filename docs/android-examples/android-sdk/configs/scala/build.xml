@@ -20,6 +20,24 @@ Builds the Scala libraries targeted to the Android platform.
         </condition>
     </fail>
 
+    <property name="scala.dir" value="${env.SCALA_HOME}" />
+    <fail message="Scala installation directory '${scala.dir}' not found">
+        <condition>
+            <not><available file="${scala.dir}" /></not>
+        </condition>
+    </fail>
+    <!-- Scala SDK (www.scala-lang.org) -->
+    <property name="scala-compiler.jar" value="${scala.dir}/lib/scala-compiler.jar" />
+    <property name="scala-library.jar" value="${scala.dir}/lib/scala-library.jar" />
+
+    <path id="scala.path">
+        <pathelement path="${scala-compiler.jar}" />
+        <pathelement path="${scala-library.jar}" />
+    </path>
+    <taskdef
+        resource="scala/tools/ant/antlib.xml"
+        classpathref="scala.path" />
+
     <target name="build">
         <build.api level="7" />
         <build.api level="8" />
@@ -41,6 +59,19 @@ Builds the Scala libraries targeted to the Android platform.
             <javac srcdir="${source.dir}/android-@{level}"
                    destdir="${out.api@{level}.dir}/classes"
                    classpath="${android@{level}.jar}" />
+            <path id="android.target@{level}.classpath">
+                <pathelement path="${sdk.dir}/platforms/android-@{level}/android.jar" />
+            </path>
+            <scalac
+                srcdir="${source.dir}/android-@{level}" includes="**/*.scala"
+                destdir="${out.api@{level}.dir}/classes"
+                bootclasspathref="android.target@{level}.classpath"
+                addparams="${scalac.addparams}">
+                <classpath>
+                    <pathelement location="${scala-library.jar}" />
+                    <pathelement location="${out.api@{level}.dir}/classes" />
+                </classpath>
+            </scalac>
             <jar destfile="${scala-android@{level}.jar}">
                 <fileset dir="${out.api@{level}.dir}/classes" />
                 <manifest>

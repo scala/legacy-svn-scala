@@ -18,7 +18,7 @@ package com.example.android.lunarlander
 
 import android.content.Context
 import android.os.{Bundle, Handler, Message}
-import android.util.AttributeSet;
+import android.util.AttributeSet
 import android.view.{KeyEvent, SurfaceHolder, SurfaceView, View}
 import android.widget.TextView
 
@@ -50,8 +50,8 @@ extends SurfaceView(context, attrs) with SurfaceHolder.Callback {
     // create thread only; it's started in surfaceCreated()
     thread = new LunarThread(holder, context, new Handler() {
       override def handleMessage(m: Message) {
-        mStatusText setVisibility m.getData().getInt("viz")
-        mStatusText setText m.getData().getString("text")
+        mStatusText setVisibility m.getData.getInt("viz")
+        mStatusText setText m.getData.getString("text")
       }
     })
     setFocusable(true) // make sure we get key events

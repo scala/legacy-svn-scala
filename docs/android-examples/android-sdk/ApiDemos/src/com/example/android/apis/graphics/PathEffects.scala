@@ -54,14 +54,14 @@ object PathEffects {
       Color.BLACK, Color.RED, Color.BLUE,
       Color.GREEN, Color.MAGENTA, Color.BLACK
     )
-        
+
     override protected def onDraw(canvas: Canvas) {
       canvas drawColor Color.WHITE
 
       val bounds = new RectF()
       mPath.computeBounds(bounds, false)
       canvas.translate(10 - bounds.left, 10 - bounds.top)
-            
+
       makeEffects(mEffects, mPhase)
       mPhase += 1
       invalidate()
@@ -88,7 +88,7 @@ object PathEffects {
 
     private def makeDash(phase: Int): PathEffect =
       new DashPathEffect(Array(15f, 5f, 8f, 5f), phase)
-        
+
     private def makeEffects(e: Array[PathEffect], phase: Float) {
       e(0) = null     // no effect
       e(1) = new CornerPathEffect(10)

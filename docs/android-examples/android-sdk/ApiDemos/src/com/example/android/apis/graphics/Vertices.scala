@@ -49,7 +49,7 @@ class Vertices extends GraphicsActivity {
     private val mTexs = new Array[Float](10)
     private val mColors = new Array[Int](10)
     private val mIndices = Array[Short](0, 1, 2, 3, 4, 1)
-        
+
     private val mMatrix = new Matrix()
     private val mInverse = new Matrix()
 
@@ -58,7 +58,7 @@ class Vertices extends GraphicsActivity {
     val bm = BitmapFactory.decodeResource(getResources, R.drawable.beach)
     val s = new BitmapShader(bm, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
     mPaint setShader s
-            
+
     val w = bm.getWidth
     val h = bm.getHeight
     // construct our mesh
@@ -77,7 +77,7 @@ class Vertices extends GraphicsActivity {
     mMatrix.setScale(0.8f, 0.8f)
     mMatrix.preTranslate(20, 20)
     mMatrix invert mInverse
-        
+
     override protected def onDraw(canvas: Canvas) {
       canvas drawColor 0xFFCCCCCC
       canvas.save()

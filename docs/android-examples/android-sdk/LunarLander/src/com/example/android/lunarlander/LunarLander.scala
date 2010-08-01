@@ -16,7 +16,8 @@
  
 package com.example.android.lunarlander
 
-import android.app.Activity
+import scala.android.app.Activity
+
 import android.os.Bundle
 import android.util.Log
 import android.view.{Menu, MenuItem, Window}
@@ -112,20 +113,20 @@ class LunarLander extends Activity {
     setContentView(R.layout.lunar_layout)
 
     // get handles to the LunarView from XML, and its LunarThread
-    mLunarView = findViewById(R.id.lunar).asInstanceOf[LunarView]
+    mLunarView = findView(R.id.lunar)
     mLunarThread = mLunarView.getThread
 
     // give the LunarView a handle to the TextView used for messages
-    mLunarView setTextView findViewById(R.id.text).asInstanceOf[TextView]
+    mLunarView setTextView findView(R.id.text)
 
     if (savedInstanceState == null) {
       // we were just launched: set up a new game
       mLunarThread setState State.READY
-      Log.w(this.getClass().getName(), "SIS is null")
+      Log.w(this.getClass.getName, "SIS is null")
     } else {
       // we are being restored: resume a previous game
       mLunarThread restoreState savedInstanceState
-      Log.w(this.getClass().getName(), "SIS is nonnull")
+      Log.w(this.getClass.getName, "SIS is nonnull")
     }
   }
 
@@ -145,7 +146,7 @@ class LunarLander extends Activity {
     // just have the View's thread save its state into our Bundle
     super.onSaveInstanceState(outState)
     mLunarThread saveState outState
-    Log.w(this.getClass().getName(), "SIS called")
+    Log.w(this.getClass.getName, "SIS called")
   }
 
 }

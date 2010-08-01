@@ -45,11 +45,11 @@ class CubeWallpaper1 extends WallpaperService {
 
     // Create a Paint to draw the lines for our cube
     private final val mPaint = new Paint
-    mPaint.setColor(0xffffffff)
-    mPaint.setAntiAlias(true)
-    mPaint.setStrokeWidth(2)
-    mPaint.setStrokeCap(Paint.Cap.ROUND)
-    mPaint.setStyle(Paint.Style.STROKE)
+    mPaint setColor 0xffffffff
+    mPaint setAntiAlias true
+    mPaint setStrokeWidth 2
+    mPaint setStrokeCap Paint.Cap.ROUND
+    mPaint setStyle Paint.Style.STROKE
     private var mOffset: Float = _
     private var mTouchX: Float = -1
     private var mTouchY: Float = -1
@@ -81,7 +81,7 @@ class CubeWallpaper1 extends WallpaperService {
       if (visible)
         drawFrame()
       else
-         mHandler removeCallbacks mDrawCube
+        mHandler removeCallbacks mDrawCube
     }
 
     override def onSurfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
@@ -103,7 +103,8 @@ class CubeWallpaper1 extends WallpaperService {
     }
 
     override def onOffsetsChanged(xOffset: Float, yOffset: Float,
-                xStep: Float, yStep: Float, xPixels: Int, yPixels: Int) {
+                                  xStep: Float, yStep: Float,
+                                  xPixels: Int, yPixels: Int) {
       mOffset = xOffset
       drawFrame()
     }
@@ -112,9 +113,9 @@ class CubeWallpaper1 extends WallpaperService {
      * Store the position of the touch event so we can use it for drawing later
      */
     override def onTouchEvent(event: MotionEvent) {
-      if (event.getAction() == MotionEvent.ACTION_MOVE) {
-        mTouchX = event.getX()
-        mTouchY = event.getY()
+      if (event.getAction == MotionEvent.ACTION_MOVE) {
+        mTouchX = event.getX
+        mTouchY = event.getY
       } else {
         mTouchX = -1
         mTouchY = -1
@@ -127,25 +128,25 @@ class CubeWallpaper1 extends WallpaperService {
      * by posting a delayed Runnable. You can do any drawing you want in
      * here. This example draws a wireframe cube.
      */
-   def drawFrame() {
-     val holder = getSurfaceHolder
+    def drawFrame() {
+      val holder = getSurfaceHolder
 
-     var c: Canvas = null
-     try {
-       c = holder.lockCanvas()
-       if (c != null) {
-         // draw something
-         drawCube(c)
-         drawTouchPoint(c)
-       }
-     } finally {
-       if (c != null) holder unlockCanvasAndPost c
-     }
+      var c: Canvas = null
+      try {
+        c = holder.lockCanvas()
+        if (c != null) {
+          // draw something
+          drawCube(c)
+          drawTouchPoint(c)
+        }
+      } finally {
+        if (c != null) holder unlockCanvasAndPost c
+      }
 
-     // Reschedule the next redraw
-     mHandler removeCallbacks mDrawCube
-     if (mVisible) mHandler.postDelayed(mDrawCube, 1000 / 25)
-   }
+      // Reschedule the next redraw
+      mHandler removeCallbacks mDrawCube
+      if (mVisible) mHandler.postDelayed(mDrawCube, 1000 / 25)
+    }
 
     /*
      * Draw a wireframe cube by drawing 12 3 dimensional lines between

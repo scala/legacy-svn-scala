@@ -21,7 +21,6 @@ import android.graphics.PixelFormat
 import android.opengl.GLSurfaceView
 import android.os.Bundle
 
-
 /**
  * Wrapper activity demonstrating the use of {@link GLSurfaceView} to
  * display translucent 3D graphics.

@@ -41,7 +41,7 @@ class BitmapMesh extends GraphicsActivity {
       array(index*2 + 1) = y
     }
   }
-    
+
   private /*static*/ class SampleView(context: Context) extends View(context) {
     import SampleView._  // companion object
 
@@ -68,14 +68,14 @@ class BitmapMesh extends GraphicsActivity {
         index += 1
       }
     }
-            
+
     mMatrix.setTranslate(10, 10)
-    mMatrix.invert(mInverse)
+    mMatrix invert mInverse
 
     override protected def onDraw(canvas: Canvas) {
       canvas drawColor 0xFFCCCCCC
 
-      canvas.concat(mMatrix);
+      canvas concat mMatrix
       canvas.drawBitmapMesh(mBitmap, WIDTH, HEIGHT, mVerts, 0,
                                   null, 0, null)
     }
@@ -112,7 +112,7 @@ class BitmapMesh extends GraphicsActivity {
     override def onTouchEvent(event: MotionEvent): Boolean = {
       val pt = Array(event.getX, event.getY)
       mInverse mapPoints pt
-            
+
       val x = pt(0).toInt
       val y = pt(1).toInt
       if (mLastWarpX != x || mLastWarpY != y) {

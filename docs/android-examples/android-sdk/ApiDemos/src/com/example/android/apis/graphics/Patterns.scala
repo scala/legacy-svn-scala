@@ -67,7 +67,7 @@ object Patterns {
 
       mPaint setShader mShader1
       canvas drawPaint mPaint
-            
+
       canvas.translate(mTouchCurrX - mTouchStartX,
                        mTouchCurrY - mTouchStartY)
 

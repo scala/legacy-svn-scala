@@ -27,10 +27,10 @@ class CubeWallpaper2Settings extends PreferenceActivity
 
   override protected def onCreate(icicle: Bundle) {
     super.onCreate(icicle)
-    getPreferenceManager().setSharedPreferencesName(
+    getPreferenceManager.setSharedPreferencesName(
             CubeWallpaper2.SHARED_PREFS_NAME)
     addPreferencesFromResource(R.xml.cube2_settings)
-    getPreferenceManager().getSharedPreferences().registerOnSharedPreferenceChangeListener(
+    getPreferenceManager.getSharedPreferences.registerOnSharedPreferenceChangeListener(
            this)
   }
 
@@ -39,8 +39,8 @@ class CubeWallpaper2Settings extends PreferenceActivity
   }
 
   override protected def onDestroy() {
-    getPreferenceManager().getSharedPreferences().unregisterOnSharedPreferenceChangeListener(
-           this);
+    getPreferenceManager.getSharedPreferences.unregisterOnSharedPreferenceChangeListener(
+           this)
     super.onDestroy()
   }
 

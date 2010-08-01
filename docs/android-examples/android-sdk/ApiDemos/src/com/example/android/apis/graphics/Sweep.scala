@@ -32,7 +32,7 @@ class Sweep extends GraphicsActivity {
     super.onCreate(savedInstanceState)
     setContentView(new SampleView(this))
   }
-    
+
   private /*static*/ class SampleView(context: Context) extends View(context) {
     private val mPaint = new Paint(Paint.ANTI_ALIAS_FLAG)
     private var mRotate: Float = _
@@ -47,7 +47,7 @@ class Sweep extends GraphicsActivity {
     private val mShader = new SweepGradient(x, y,
       Array(Color.GREEN, Color.RED, Color.BLUE, Color.GREEN), null)
     mPaint setShader mShader
-        
+
     override protected def onDraw(canvas: Canvas) {
       val paint = mPaint
       val x = 160f
@@ -79,7 +79,7 @@ class Sweep extends GraphicsActivity {
     override def onKeyDown(keyCode: Int, event: KeyEvent): Boolean = {
       keyCode match {
         case KeyEvent.KEYCODE_D =>
-          mPaint.setDither(!mPaint.isDither)
+          mPaint setDither !mPaint.isDither
           invalidate()
           true
         case KeyEvent.KEYCODE_T =>

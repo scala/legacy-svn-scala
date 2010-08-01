@@ -206,9 +206,9 @@ object StaticTriangleRenderer {
         mIndexBuffer put i.toShort
       }
 
-       mFVertexBuffer.position(0)
-       mTexBuffer.position(0)
-       mIndexBuffer.position(0)
+      mFVertexBuffer position 0
+      mTexBuffer position 0
+      mIndexBuffer position 0
     }
 
     def draw(gl: GL10) {

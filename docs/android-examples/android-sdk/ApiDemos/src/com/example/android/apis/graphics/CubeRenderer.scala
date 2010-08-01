@@ -43,7 +43,7 @@ class CubeRenderer(useTranslucentBackground: Boolean)
      * Now we're ready to draw some 3D objects
      */
 
-    gl.glMatrixMode(GL10.GL_MODELVIEW)
+    gl glMatrixMode GL10.GL_MODELVIEW
     gl.glLoadIdentity()
     gl.glTranslatef(0, 0, -3.0f)
     gl.glRotatef(mAngle,        0, 1, 0)
@@ -57,7 +57,7 @@ class CubeRenderer(useTranslucentBackground: Boolean)
     gl.glRotatef(mAngle*2.0f, 0, 1, 1)
     gl.glTranslatef(0.5f, 0.5f, 0.5f)
 
-    mCube.draw(gl)
+    mCube draw gl
 
     mAngle += 1.2f
   }
@@ -72,7 +72,7 @@ class CubeRenderer(useTranslucentBackground: Boolean)
      */
 
     val ratio = width.toFloat / height
-    gl.glMatrixMode(GL10.GL_PROJECTION)
+    gl glMatrixMode GL10.GL_PROJECTION
     gl.glLoadIdentity()
     gl.glFrustumf(-ratio, ratio, -1, 1, 1, 10)
   }
@@ -83,7 +83,7 @@ class CubeRenderer(useTranslucentBackground: Boolean)
      * but reduce performance. One might want to tweak that
      * especially on software renderer.
      */
-    gl.glDisable(GL10.GL_DITHER)
+    gl glDisable GL10.GL_DITHER
 
     /*
      * Some one-time OpenGL initialization can be made here
@@ -96,9 +96,9 @@ class CubeRenderer(useTranslucentBackground: Boolean)
     } else {
       gl.glClearColor(1,1,1,1)
     }
-    gl.glEnable(GL10.GL_CULL_FACE)
-    gl.glShadeModel(GL10.GL_SMOOTH)
-    gl.glEnable(GL10.GL_DEPTH_TEST)
+    gl glEnable GL10.GL_CULL_FACE
+    gl glShadeModel GL10.GL_SMOOTH
+    gl glEnable GL10.GL_DEPTH_TEST
   }
 }
 

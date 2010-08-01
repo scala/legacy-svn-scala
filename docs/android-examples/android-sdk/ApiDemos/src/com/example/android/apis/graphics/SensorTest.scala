@@ -48,7 +48,7 @@ class SensorTest extends GraphicsActivity {
       for (i <- 0 until depth) {
         sum += weights(i) * mSamples(index)
         index -= 1;
-        if (index < 0) index = depth - 1
+        if (index < 0) index -= 1
       }
       sum * mWeightScale
     }
@@ -93,22 +93,22 @@ class SensorTest extends GraphicsActivity {
         if ((gestX || gestY) && !(gestX && gestY)) {
           if (gestX) {
             if (x < 0) {
-              android.util.Log.e("test", "<<<<<<<< LEFT <<<<<<<<<<<<");
+              Log.e("test", "<<<<<<<< LEFT <<<<<<<<<<<<")
             } else {
-              android.util.Log.e("test", ">>>>>>>>> RITE >>>>>>>>>>>");
+              Log.e("test", ">>>>>>>>> RITE >>>>>>>>>>>")
             }
           } else {
             if (y < -2) {
-              android.util.Log.e("test", "<<<<<<<< UP <<<<<<<<<<<<");
+              Log.e("test", "<<<<<<<< UP <<<<<<<<<<<<")
             } else {
-              android.util.Log.e("test", ">>>>>>>>> DOWN >>>>>>>>>>>");
+              Log.e("test", ">>>>>>>>> DOWN >>>>>>>>>>>")
             }
           }
           mLastGestureTime = now
         }
       }
     }
-        
+
     private var mLastGestureTime: Long = _
 
     def onAccuracyChanged(sensor: Sensor, accuracy: Int) {
@@ -136,7 +136,7 @@ class SensorTest extends GraphicsActivity {
     }
 //  android.util.Log.d("skia", "resume " + mSensorManager)
   }
-    
+
   override protected def onStop() {
     mSensorManager unregisterListener mListener
     super.onStop()
@@ -176,12 +176,12 @@ class SensorTest extends GraphicsActivity {
       }
       canvas.drawPath(mPath, mPaint)
     }
-    
+
     override protected def onAttachedToWindow() {
       //mAnimate = true
       super.onAttachedToWindow()
     }
-        
+
     override protected def onDetachedFromWindow() {
       //mAnimate = false
       super.onDetachedFromWindow()

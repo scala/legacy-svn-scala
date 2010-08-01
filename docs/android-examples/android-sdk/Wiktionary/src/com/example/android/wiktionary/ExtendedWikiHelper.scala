@@ -249,7 +249,7 @@ object ExtendedWikiHelper { //extends SimpleWikiHelper {
 
     val sectionMatcher = sSectionSplit matcher wikiText
     while (sectionMatcher.find()) {
-      val title = sectionMatcher.group(1);
+      val title = sectionMatcher group 1
       if (!foundSections.contains(title) &&
           sValidSections.matcher(title).matches()) {
         val sectionContent = sectionMatcher.group()

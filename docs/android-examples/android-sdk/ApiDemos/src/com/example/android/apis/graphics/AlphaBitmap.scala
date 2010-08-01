@@ -48,7 +48,7 @@ object AlphaBitmap {
 
       p setAlpha 0x80
       c.drawCircle(x/2, y/2, x/2, p)
-            
+
       p setAlpha 0x30
       p setXfermode new PorterDuffXfermode(PorterDuff.Mode.SRC)
       p setTextSize 60
@@ -79,12 +79,12 @@ object AlphaBitmap {
       val p = new Paint
       var y = 10
 
-      p.setColor(Color.RED)
+      p setColor Color.RED
       canvas.drawBitmap(mBitmap, 10, y, p)
       y += mBitmap.getHeight() + 10
       canvas.drawBitmap(mBitmap2, 10, y, p)
       y += mBitmap2.getHeight() + 10
-      p.setShader(mShader)
+      p setShader mShader
       canvas.drawBitmap(mBitmap3, 10, y, p)
     }
   }

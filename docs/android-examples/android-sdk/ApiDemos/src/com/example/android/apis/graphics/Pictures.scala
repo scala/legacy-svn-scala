@@ -35,10 +35,10 @@ class Pictures extends GraphicsActivity {
   private object SampleView {
     def drawSomething(canvas: Canvas) {
       val p = new Paint(Paint.ANTI_ALIAS_FLAG)
-            
+
       p setColor 0x88FF0000
       canvas.drawCircle(50, 50, 40, p)
-            
+
       p setColor Color.GREEN
       p setTextSize 30
       canvas.drawText("Pictures", 60, 60, p)
@@ -54,23 +54,23 @@ class Pictures extends GraphicsActivity {
     private val mPicture = new Picture
     drawSomething(mPicture.beginRecording(200, 100))
     mPicture.endRecording()
-            
+
     private val mDrawable = new PictureDrawable(mPicture)
-        
+
     override protected def onDraw(canvas: Canvas) {
       canvas drawColor Color.WHITE
 
       canvas drawPicture mPicture
-            
+
       canvas.drawPicture(mPicture, new RectF(0, 100, getWidth, 200))
-            
+
       mDrawable.setBounds(0, 200, getWidth, 300)
       mDrawable draw canvas
-            
+
       val os = new ByteArrayOutputStream
       mPicture writeToStream os
       val is = new ByteArrayInputStream(os.toByteArray)
-      canvas.translate(0, 300);
+      canvas.translate(0, 300)
       canvas drawPicture Picture.createFromStream(is)
     }
   }

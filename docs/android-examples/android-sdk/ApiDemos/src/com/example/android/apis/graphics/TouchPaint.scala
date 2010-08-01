@@ -33,12 +33,12 @@ import android.view.{Menu, MenuItem, MotionEvent, View}
 object TouchPaint {
   /** Used as a pulse to gradually fade the contents of the window. */
   private final val FADE_MSG = 1
-    
+
   /** Menu ID for the command to clear the window. */
   private final val CLEAR_ID = Menu.FIRST
   /** Menu ID for the command to toggle fading. */
   private final val FADE_ID = Menu.FIRST+1
-    
+
   /** How often to fade the contents of the window (in ms). */
   private final val FADE_DELAY = 100
 }
@@ -50,29 +50,29 @@ class TouchPaint extends GraphicsActivity {
   private var mView: MyView = _
   /** Is fading mode enabled? */
   private var mFading: Boolean = _
-    
+
   override protected def onCreate(savedInstanceState: Bundle) {
     super.onCreate(savedInstanceState)
-        
+
     // Create and attach the view that is responsible for painting.
     mView = new MyView(this)
     setContentView(mView)
     mView.requestFocus()
-        
+
     // Restore the fading option if we are being thawed from a
     // previously saved state.  Note that we are not currently remembering
     // the contents of the bitmap.
     mFading = if (savedInstanceState != null) savedInstanceState.getBoolean("fading", true) else true
   }
-    
+
   override def onCreateOptionsMenu(menu: Menu): Boolean = {
     menu.add(0, CLEAR_ID, 0, "Clear")
-    menu.add(0, FADE_ID, 0, "Fade").setCheckable(true)
+    menu.add(0, FADE_ID, 0, "Fade") setCheckable true
     super.onCreateOptionsMenu(menu)
   }
 
   override def onPrepareOptionsMenu(menu: Menu): Boolean = {
-    menu.findItem(FADE_ID).setChecked(mFading)
+    menu.findItem(FADE_ID) setChecked mFading
     super.onPrepareOptionsMenu(menu)
   }
 
@@ -122,17 +122,17 @@ class TouchPaint extends GraphicsActivity {
    * ensure that we don't have multiple pulses running at a time.
    */
   def startFading() {
-    mHandler.removeMessages(FADE_MSG)
+    mHandler removeMessages FADE_MSG
     mHandler.sendMessageDelayed(mHandler.obtainMessage(FADE_MSG), FADE_DELAY)
   }
-    
+
   /**
    * Stop the pulse to fade the screen.
    */
   def stopFading() {
     mHandler.removeMessages(FADE_MSG)
   }
-    
+
   private val mHandler: Handler = new Handler() {
     override def handleMessage(msg: Message) {
       msg.what match {
@@ -153,7 +153,7 @@ class TouchPaint extends GraphicsActivity {
     private final val FADE_ALPHA = 0x06
     private final val MAX_FADE_STEPS = 256/FADE_ALPHA + 4
   }
-    
+
   class MyView(context: Context) extends View(context) {
     import MyView._  // companion object
 
@@ -191,7 +191,7 @@ class TouchPaint extends GraphicsActivity {
         mFadeSteps += 1
       }
     }
-        
+
     override protected def onSizeChanged(w: Int, h: Int,
                                          oldw: Int, oldh: Int) {
       var (curW, curH) =

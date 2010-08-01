@@ -45,10 +45,10 @@ class AnimateDrawables extends GraphicsActivity {
     an setDuration 2000
     an.setRepeatCount(-1)
     an.initialize(10, 10, 10, 10)
-            
+
     private val mDrawable = new AnimateDrawable(dr, an)
     an.startNow()
-        
+
     override protected def onDraw(canvas: Canvas) {
       canvas drawColor Color.WHITE
 

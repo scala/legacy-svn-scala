@@ -26,7 +26,7 @@ import android.os.Bundle
 import android.view._
 
 class ColorFilters extends GraphicsActivity {
-    
+
   override protected def onCreate(savedInstanceState: Bundle) {
     super.onCreate(savedInstanceState)
     setContentView(new SampleView(this))
@@ -39,7 +39,7 @@ class ColorFilters extends GraphicsActivity {
       val center = (r.top + r.bottom) >> 1
       val h = curr.getIntrinsicHeight
       val y = center - (h >> 1)
-            
+
       curr.setBounds(x, y, x + curr.getIntrinsicWidth, y + h)
     }
   }
@@ -115,8 +115,8 @@ class ColorFilters extends GraphicsActivity {
         canvas.drawText("Label", x, y, mPaint)
             
         for (dr <- mDrawables) {
-          dr.setColorFilter(filter)
-          dr.draw(canvas)
+          dr setColorFilter filter
+          dr draw canvas
         }
       }
       canvas drawColor 0xFFCCCCCC
@@ -134,13 +134,13 @@ class ColorFilters extends GraphicsActivity {
     override def onTouchEvent(event: MotionEvent): Boolean = {
       def swapPaintColors() {
         if (mPaint.getColor == 0xFF000000) {
-          mPaint.setColor(0xFFFFFFFF)
-          mPaint2.setColor(0xFF000000)
+          mPaint setColor 0xFFFFFFFF
+          mPaint2 setColor 0xFF000000
         } else {
-          mPaint.setColor(0xFF000000)
-          mPaint2.setColor(0xFFFFFFFF)
+          mPaint setColor 0xFF000000
+          mPaint2 setColor 0xFFFFFFFF
         }
-        mPaint2.setAlpha(64)
+        mPaint2 setAlpha 64
       }
       val x = event.getX
       val y = event.getY

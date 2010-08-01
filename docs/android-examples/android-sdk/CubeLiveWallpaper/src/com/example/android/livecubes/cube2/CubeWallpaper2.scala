@@ -35,7 +35,9 @@ object CubeWallpaper2 {
   class ThreeDPoint(var x: Float, var y: Float, var z: Float) {
     def this() = this(0, 0, 0)
   }
+
   case class ThreeDLine(startPoint: Int, endPoint: Int)
+
 }
 
 class CubeWallpaper2 extends WallpaperService {
@@ -139,7 +141,8 @@ class CubeWallpaper2 extends WallpaperService {
         mHandler removeCallbacks mDrawCube
     }
 
-    override def onSurfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
+    override def onSurfaceChanged(holder: SurfaceHolder, format: Int,
+                                  width: Int, height: Int) {
       super.onSurfaceChanged(holder, format, width, height)
       // store the center of the surface, so we can draw the cube in the right spot
       mCenterX = width / 2.0f
@@ -158,7 +161,8 @@ class CubeWallpaper2 extends WallpaperService {
     }
 
     override def onOffsetsChanged(xOffset: Float, yOffset: Float,
-                xStep: Float, yStep: Float, xPixels: Int, yPixels: Int) {
+                                  xStep: Float, yStep: Float,
+                                  xPixels: Int, yPixels: Int) {
       mOffset = xOffset
       drawFrame()
     }
@@ -167,7 +171,7 @@ class CubeWallpaper2 extends WallpaperService {
      * Store the position of the touch event so we can use it for drawing later
      */
     override def onTouchEvent(event: MotionEvent) {
-      if (event.getAction() == MotionEvent.ACTION_MOVE) {
+      if (event.getAction == MotionEvent.ACTION_MOVE) {
         mTouchX = event.getX
         mTouchY = event.getY
       } else {
@@ -208,7 +212,7 @@ class CubeWallpaper2 extends WallpaperService {
     def drawCube(c: Canvas) {
       c.save()
       c.translate(mCenterX, mCenterY)
-      c.drawColor(0xff000000)
+      c drawColor 0xff000000
 
       val now = SystemClock.elapsedRealtime
       val xrot = (now - mStartTime) / 1000.0f
