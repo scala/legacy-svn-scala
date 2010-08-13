@@ -380,7 +380,7 @@ trait JavaParsers extends JavaScanners {
       // assumed true unless we see public/private/protected - see bug #1240
       var privateWithin: Name =
         if (inInterface) nme.EMPTY.toTypeName else thisPackageName
-          
+
       while (true) {
         in.token match {
           case AT if (in.lookaheadToken != INTERFACE) => 
