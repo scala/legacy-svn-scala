@@ -171,7 +171,7 @@ class Process(processCreator: () => JProcess) extends Iterable[String] {
       }
     }
     override final def run() {
-      @tailrec def loop() {      
+      @tailrec def loop() {
         reader.readLine match { 
           case null =>
             reader.close()
@@ -192,6 +192,7 @@ class Process(processCreator: () => JProcess) extends Iterable[String] {
   
   private def createConsumer(in: InputStream) = {
     val t = new StreamedConsumer(in)
+    t setDaemon true
     t.start()
     t
   }
