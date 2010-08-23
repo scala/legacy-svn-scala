@@ -28,6 +28,8 @@ final class RichLong(x: Long) extends Proxy with Ordered[Long] {
    *  @return       the range
    */
   def until(end: Long, step: Long = 1L): NumericRange.Exclusive[Long] = Range.Long(x, end, step)
+
+  def until(end: Long): NumericRange.Exclusive[Long] = Range.Long(x, end, 1l)
   
   /** Like until, but inclusive of the end value.
    */
