@@ -153,8 +153,8 @@ trait Position {
   /** Does this position properly precede the given position `pos` ("properly" meaning their ranges
    *  do not share a common point).
    */
-  def properlyPrecedes(pos: Position) = 
-    isDefined && pos.isDefined && startOrPoint < pos.endOrPoint
+  def properlyPrecedes(pos: Position) =
+    isDefined && pos.isDefined && endOrPoint < pos.startOrPoint
 
   /** Does this position overlap with that position?
    *  This holds if both positions are ranges and there is an interval of
