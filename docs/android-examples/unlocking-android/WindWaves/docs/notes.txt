@@ -1,9 +1,0 @@
-
-Info: http://www.ndbc.noaa.gov/rss_access.shtml
-
-Radius feed: http://www.ndbc.noaa.gov/rss/ndbc_obs_search.php?lat=40N&lon=73W&radius=100
-
-Single station HTML (can't find some stuff in the feeds): http://www.ndbc.noaa.gov/station_page.php?station=42007
-
-San Fran lat/lon    : 37.49 -122.49
-Tampa lat/lon       : 27.50 -82.36

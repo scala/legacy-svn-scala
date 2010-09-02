@@ -1,6 +1,0 @@
-ccollins@rasputin:~/.android$ keytool -list -alias androiddebugkey -keystore ./debug.keystore -storepass android -keypass android
-
-androiddebugkey, Oct 6, 2008, PrivateKeyEntry, 
-Certificate fingerprint (MD5): 08:26:4C:0B:A8:C0:58:42:9B:A4:17:D0:2F:D7:1D:41
-
-http://code.google.com/android/maps-api-signup.html

@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="app_name">SimpleAlarm</string>
-    <string name="set_alarm_text">Set Alarm</string>
-    <string name="alarm_message">Alarm Fired</string>
-</resources>
