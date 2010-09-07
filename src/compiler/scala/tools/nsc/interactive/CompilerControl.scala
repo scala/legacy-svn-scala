@@ -42,14 +42,17 @@ trait CompilerControl { self: Global =>
   protected val scheduler = new WorkScheduler
   
   /** The compilation unit corresponding to a source file
+   *  if it does not yet exist creat a new one atomically
    */
-  def unitOf(s: SourceFile): RichCompilationUnit = unitOfFile get s.file match {
-    case Some(unit) => 
-      unit
-    case None => 
-      val unit = new RichCompilationUnit(s)
-      unitOfFile(s.file) = unit
-      unit
+  def unitOf(s: SourceFile): RichCompilationUnit = unitOfFile.synchronized {
+    unitOfFile get s.file match {
+      case Some(unit) => 
+        unit
+      case None => 
+        val unit = new RichCompilationUnit(s)
+        unitOfFile(s.file) = unit
+        unit
+    }
   }
   
   /** The compilation unit corresponding to a position */
@@ -60,14 +63,23 @@ trait CompilerControl { self: Global =>
    */
   def removeUnitOf(s: SourceFile) = unitOfFile remove s.file
 
+  /* returns the top level classes and objects that were deleted
+   * in the editor since last time recentlyDeleted() was called.
+   */
+  def recentlyDeleted(): List[Symbol] = deletedTopLevelSyms.synchronized {
+    val result = deletedTopLevelSyms
+    deletedTopLevelSyms.clear()
+    result.toList
+  }
+
   /** Locate smallest tree that encloses position
    */
   def locateTree(pos: Position): Tree = 
     new Locator(pos) locateIn unitOf(pos).body
-    
+
   /** Locates smallest context that encloses position as an optional value.
    */
-  def locateContext(pos: Position): Option[Context] = 
+  def locateContext(pos: Position): Option[Context] =
     locateContext(unitOf(pos).contexts, pos)
 
   /** Returns the smallest context that contains given `pos`, throws FatalError if none exists.
