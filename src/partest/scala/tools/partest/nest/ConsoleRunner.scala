@@ -34,7 +34,7 @@ class ConsoleRunner extends DirectRunner {
       TestSet("buildmanager", _.isDirectory, "Testing Build Manager"),
       TestSet("shootout", pathFilter, "Testing shootout tests"),
       TestSet("script", pathFilter, "Testing script tests"),
-      TestSet("scalacheck", pathFilter, "Testing ScalaCheck tests"),
+      TestSet("scalacheck", x => pathFilter(x) || x.isDirectory, "Testing ScalaCheck tests"),
       TestSet("scalap", _.isDirectory, "Run scalap decompiler tests")
     )
   }
@@ -190,7 +190,7 @@ class ConsoleRunner extends DirectRunner {
    */
   def testCheckAll(enabledSets: List[TestSet]): (Int, Int) = {
     def kindOf(f: File) = (srcDir relativize Path(f).normalize).segments.head
-        
+    
     val (valid, invalid) = testFiles partition (x => testSetKinds contains kindOf(x))
     invalid foreach (x => NestUI.failure("Invalid test file '%s', skipping.\n" format x))
     
