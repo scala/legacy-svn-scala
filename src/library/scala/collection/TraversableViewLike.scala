@@ -197,6 +197,9 @@ self =>
     self foreach (buf +=)
     buf.result
   }
+  
+  override def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder =
+    b append start append "..." append end
 
   override def filter(p: A => Boolean): This = newFiltered(p).asInstanceOf[This]
   override def withFilter(p: A => Boolean): This = newFiltered(p).asInstanceOf[This]
