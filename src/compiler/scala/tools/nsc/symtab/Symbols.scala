@@ -537,6 +537,10 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     /** Is this symbol static (i.e. with no outer instance)? */
     final def isStatic: Boolean =
       hasFlag(STATIC) || isRoot || owner.isStaticOwner
+    
+    /** Is this symbol a static constructor? */
+    final def isStaticConstructor: Boolean =
+      isStaticMember && isClassConstructor
 
     /** Is this symbol a static member of its class? (i.e. needs to be implemented as a Java static?) */
     final def isStaticMember: Boolean = 
