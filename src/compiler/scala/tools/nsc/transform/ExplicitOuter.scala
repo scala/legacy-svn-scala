@@ -311,7 +311,7 @@ abstract class ExplicitOuter extends InfoTransform
       var rhs: Tree =
         if (outerAcc.isDeferred) EmptyTree
         else This(currentClass) DOT outerField(currentClass)
-                
+
       typedPos(currentClass.pos)(DEF(outerAcc) === rhs)
     }
 
