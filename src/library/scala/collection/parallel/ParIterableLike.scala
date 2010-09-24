@@ -963,7 +963,7 @@ self =>
     }
     override def merge(that: Zip[U, S, That]) = result = result combine that.result
   }
-
+     
   protected[this] class ZipAll[U >: T, S, That]
     (len: Int, thiselem: U, thatelem: S, pbf: CanCombineFrom[Repr, (U, S), That], protected[this] val pit: ParIterableIterator[T], val othpit: ParSeqIterator[S])
   extends Transformer[Combiner[(U, S), That], ZipAll[U, S, That]] {
