@@ -23,15 +23,21 @@ trait TypeStacks {
   type Rep = List[TypeKind]
 
   class TypeStack(var types: Rep) {
+    if (types.nonEmpty)
+      checkerDebug("TypeStack init: " + types.mkString(", "))
+
     def this() = this(Nil)
     def this(that: TypeStack) = this(that.types)
     
     def length: Int = types.length
+    def isEmpty     = length == 0
+    def nonEmpty    = length != 0
 
     /** Push a type on the type stack. UNITs are ignored. */
-    def push(t: TypeKind) =
+    def push(t: TypeKind) = {
       if (t != UNIT)
         types = t :: types
+    }
 
     def head: TypeKind = types.head
 
@@ -71,8 +77,10 @@ trait TypeStacks {
     def agreesWith(other: TypeStack): Boolean =
       (types corresponds other.types)((t1, t2) => t1 <:< t2 || t2 <:< t1)
 
-    /* This method returns a String representation of the stack */
-    override def toString() = types.mkString("\n", "\n", "\n")
+    /* This method returns a String representation of the stack */    
+    override def toString() = 
+      if (types.isEmpty) "TypeStack()"
+      else types.mkString("TypeStack(" + types.size + " elems) {\n  ", "\n  ", "\n}")
 
     override def hashCode() = types.hashCode()
     override def equals(other: Any): Boolean = other match {

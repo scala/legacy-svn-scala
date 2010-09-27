@@ -365,7 +365,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
     val runsAfter = List[String]("")
     val runsRightAfter = Some("tailcalls")
-  } with SpecializeTypes 
+  } with SpecializeTypes
 
   // phaseName = "erasure"
   object erasure extends {
@@ -755,12 +755,11 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         if (settings.check contains globalPhase.prev.name) {
           if (globalPhase.prev.checkable) {
             phase = globalPhase
+            inform("[Now checking: " + phase.prev.name + "]")
             if (globalPhase.id >= icodePhase.id) icodeChecker.checkICodes
             else checker.checkTrees
           } 
-          else if (!settings.check.doAllPhases) {
-            warning("It is not possible to check the result of the "+globalPhase.name+" phase")
-          }
+          else inform("[Not checkable: " + globalPhase.prev.name + "]")
         }
         if (settings.Ystatistics.value) statistics.print(phase)
         advancePhase
