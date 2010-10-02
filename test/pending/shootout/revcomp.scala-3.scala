@@ -24,7 +24,7 @@ object revcomp {
 trait FastaByteStream {
    val nl = '\n'.toByte  
 
-   type Line = Array[byte]
+   type Line = Array[Byte]
    type LineStack = Stack[Line]
 }
 
@@ -95,7 +95,7 @@ final class FastaOutputStream(in: OutputStream)
    private def IUBCodeComplements() = {
       val code = "ABCDGHKMNRSTVWYabcdghkmnrstvwy".getBytes
       val comp = "TVGHCDMKNYSABWRTVGHCDMKNYSABWR".getBytes
-      val iub: Array[byte] = new Array( 'z'.toByte )
+      val iub: Array[Byte] = new Array( 'z'.toByte )
 
       for (val indexValue <- code zip comp)
          indexValue match { case Pair(i,v) => iub(i) = v }
@@ -105,7 +105,7 @@ final class FastaOutputStream(in: OutputStream)
 
    def writeReverseComplement(sequence: Pair[Line,LineStack]) = {
 
-      def inplaceComplementReverse(b: Array[byte]) = {
+      def inplaceComplementReverse(b: Array[Byte]) = {
          var i = 0 
          var j = b.length - 1
          while (i < j){

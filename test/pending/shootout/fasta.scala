@@ -63,7 +63,7 @@ object fasta {
       s.close
    } 
 
-   def makeCumulative(a: Array[Pair[Char,double]]) = {
+   def makeCumulative(a: Array[Pair[Char,Double]]) = {
       var cp = 0.0
       a map (frequency =>
          frequency match { 
@@ -79,7 +79,7 @@ object fasta {
 // We could use instances of Pair or Tuple2 but specific labels
 // make the code more readable than index numbers
 
-class Frequency(_code: byte, _percent: double){ 
+class Frequency(_code: Byte, _percent: Double){ 
    var code = _code; var percent = _percent;
 }
 
@@ -93,7 +93,7 @@ class FastaOutputStream(out: OutputStream) extends BufferedOutputStream(out) {
 
    def writeDescription(desc: String) = { write( (">" + desc + "\n").getBytes ) }
 
-   def writeRepeatingSequence(_alu: String, length: int) = {
+   def writeRepeatingSequence(_alu: String, length: Int) = {
       val alu = _alu.getBytes
       var n = length; var k = 0; val kn = alu.length;
 
@@ -116,7 +116,7 @@ class FastaOutputStream(out: OutputStream) extends BufferedOutputStream(out) {
 
    }
 
-   def writeRandomSequence(distribution: Array[Frequency], length: int) = {
+   def writeRandomSequence(distribution: Array[Frequency], length: Int) = {
       var n = length
       while (n > 0) {
          val m = if (n < LineLength) n else LineLength
@@ -155,7 +155,7 @@ object RandomNumber {
    private val IC = 29573
    private var seed = 42
 
-   def scaledTo(max: double) = {
+   def scaledTo(max: Double) = {
       seed = (seed * IA + IC) % IM
       max * seed / IM
    }

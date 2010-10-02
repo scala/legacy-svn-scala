@@ -13,7 +13,7 @@ object revcomp {
    def IUBCodeComplements() = {
       val code = "ABCDGHKMNRSTVWYabcdghkmnrstvwy".getBytes
       val comp = "TVGHCDMKNYSABWRTVGHCDMKNYSABWR".getBytes
-      val a: Array[byte] = new Array( 'z'.toByte )
+      val a: Array[Byte] = new Array( 'z'.toByte )
 
       for (val indexValue <- code zip comp)
          indexValue match { case Pair(i,v) => a(i) = v }
@@ -22,7 +22,7 @@ object revcomp {
    }
 
 
-   type LineStack = Stack[Array[byte]]
+   type LineStack = Stack[Array[Byte]]
 
    def main(args: Array[String]) = {
       val r = new BufferedReader(new InputStreamReader(System.in))
@@ -55,7 +55,7 @@ object revcomp {
    def complementReverseWrite(desc: String, lines: LineStack, 
          w: BufferedOutputStream) = {
 
-      def inplaceComplementReverse(b: Array[byte]) = {
+      def inplaceComplementReverse(b: Array[Byte]) = {
          var i = 0 
          var j = b.length - 1
          while (i < j){
