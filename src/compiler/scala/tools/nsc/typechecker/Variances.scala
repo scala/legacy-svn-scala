@@ -14,12 +14,6 @@ trait Variances {
 
   val global: Global
   import global._
-
-  /** Convert variance to string */
-  private def varianceString(variance: Int): String =
-    if (variance == COVARIANT) "covariant"
-    else if (variance == CONTRAVARIANT) "contravariant"
-    else "invariant"
   
   /** Flip between covariant and contravariant */
   private def flip(v: Int): Int = {
@@ -27,11 +21,6 @@ trait Variances {
     else if (v == CONTRAVARIANT) COVARIANT
     else v
   }
-
-  private def compose(v1: Int, v2: Int) =
-    if (v1 == 0) 0
-    else if (v1 == CONTRAVARIANT) flip(v2)
-    else v2;
 
   /** Map everything below VARIANCES to 0 */
   private def cut(v: Int): Int =
