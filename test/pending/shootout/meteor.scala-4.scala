@@ -36,7 +36,7 @@ final class Solver (n: Int) {
 
    val unplaced = new BitSet(pieces.length)
 
-   { unplaced ++= Iterator.range(0,unplaced.capacity) }
+   { unplaced ++= (0 until pieces.length) }
 
 
    def findSolutions(): Unit = {
@@ -171,7 +171,7 @@ final class Board {
                   for (k <- Array.range(0,Piece.size)) // piece cell index
                      yield 
                         for (m <- Array.range(0,Board.size)) // board cell index
-                           yield null
+                           yield (null: BoardCell)
 
 
    def add(pieceIndex: Int, boardIndex: Int, p: Piece): Boolean = {

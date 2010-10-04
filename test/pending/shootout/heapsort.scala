@@ -8,12 +8,12 @@ object heapsort {
       val n = toPositiveInt(args);
 
       val numbers = new Array[Double](n+1);
-      for (val i <- Iterator.range(1,n+1)) 
+      for (i <- Iterator.range(1,n+1)) 
          numbers(i) = generate(100.0);
 
       heapsort(n, numbers);
 
-      Console.printf("{0,number,#.000000000}\n")(numbers(n));   
+      Console.printf("{0,number,#.000000000}\n", numbers(n));
    }
 
 

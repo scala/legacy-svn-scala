@@ -6,15 +6,15 @@
 object methcall {
    def main(args: Array[String]) = {
       var n = toPositiveInt(args);
-      var v: Boolean = _;
+      var v: Boolean = false
 
       val toggle = new Toggle(true);
-      for (val i <- Iterator.range(1,n)) v = toggle.activate.value;         
+      for (i <- Iterator.range(1,n)) v = toggle.activate.value;         
 
       Console println( toggle.activate.value );
 
       val ntoggle = new NToggle(true,3);
-      for (val i <- Iterator.range(1,n)) v = ntoggle.activate.value;    
+      for (i <- Iterator.range(1,n)) v = ntoggle.activate.value;    
      
       Console println( ntoggle.activate.value );
    }

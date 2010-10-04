@@ -9,15 +9,15 @@ object sieve {
       val start = 2;
       val stop = 8192;
       val isPrime = new Array[Boolean](stop+1);
-      var count: Int = _;
+      var count: Int = 0;
 
       while (n>0) { 
          count = 0;
 
-         for (val i <- Iterator.range(start,stop+1)) 
+         for (i <- Iterator.range(start,stop+1)) 
             isPrime(i)=true;
 
-         for (val i <- Iterator.range(start,stop+1)) {
+         for (i <- Iterator.range(start,stop+1)) {
             if( isPrime(i) ) {
                var k = i+i;
                while (k<=stop) { isPrime(k)=false; k=k+i; }

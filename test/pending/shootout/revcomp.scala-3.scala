@@ -52,7 +52,7 @@ final class FastaInputStream(in: InputStream)
                return Pair(header,lines)
             }
          } else {
-            if (c != sc) lines += line       // ';'
+            if (c != sc) lines push line       // ';'
          }
          line = readLine()
       }
@@ -97,7 +97,7 @@ final class FastaOutputStream(in: OutputStream)
       val comp = "TVGHCDMKNYSABWRTVGHCDMKNYSABWR".getBytes
       val iub: Array[Byte] = new Array( 'z'.toByte )
 
-      for (val indexValue <- code zip comp)
+      for (indexValue <- code zip comp)
          indexValue match { case Pair(i,v) => iub(i) = v }
 
       iub

@@ -7,10 +7,10 @@
 object nsieve { 
 
    def nsieve(m: Int, isPrime: Array[Boolean]) = {
-      for (val i <- List.range(2, m)) isPrime(i) = true
+      for (i <- List.range(2, m)) isPrime(i) = true
       var count = 0
 
-      for (val i <- List.range(2, m)){
+      for (i <- List.range(2, m)){
          if (isPrime(i)){
             var k = i+i
             while (k < m){ isPrime(k) = false; k = k+i }

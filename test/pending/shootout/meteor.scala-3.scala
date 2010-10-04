@@ -36,7 +36,7 @@ final class Solver (n: Int) {
 
    val unplaced = new BitSet(pieces.length)
 
-   { unplaced ++= Iterator.range(0,unplaced.capacity) }
+   { unplaced ++= (0 until pieces.length) }
 
 
    def findSolutions(): Unit = {
@@ -123,7 +123,7 @@ final class Solver (n: Int) {
 
 /*
    def printPieces() = 
-      for (val i <- Iterator.range(0,Board.pieces)) pieces(i).print 
+      for (i <- Iterator.range(0,Board.pieces)) pieces(i).print 
 */
 
 }
@@ -210,10 +210,10 @@ final class Board {
 
 
    private def boardCells() = {
-      val a = for (val i <- Array.range(0,Board.size)) yield new BoardCell(i)
+      val a = for (i <- Array.range(0,Board.size)) yield new BoardCell(i)
       val m = (Board.size / Board.cols) - 1
 
-      for (val i <- Iterator.range(0,a.length)){
+      for (i <- Iterator.range(0,a.length)){
          val row = i / Board.cols
          val isFirst = i % Board.cols == 0
          val isLast = (i+1) % Board.cols == 0
@@ -248,9 +248,9 @@ final class Board {
 
    def printBoardCellsAndNeighbours() = {
       Console.println("cell\tNW NE W  E  SW SE")
-      for (val i <- Iterator.range(0,Board.size)){
+      for (i <- Iterator.range(0,Board.size)){
          Console.print(i + "\t")
-         for (val j <- Iterator.range(0,Cell.sides)){
+         for (j <- Iterator.range(0,Cell.sides)){
             val c = cells(i).next(j)
             if (c == null) 
                Console.print("-- ") 
@@ -279,7 +279,7 @@ object Piece {
 
 final class Piece(_number: Int) {
    val number = _number
-   val cells = for (val i <- Array.range(0,Piece.size)) yield new PieceCell()
+   val cells = for (i <- Array.range(0,Piece.size)) yield new PieceCell()
 
    { 
       number match {
@@ -451,14 +451,14 @@ final class Piece(_number: Int) {
    def print() = {
       Console.println("Piece # " + number)
       Console.println("cell\tNW NE W  E  SW SE")
-      for (val i <- Iterator.range(0,Piece.size)){
+      for (i <- Iterator.range(0,Piece.size)){
          Console.print(i + "\t")
-         for (val j <- Iterator.range(0,Cell.sides)){
+         for (j <- Iterator.range(0,Cell.sides)){
             val c = cells(i).next(j)
             if (c == null) 
                Console.print("-- ") 
             else 
-               for (val k <- Iterator.range(0,Piece.size)){
+               for (k <- Iterator.range(0,Piece.size)){
                   if (cells(k) == c) Console.printf(" {0,number,0} ")(k)
                }       
          }
