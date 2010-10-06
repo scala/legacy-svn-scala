@@ -318,7 +318,7 @@ class Worker(val fileManager: FileManager, scalaCheckParentClassLoader: ScalaCla
   def runTests(kind: String, files: List[File])(topcont: ImmMap[String, Int] => Unit) {
     val compileMgr = new CompileManager(fileManager)
     if (kind == "scalacheck") fileManager.CLASSPATH += File.pathSeparator + PathSettings.scalaCheck
-        
+    
     var errors = 0
     var succeeded = true
     var diff = ""
@@ -463,9 +463,9 @@ class Worker(val fileManager: FileManager, scalaCheckParentClassLoader: ScalaCla
       case "scalacheck" =>
         runTestCommon(file, kind, expectFailure = false)((logFile, outDir) => {
           NestUI.verbose("compilation of "+file+" succeeded\n")
-
+          
           val outURL = outDir.getCanonicalFile.toURI.toURL
-
+          
           val logWriter = new PrintStream(new FileOutputStream(logFile))
           
           withOutputRedirected(logWriter) {
@@ -483,7 +483,8 @@ class Worker(val fileManager: FileManager, scalaCheckParentClassLoader: ScalaCla
             val passedok = lines filter (_ startsWith "+") forall (_ contains "OK")
             failures.isEmpty && passedok
           }
-      })
+          NestUI.verbose("test for '" + file + "' success: " + succeeded)
+        })
 
       case "pos" =>
         runTestCommon(file, kind, expectFailure = false)((_, _) => ())
