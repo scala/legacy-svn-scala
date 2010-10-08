@@ -1,4 +1,5 @@
 import org.scalacheck._
+import org.scalacheck.Prop._
 
 import scala.tools.nsc.doc
 import scala.tools.nsc.doc.html.page.Index
@@ -27,7 +28,7 @@ object Test extends Properties("Index") {
 
     new doc.DocFactory(reporter, settings)
   }
-
+  
   val indexModelFactory = {
     val settings = new doc.Settings((s: String) => {
       Console.err.println(s)
@@ -38,7 +39,7 @@ object Test extends Properties("Index") {
 
     new doc.model.IndexModelFactory
   }
-
+  
   def createIndex(path: String): Option[Index] = {
     val maybeModel = {
       //val stream = new java.io.ByteArrayOutputStream
