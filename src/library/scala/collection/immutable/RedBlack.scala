@@ -186,7 +186,7 @@ abstract class RedBlack[A] {
       // else mkTree(isBlack, key, value, newLeft, newRight)
       iterator
       .dropWhile { case (key, _) => from exists (isSmaller(key, _)) }
-      .takeWhile { case (key, _) => until forall (isSmaller(_, key)) }
+      .takeWhile { case (key, _) => until forall (isSmaller(key, _)) }
       .foldLeft(Empty: Tree[B]) { case (tree, (key, value)) => tree.update(key, value) }
     }
     def first = if (left .isEmpty) key else left.first
