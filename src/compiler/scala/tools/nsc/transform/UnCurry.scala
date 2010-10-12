@@ -596,7 +596,8 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
 
         case Assign(Select(_, _), _) =>
           withNeedLift(true) { super.transform(tree) }
-        case Assign(lhs, _) if lhs.symbol.owner != currentMethod =>
+          
+        case Assign(lhs, _) if lhs.symbol.owner != currentMethod || lhs.symbol.hasFlag(LAZY | ACCESSOR) =>
           withNeedLift(true) { super.transform(tree) }
 
         case Try(block, catches, finalizer) =>
@@ -615,7 +616,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         case Template(_, _, _) =>
           withInConstructorFlag(0) { super.transform(tree) }
 
-        case _ => 
+        case _ =>
           val tree1 = super.transform(tree)
           if (isByNameRef(tree1)) {
             val tree2 = tree1 setType functionType(List(), tree1.tpe)
