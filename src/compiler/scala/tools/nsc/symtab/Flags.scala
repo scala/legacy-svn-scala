@@ -100,6 +100,16 @@ class Flags extends reflect.generic.Flags {
   final val notABSTRACT   = (ABSTRACT: Long) << AntiShift
   final val notOVERRIDE   = (OVERRIDE: Long) << AntiShift
   final val notMETHOD     = (METHOD: Long) << AntiShift
+  
+  final val notFlagMap = Map[Int, Long](
+    FINAL -> notFINAL,
+    PRIVATE -> notPRIVATE,
+    DEFERRED -> notDEFERRED,
+    PROTECTED -> notPROTECTED,
+    ABSTRACT -> notABSTRACT,
+    OVERRIDE -> notOVERRIDE,
+    METHOD -> notMETHOD
+  )
 
   // masks
   /** These flags can be set when class or module symbol is first created. */
