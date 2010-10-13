@@ -886,7 +886,7 @@ self: Analyzer =>
       case TypeRef(_, tsym, _) if (tsym.isAbstractType) =>
         implicitManifestOrOfExpectedType(pt.bounds.lo)
       case _ =>
-        searchImplicit(implicitsOfExpectedType, false)
+        searchImplicit(implicitsOfExpectedType, false) // shouldn't we pass `pt` to `implicitsOfExpectedType`, or is the recursive case for an abstract type really only meant for manifests?
     }
             
     /** The result of the implicit search:
@@ -903,7 +903,7 @@ self: Analyzer =>
 
       if (result == SearchFailure) {
         stopTimer(inscopeFailNanos, failstart)
-      } else {                                        
+      } else {
         stopTimer(inscopeSucceedNanos, succstart)
         incCounter(inscopeImplicitHits)
       }
@@ -915,7 +915,7 @@ self: Analyzer =>
 
         if (result == SearchFailure) {
           stopTimer(oftypeFailNanos, failstart)
-        } else {                                        
+        } else {
           stopTimer(oftypeSucceedNanos, succstart)
           incCounter(oftypeImplicitHits)
         }
