@@ -27,10 +27,10 @@ trait Map[A, B]
   override def empty: Map[A, B] = Map.empty
   
   /** The same map with a given default function */
-  def withDefault(d: A => B): Map[A, B] = new Map.WithDefault[A, B](this, d) 
+  def withDefault(d: A => B): mutable.Map[A, B] = new Map.WithDefault[A, B](this, d)
   
   /** The same map with a given default value */
-  def withDefaultValue(d: B): Map[A, B] = new Map.WithDefault[A, B](this, x => d)
+  def withDefaultValue(d: B): mutable.Map[A, B] = new Map.WithDefault[A, B](this, x => d)
   
   /** Return a read-only projection of this map.  !!! or just use an (immutable) MapProxy? 
   def readOnly : scala.collection.Map[A, B] = new scala.collection.Map[A, B] {
@@ -55,7 +55,7 @@ object Map extends MutableMapFactory[Map] {
   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), Map[A, B]] = new MapCanBuildFrom[A, B]
   
   def empty[A, B]: Map[A, B] = new HashMap[A, B]
-  
+
   class WithDefault[A, B](underlying: Map[A, B], d: A => B) extends collection.Map.WithDefault(underlying, d) with Map[A, B] {
     override def += (kv: (A, B)) = {underlying += kv; this}
     def -= (key: A) = {underlying -= key; this}
@@ -63,7 +63,11 @@ object Map extends MutableMapFactory[Map] {
     override def updated[B1 >: B](key: A, value: B1): WithDefault[A, B1] = new WithDefault[A, B1](underlying.updated[B1](key, value), d)
     override def + [B1 >: B](kv: (A, B1)): WithDefault[A, B1] = updated(kv._1, kv._2)
     override def - (key: A): WithDefault[A, B] = new WithDefault(underlying - key, d)
-  }
-  
-}
 
+    /** If these methods aren't overridden to thread through the underlying map,
+     *  successive calls to withDefault* have no effect.
+     */
+    override def withDefault(d: A => B): mutable.Map[A, B] = new WithDefault[A, B](underlying, d)
+    override def withDefaultValue(d: B): mutable.Map[A, B] = new WithDefault[A, B](underlying, x => d)
+  } 
+}
