@@ -71,7 +71,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
             }
           treeCopy.Template(tree, parents, self, stats)
         }
-          
+
         case _ => super.transform(tree)
       }
     }
