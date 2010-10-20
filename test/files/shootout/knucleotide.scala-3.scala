@@ -87,7 +87,7 @@ object knucleotide {
 }
 
 
-class HashBag[A] extends HashTable[A] {
+class HashBag[A] extends HashTable[A, Counter[A]] {
    protected type Entry = Counter[A]
    protected def entryKey(e: Entry) = e.key
    def iterator = entries
