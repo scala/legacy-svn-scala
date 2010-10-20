@@ -40,11 +40,11 @@ trait HashTable[A] {
    */
   protected def loadFactor: Int = 750 // corresponds to 75%
   protected final val loadFactorDenum = 1000;
-
+  
   /** The initial size of the hash table.
    */
   protected def initialSize: Int = 16
-
+  
   /** The initial threshold
    */
   protected def initialThreshold: Int = newThreshold(initialCapacity)
@@ -58,7 +58,7 @@ trait HashTable[A] {
   /** The number of mappings contained in this hash table.
    */
   @transient protected var tableSize: Int = 0
-
+  
   /** The next size value at which to resize (capacity * load factor).
    */
   @transient protected var threshold: Int = initialThreshold
@@ -236,8 +236,14 @@ trait HashTable[A] {
     h = h + (h << 4)
     h ^ (h >>> 10)
   }
-
-  protected final def index(hcode: Int) = improve(hcode) & (table.length - 1)
+  
+  // Note:
+  // we take the most significant bits of the hashcode, not the lower ones
+  // this is of crucial importance when populating the table in parallel
+  protected final def index(hcode: Int) = {
+    val ones = table.length - 1
+    (improve(hcode) >> (32 - java.lang.Integer.bitCount(ones))) & ones
+  }
 }
 
 private[collection] object HashTable {
