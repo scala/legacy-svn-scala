@@ -20,11 +20,14 @@ class WorkScheduler {
   def moreWork(): Boolean = synchronized {
     todo.nonEmpty || throwables.nonEmpty || interruptReqs.nonEmpty
   }
-
+  
   /** Called from server: get first action in todo list, and pop it off */
   def nextWorkItem(): Option[Action] = synchronized {
     if (todo.isEmpty) None else Some(todo.dequeue()) 
   }
+
+  def dequeueAll[T](f: Action => Option[T]): Seq[T] = 
+    todo.dequeueAll(a => f(a).isDefined).map(a => f(a).get)
 
   /** Called from server: return optional exception posted by client
    *  Reset to no exception.
