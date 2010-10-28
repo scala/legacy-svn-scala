@@ -31,7 +31,7 @@ self =>
       case "par" => this.parcoll = createParallel(size, parallelism)
       case _ =>
     }
-
+    
     def nameOfCollection = self.nameOfCollection
     def operators = self.operators
     def createSequential(sz: Int, p: Int) = self.createSequential(size, parallelism)
