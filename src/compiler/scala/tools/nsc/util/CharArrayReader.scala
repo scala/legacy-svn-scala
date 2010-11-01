@@ -98,9 +98,11 @@ abstract class CharArrayReader { self =>
       lineStartOffset = charOffset
     }
   }
-
+  
   /** A new reader that takes off at the current character position */
-  def lookaheadReader = new CharArrayReader {
+  def lookaheadReader = new CharArrayLookaheadReader
+
+  class CharArrayLookaheadReader extends CharArrayReader {
     val buf = self.buf
     charOffset = self.charOffset
     ch = self.ch
