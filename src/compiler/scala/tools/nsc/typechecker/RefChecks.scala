@@ -965,7 +965,7 @@ abstract class RefChecks extends InfoTransform {
               val ddef = 
                 atPhase(phase.next) {
                   localTyper.typed {
-                    gen.mkModuleAccessDef(factory, sym.tpe)
+                    gen.mkModuleAccessDef(factory, sym)
                   }
                 }
               transformTrees(List(cdef, ddef))
@@ -975,7 +975,7 @@ abstract class RefChecks extends InfoTransform {
           } else {
             def lazyNestedObjectTrees(transformedInfo: Boolean) = {
               val cdef = ClassDef(mods | MODULE, name, List(), impl)
-                .setPos(tree.pos) 
+                .setPos(tree.pos)
                 .setSymbol(if (!transformedInfo) sym.moduleClass else sym.lazyAccessor) 
                 .setType(NoType)
               
