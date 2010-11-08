@@ -31,7 +31,7 @@ trait Seq[+A] extends PartialFunction[Int, A]
 object Seq extends SeqFactory[Seq] {
 
   private[collection] val hashSeed = "Seq".hashCode
-   
+  
   /** $genericCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Seq[A]] = new GenericCanBuildFrom[A]
 
