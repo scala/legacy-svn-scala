@@ -1896,6 +1896,10 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
 
     /** The classfile from which this class was loaded. Maybe null. */
     var classFile: AbstractFile = null;
+
+    /** The original owner of this class. Used by the backend to generate
+     *  EnclosingMethod attributes. */
+    var originalOwner: Symbol = initOwner
     
     private var source: AbstractFile = null
     override def sourceFile =
