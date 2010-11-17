@@ -18,7 +18,31 @@ import annotation.tailrec
  *  list. Type variable `A` refers to the element type of the
  *  list, type variable `This` is used to model self types of
  *  linked lists.
+ *  
+ *  If the list is empty `next` must be set to `this`. The last node in every
+ *  mutable linked list is empty.
  *
+ *  Examples (`_` represents no value):
+ *  
+ *  {{{
+ *  
+ *     Empty:
+ *     
+ *     [ _ ] --,
+ *     [   ] <-`
+ *     
+ *     Single element:
+ *     
+ *     [ x ] --> [ _ ] --,
+ *               [   ] <-`
+ *     
+ *     More elements:
+ *     
+ *     [ x ] --> [ y ] --> [ z ] --> [ _ ] --,
+ *                                   [   ] <-`
+ *     
+ *  }}}
+ *  
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
  *  @version 1.0, 08/07/2003

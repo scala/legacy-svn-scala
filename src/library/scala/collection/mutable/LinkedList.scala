@@ -15,7 +15,7 @@ import generic._
 
 /** This class implements single linked lists where both the head (`elem`)
  *  and the tail (`next`) are mutable.
- *  
+ *
  *  @author Matthias Zenger
  *  @author Martin Odersky
  *  @version 2.8
