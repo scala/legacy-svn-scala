@@ -35,14 +35,14 @@ class MutableList[A] extends LinearSeq[A]
   protected var first0: LinkedList[A] = new LinkedList[A]
   protected var last0: LinkedList[A] = _ // undefined if first0.isEmpty 
   protected var len: Int = 0
-
+  
   /** Is the list empty?
    */
   override def isEmpty = len == 0
 
   /** Returns the first element in this list
    */
-  override def head: A = first0.head
+  override def head: A = if (nonEmpty) first0.head else throw new NoSuchElementException
 
   /** Returns the rest of this list
    */
@@ -134,3 +134,12 @@ class MutableList[A] extends LinearSeq[A]
 
   def result = this
 }
+
+
+object MutableList {
+  
+}
+
+
+
+
