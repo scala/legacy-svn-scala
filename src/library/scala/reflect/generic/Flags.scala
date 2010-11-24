@@ -77,6 +77,8 @@ class Flags extends ModifierFlags {
   final val LOCKED        = 0x8000000000L // temporary flag to catch cyclic dependencies
   final val SPECIALIZED   = 0x10000000000L// symbol is a generated specialized member
   final val VBRIDGE       = 0x40000000000L// symbol is a varargs bridge
+  
+  final val VARARGS       = 0x80000000000L// symbol is a Java-style varargs method
 
   // pickling and unpickling of flags
 
