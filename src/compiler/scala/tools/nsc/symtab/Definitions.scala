@@ -800,12 +800,18 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     /** Is symbol a value class? */
     def isValueClass(sym: Symbol): Boolean =
       (sym eq UnitClass) || (boxedClass contains sym)
+    
+    /** If symbol is a value class or a boxed value class, return the value class: otherwise NoSymbol. */
+    def unboxedValueClass(sym: Symbol): Symbol =
+      if (isValueClass(sym)) sym
+      else if (sym == BoxedUnitClass) sym
+      else boxedClass.map(_.swap).getOrElse(sym, NoSymbol)
 
     /** Is symbol a numeric value class? */
     def isNumericValueClass(sym: Symbol): Boolean =
       numericWeight contains sym
 
-    /** Is symbol a numeric value class? */
+    /** Is type's symbol a numeric value class? */
     def isNumericValueType(tp: Type): Boolean = tp match {
       case TypeRef(_, sym, _) => isNumericValueClass(sym)
       case _ => false
