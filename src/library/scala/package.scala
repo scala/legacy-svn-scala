@@ -27,6 +27,9 @@ package object scala {
   type NoSuchElementException          = java.util.NoSuchElementException
   type NumberFormatException           = java.lang.NumberFormatException
   type AbstractMethodError             = java.lang.AbstractMethodError
+
+  @deprecated("instead of `@serializable class C`, use `class C extends Serializable`")
+  type serializable = annotation.serializable
   
   type TraversableOnce[+A] = scala.collection.TraversableOnce[A]
 

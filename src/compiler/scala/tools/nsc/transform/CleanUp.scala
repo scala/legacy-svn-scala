@@ -560,19 +560,6 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         val newTry      = Try(newBlock, newCatches, super.transform(finalizer))
                 
         typedWithPos(theTry.pos)(BLOCK(VAL(tempVar) === EmptyTree, newTry, Ident(tempVar)))
-        
-      /* Adds @serializable annotation to anonymous function classes */
-      case cdef @ ClassDef(mods, name, tparams, impl) =>
-        /** XXX This check is overly specific and bound to break if it hasn't already. */
-        if (settings.target.value == "jvm-1.5") {
-          val sym = cdef.symbol
-          // is this an anonymous function class?
-          if (sym.isAnonymousFunction && !sym.isSerializable) {
-            sym.setSerializable()
-            sym addAnnotation serialVersionUIDAnnotation
-          }
-        }
-        super.transform(tree)
 
      /*
       * This transformation should identify Scala symbol invocations in the tree and replace them
