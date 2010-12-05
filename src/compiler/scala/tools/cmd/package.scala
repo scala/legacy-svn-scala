@@ -11,9 +11,8 @@ package object cmd {
   private[cmd] def debug(msg: String) = println(msg)
   
   def runAndExit(body: => Unit): Nothing = {
-    body    
-    System exit 0
-    error("unreachable")
+    body
+    system.exit(0)
   }
   
   def toOpt(s: String)              = if (s startsWith "--") s else "--" + s
