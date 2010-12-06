@@ -11,7 +11,7 @@
 package scala.swing
 
 import event._
-import javax.swing.{JList, JComponent, JComboBox, JTextField, ComboBoxModel, AbstractListModel, ListCellRenderer}
+import javax.swing.{ JComponent, JComboBox, JTextField, ComboBoxModel, AbstractListModel, ListCellRenderer, DefaultComboBoxModel }
 import java.awt.event.ActionListener
 
 object ComboBox {
@@ -121,9 +121,19 @@ object ComboBox {
   implicit def doubleEditor(c: ComboBox[Double]): Editor[Double] = new BuiltInEditor(c)(s => s.toDouble, s => s.toString)
   
   def newConstantModel[A](items: Seq[A]): ComboBoxModel = {
-    new AbstractListModel with ComboBoxModel {
+    // [scalacfork]  anonymous class $anon inherits different type instances of trait ListModel:
+    // [scalacfork] javax.swing.ListModel and javax.swing.ListModel[AnyRef]
+    // [scalacfork]     new AbstractListModel[AnyRef] with ComboBoxModel {
+    // [scalacfork]         ^
+    //
+    // [scalacfork]  anonymous class $anon inherits different type instances of trait ListModel:
+    // [scalacfork] javax.swing.ListModel and javax.swing.ListModel[Nothing]
+    // [scalacfork]     new AbstractListModel with ComboBoxModel {
+    // [scalacfork]         ^
+    
+    new AbstractListModel[A] with ComboBoxModel {
       private var selected: A = if (items.isEmpty) null.asInstanceOf[A] else items(0)
-      def getSelectedItem: AnyRef = selected.asInstanceOf[AnyRef]
+      def getSelectedItem = selected.asInstanceOf[AnyRef]
       def setSelectedItem(a: Any) { 
         if ((selected != null && selected != a) ||
             selected == null && a != null) {
@@ -131,7 +141,7 @@ object ComboBox {
           fireContentsChanged(this, -1, -1)
         }
       } 
-      def getElementAt(n: Int) = items(n).asInstanceOf[AnyRef]
+      def getElementAt(n: Int) = items(n).asInstanceOf[A]
       def getSize = items.size
     }
   }
@@ -184,7 +194,7 @@ class ComboBox[A](items: Seq[A]) extends Component with Publisher {
    * of the component to its own defaults _after_ the renderer has been 
    * configured. That's Swing's principle of most suprise.
    */
-  def renderer: ListView.Renderer[A] = ListView.Renderer.wrap(peer.getRenderer)
+  def renderer: ListView.Renderer[A] = ListView.Renderer.wrap(peer.getRenderer.asInstanceOf[ListCellRenderer[A]])
   def renderer_=(r: ListView.Renderer[A]) { peer.setRenderer(r.peer) }
   
   /* XXX: currently not safe to expose:
