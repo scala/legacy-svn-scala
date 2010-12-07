@@ -50,6 +50,19 @@ abstract class Reporter {
       source = oldSource 
     }
   }
+  
+  /** Whether very long lines can be truncated.  This exists so important
+   *  debugging information (like printing the classpath) is not rendered
+   *  invisible due to the max message length.
+   */
+  private var _truncationOK: Boolean = true
+  def truncationOK = _truncationOK
+  def withoutTruncating[T](body: => T): T = {
+    val saved = _truncationOK
+    _truncationOK = false
+    try body
+    finally _truncationOK = saved
+  }
 
   def    info(pos: Position, msg: String, force: Boolean) { info0(pos, msg,    INFO, force) }
   def warning(pos: Position, msg: String                ) { info0(pos, msg, WARNING, false) }
