@@ -157,6 +157,10 @@ trait Symbols { self: Universe =>
     /** Is this symbol an effective root for fullname string?
      */
     def isEffectiveRoot = isRoot || isEmptyPackageClass
+    
+    /** If this is NoSymbol, evaluate the argument: otherwise, this.
+     */
+    def orElse[T](alt: => Symbol): Symbol = if (this ne NoSymbol) this else alt
 
     // creators 
     
