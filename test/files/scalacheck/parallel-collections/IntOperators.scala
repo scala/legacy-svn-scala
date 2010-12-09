@@ -26,9 +26,9 @@ trait IntOperators extends Operators[Int] {
   def filterPredicates = List(
     _ % 2 == 0, _ % 3 == 0,
     _ % 4 != 0, _ % 17 != 0,
-    n => n > 50 && n < 100, 
+    n => n > 50 && n < 100,
     _ >= 0, _ < 0, _ == 99,
-    _ > 500, _ > 5000, _ > 50000, 
+    _ > 500, _ > 5000, _ > 50000,
     _ < 500, _ < 50, _ < -50, _ < -5e5,
     x => true, x => false,
     x => x % 53 == 0 && x % 17 == 0
@@ -49,7 +49,8 @@ trait IntOperators extends Operators[Int] {
   def foldArguments = List(
     (0, _ + _),
     (1, _ * _),
-    (Int.MinValue, math.max(_, _))
+    (Int.MinValue, math.max(_, _)),
+    (Int.MaxValue, math.min(_, _))
   )
   def addAllTraversables = List(
     List[Int](),

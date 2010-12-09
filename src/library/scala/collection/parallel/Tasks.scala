@@ -341,7 +341,7 @@ trait ForkJoinTasks extends Tasks with HavingForkJoinPool {
   var environment: AnyRef = ForkJoinTasks.defaultForkJoinPool
   
   /** Executes a task and does not wait for it to finish - instead returns a future.
-   *
+   *  
    *  $fjdispatch
    */
   def execute[R, Tp](task: Task[R, Tp]): () => R = {
