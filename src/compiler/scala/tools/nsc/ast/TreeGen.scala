@@ -27,7 +27,7 @@ abstract class TreeGen {
   def scalaScalaObjectConstr      = scalaDot(tpnme.ScalaObject)
   def productConstr               = scalaDot(tpnme.Product)
   def serializableConstr          = scalaDot(tpnme.Serializable)
-  
+
   private def isRootOrEmptyPackageClass(s: Symbol) = s.isRoot || s.isEmptyPackageClass
   
   def scalaFunctionConstr(argtpes: List[Tree], restpe: Tree, abstractFun: Boolean = false): Tree = {
