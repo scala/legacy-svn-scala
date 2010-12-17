@@ -98,8 +98,6 @@ sealed abstract class List[+A] extends LinearSeq[A]
   /** Builds a new list by applying a function to all elements of this list.
    *  Like `xs map f`, but returns `xs` unchanged if function
    *  `f` maps all elements to themselves (wrt eq).
-   *
-   *  Note: Unlike `map`, `mapConserve` is not tail-recursive.
    * 
    *  @param f      the function to apply to each element.
    *  @tparam B     the element type of the returned collection.
@@ -118,7 +116,7 @@ sealed abstract class List[+A] extends LinearSeq[A]
         val head0 = pending.head
         val head1 = f(head0)
 
-        if (head1 == head0)
+        if (head1 eq head0.asInstanceOf[AnyRef])
           loop(mapped, unchanged, pending.tail)
         else {
           val b = if (mapped eq null) new ListBuffer[B] else mapped
