@@ -35,7 +35,7 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with ReflectiveProj
   lazy val buildMsil = libs.buildMsil.describedAs(buildMislTaskDescription)
   lazy val newMsil = libs.newMsil.describedAs(newMsilTaskDescription)
   lazy val partest = quick.externalPartest.describedAs(partestTaskDescription)
-  lazy val stabilityTest = strap.stabilityTest.describedAs(stabilityTestTaskDescription) 
+  lazy val stabilityTest = strap.stabilityTest.describedAs(stabilityTestTaskDescription)
   
   // Top level variables
 
@@ -225,7 +225,7 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with ReflectiveProj
 
 
   }
-
+  
 
   /**
    * Definition of what is specific to the strap layer
