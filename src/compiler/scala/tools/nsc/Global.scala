@@ -662,11 +662,13 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     var isDefined = false
     /** To be initialized from firstPhase. */
     private var terminalPhase: Phase = NoPhase
-    
+  
     if (settings.YprofileRes.value) {
       System.gc();
-      println("Saving snapshot")
+      print("Saving snapshot..")
       profiler.captureSnapshot()
+      println("[saved]")
+      specializeTypes.printSpecStats()
     }
 
     /** Whether compilation should stop at or skip the phase with given name. */
