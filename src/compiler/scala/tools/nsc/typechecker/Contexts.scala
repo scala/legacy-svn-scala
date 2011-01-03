@@ -137,6 +137,13 @@ trait Contexts { self: Analyzer =>
       undetparams = List()
       tparams
     }
+    
+    def withImplicitsDisabled[T](op: => T): T = {
+      val saved = implicitsEnabled
+      implicitsEnabled = false
+      try op
+      finally implicitsEnabled = saved
+    }
 
     /**
      *  @param unit    ...
