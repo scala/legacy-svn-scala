@@ -4,7 +4,7 @@ package interactive
 import util.{SourceFile, BatchSourceFile}
 import io.{AbstractFile, PlainFile}
 
-import util.{Position, RangePosition, NoPosition, OffsetPosition, TransparentPosition}
+import util.{Position, RangePosition, NoPosition, OffsetPosition, TransparentPosition, EmptyAction}
 import io.{Pickler, CondPickler}
 import io.Pickler._
 import collection.mutable
@@ -108,7 +108,12 @@ trait Picklers { self: Global =>
     pkl[SourceFile]
       .wrapped { new AskToDoFirstItem(_) } { _.source }
       .asClass (classOf[AskToDoFirstItem])
+
+  implicit def emptyAction: CondPickler[EmptyAction] = 
+    pkl[Unit]
+      .wrapped { _ => new EmptyAction } { _ => () }
+      .asClass (classOf[EmptyAction])
       
   implicit def action: Pickler[() => Unit] = 
-    reloadItem | askTypeAtItem | askTypeItem | askLastTypeItem | askTypeCompletionItem | askScopeCompletionItem | askToDoFirstItem
+    reloadItem | askTypeAtItem | askTypeItem | askLastTypeItem | askTypeCompletionItem | askScopeCompletionItem | askToDoFirstItem | emptyAction
 }
