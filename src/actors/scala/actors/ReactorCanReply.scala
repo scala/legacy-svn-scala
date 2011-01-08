@@ -17,8 +17,8 @@ package scala.actors
  */
 private[actors] trait ReactorCanReply extends CanReply[Any, Any] {
   _: ReplyReactor =>
-
-  override type Future[+P] = scala.actors.Future[P]
+  
+  type Future[+P] = scala.actors.Future[P]
 
   def !?(msg: Any): Any =
     (this !! msg)()
