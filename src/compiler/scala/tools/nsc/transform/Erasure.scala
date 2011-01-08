@@ -161,7 +161,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
         case mt @ MethodType(params, restpe) =>
           MethodType(
             cloneSymbols(params) map (p => p.setInfo(apply(p.tpe))),
-            if (restpe.typeSymbol == UnitClass)
+            if (restpe.typeSymbol == UnitClass) 
               erasedTypeRef(UnitClass) 
             else if (settings.YdepMethTpes.value)
               // this replaces each typeref that refers to an argument by the type `p.tpe` of the actual argument p (p in params)
@@ -449,10 +449,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
       case _ =>
         typedPos(tree.pos)(tree.tpe.typeSymbol match {
           case UnitClass  =>
-            // Although lazy vals are pure expressions,
-            // we should still call them in bridge methods
-            if (treeInfo.isPureExpr(tree) && (tree.symbol == null || !tree.symbol.isLazy))
-              REF(BoxedUnit_UNIT)
+            if (treeInfo isPureExpr tree) REF(BoxedUnit_UNIT)
             else BLOCK(tree, REF(BoxedUnit_UNIT))
           case x          =>
             assert(x != ArrayClass)
@@ -821,15 +818,15 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
       while (opc.hasNext) {
         val member = opc.overriding
         val other = opc.overridden
-        //Console.println("bridge? " + member + ":" + member.tpe + member.locationString + " to " + other + ":" + other.tpe + other.locationString)//DEBUG
+        //Console.println("bridge? " + member + ":" + member.tpe + member.locationString + " to " + other + ":" + other.tpe + other.locationString);//DEBUG
         if (atPhase(currentRun.explicitouterPhase)(!member.isDeferred)) {
-          val otpe = erasure(other.tpe)
+          val otpe = erasure(other.tpe);
           val bridgeNeeded = atPhase(phase.next) (
             !(other.tpe =:= member.tpe) &&
             !(deconstMap(other.tpe) =:= deconstMap(member.tpe)) &&
             { var e = bridgesScope.lookupEntry(member.name)
               while ((e ne null) && !((e.sym.tpe =:= otpe) && (bridgeTarget(e.sym) == member)))
-                e = bridgesScope.lookupNextEntry(e)
+                e = bridgesScope.lookupNextEntry(e);
               (e eq null)
             }
           );
@@ -855,7 +852,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
                     DefDef(bridge,
                       member.tpe match {
                         case MethodType(List(), ConstantType(c)) => Literal(c)
-                        case _ =>
+                        case _ => 
                           (((Select(This(owner), member): Tree) /: bridge.paramss)
                              ((fun, vparams) => Apply(fun, vparams map Ident)))
                       });
@@ -863,7 +860,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
                     log("generating bridge from " + other + "(" + Flags.flagsToString(bridge.flags)  + ")" + ":" + otpe + other.locationString + " to " + member + ":" + erasure(member.tpe) + member.locationString + " =\n " + bridgeDef);
                   bridgeDef
                 }
-              } :: bridges
+              } :: bridges;
           }
         }
         opc.next
