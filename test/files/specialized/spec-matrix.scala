@@ -29,7 +29,7 @@ object Test {
   def main(args: Array[String]) {
     val m = randomMatrix(200, 100)
     val n = randomMatrix(100, 200)
-
+    
     mult(m, n)
     println("*")
     
