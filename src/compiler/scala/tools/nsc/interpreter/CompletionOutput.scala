@@ -77,11 +77,11 @@ trait CompletionOutput {
 
     def methodString() =
       method.keyString + " " + method.nameString + (method.info.normalize match {
-        case PolyType(Nil, resType)             => ": " + typeToString(resType) // nullary method
+        case NullaryMethodType(resType)         => ": " + typeToString(resType)
         case PolyType(tparams, resType)         => tparamsString(tparams) + typeToString(resType)
         case mt @ MethodType(_, _)              => methodTypeToString(mt)
         case x                                  => 
-          DBG("methodString(): %s / %s".format(x.getClass, x))            
+          DBG("methodString(): %s / %s".format(x.getClass, x))
           x.toString
       })
   }  

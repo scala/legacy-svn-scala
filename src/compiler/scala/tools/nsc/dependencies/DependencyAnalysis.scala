@@ -227,13 +227,17 @@ trait DependencyAnalysis extends SubComponent with Files {
                   updateReferences(t.typeSymbolDirect.fullName)
                   checkType(t.typeSymbolDirect.info)
               }
-              updateReferences(t.typeSymbol.fullName)            
+              updateReferences(t.typeSymbol.fullName)
               for (tp <- t.args) checkType(tp)
             
             case t: PolyType   =>
               checkType(t.resultType)
               updateReferences(t.typeSymbol.fullName)
-            
+
+            case t: NullaryMethodType =>
+              checkType(t.resultType)
+              updateReferences(t.typeSymbol.fullName)
+
             case t             =>
               updateReferences(t.typeSymbol.fullName)
           }
