@@ -241,10 +241,10 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       treatedClassInfos(clazz) = clazz.info
 
       assert(!clazz.isTrait, clazz)
-      assert(!clazz.info.parents.isEmpty, clazz)
+      assert(clazz.info.parents.nonEmpty, clazz)
 
       // first complete the superclass with mixed in members
-      addMixedinMembers(clazz.superClass,unit)
+      addMixedinMembers(clazz.superClass, unit)
 
       //Console.println("adding members of " + clazz.info.baseClasses.tail.takeWhile(superclazz !=) + " to " + clazz);//DEBUG
 
@@ -485,13 +485,17 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
      *   - Remove all fields in implementation classes
      */
     private def preTransform(tree: Tree): Tree = {
-      val sym = tree.symbol
+      val sym = tree.symbol      
       tree match {
         case Template(parents, self, body) =>
           localTyper = erasure.newTyper(rootContext.make(tree, currentOwner))
           atPhase(phase.next)(currentOwner.owner.info)//todo: needed?
-          if (!currentOwner.isTrait) addMixedinMembers(currentOwner,unit)
-          else if (currentOwner hasFlag lateINTERFACE) addLateInterfaceMembers(currentOwner)
+          
+          if (!currentOwner.isTrait && !isValueClass(currentOwner))
+            addMixedinMembers(currentOwner, unit)
+          else if (currentOwner hasFlag lateINTERFACE)
+            addLateInterfaceMembers(currentOwner)
+            
           tree
         case DefDef(mods, name, tparams, List(vparams), tpt, rhs) =>
           if (currentOwner.isImplClass) {

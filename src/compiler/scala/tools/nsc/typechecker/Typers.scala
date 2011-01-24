@@ -1148,10 +1148,11 @@ trait Typers extends Modes {
             error(parent.pos, "illegal inheritance from final "+psym)
           } 
           if (psym.isSealed && !phase.erasedTypes) {
-            if (context.unit.source.file != psym.sourceFile)
-              error(parent.pos, "illegal inheritance from sealed "+psym)
-            else
+            // AnyVal is sealed, but we have to let the value classes through manually
+            if (context.unit.source.file == psym.sourceFile || isValueClass(context.owner))
               psym addChild context.owner
+            else
+              error(parent.pos, "illegal inheritance from sealed "+psym)
           }
           if (!(selfType <:< parent.tpe.typeOfThis) && 
               !phase.erasedTypes &&     
@@ -1294,8 +1295,9 @@ trait Typers extends Modes {
 
         val getter = if (isDeferred) value else value.getter(value.owner)
         assert(getter != NoSymbol, stat)
-        if (getter.isOverloaded)
+        if (getter.isOverloaded) 
           error(getter.pos, getter+" is defined twice")
+
         getter.setAnnotations(memberAnnots(allAnnots, GetterTargetClass))
 
         if (value.isLazy) List(stat)
@@ -2072,9 +2074,9 @@ trait Typers extends Modes {
                     (e.sym.isType || inBlock || (e.sym.tpe matches e1.sym.tpe)))
                   // default getters are defined twice when multiple overloads have defaults. an
                   // error for this is issued in RefChecks.checkDefaultsInOverloaded
-                  if (!e.sym.isErroneous && !e1.sym.isErroneous && !e.sym.hasDefaultFlag) {
+                  if (!e.sym.isErroneous && !e1.sym.isErroneous && !e.sym.hasDefaultFlag) {                    
                     error(e.sym.pos, e1.sym+" is defined twice"+
-                          {if(!settings.debug.value) "" else " in "+unit.toString})
+                    {if(!settings.debug.value) "" else " in "+unit.toString})
                     scope.unlink(e1) // need to unlink to avoid later problems with lub; see #2779
                   }
                 e1 = scope.lookupNextEntry(e1)
@@ -3432,6 +3434,8 @@ trait Typers extends Modes {
        *  @return     ...
        */
       def typedSelect(qual: Tree, name: Name): Tree = {
+        
+        
         val sym =
           if (tree.symbol != NoSymbol) {
             if (phase.erasedTypes && qual.isInstanceOf[Super])
@@ -3473,7 +3477,7 @@ trait Typers extends Modes {
           if (qual1 ne qual) return typed(treeCopy.Select(tree, qual1, name), mode, pt)
         }
         
-        if (!reallyExists(sym)) {
+        if (!reallyExists(sym)) {          
           if (context.owner.toplevelClass.isJavaDefined && name.isTypeName) {
             val tree1 = atPos(tree.pos) { gen.convertToSelectFromType(qual, name)  }
             if (tree1 != EmptyTree) return typed1(tree1, mode, pt)
