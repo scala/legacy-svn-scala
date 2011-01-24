@@ -315,6 +315,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
       "-Dpartest.output="+outDir.getAbsolutePath,
       "-Dpartest.lib="+LATEST_LIB,
       "-Dpartest.cwd="+outDir.getParent,
+      "-Dpartest.testname="+fileBase,
       "-Djavacmd="+JAVACMD,
       "-Djavaccmd="+javacCmd,
       "-Duser.language=en -Duser.country=US"
@@ -540,7 +541,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
         execTest(outDir, logFile, PathSettings.srcSpecLib.toString)
         diffCheck(compareOutput(dir, logFile))
       })
-    
+
     def processSingleFile(file: File): LogContext = kind match {
       case "scalacheck" =>
         val succFn: (File, File) => Boolean = { (logFile, outDir) =>
@@ -592,6 +593,9 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
       
       case "specialized" =>
         runSpecializedTest(file)
+
+      case "presentation" =>
+        runJvmTest(file) // for the moment, it's exactly the same as for a run test
       
       case "buildmanager" =>
         val logFile = createLogFile(file)
