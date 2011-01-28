@@ -51,7 +51,14 @@ trait CompilerControl { self: Global =>
    */
   def getUnitOf(s: SourceFile): Option[RichCompilationUnit] = getUnit(s)
   
- /** The compilation unit corresponding to a source file
+  /** Run operation `op` on a compilation unit assocuated with given `source`.
+   *  If source has a loaded compilation unit, this one is passed to `op`.
+   *  Otherwise a new compilation unit is created, but not added to the set of loaded units.
+   */
+  def onUnitOf[T](source: SourceFile)(op: RichCompilationUnit => T): T =
+    op(unitOfFile.getOrElse(source.file, new RichCompilationUnit(source)))
+
+  /** The compilation unit corresponding to a source file
    *  if it does not yet exist create a new one atomically
    *  Note: We want to get roid of this operation as it messes compiler invariants.
    */
@@ -193,13 +200,17 @@ trait CompilerControl { self: Global =>
   /** Returns parse tree for source `source`. No symbols are entered. Syntax errors are reported.
    */
   def askParse(source: SourceFile, response: Response[Tree]) = respond(response) {
+    parseTree(source)
+  }
+  
+  def parseTree(source: SourceFile): Tree = ask { () =>
     getUnit(source) match { 
       case Some(unit) if unit.status >= JustParsed =>
         unit.body
       case _ =>
         new UnitParser(new CompilationUnit(source)).parse()
     }
-  }  
+  }
     
   /** Asks for a computation to be done quickly on the presentation compiler thread */
   def ask[A](op: () => A): A = scheduler doQuickly op
