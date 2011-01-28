@@ -12,12 +12,16 @@ import scala.util.control.Exception._
 import InteractiveReader._
 
 /** Reads lines from an input stream */
-trait InteractiveReader {
-  
-  protected def readOneLine(prompt: String): String
+trait InteractiveReader {  
   val interactive: Boolean
-  def init(): Unit = ()
-  def reset(): Unit = ()
+  protected def readOneLine(prompt: String): String
+  
+  def history: History
+  def completion: Completion
+  
+  def init(): Unit
+  def reset(): Unit
+  
   def redrawLine(): Unit = ()
   def currentLine = ""    // the current buffer contents, if available
   
@@ -29,32 +33,22 @@ trait InteractiveReader {
     }
     catching(handler) { readOneLine(prompt) }
   }
-  
-  // override if history is available
-  def history: Option[History] = None
-  def historyList = history map (_.asList) getOrElse Nil
-  
-  // override if completion is available
-  def completion: Option[Completion] = None
-    
+
   // hack necessary for OSX jvm suspension because read calls are not restarted after SIGTSTP
   private def restartSystemCall(e: Exception): Boolean =
     Properties.isMac && (e.getMessage == msgEINTR)
 }
 
 object InteractiveReader {
-  val msgEINTR = "Interrupted system call"  
-  def createDefault(): InteractiveReader = createDefault(null)
-  
-  /** Create an interactive reader.  Uses <code>JLineReader</code> if the
-   *  library is available, but otherwise uses a <code>SimpleReader</code>. 
-   */
-  def createDefault(interpreter: Interpreter): InteractiveReader =
-    try new JLineReader(interpreter)
-    catch {
-      case e @ (_: Exception | _: NoClassDefFoundError) =>
-        // println("Failed to create JLineReader(%s): %s".format(interpreter, e))
-        new SimpleReader
-    }
-}
+  val msgEINTR = "Interrupted system call"
 
+  def apply(): InteractiveReader = new SimpleReader
+  def apply(repl: Interpreter): InteractiveReader = apply(Completion(repl))
+  def apply(comp: Completion): InteractiveReader = {
+    try new JLineReader(comp)
+    catch { case e @ (_: Exception | _: NoClassDefFoundError) => apply() }
+  }
+  
+  @deprecated("Use `apply` instead") def createDefault(repl: Interpreter): InteractiveReader = apply(repl)
+  @deprecated("Use `apply` instead") def createDefault(comp: Completion): InteractiveReader = apply(comp)
+}
