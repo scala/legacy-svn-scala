@@ -196,6 +196,12 @@ class IMain(val settings: Settings, out: PrintWriter) {
   /** whether to bind the lastException variable */
   private var bindLastException = true
   
+  /** A string representing code to be wrapped around all lines. */
+  private var _executionWrapper: String = ""
+  def executionWrapper = _executionWrapper
+  def setExecutionWrapper(code: String) = _executionWrapper = code
+  def clearExecutionWrapper() = _executionWrapper = ""
+  
   /** Temporarily stop binding lastException */
   def withoutBindingLastException[T](operation: => T): T = {
     val wasBinding = bindLastException
@@ -268,6 +274,15 @@ class IMain(val settings: Settings, out: PrintWriter) {
   private def allHandlers       = prevRequests.toList flatMap (_.handlers)
   private def allReqAndHandlers = prevRequests.toList flatMap (req => req.handlers map (req -> _))
   
+  def pathToTerm(id: String): String = {
+    val name = id.toTermName
+    if (boundNameMap contains name) {
+      val req = boundNameMap(name)
+      req.fullPath(name)
+    }
+    else id
+  }
+
   def printAllTypeOf = {
     prevRequests foreach { req =>
       req.typeOf foreach { case (k, v) => Console.println(k + " => " + v) }
@@ -924,10 +939,10 @@ class IMain(val settings: Settings, out: PrintWriter) {
       val preamble = """
       |object %s {
       |  %s
-      |  val scala_repl_result: String = {
+      |  val scala_repl_result: String = %s {
       |    %s
       |    (""
-      """.stripMargin.format(resultObjectName, valueExtractor, objectName + accessPath)
+      """.stripMargin.format(resultObjectName, valueExtractor, executionWrapper, objectName + accessPath)
       
       val postamble = """
       |    )
