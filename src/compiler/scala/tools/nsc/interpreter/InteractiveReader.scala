@@ -13,11 +13,12 @@ import InteractiveReader._
 import Properties.isMac
 
 /** Reads lines from an input stream */
-trait InteractiveReader {  
+trait InteractiveReader {
   val interactive: Boolean
   
   def history: History
   def completion: Completion
+  def keyBindings: List[KeyBinding]
 
   def init(): Unit
   def reset(): Unit
