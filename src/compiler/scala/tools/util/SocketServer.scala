@@ -12,13 +12,7 @@ package scala.tools.util
 import java.io.{ PrintWriter, BufferedOutputStream, BufferedReader, InputStreamReader, IOException }
 import java.net.{ Socket, ServerSocket, SocketException, SocketTimeoutException }
 
-object SocketServer
-{
-  // After 30 idle minutes, politely exit.
-  // Should the port file disappear, and the clients
-  // therefore unable to contact this server instance,
-  // the process will just eventually terminate by itself.
-  val IdleTimeout = 1800000
+object SocketServer {
   val BufferSize  = 10240
   
   def bufferedReader(s: Socket) = new BufferedReader(new InputStreamReader(s.getInputStream()))
@@ -32,8 +26,19 @@ import SocketServer._
  *  @author  Martin Odersky
  *  @version 1.0
  */
-abstract class SocketServer
-{
+abstract class SocketServer {
+  // After some number of idle minutes, politely exit.
+  // Should the port file disappear, and the clients
+  // therefore unable to contact this server instance,
+  // the process will just eventually terminate by itself.
+  def fscIdleMinutes = {
+    sys.props("scala.fsc.idle.minutes") match {
+      case null   => 30
+      case str    => try str.toInt catch { case _: Exception => 30 }
+    }
+  }
+  def fscIdleMillis = fscIdleMinutes * 60 * 1000
+
   def shutDown: Boolean
   def session()
 
@@ -59,7 +64,7 @@ abstract class SocketServer
     catch { case e: IOException => fatal("Could not listen on any port; exiting.") }
     
   val port: Int = serverSocket.getLocalPort()
-  
+
   // @todo: this is going to be a prime candidate for ARM
   def doSession(clientSocket: Socket) = {
     out = new PrintWriter(clientSocket.getOutputStream(), true)
@@ -72,12 +77,12 @@ abstract class SocketServer
     out.close()
     in.close()
   }
-
+  
   def run() {
     def fail(s: String) = fatal(s format port)
-    
-    try serverSocket setSoTimeout IdleTimeout catch {
-      case e: SocketException => fail("Could not set timeout on port: %d; exiting.")
+    Console.println("Setting timeout to " + fscIdleMillis)
+    try serverSocket setSoTimeout fscIdleMillis catch {
+      case e: SocketException => fatal("Could not set timeout on server socket; exiting.")
     }
     
     try {
@@ -94,6 +99,6 @@ abstract class SocketServer
         warn("Timeout elapsed with no requests from clients on port %d; exiting" format port)
         timeout()
     }
-    serverSocket.close()
+    finally serverSocket.close()
   }
 }
