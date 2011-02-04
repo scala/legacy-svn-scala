@@ -154,7 +154,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
     override def completions(verbosity: Int) = intp.unqualifiedIds ++ List("classOf") //, "_root_")
     // now we use the compiler for everything.
     override def follow(id: String) = {
-      if (completions(0) contains id) {        
+      if (completions(0) contains id) {
         intp typeOfExpression id map { tpe =>
           intp runtimeClassAndTypeOfTerm id match {
             case Some((clazz, runtimeType)) =>
