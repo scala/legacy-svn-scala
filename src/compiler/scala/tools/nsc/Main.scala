@@ -109,11 +109,12 @@ object Main extends AnyRef with EvalLoop {
         }
       }
       catch {
-        case FatalError(msg)              =>
-          reporter.error(null, "fatal error: " + msg)
-        case ex if compiler.opt.richExes  =>
-          compiler.logThrowable(ex)
-          throw ex
+        case ex =>
+          compiler.logThrowable(ex)  
+          ex match {
+            case FatalError(msg)  => reporter.error(null, "fatal error: " + msg)
+            case _                => throw ex
+          }
       }
     }
   }
