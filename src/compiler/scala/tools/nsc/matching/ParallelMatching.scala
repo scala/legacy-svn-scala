@@ -841,7 +841,7 @@ trait ParallelMatching extends ast.TreeDSL
     final def condition(tpe: Type, scrut: Scrutinee, isBound: Boolean): Tree = {
       assert(scrut.isDefined)
       val cond = handleOuter(condition(tpe, scrut.id, isBound))
-    
+
       if (!needsOuterTest(tpe, scrut.tpe, owner)) cond
       else addOuterCondition(cond, tpe, scrut.id)
     }
@@ -878,7 +878,7 @@ trait ParallelMatching extends ast.TreeDSL
           case ConstantType(Constant(null)) if isRef  => scrutTree OBJ_EQ NULL
           case ConstantType(Constant(value))          => scrutTree MEMBER_== Literal(value)
           case SingleType(NoPrefix, sym)              => genEquals(sym)
-          case SingleType(pre, sym) if sym.isModule   => genEquals(sym)
+          case SingleType(pre, sym) if sym.isStable   => genEquals(sym)
           case ThisType(sym) if sym.isModule          => genEquals(sym)
           case _ if isMatchUnlessNull                 => scrutTree OBJ_NE NULL
           case _                                      => scrutTree IS tpe
