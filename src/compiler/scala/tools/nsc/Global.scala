@@ -125,6 +125,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   /** Called every time an AST node is successfully typechecked in typerPhase.
    */ 
   def signalDone(context: analyzer.Context, old: Tree, result: Tree) {}
+  
+  /** Called from parser, which signals hereby that a method definition has been parsed. */
+  def signalParseProgress(pos: Position) {}
 
   /** Register new context; called for every created context
    */
