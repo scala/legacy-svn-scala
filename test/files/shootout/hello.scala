@@ -4,7 +4,7 @@
    modified for Scala 2.x by Anthony Borla
 */
 
-object hello extends Application {
+object hello extends App {
   Console.println("hello world")
 }
 
