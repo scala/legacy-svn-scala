@@ -1639,15 +1639,17 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       if (variance == 1) "+"
       else if (variance == -1) "-"
       else ""
+    
+    def defaultFlagMask =
+      if (settings.debug.value) -1L
+      else if (owner.isRefinementClass) ExplicitFlags & ~OVERRIDE
+      else ExplicitFlags
+    
+    def defaultFlagString = hasFlagsToString(defaultFlagMask)
 
     /** String representation of symbol's definition */
     def defString: String = {
-      val mask =
-        if (settings.debug.value) -1L
-        else if (owner.isRefinementClass) ExplicitFlags & ~OVERRIDE
-        else ExplicitFlags
-
-      compose(List(hasFlagsToString(mask), keyString, varianceString + nameString + 
+      compose(List(defaultFlagString, keyString, varianceString + nameString + 
                    (if (hasRawInfo) infoString(rawInfo) else "<_>")))
     }
 
