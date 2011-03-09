@@ -119,16 +119,22 @@ final class Float extends AnyVal {
 
 
 object Float extends AnyValCompanion {
+  /** Smallest positive value greater than 0.0f */
   final val MinPositiveValue = jl.Float.MIN_VALUE
-  final val MinNegativeValue = -jl.Float.MAX_VALUE
   final val NaN              = jl.Float.NaN
   final val PositiveInfinity = jl.Float.POSITIVE_INFINITY
   final val NegativeInfinity = jl.Float.NEGATIVE_INFINITY
 
+  /** Smallest positive value greater than 0.0f */
   @deprecated("use Float.MinPositiveValue instead")
-  final val Epsilon          = MinPositiveValue
-  @deprecated("use Float.MinNegativeValue instead")
-  final val MinValue = MinNegativeValue
+  final val Epsilon  = MinPositiveValue
+  /** Biggest negative value representable as a Float, not equal to NegativeInfinity. 
+    * This value differs from [[java.lang.Float.MIN_VALUE]],
+    * which represents the smallest positive value greater than 0.0f 
+    * and is called [[Float.MinPositiveValue]] in Scala.
+    */
+  final val MinValue = -jl.Float.MAX_VALUE
+  /** Biggest positive value representable as a Float, not equal to PositiveInfinity. */
   final val MaxValue = jl.Float.MAX_VALUE
 
   def box(x: Float): jl.Float = jl.Float.valueOf(x)

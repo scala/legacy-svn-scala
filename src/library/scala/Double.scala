@@ -119,16 +119,22 @@ final class Double extends AnyVal {
 
 
 object Double extends AnyValCompanion {
+  /** Smallest positive value greater than 0.0d */
   final val MinPositiveValue = jl.Double.MIN_VALUE
-  final val MinNegativeValue = -jl.Double.MAX_VALUE
   final val NaN              = jl.Double.NaN
   final val PositiveInfinity = jl.Double.POSITIVE_INFINITY
   final val NegativeInfinity = jl.Double.NEGATIVE_INFINITY
 
+  /** Smallest positive value greater than 0.0d */
   @deprecated("use Double.MinPositiveValue instead")
-  final val Epsilon          = MinPositiveValue
-  @deprecated("use Double.MinNegativeValue instead")
-  final val MinValue = MinNegativeValue
+  final val Epsilon  = MinPositiveValue
+  /** Biggest negative value representable as a Double, not equal to [[Double.NegativeInfinity]]. 
+    * This value differs from [[java.lang.Double.MIN_VALUE]],
+    * which represents the smallest positive value greater than 0.0d 
+    * and is called [[Double.MinPositiveValue]] in Scala.
+    */
+  final val MinValue = -jl.Double.MAX_VALUE
+  /** Biggest positive value representable as a Double, not equal to [[Double.PositiveInfinity]]. */
   final val MaxValue = jl.Double.MAX_VALUE
 
   def box(x: Double): jl.Double = jl.Double.valueOf(x)
