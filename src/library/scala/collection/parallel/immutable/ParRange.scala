@@ -28,7 +28,7 @@ import scala.collection.parallel.ParIterableIterator
  *  
  *  @author Aleksandar Prokopec
  *  @since 2.9
- *
+ *  
  *  @define Coll immutable.ParRange
  *  @define coll immutable parallel range
  */
