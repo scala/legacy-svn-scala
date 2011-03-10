@@ -31,6 +31,9 @@ abstract class TreeBrowsers {
   import global._
   import nme.EMPTY
 
+  val borderSize = 10
+
+
   def create(): SwingBrowser = new SwingBrowser();
 
   /** Pseudo tree class, so that all JTree nodes are treated uniformly */
@@ -93,35 +96,36 @@ abstract class TreeBrowsers {
       listeners = l :: listeners
 
     /** Return the index'th child of parent */
-    def getChild(parent: Any, index: Int): AnyRef =
+    def getChild(parent: AnyRef, index: Int): AnyRef =
       packChildren(parent)(index)
 
     /** Return the number of children this 'parent' has */
-    def getChildCount(parent: Any): Int =
+    def getChildCount(parent: AnyRef): Int =
       packChildren(parent).length
 
     /** Return the index of the given child */
-    def getIndexOfChild(parent: Any, child: Any): Int =
+    def getIndexOfChild(parent: AnyRef, child: AnyRef): Int =
       packChildren(parent) indexOf child
 
     /** Return the root node */
     def getRoot(): AnyRef = program
 
     /** Test whether the given node is a leaf */
-    def isLeaf(node: Any): Boolean = packChildren(node).isEmpty
+    def isLeaf(node: AnyRef): Boolean = packChildren(node).isEmpty
 
     def removeTreeModelListener(l: TreeModelListener): Unit =
       listeners = listeners filterNot (_ == l)
 
     /** we ignore this message for now */
-    def valueForPathChanged(path: TreePath, newValue: Any) = ()
+    def valueForPathChanged(path: TreePath, newValue: AnyRef) = ()
 
     /**
      * Return a list of children for the given node.
      */
-    def packChildren(t: Any): List[AnyRef] =
-        TreeInfo.children(t.asInstanceOf[Tree])
+    def packChildren(t: AnyRef): List[AnyRef] = TreeInfo.children(t.asInstanceOf[Tree])
   }
+
+    
 
 
   /**
@@ -132,15 +136,44 @@ abstract class TreeBrowsers {
    * @version 1.0
    */
   class BrowserFrame(phaseName: String = "unknown") {
-    val frame = new JFrame("Scala AST [" + phaseName + "]")
+    try {
+      UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel")
+    }
+    catch {
+      case _ => UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName())
+    }
+
+    val frame = new JFrame("Scala AST after " + phaseName + " phase")
+    frame.setJMenuBar(new ASTMenuBar())
     val topLeftPane = new JPanel(new BorderLayout())
     val topRightPane = new JPanel(new BorderLayout())
     val bottomPane = new JPanel(new BorderLayout())
     var splitPane: JSplitPane = _
-    var treeModel: TreeModel = _
-
+    var treeModel: ASTTreeModel = _
+    var jTreeRoot: JTree = _
     val textArea: JTextArea = new JTextArea(30, 120)
+    textArea.setBorder(BorderFactory.createEmptyBorder(borderSize, borderSize, borderSize, borderSize))
+
     val infoPanel = new TextInfoPanel()
+
+
+    private def setExpansionState(root: JTree, expand: Boolean): Unit = {
+      def _setExpansionState(root: JTree, path: TreePath): Unit = {
+        val last = path.getLastPathComponent
+        for (i <- 0 until root.getModel.getChildCount(last)) {  
+          val child = root.getModel.getChild(last, i)
+          val childPath = path pathByAddingChild child
+          _setExpansionState(root, childPath)
+        }
+        if (expand) {jTreeRoot expandPath path}
+        else {jTreeRoot collapsePath path}
+      }
+      _setExpansionState(root, new TreePath(root.getModel.getRoot))
+    }
+
+    def expandAll(subtree: JTree) = setExpansionState(subtree, true)
+    def collapseAll(subtree: JTree) = setExpansionState(subtree, false)
+
 
     /** Create a frame that displays the AST.
      *
@@ -160,7 +193,7 @@ abstract class TreeBrowsers {
         override def windowClosed(e: WindowEvent): Unit = lock.release
       });
 
-      val tree = new JTree(treeModel) {
+      jTreeRoot = new JTree(treeModel) {
         /** Return the string for a tree node. */
         override def convertValueToText(value: Any, sel: Boolean,
                                         exp: Boolean, leaf: Boolean,
@@ -172,8 +205,11 @@ abstract class TreeBrowsers {
               cls
         }
       }
+      jTreeRoot.addMouseListener(new MouseAdapter() {
+        //TODO
+      })
 
-      tree.addTreeSelectionListener(new javax.swing.event.TreeSelectionListener() {
+      jTreeRoot.addTreeSelectionListener(new javax.swing.event.TreeSelectionListener() {
         def valueChanged(e: javax.swing.event.TreeSelectionEvent): Unit = {
           textArea.setText(e.getPath().getLastPathComponent().toString())
           infoPanel.update(e.getPath().getLastPathComponent())
@@ -183,9 +219,10 @@ abstract class TreeBrowsers {
       val topSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, topLeftPane, topRightPane)
       topSplitPane.setResizeWeight(0.5)
 
-      topLeftPane.add(new JScrollPane(tree), BorderLayout.CENTER)
+      jTreeRoot.setBorder(
+        BorderFactory.createEmptyBorder(borderSize, borderSize, borderSize, borderSize))
+      topLeftPane.add(new JScrollPane(jTreeRoot), BorderLayout.CENTER)
       topRightPane.add(new JScrollPane(infoPanel), BorderLayout.CENTER)
-
       bottomPane.add(new JScrollPane(textArea), BorderLayout.CENTER)
       textArea.setFont(new Font("monospaced", Font.PLAIN, 14))
       textArea.setEditable(false)
@@ -196,7 +233,44 @@ abstract class TreeBrowsers {
       frame.setVisible(true)
     }
 
-    def setTreeModel(tm: TreeModel): Unit = treeModel = tm
+    class ASTMenuBar extends JMenuBar {
+      val menuKey = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()
+      // val jmFile = new JMenu("File")
+      // val jmiSaveImage = new JMenuItem(
+      //   new AbstractAction("Save Tree Image") {
+      //     putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_S, menuKey, false))
+      //     override def actionPerformed(e: ActionEvent) {
+      //       //TODO
+      //     }
+      //   }
+      // )
+
+      // jmFile add jmiSaveImage
+      // add(jmFile)
+
+      val jmView = new JMenu("View")
+      val jmiExpand = new JMenuItem(
+        new AbstractAction("Expand All Nodes") {
+          putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_E, menuKey, false))
+          override def actionPerformed(e: ActionEvent) {
+            expandAll(jTreeRoot)
+          }
+        }
+      )
+      jmView add jmiExpand
+      val jmiCollapse = new JMenuItem(
+        new AbstractAction("Collapse All Nodes") {
+          putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_L, menuKey, false))
+          override def actionPerformed(e: ActionEvent) {
+            collapseAll(jTreeRoot)
+          }
+        }
+      )
+      jmView add jmiCollapse
+      add(jmView)
+    }
+
+    def setTreeModel(tm: ASTTreeModel): Unit = treeModel = tm
   }
 
   /**
@@ -204,6 +278,8 @@ abstract class TreeBrowsers {
    */
   class TextInfoPanel extends JTextArea(20, 50) {
 
+    setBorder(BorderFactory.createEmptyBorder(borderSize, borderSize, borderSize, borderSize))
+    setEditable(false)
     setFont(new Font("monospaced", Font.PLAIN, 12))
 
     def update(v: AnyRef): Unit = {
