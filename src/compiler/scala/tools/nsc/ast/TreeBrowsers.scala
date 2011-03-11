@@ -232,7 +232,7 @@ abstract class TreeBrowsers {
 
     class ASTMenuBar extends JMenuBar {
       val menuKey = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()
-      // val jmFile = new JMenu("File")
+      val jmFile = new JMenu("File")
       // val jmiSaveImage = new JMenuItem(
       //   new AbstractAction("Save Tree Image") {
       //     putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_S, menuKey, false))
@@ -243,7 +243,17 @@ abstract class TreeBrowsers {
       // )
 
       // jmFile add jmiSaveImage
-      // add(jmFile)
+      val jmiExit = new JMenuItem (
+        new AbstractAction("Exit") {
+          putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_Q, menuKey, false))
+          override def actionPerformed(e: ActionEvent) {
+            frame.getToolkit().getSystemEventQueue().postEvent(
+              new WindowEvent(frame, WindowEvent.WINDOW_CLOSING))
+          }
+        }
+      )
+      jmFile add jmiExit
+      add(jmFile)
 
       val jmView = new JMenu("View")
       val jmiExpand = new JMenuItem(
