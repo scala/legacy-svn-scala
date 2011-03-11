@@ -320,9 +320,11 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
           
       val unit0 = currentRun.currentUnit
       try {
-        currentRun.currentUnit = unit
-        if (!cancelled(unit))
+        currentRun.currentUnit = unit       
+        if (!cancelled(unit)) {
+          currentRun.informUnitStarting(this, unit)
           reporter.withSource(unit.source) { apply(unit) }
+        }
         currentRun.advanceUnit
       } finally {
         //assert(currentRun.currentUnit == unit)
@@ -714,6 +716,12 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
      */
     def progress(current: Int, total: Int) {}
 
+    /**
+     * For subclasses to override. Called when `phase` is about to be run on `unit`.
+     * Variables are passed explicitly to indicate that `globalPhase` and `currentUnit` have been set.
+     */
+    def informUnitStarting(phase: Phase, unit: CompilationUnit) { }
+    
     /** take note that phase is completed
      *  (for progress reporting)
      */
