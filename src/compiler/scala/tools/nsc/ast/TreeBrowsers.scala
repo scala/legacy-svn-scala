@@ -150,7 +150,7 @@ abstract class TreeBrowsers {
     val bottomPane = new JPanel(new BorderLayout())
     var splitPane: JSplitPane = _
     var treeModel: ASTTreeModel = _
-    var jTreeRoot: JTree = _
+    var jTree: JTree = _
     val textArea: JTextArea = new JTextArea(30, 120)
     textArea.setBorder(BorderFactory.createEmptyBorder(borderSize, borderSize, borderSize, borderSize))
 
@@ -165,8 +165,8 @@ abstract class TreeBrowsers {
           val childPath = path pathByAddingChild child
           _setExpansionState(root, childPath)
         }
-        if (expand) {jTreeRoot expandPath path}
-        else {jTreeRoot collapsePath path}
+        if (expand) {jTree expandPath path}
+        else {jTree collapsePath path}
       }
       _setExpansionState(root, new TreePath(root.getModel.getRoot))
     }
@@ -193,7 +193,7 @@ abstract class TreeBrowsers {
         override def windowClosed(e: WindowEvent): Unit = lock.release
       });
 
-      jTreeRoot = new JTree(treeModel) {
+      jTree = new JTree(treeModel) {
         /** Return the string for a tree node. */
         override def convertValueToText(value: Any, sel: Boolean,
                                         exp: Boolean, leaf: Boolean,
@@ -205,11 +205,8 @@ abstract class TreeBrowsers {
               cls
         }
       }
-      jTreeRoot.addMouseListener(new MouseAdapter() {
-        //TODO
-      })
 
-      jTreeRoot.addTreeSelectionListener(new javax.swing.event.TreeSelectionListener() {
+      jTree.addTreeSelectionListener(new javax.swing.event.TreeSelectionListener() {
         def valueChanged(e: javax.swing.event.TreeSelectionEvent): Unit = {
           textArea.setText(e.getPath().getLastPathComponent().toString())
           infoPanel.update(e.getPath().getLastPathComponent())
@@ -219,9 +216,9 @@ abstract class TreeBrowsers {
       val topSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, topLeftPane, topRightPane)
       topSplitPane.setResizeWeight(0.5)
 
-      jTreeRoot.setBorder(
+      jTree.setBorder(
         BorderFactory.createEmptyBorder(borderSize, borderSize, borderSize, borderSize))
-      topLeftPane.add(new JScrollPane(jTreeRoot), BorderLayout.CENTER)
+      topLeftPane.add(new JScrollPane(jTree), BorderLayout.CENTER)
       topRightPane.add(new JScrollPane(infoPanel), BorderLayout.CENTER)
       bottomPane.add(new JScrollPane(textArea), BorderLayout.CENTER)
       textArea.setFont(new Font("monospaced", Font.PLAIN, 14))
@@ -253,7 +250,7 @@ abstract class TreeBrowsers {
         new AbstractAction("Expand All Nodes") {
           putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_E, menuKey, false))
           override def actionPerformed(e: ActionEvent) {
-            expandAll(jTreeRoot)
+            expandAll(jTree)
           }
         }
       )
@@ -262,7 +259,7 @@ abstract class TreeBrowsers {
         new AbstractAction("Collapse All Nodes") {
           putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_L, menuKey, false))
           override def actionPerformed(e: ActionEvent) {
-            collapseAll(jTreeRoot)
+            collapseAll(jTree)
           }
         }
       )
