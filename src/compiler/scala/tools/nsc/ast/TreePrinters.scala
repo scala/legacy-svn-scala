@@ -341,12 +341,18 @@ trait TreePrinters { trees: SymbolTable =>
           print("<apply-dynamic>("); print(qual); print("#"); print(tree.symbol.nameString)
           printRow(vargs, ", (", ", ", "))")
 
-        case Super(qual, mix) =>
+        case Super(This(qual), mix) =>
           if (!qual.isEmpty || tree.symbol != NoSymbol) print(symName(tree, qual) + ".")
           print("super")
           if (!mix.isEmpty)
             print("[" + mix + "]")
 
+        case Super(qual, mix) =>
+          print(qual)
+          print(".super")
+          if (!mix.isEmpty)
+            print("[" + mix + "]")
+            
         case This(qual) =>
           if (!qual.isEmpty) print(symName(tree, qual) + ".")
           print("this")
