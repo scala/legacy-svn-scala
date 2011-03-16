@@ -88,6 +88,14 @@ trait AbsSettings {
       internalSetting = true
       this
     }
+    
+    /** If the appearance of the setting should halt argument processing. */
+    private var isTerminatorSetting = false
+    def shouldStopProcessing = isTerminatorSetting
+    def stopProcessing(): this.type = {
+      isTerminatorSetting = true
+      this
+    }
 
     /** Issue error and return */
     def errorAndValue[T](msg: String, x: T): T = { errorFn(msg) ; x }
