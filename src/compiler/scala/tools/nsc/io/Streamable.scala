@@ -28,7 +28,7 @@ object Streamable {
     def inputStream(): InputStream
     def length: Long = -1
     
-    def bufferedInput() = new BufferedInputStream(inputStream())
+    def bufferedInput() = new BufferedInputStream(inputStream())    
     def bytes(): Iterator[Byte] = bytesAsInts() map (_.toByte)
     def bytesAsInts(): Iterator[Int] = {
       val in = bufferedInput()
