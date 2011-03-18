@@ -12,6 +12,7 @@ package scala.collection
 
 import mutable.ArrayBuffer
 import annotation.{ tailrec, migration }
+import parallel.ParIterable
 
 /** The `Iterator` object provides various functions for
  *  creating specialized iterators.
@@ -250,7 +251,7 @@ import Iterator.empty
  *  @define mayNotTerminateInf
  *  Note: may not terminate for infinite iterators.
  */
-trait Iterator[+A] extends TraversableOnce[A] {
+trait Iterator[+A] extends TraversableOnce[A] with Parallelizable[A, ParIterable[A]] {
   self =>
 
   /** Tests whether this iterator can provide another element.
@@ -258,7 +259,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *           `false` otherwise.
    */
   def hasNext: Boolean
-
+  
   /** Produces the next element of this iterator.
    *  @return  the next element of this iterator, if `hasNext` is `true`,
    *           undefined behavior otherwise.
@@ -274,6 +275,8 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  @return   `false`
    */
   def isTraversableAgain = false
+  
+  protected[this] def parCombiner = ParIterable.newCombiner[A]
   
   /** Tests whether this Iterator has a known size.
    *
