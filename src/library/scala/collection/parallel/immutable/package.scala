@@ -28,7 +28,7 @@ package object immutable {
   
   /* classes */
   
-  /** A (parallel) sequence consisting of `length` elements `elem`. Used in the `padTo` method.
+  /** A (parallel) sequence consisting of `length` elements `elem`. Used in the `padTo` method. 
    *  
    *  @tparam T        type of the elements
    *  @param elem      the element in the repetition
