@@ -17,7 +17,7 @@ import scala.collection.parallel._
 
 abstract class ParallelSeqCheck[T](collName: String) extends ParallelIterableCheck[T](collName) with SeqOperators[T] {
   
-  type CollType <: collection.parallel.ParSeq[T] with Sequentializable[T, Seq[T]]
+  type CollType <: collection.parallel.ParSeq[T]
   
 
   def ofSize(vals: Seq[Gen[T]], sz: Int): Seq[T]
@@ -65,7 +65,7 @@ abstract class ParallelSeqCheck[T](collName: String) extends ParallelIterableChe
     }
   
   def collectionTripletsWith2Indices: Gen[(Seq[T], CollType, Seq[T], Int, Int)] =
-    for (inst <- instances(values); f <- choose(0, inst.size); s <- choose(0, inst.size);
+    for (inst <- instances(values); f <- choose(0, inst.size); s <- choose(0, inst.size - f);
       third <- instances(values); sliceStart <- choose(0, inst.size); howMany <- choose(0, inst.size)) yield {
       (inst, fromSeq(inst), inst.slice(sliceStart, sliceStart + howMany), f, s)
     }
@@ -219,6 +219,12 @@ abstract class ParallelSeqCheck[T](collName: String) extends ParallelIterableChe
     ("empty" |: s.union(Nil) == coll.union(fromSeq(Nil)))
   }
   
+  // This is failing with my views patch: array index out of bounds in the array iterator.
+  // Couldn't see why this and only this was impacted, could use a second pair of eyes.
+  // 
+  // This was failing because some corner cases weren't added to the patch method in ParSeqLike.
+  // Curiously, this wasn't detected before.
+  // 
   if (!isCheckingViews) property("patches must be equal") = forAll(collectionTripletsWith2Indices) {
     case (s, coll, pat, from, repl) =>
     ("with seq" |: s.patch(from, pat, repl) == coll.patch(from, pat, repl)) &&

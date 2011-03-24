@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.math
 
 /**
@@ -21,4 +19,11 @@ trait Fractional[T] extends Numeric[T] {
   }
   override implicit def mkNumericOps(lhs: T): FractionalOps =
     new FractionalOps(lhs)
+}
+
+object Fractional {
+  trait ExtraImplicits {
+    implicit def infixFractionalOps[T](x: T)(implicit num: Fractional[T]): Fractional[T]#FractionalOps = new num.FractionalOps(x)
+  }
+  object Implicits extends ExtraImplicits
 }

@@ -84,7 +84,7 @@ private[immutable] abstract class LongMapIterator[V, T](it : LongMap[V]) extends
   var index = 0;
   var buffer = new Array[AnyRef](65);
  
-  def pop = {
+  def pop() = {
     index -= 1;
     buffer(index).asInstanceOf[LongMap[V]];
   }
@@ -102,7 +102,7 @@ private[immutable] abstract class LongMapIterator[V, T](it : LongMap[V]) extends
 
   def hasNext = index != 0; 
   final def next : T = 
-    pop match {      
+    pop() match {      
       case LongMap.Bin(_,_, t@LongMap.Tip(_, _), right) => {
         push(right);
         valueOf(t);
@@ -266,9 +266,6 @@ sealed abstract class LongMap[+T] extends Map[Long, T] with MapLike[Long, T, Lon
                              else join(key, LongMap.Tip(key, value), key2, this);
     case LongMap.Nil => LongMap.Tip(key, value);
   }
-
-  @deprecated("use `updated' instead")
-  override def update[S >: T](key: Long, value: S): LongMap[S] = updated(key, value)
 
   /**
    * Updates the map, using the provided function to resolve conflicts if the key is already present.

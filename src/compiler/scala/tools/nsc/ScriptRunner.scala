@@ -11,7 +11,6 @@ import java.io.{
   FileReader, InputStreamReader, PrintWriter, FileWriter,
   IOException
 }
-import java.io.{ File => JFile }
 import io.{ Directory, File, Path, PlainFile }
 import java.net.URL
 import java.util.jar.{ JarEntry, JarOutputStream }
@@ -50,12 +49,6 @@ import util.Exceptional.unwrap
 class ScriptRunner extends HasCompileSocket {
   lazy val compileSocket = CompileSocket
 
-  /* While I'm chasing down the fsc and script bugs. */
-  def DBG(msg: Any) {
-    System.err.println(msg.toString)
-    System.err.flush()
-  }
-
   /** Default name to use for the wrapped script */
   val defaultScriptMain = "Main"
 
@@ -68,51 +61,10 @@ class ScriptRunner extends HasCompileSocket {
   def isScript(settings: Settings) = settings.script.value != ""
 
   /** Choose a jar filename to hold the compiled version of a script. */
-  private def jarFileFor(scriptFile: String): File = {
-    val name =
-      if (scriptFile endsWith ".jar") scriptFile
-      else scriptFile + ".jar"
-
-    File(name)
-  }
-
-  def copyStreams(in: InputStream, out: OutputStream) = {
-    val buf = new Array[Byte](10240)
-
-    def loop: Unit = in.read(buf, 0, buf.length) match {
-      case -1 => in.close()
-      case n  => out.write(buf, 0, n) ; loop
-    }
-
-    loop
-  }
-
-  /** Try to create a jar file out of all the contents
-   *  of the directory <code>sourcePath</code>.
-   */
-  private def tryMakeJar(jarFile: File, sourcePath: Directory) = {
-    def addFromDir(jar: JarOutputStream, dir: Directory, prefix: String) {
-      def addFileToJar(entry: File) = {
-        jar putNextEntry new JarEntry(prefix + entry.name)
-        copyStreams(entry.inputStream, jar)
-        jar.closeEntry
-      }
-
-      dir.list foreach { entry =>
-        if (entry.isFile) addFileToJar(entry.toFile)
-        else addFromDir(jar, entry.toDirectory, prefix + entry.name + "/")
-      }
-    }
-
-    try {
-      val jar = new JarOutputStream(jarFile.outputStream())
-      addFromDir(jar, sourcePath, "")
-      jar.close
-    } 
-    catch {
-      case _: Exception => jarFile.delete()
-    }
-  }
+  private def jarFileFor(scriptFile: String)= File(
+    if (scriptFile endsWith ".jar") scriptFile
+    else scriptFile.stripSuffix(".scala") + ".jar"
+  )
 
   /** Read the entire contents of a file as a String. */
   private def contentsOfFile(filename: String) = File(filename).slurp()
@@ -153,6 +105,8 @@ class ScriptRunner extends HasCompileSocket {
     scriptFile: String)
     (handler: String => Boolean): Boolean =
   {
+    def mainClass = scriptMain(settings)
+
     /** Compiles the script file, and returns the directory with the compiled
      *  class files, if the compilation succeeded.
      */
@@ -164,16 +118,15 @@ class ScriptRunner extends HasCompileSocket {
 
       settings.outdir.value = compiledPath.path
 
-      if (settings.nocompdaemon.value) {
+      if (settings.nc.value) {
         /** Setting settings.script.value informs the compiler this is not a
          *  self contained compilation unit.
          */
-        settings.script.value = scriptMain(settings)
+        settings.script.value = mainClass
         val reporter = new ConsoleReporter(settings)
         val compiler = newGlobal(settings, reporter)
-        val cr = new compiler.Run
 
-        cr compile List(scriptFile)
+        new compiler.Run compile List(scriptFile)
         if (reporter.hasErrors) None else Some(compiledPath)
       }
       else if (compileWithDaemon(settings, scriptFile)) Some(compiledPath)
@@ -184,7 +137,7 @@ class ScriptRunner extends HasCompileSocket {
      *  not take place until there are no non-daemon threads running.  Tickets #1955, #2006.
      */
     waitingForThreads {
-      if (settings.savecompiled.value) {
+      if (settings.save.value) {
         val jarFile = jarFileFor(scriptFile)
         def jarOK   = jarFile.canRead && (jarFile isFresher File(scriptFile))
 
@@ -193,7 +146,9 @@ class ScriptRunner extends HasCompileSocket {
 
           compile match {
             case Some(compiledPath) =>
-              tryMakeJar(jarFile, compiledPath)
+              try io.Jar.create(jarFile, compiledPath, mainClass)
+              catch { case _: Exception => jarFile.delete() }
+              
               if (jarOK) {
                 compiledPath.deleteRecursively()
                 handler(jarFile.toAbsolute.path)
@@ -220,11 +175,9 @@ class ScriptRunner extends HasCompileSocket {
     settings: GenericRunnerSettings,
     compiledLocation: String,
     scriptArgs: List[String]): Boolean =
-  {      
-    val pr = new PathResolver(settings)
-    val classpath = File(compiledLocation).toURL +: pr.asURLs
-
-    ObjectRunner.runAndCatch(classpath, scriptMain(settings), scriptArgs) match {
+  {
+    val cp = File(compiledLocation).toURL +: settings.classpathURLs
+    ObjectRunner.runAndCatch(cp, scriptMain(settings), scriptArgs) match {
       case Left(ex) => ex.printStackTrace() ; false
       case _        => true
     }

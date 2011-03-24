@@ -41,15 +41,19 @@ import scala.collection.parallel.immutable.ParRange
 @SerialVersionUID(7618862778670199309L)
 class Range(val start: Int, val end: Int, val step: Int)
 extends IndexedSeq[Int]
-   with collection.Parallelizable[ParRange]
+   with collection.CustomParallelizable[Int, ParRange]
    with Serializable
 {
-  def par = new ParRange(this)
-  
-  // Note that this value is calculated eagerly intentionally: it also
-  // serves to enforce conditions (step != 0) && (length <= Int.MaxValue)
-  private val numRangeElements: Int =
-    Range.count(start, end, step, isInclusive)
+  override def par = new ParRange(this)
+
+  // This member is designed to enforce conditions:
+  //   (step != 0) && (length <= Int.MaxValue),
+  // but cannot be evaluated eagerly because we have a pattern where ranges
+  // are constructed like:    "x to y by z"
+  // The "x to y" piece should not trigger an exception. So the calculation
+  // is delayed, which means it will not fail fast for those cases where failing
+  // was correct.
+  private lazy val numRangeElements: Int = Range.count(start, end, step, isInclusive)
 
   protected def copy(start: Int, end: Int, step: Int): Range = new Range(start, end, step)
 
@@ -205,11 +209,9 @@ extends IndexedSeq[Int]
 
   final def contains(x: Int) = isWithinBoundaries(x) && ((x - start) % step == 0)
   
-  override def toParIterable = par
+  override def toIterable = this
   
-  override def toParSeq = par
-  
-  override def toParSet[U >: Int] = par.toParSet[U]
+  override def toSeq = this
   
   override def equals(other: Any) = other match {
     case x: Range =>

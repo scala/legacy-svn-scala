@@ -3,24 +3,19 @@
  * @author  Lex Spoon
  */
 
-
 package scala.tools.nsc
 
-class GenericRunnerSettings(error: String => Unit)
-extends Settings(error) {
-  val jarfile =
-    StringSetting(
-      "-jar",
-      "jar",
-      "Specify the jarfile in which to look for the main class",
-      "")
+import scala.tools.util.PathResolver
+
+class GenericRunnerSettings(error: String => Unit) extends Settings(error) {  
+  def classpathURLs = new PathResolver(this) asURLs
 
   val howtorun =
     ChoiceSetting(
       "-howtorun",
       "how",
       "how to run the specified code",
-      List("guess", "object", "script"),
+      List("object", "script", "jar", "guess"),
       "guess")
 
   val loadfiles =
@@ -36,13 +31,15 @@ extends Settings(error) {
       "execute a single command",
       "")
 
-  val savecompiled = 
+  val save = 
     BooleanSetting(
-      "-savecompiled",
-      "save the compiled script (assumes the code is a script)")
-        
-  val nocompdaemon =
-    BooleanSetting(
-      "-nocompdaemon",
-      "do not use the fsc compilation daemon")
+      "-save",
+      "save the compiled script (assumes the code is a script)") withAbbreviation "-savecompiled"
+  
+  val nc = BooleanSetting(
+      "-nc",
+      "do not use the fsc compilation daemon") withAbbreviation "-nocompdaemon"
+
+  @deprecated("Use `nc` instead") def nocompdaemon = nc
+  @deprecated("Use `save` instead") def savecompiled = save
 }

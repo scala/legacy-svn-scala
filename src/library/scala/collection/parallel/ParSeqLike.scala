@@ -45,7 +45,7 @@ import scala.collection.generic.VolatileAbort
  *  @author Aleksandar Prokopec
  *  @since 2.9
  */
-trait ParSeqLike[+T, +Repr <: Parallel, +Sequential <: Seq[T] with SeqLike[T, Sequential]]
+trait ParSeqLike[+T, +Repr <: ParSeq[T], +Sequential <: Seq[T] with SeqLike[T, Sequential]]
 extends scala.collection.SeqLike[T, Repr]
    with ParIterableLike[T, Repr, Sequential] {
 self =>
@@ -262,9 +262,10 @@ self =>
     } else patch_sequential(from, patch, replaced)
   }
   
-  private def patch_sequential[U >: T, That](from: Int, patch: Seq[U], r: Int)(implicit bf: CanBuildFrom[Repr, U, That]): That = {
+  private def patch_sequential[U >: T, That](fromarg: Int, patch: Seq[U], r: Int)(implicit bf: CanBuildFrom[Repr, U, That]): That = {
+    val from = 0 max fromarg
     val b = bf(repr)
-    val repl = r min (length - from)
+    val repl = (r min (length - from)) max 0
     val pits = parallelIterator.psplit(from, repl, length - from - repl)
     b ++= pits(0)
     b ++= patch.iterator
@@ -313,13 +314,13 @@ self =>
   
   override def toString = seq.mkString(stringPrefix + "(", ", ", ")")
   
-  override def toParSeq = this.asInstanceOf[ParSeq[T]] // TODO add a type bound for `Repr`
+  override def toSeq = this.asInstanceOf[ParSeq[T]]
   
   override def view = new ParSeqView[T, Repr, Sequential] {
     protected lazy val underlying = self.repr
     def length = self.length
     def apply(idx: Int) = self(idx)
-    def seq = self.seq.view
+    override def seq = self.seq.view
     def parallelIterator = self.parallelIterator
   }
   

@@ -80,7 +80,23 @@ trait TraversableOnce[+A] {
    *  @return a stream containing all elements of this $coll.
    */	
   def toStream: Stream[A]
-
+    
+  // Note: We could redefine this in TraversableLike to always return `repr`
+  // of type `Repr`, only if `Repr` had type bounds, which it doesn't, because
+  // not all `Repr` are a subtype `TraversableOnce[A]`.
+  // The alternative is redefining it for maps, sets and seqs. For concrete implementations
+  // we don't have to do this anyway, since they are leaves in the inheritance hierarchy.
+  /** A version of this collection with all
+   *  of the operations implemented sequentially (i.e. in a single-threaded manner).
+   *
+   *  This method returns a reference to this collection. In parallel collections,
+   *  it is redefined to return a sequential implementation of this collection. In
+   *  both cases, it has O(1) complexity.
+   *  
+   *  @return a sequential view of the collection.
+   */
+  def seq: TraversableOnce[A] = this
+  
   /** Presently these are abstract because the Traversable versions use
    *  breakable/break, and I wasn't sure enough of how that's supposed to
    *  function to consolidate them with the Iterator versions.
@@ -93,7 +109,7 @@ trait TraversableOnce[+A] {
   // for internal use
   protected[this] def reversed = {
     var elems: List[A] = Nil
-    self foreach (elems ::= _)
+    self.seq foreach (elems ::= _)
     elems
   }
     
@@ -140,7 +156,7 @@ trait TraversableOnce[+A] {
    *  @example   `Seq("a", 1, 5L).collectFirst({ case x: Int => x*10 }) = Some(10)`
    */
   def collectFirst[B](pf: PartialFunction[A, B]): Option[B] = {
-    for (x <- self.toIterator) {
+    for (x <- self.toIterator) { // make sure to use an iterator or `seq`
       if (pf isDefinedAt x)
         return Some(pf(x))
     }
@@ -205,7 +221,7 @@ trait TraversableOnce[+A] {
    */
   def foldLeft[B](z: B)(op: (B, A) => B): B = {
     var result = z
-    this foreach (x => result = op(result, x))
+    this.seq foreach (x => result = op(result, x))
     result
   }
   
@@ -499,66 +515,6 @@ trait TraversableOnce[+A] {
       b += x
       
     b.result
-  }
-  
-  /* The following 4 methods are implemented in a generic way here,
-   * but are specialized further down the hierarchy where possible.
-   * In particular:
-   * 
-   * - all concrete sequential collection classes that can be
-   *   parallelized have their corresponding `toPar*` methods
-   *   overridden (e.g. ArrayBuffer overrides `toParIterable`
-   *   and `toParSeq`)
-   * - ParIterableLike overrides all 4 methods
-   * - ParSeqLike again overrides `toParSeq`
-   * - ParSetLike again overrides `toParSet`
-   * - ParMapLike again overrides `toParMap`
-   * - immutable.ParIterable overrides all 4 methods to have immutable return types
-   * - immutable.ParSet overrides `toParSet` to `this`
-   * - immutable.ParSeq overrides nothing yet TODO vector
-   * - immutable.ParMap overrides `toParMap` to `this`
-   */
-  
-  /** Converts this $coll to a parallel iterable.
-   *  $willNotTerminateInf
-   *  @return     a parallel iterable containing all elements of this $coll.
-   */
-  def toParIterable: parallel.ParIterable[A] = toParSeq
-  
-  /** Converts this $coll to a parallel sequence.
-   *  $willNotTerminateInf
-   *  @return     a parallel sequence containing all elements of this $coll.
-   */
-  def toParSeq: parallel.ParSeq[A] = {
-    val cb = parallel.mutable.ParArray.newCombiner[A]
-    for (elem <- this) cb += elem
-    cb.result
-  }
-  
-  /** Converts this $coll to a parallel set.
-   *  $willNotTerminateInf
-   *  @return     a parallel set containing all elements of this $coll.
-   */
-  def toParSet[B >: A]: parallel.ParSet[B] = {
-    val cb = parallel.mutable.ParHashSet.newCombiner[B]
-    for (elem <- this) cb += elem
-    cb.result
-  }
-  
-  /** Converts this $coll to a parallel map.
-   *  $willNotTerminateInf
-   *  
-   *  This operation is only available on collections containing pairs of elements.
-   *
-   *  @return    a parallel map containing all elements of this $coll.
-   *  @usecase   def toParMap[T, U]: ParMap[T, U]
-   *  @return    a parallel map of type `parallel.ParMap[T, U]`
-   *             containing all key/value pairs of type `(T, U)` of this $coll.
-   */
-  def toParMap[T, U](implicit ev: A <:< (T, U)): parallel.ParMap[T, U] = {
-    val cb = parallel.mutable.ParHashMap.newCombiner[T, U]
-    for (elem <- this) cb += elem
-    cb.result
   }
   
   /** Displays all elements of this $coll in a string using start, end, and

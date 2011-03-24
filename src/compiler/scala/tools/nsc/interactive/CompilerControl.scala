@@ -1,3 +1,7 @@
+/* NSC -- new Scala compiler
+ * Copyright 2009-2011 Scala Solutions and LAMP/EPFL
+ * @author Martin Odersky
+ */
 package scala.tools.nsc
 package interactive
 
@@ -172,6 +176,17 @@ trait CompilerControl { self: Global =>
    */
   def askLoadedTyped(source: SourceFile, response: Response[Tree]) =
     scheduler postWorkItem new AskLoadedTypedItem(source, response)
+  
+  /** If source if not yet loaded, get an outline view with askParseEntered.
+   *  If source is loaded, wait for it to be typechecked.
+   *  In both cases, set response to parsed (and possibly typechecked) tree.
+   */
+  def askStructure(source: SourceFile, response: Response[Tree]) = {
+    getUnit(source) match {
+      case Some(_) => askLoadedTyped(source, response)
+      case None => askParsedEntered(source, false, response)
+    }
+  }
   
   /** Set sync var `response` to the parse tree of `source` with all top-level symbols entered.
    *  @param source       The source file to be analyzed

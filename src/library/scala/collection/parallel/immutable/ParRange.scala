@@ -28,7 +28,7 @@ import scala.collection.parallel.ParIterableIterator
  *  
  *  @author Aleksandar Prokopec
  *  @since 2.9
- *
+ *  
  *  @define Coll immutable.ParRange
  *  @define coll immutable parallel range
  */
@@ -39,7 +39,7 @@ extends ParSeq[Int]
 {
 self =>
   
-  def seq = range
+  override def seq = range
   
   @inline final def length = range.length
   
@@ -48,10 +48,6 @@ self =>
   def parallelIterator = new ParRangeIterator with SCPI
   
   type SCPI = SignalContextPassingIterator[ParRangeIterator]
-  
-  override def toParSeq = this
-  
-  override def toParSet[U >: Int] = toParCollection[U, ParSet[U]](() => HashSetCombiner[U])
   
   class ParRangeIterator(range: Range = self.range)
   extends ParIterator {

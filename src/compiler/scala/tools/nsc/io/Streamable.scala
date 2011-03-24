@@ -7,7 +7,7 @@ package scala.tools.nsc
 package io
 
 import java.net.{ URI, URL }
-import java.io.{ BufferedInputStream, InputStream, PrintStream, File => JFile }
+import java.io.{ BufferedInputStream, InputStream, PrintStream }
 import java.io.{ BufferedReader, InputStreamReader, Closeable => JCloseable }
 import scala.io.{ Codec, BufferedSource, Source }
 import collection.mutable.ArrayBuffer
@@ -28,7 +28,7 @@ object Streamable {
     def inputStream(): InputStream
     def length: Long = -1
     
-    def bufferedInput() = new BufferedInputStream(inputStream())
+    def bufferedInput() = new BufferedInputStream(inputStream())    
     def bytes(): Iterator[Byte] = bytesAsInts() map (_.toByte)
     def bytesAsInts(): Iterator[Int] = {
       val in = bufferedInput()

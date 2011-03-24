@@ -15,6 +15,7 @@ import mutable.{ Builder, ListBuffer }
 import annotation.tailrec
 import annotation.migration
 import annotation.unchecked.{ uncheckedVariance => uV }
+import parallel.ParIterable
 
 
 /** A template trait for traversable collections of type `Traversable[A]`.
@@ -90,11 +91,12 @@ import annotation.unchecked.{ uncheckedVariance => uV }
  */
 trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr] 
                                     with FilterMonadic[A, Repr]
-                                    with TraversableOnce[A] { 
+                                    with TraversableOnce[A]
+                                    with Parallelizable[A, ParIterable[A]] { 
   self =>
 
   import Traversable.breaks._
-
+  
   /** The type implementing this traversable */
   protected type Self = Repr
 
@@ -118,6 +120,8 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
   /** Creates a new builder for this collection type.
    */
   protected[this] def newBuilder: Builder[A, Repr]
+
+  protected[this] def parCombiner = ParIterable.newCombiner[A]
 
   /** Applies a function `f` to all elements of this $coll.
    *  
@@ -549,7 +553,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
     var follow = false
     val b = newBuilder
     b.sizeHint(this, -1)
-    for (x <- this) {
+    for (x <- this.seq) {
       if (follow) b += lst
       else follow = true
       lst = x
@@ -563,7 +567,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
    *  @return a $coll consisting only of the first `n` elements of this $coll,
    *          or else the whole $coll, if it has less than `n` elements.
    */
-  def take(n: Int): Repr = sliceWithKnownSize(0, n)
+  def take(n: Int): Repr = slice(0, n)
 
   /** Selects all elements except first ''n'' ones. 
    *  $orderDependent
@@ -594,7 +598,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
   private[this] def sliceInternal(from: Int, until: Int, b: Builder[A, Repr]): Repr = {
     var i = 0
     breakable {
-      for (x <- this) {
+      for (x <- this.seq) {
         if (i >= from) b += x
         i += 1
         if (i >= until) break
@@ -608,15 +612,6 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
     if (until <= from) b.result
     else {
       b.sizeHint(this, delta)
-      sliceInternal(from, until, b)
-    }
-  }
-  // Precondition: from >= 0
-  private[scala] def sliceWithKnownSize(from: Int, until: Int): Repr = {
-    val b = newBuilder
-    if (until <= from) b.result
-    else {
-      b.sizeHint(until - from)
       sliceInternal(from, until, b)
     }
   }

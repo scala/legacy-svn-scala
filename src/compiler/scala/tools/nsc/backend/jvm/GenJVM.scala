@@ -237,13 +237,13 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
 
       for (annot <- c.symbol.annotations) annot match {
         case AnnotationInfo(tp, _, _) if tp.typeSymbol == SerializableAttr =>
-          parents = parents ::: List(SerializableClass.tpe)
+          parents :+= SerializableClass.tpe
         case AnnotationInfo(tp, _, _) if tp.typeSymbol == CloneableAttr =>
-          parents = parents ::: List(CloneableClass.tpe)
+          parents :+= CloneableClass.tpe
         case AnnotationInfo(tp, Literal(const) :: _, _) if tp.typeSymbol == SerialVersionUIDAttr =>
           serialVUID = Some(const.longValue)
         case AnnotationInfo(tp, _, _) if tp.typeSymbol == RemoteAttr =>
-          parents = parents ::: List(RemoteInterface.tpe)
+          parents :+= RemoteInterface.tpe
           isRemoteClass = true
         case _ =>
       }
@@ -549,7 +549,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
 
     // @M don't generate java generics sigs for (members of) implementation
     // classes, as they are monomorphic (TODO: ok?)
-    private def noGenericSignature(sym: Symbol) = (
+    private def needsGenericSignature(sym: Symbol) = !(
       // PP: This condition used to include sym.hasExpandedName, but this leads
       // to the total loss of generic information if a private member is
       // accessed from a closure: both the field and the accessor were generated
@@ -558,11 +558,11 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
       // unrelated change.
          sym.isSynthetic
       || sym.isLiftedMethod
+      || sym.isBridge
       || (sym.ownerChain exists (_.isImplClass))
     )
     def addGenericSignature(jmember: JMember, sym: Symbol, owner: Symbol) {
-      if (noGenericSignature(sym)) ()
-      else {
+      if (needsGenericSignature(sym)) {
         val memberTpe = atPhase(currentRun.erasurePhase)(owner.thisType.memberInfo(sym))
         // println("addGenericSignature sym: " + sym.fullName + " : " + memberTpe + " sym.info: " + sym.info)
         // println("addGenericSignature: "+ (sym.ownerChain map (x => (x.name, x.isImplClass))))
@@ -572,22 +572,37 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
            *  in which case we treat every signature as valid.  Medium term we
            *  should certainly write independent signature validation.
            */
-          if (!SigParser.isParserAvailable || isValidSignature(sym, sig)) {
-            val index = jmember.getConstantPool.addUtf8(sig).toShort
-            if (opt.verboseDebug) 
-              atPhase(currentRun.erasurePhase) {
-                println("add generic sig "+sym+":"+sym.info+" ==> "+sig+" @ "+index)
-              }
-            val buf = ByteBuffer.allocate(2)
-            buf putShort index
-            addAttribute(jmember, tpnme.SignatureATTR, buf)
+          if (SigParser.isParserAvailable && !isValidSignature(sym, sig)) {
+            clasz.cunit.warning(sym.pos, 
+                """|compiler bug: created invalid generic signature for %s in %s
+                   |signature: %s
+                   |if this is reproducible, please report bug at http://lampsvn.epfl.ch/trac/scala
+                """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig))
+            return
           }
-          else clasz.cunit.warning(sym.pos, 
-            """|compiler bug: created invalid generic signature for %s in %s
-               |signature: %s
-               |if this is reproducible, please report bug at http://lampsvn.epfl.ch/trac/scala
-            """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig)
-          )
+          if ((settings.check.value contains "genjvm")) {
+            val normalizedTpe = atPhase(currentRun.erasurePhase)(erasure.prepareSigMap(memberTpe))
+            val bytecodeTpe = owner.thisType.memberInfo(sym)
+            if (!sym.isType && !sym.isConstructor && !(erasure.erasure(normalizedTpe) =:= bytecodeTpe)) {
+              clasz.cunit.warning(sym.pos, 
+                  """|compiler bug: created generic signature for %s in %s that does not conform to its erasure
+                     |signature: %s
+                     |original type: %s
+                     |normalized type: %s
+                     |erasure type: %s
+                     |if this is reproducible, please report bug at http://lampsvn.epfl.ch/trac/scala
+                  """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig, memberTpe, normalizedTpe, bytecodeTpe))
+               return
+            }
+          }
+          val index = jmember.getConstantPool.addUtf8(sig).toShort
+          if (opt.verboseDebug) 
+            atPhase(currentRun.erasurePhase) {
+              println("add generic sig "+sym+":"+sym.info+" ==> "+sig+" @ "+index)
+            }
+          val buf = ByteBuffer.allocate(2)
+          buf putShort index
+          addAttribute(jmember, tpnme.SignatureATTR, buf)
         }
       }
     }
@@ -1846,7 +1861,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
       if (sym.isInterface) ACC_INTERFACE else 0,
       if (sym.isFinal && !sym.enclClass.isInterface && !sym.isClassConstructor) ACC_FINAL else 0,
       if (sym.isStaticMember) ACC_STATIC else 0,
-      if (sym.isBridge) ACC_BRIDGE else 0,
+      if (sym.isBridge || sym.hasFlag(Flags.MIXEDIN) && sym.isMethod) ACC_BRIDGE else 0,
       if (sym.isClass && !sym.isInterface) ACC_SUPER else 0,
       if (sym.isVarargsMethod) ACC_VARARGS else 0
     )

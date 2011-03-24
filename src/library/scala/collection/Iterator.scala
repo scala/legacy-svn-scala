@@ -12,6 +12,7 @@ package scala.collection
 
 import mutable.ArrayBuffer
 import annotation.{ tailrec, migration }
+import parallel.ParIterable
 
 /** The `Iterator` object provides various functions for
  *  creating specialized iterators.
@@ -258,7 +259,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *           `false` otherwise.
    */
   def hasNext: Boolean
-
+  
   /** Produces the next element of this iterator.
    *  @return  the next element of this iterator, if `hasNext` is `true`,
    *           undefined behavior otherwise.
@@ -307,9 +308,10 @@ trait Iterator[+A] extends TraversableOnce[A] {
     val lo = from max 0
     var toDrop = lo
     while (toDrop > 0 && self.hasNext) {
-      self.next
+      self.next()
       toDrop -= 1
     }
+
     new Iterator[A] {
       private var remaining = until - lo
       def hasNext = remaining > 0 && self.hasNext

@@ -560,10 +560,10 @@ object JavaConversions {
 
   case class IteratorWrapper[A](underlying : Iterator[A]) extends ju.Iterator[A] with ju.Enumeration[A] {
     def hasNext = underlying.hasNext
-    def next = underlying.next
+    def next() = underlying.next
     def hasMoreElements = underlying.hasNext
-    def nextElement = underlying.next
-    def remove = throw new UnsupportedOperationException
+    def nextElement() = underlying.next
+    def remove() = throw new UnsupportedOperationException
   }
 
   class ToIteratorWrapper[A](underlying : Iterator[A]) {
@@ -572,12 +572,12 @@ object JavaConversions {
 
   case class JIteratorWrapper[A](underlying : ju.Iterator[A]) extends Iterator[A] {
     def hasNext = underlying.hasNext
-    def next = underlying.next
+    def next() = underlying.next
   }
 
   case class JEnumerationWrapper[A](underlying : ju.Enumeration[A]) extends Iterator[A] {
     def hasNext = underlying.hasMoreElements
-    def next = underlying.nextElement
+    def next() = underlying.nextElement
   }
 
   case class IterableWrapper[A](underlying : Iterable[A])
@@ -620,7 +620,7 @@ object JavaConversions {
     def update(i : Int, elem : A) = underlying.set(i, elem)
     def +=:(elem : A) = { underlying.subList(0, 0).add(elem) ; this } 
     def +=(elem : A): this.type = { underlying.add(elem); this }
-    def insertAll(i : Int, elems : Traversable[A]) = { val ins = underlying.subList(0, i) ;  elems.foreach(ins.add(_)) }
+    def insertAll(i : Int, elems : Traversable[A]) = { val ins = underlying.subList(0, i) ;  elems.seq.foreach(ins.add(_)) }
     def remove(i : Int) = underlying.remove(i)
     def clear = underlying.clear
     def result = this
@@ -696,7 +696,7 @@ object JavaConversions {
         
         def hasNext = ui.hasNext
       
-        def next = {
+        def next() = {
           val (k, v) = ui.next
           prev = Some(k)
           new ju.Map.Entry[A, B] {
@@ -711,7 +711,7 @@ object JavaConversions {
           }
         }
         
-        def remove = prev match {
+        def remove() = prev match {
           case Some(k) => 
             underlying match {
               case mm: mutable.Map[a, _] =>
@@ -781,7 +781,7 @@ object JavaConversions {
     def iterator = new Iterator[(A, B)] {
       val ui = underlying.entrySet.iterator
       def hasNext = ui.hasNext
-      def next = { val e = ui.next ; (e.getKey, e.getValue) }
+      def next() = { val e = ui.next ; (e.getKey, e.getValue) }
     }
     
     override def clear() = underlying.clear()
@@ -930,7 +930,7 @@ object JavaConversions {
     def iterator = new Iterator[(String, String)] {
       val ui = underlying.entrySet.iterator
       def hasNext = ui.hasNext
-      def next = { val e = ui.next ; (e.getKey.asInstanceOf[String], e.getValue.asInstanceOf[String]) }
+      def next() = { val e = ui.next ; (e.getKey.asInstanceOf[String], e.getValue.asInstanceOf[String]) }
     }
     
     override def clear() = underlying.clear()

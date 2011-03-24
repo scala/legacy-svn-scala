@@ -3396,7 +3396,8 @@ A type's typeSymbol should never be inspected directly.
                 else instParam(ps.tail, as.tail);
               val symclazz = sym.owner
               if (symclazz == clazz && !pre.isInstanceOf[TypeVar] && (pre.widen.typeSymbol isNonBottomSubClass symclazz)) {
-                pre.baseType(symclazz) match {
+                // have to deconst because it may be a Class[T].
+                pre.baseType(symclazz).deconst match {
                   case TypeRef(_, basesym, baseargs) =>
                     //Console.println("instantiating " + sym + " from " + basesym + " with " + basesym.typeParams + " and " + baseargs+", pre = "+pre+", symclazz = "+symclazz);//DEBUG
                     if (sameLength(basesym.typeParams, baseargs)) {
@@ -5617,6 +5618,7 @@ A type's typeSymbol should never be inspected directly.
     val errors = new ListBuffer[(Type, Symbol, List[(Symbol, Symbol)], List[(Symbol, Symbol)], List[(Symbol, Symbol)])]
     (tparams zip targs).foreach{ case (tparam, targ) if (targ.isHigherKinded || !tparam.typeParams.isEmpty) => 
       // @M must use the typeParams of the type targ, not the typeParams of the symbol of targ!!
+      targ.typeSymbolDirect.info // force symbol load for #4205
       val tparamsHO =  targ.typeParams
 
       val (arityMismatches, varianceMismatches, stricterBounds) = 

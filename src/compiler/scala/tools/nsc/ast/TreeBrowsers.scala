@@ -441,7 +441,7 @@ abstract class TreeBrowsers {
         ("Apply", EMPTY)
 
       case Super(qualif, mix) =>
-        ("Super", qualif.toString() + ", mix: " + mix.toString())
+        ("Super", "mix: " + mix.toString())
 
       case This(qualifier) =>
         ("This", qualifier)
@@ -582,7 +582,7 @@ abstract class TreeBrowsers {
         List(qual) ::: args
 
       case Super(qualif, mix) =>
-        Nil
+        List(qualif)
 
       case This(qualif) =>
         Nil

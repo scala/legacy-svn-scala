@@ -12,6 +12,7 @@ package scala.collection
 import generic._
 import mutable.{ Builder, MapBuilder }
 import annotation.migration
+import parallel.ParMap
 
 /** A template trait for maps, which associate keys with values.
  *
@@ -56,7 +57,8 @@ import annotation.migration
 trait MapLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
   extends PartialFunction[A, B] 
      with IterableLike[(A, B), This] 
-     with Subtractable[A, This] { 
+     with Subtractable[A, This] 
+     with Parallelizable[(A, B), ParMap[A, B]] {
 self =>
 
   /** The empty map of the same type as this map
@@ -174,7 +176,7 @@ self =>
   def keysIterator: Iterator[A] = new Iterator[A] {
     val iter = self.iterator
     def hasNext = iter.hasNext
-    def next = iter.next._1
+    def next() = iter.next._1
   }
 
   /** Creates an iterator for all keys.
@@ -205,7 +207,7 @@ self =>
   def valuesIterator: Iterator[B] = new Iterator[B] {
     val iter = self.iterator
     def hasNext = iter.hasNext
-    def next = iter.next._2
+    def next() = iter.next._2
   }
 
   /** Defines the default value computation for the map,
@@ -310,6 +312,8 @@ self =>
     copyToBuffer(result)
     result
   }
+  
+  protected[this] override def parCombiner = ParMap.newCombiner[A, B]
 
   /** Appends all bindings of this map to a string builder using start, end, and separator strings.
    *  The written text begins with the string `start` and ends with the string

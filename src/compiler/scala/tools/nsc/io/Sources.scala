@@ -4,7 +4,7 @@ package io
 import util.ClassPath
 import java.util.concurrent.{ Future, ConcurrentHashMap, ExecutionException }
 import java.util.zip.ZipException
-import Path.{ isJarOrZip, locateJarByName }
+import Jar.{ isJarOrZip, locateByClass }
 import collection.JavaConverters._
 import Properties.{ envOrElse, propOrElse }
 
@@ -39,7 +39,7 @@ class Sources(val path: String) {
     dirs foreach { d => dbg(d) ; catchZip(addSources(d.deepFiles map (x => Fileish(x)))) }
 
   private def calculateJars() = 
-    jars foreach { j => dbg(j) ; catchZip(addSources(new SourceJar(j).iterator)) }
+    jars foreach { j => dbg(j) ; catchZip(addSources(new Jar(j).fileishIterator)) }
   
   private def addSources(fs: TraversableOnce[Fileish]) =
     fs foreach { f => if (f.isSourceFile) add(f.name, f) }
@@ -62,7 +62,6 @@ trait LowPrioritySourcesImplicits {
   implicit def fallbackSources: Sources = defaultSources
 }
 
-
 object Sources extends LowPrioritySourcesImplicits {
   // Examples of what libraryJar might be, each of which we'd like to find
   // the source files automatically:
@@ -70,7 +69,7 @@ object Sources extends LowPrioritySourcesImplicits {
   // /scala/trunk/build/pack/lib/scala-library.jar
   // /scala/trunk/build/quick/classes/library
   // /scala/inst/scala-2.9.0.r24213-b20110206233447/lib/scala-library.jar
-  private def libraryJar = Path.locateJarByClass(classOf[ScalaObject]) map (_.toAbsolute.path)
+  private def libraryJar = locateByClass(classOf[ScalaObject]) map (_.toAbsolute.path)
   private def autoSourcePaths: List[String] = libraryJar.toList flatMap { lib =>
     val markers = List("build/pack/lib", "build/quick/classes", "scala-library.jar")
     markers filter (lib contains _) flatMap { m =>

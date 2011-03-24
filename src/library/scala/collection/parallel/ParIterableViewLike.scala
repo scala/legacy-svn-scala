@@ -6,21 +6,13 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.collection.parallel
 
-
-
-
 import scala.collection.Parallel
-import scala.collection.IterableView
-import scala.collection.IterableViewLike
-import scala.collection.generic.CanBuildFrom
+import scala.collection.{ IterableView, IterableViewLike }
+import scala.collection.generic.{ CanBuildFrom, SliceInterval }
 import scala.collection.generic.CanCombineFrom
 import scala.collection.parallel.immutable.ParRange
-
-
-
 
 /** A template view of a non-strict view of parallel iterable collection.
  *  
@@ -60,51 +52,52 @@ self =>
   }
   
   trait Sliced extends super.Sliced with Transformed[T] {
-    override def slice(from1: Int, until1: Int): This = newSliced(from1 max 0, until1 max 0).asInstanceOf[This]
+    // override def slice(from1: Int, until1: Int): This = newSliced(from1 max 0, until1 max 0).asInstanceOf[This]
     def parallelIterator: ParIterableIterator[T] = self.parallelIterator.slice(from, until)
-    def seq = self.seq.slice(from, until)
+    override def seq = self.seq.slice(from, until)
   }
   
   trait Mapped[S] extends super.Mapped[S] with Transformed[S]{
     def parallelIterator: ParIterableIterator[S] = self.parallelIterator.map(mapping)
-    def seq = self.seq.map(mapping).asInstanceOf[IterableView[S, CollSeq]]
+    override def seq = self.seq.map(mapping).asInstanceOf[IterableView[S, CollSeq]]
   }
   
   // only use if other is a ParIterable, otherwise force
   trait Appended[U >: T] extends super.Appended[U] with Transformed[U] {
     def restPar: ParIterable[U] = rest.asParIterable
     def parallelIterator: ParIterableIterator[U] = self.parallelIterator.appendParIterable[U, ParIterableIterator[U]](restPar.parallelIterator)
-    def seq = self.seq.++(rest).asInstanceOf[IterableView[U, CollSeq]]
+    override def seq = self.seq.++(rest).asInstanceOf[IterableView[U, CollSeq]]
   }
   
   trait Forced[S] extends super.Forced[S] with Transformed[S] {
     def forcedPar: ParIterable[S] = forced.asParIterable
     def parallelIterator: ParIterableIterator[S] = forcedPar.parallelIterator
-    def seq = forcedPar.seq.view.asInstanceOf[IterableView[S, CollSeq]]
+    override def seq = forcedPar.seq.view.asInstanceOf[IterableView[S, CollSeq]]
   }
   
   // only use if other is a ParSeq, otherwise force
   trait Zipped[S] extends super.Zipped[S] with Transformed[(T, S)] {
     def otherPar: ParSeq[S] = other.asParSeq
     def parallelIterator: ParIterableIterator[(T, S)] = self.parallelIterator zipParSeq otherPar.parallelIterator
-    def seq = (self.seq zip other).asInstanceOf[IterableView[(T, S), CollSeq]]
+    override def seq = (self.seq zip other).asInstanceOf[IterableView[(T, S), CollSeq]]
   }
   
   // only use if other is a ParSeq, otherwise force
   trait ZippedAll[U >: T, S] extends super.ZippedAll[U, S] with Transformed[(U, S)] {
     def otherPar: ParSeq[S] = other.asParSeq
     def parallelIterator: ParIterableIterator[(U, S)] = self.parallelIterator.zipAllParSeq(otherPar.parallelIterator, thisElem, thatElem)
-    def seq = (self.seq.zipAll(other, thisElem, thatElem)).asInstanceOf[IterableView[(U, S), CollSeq]]
+    override def seq = (self.seq.zipAll(other, thisElem, thatElem)).asInstanceOf[IterableView[(U, S), CollSeq]]
   }
   
   protected[this] def thisParSeq: ParSeq[T] = mutable.ParArray.fromTraversables(this.iterator)
+  private[this] implicit def asThis(xs: Transformed[T]): This = xs.asInstanceOf[This]
   
   /* operation overrides */
   
-  override def take(n: Int): This = newSliced(0, n).asInstanceOf[This]
-  override def drop(n: Int): This = newSliced(n, parallelIterator.remaining).asInstanceOf[This]
+  override def take(n: Int): This = newSliced(SliceInterval(0, n))
+  override def drop(n: Int): This = newSliced(SliceInterval(n, parallelIterator.remaining))
   override def splitAt(n: Int): (This, This) = (take(n), drop(n))
-  override def slice(from: Int, until: Int): This = newSliced(from, until).asInstanceOf[This]
+  override def slice(from: Int, until: Int): This = newSliced(SliceInterval(from, until))
   override def map[S, That](f: T => S)(implicit bf: CanBuildFrom[This, S, That]): That = newMapped(f).asInstanceOf[That]
   override def ++[U >: T, That](xs: TraversableOnce[U])(implicit bf: CanBuildFrom[This, U, That]): That = newAppendedTryParIterable(xs.toTraversable).asInstanceOf[That]
   
@@ -138,7 +131,7 @@ self =>
   
   /* wrapper virtual ctors */
   
-  protected override def newSliced(f: Int, u: Int): Transformed[T] = new Sliced { val from = f; val until = u }
+  protected override def newSliced(_endpoints: SliceInterval): Transformed[T] = new { val endpoints = _endpoints } with Sliced
   protected override def newMapped[S](f: T => S): Transformed[S] = new Mapped[S] { val mapping = f }
   protected override def newForced[S](xs: => Seq[S]): Transformed[S] = new Forced[S] { val forced = xs }
   protected override def newAppended[U >: T](that: Traversable[U]): Transformed[U] = new Appended[U] { val rest = that }

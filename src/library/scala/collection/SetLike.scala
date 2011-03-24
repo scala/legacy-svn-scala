@@ -12,6 +12,7 @@ package scala.collection
 import generic._
 import mutable.{ Builder, SetBuilder }
 import scala.annotation.migration
+import parallel.ParSet
 
 /** A template trait for sets.
  *
@@ -57,7 +58,8 @@ import scala.annotation.migration
  */
 trait SetLike[A, +This <: SetLike[A, This] with Set[A]] 
 extends IterableLike[A, This] 
-   with Subtractable[A, This] { 
+   with Subtractable[A, This] 
+   with Parallelizable[A, ParSet[A]] { 
 self =>
 
   /** The empty set of the same type as this set
@@ -72,6 +74,8 @@ self =>
    */
   override protected[this] def newBuilder: Builder[A, This] = new SetBuilder[A, This](empty)
   
+  protected[this] override def parCombiner = ParSet.newCombiner[A]
+
   /** Overridden for efficiency. */
   override def toSeq: Seq[A] = toBuffer[A]
   override def toBuffer[A1 >: A]: mutable.Buffer[A1] = {
@@ -79,7 +83,7 @@ self =>
     copyToBuffer(result)
     result
   }
-
+  
   // note: this is only overridden here to add the migration annotation,
   // which I hope to turn into an Xlint style warning as the migration aspect
   // is not central to its importance.
