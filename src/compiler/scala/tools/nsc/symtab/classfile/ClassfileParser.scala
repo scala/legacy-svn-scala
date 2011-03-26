@@ -264,7 +264,7 @@ abstract class ClassfileParser {
 //            println("Looking for: " + name + ": " + tpe + " inside: " + ownerTpe.typeSymbol + "\n\tand found: " + ownerTpe.members)
           }
         }
-        assert(f != NoSymbol, "could not find " + name + ": " + tpe + "inside: \n" + ownerTpe.members)
+        assert(f != NoSymbol, "could not find\n  " + name + ": " + tpe + "\ninside:\n  " + ownerTpe.members.mkString(", "))
         values(index) = f
       }
       f 
@@ -933,7 +933,7 @@ abstract class ClassfileParser {
                   throw new RuntimeException("Scala class file does not contain Scala annotation")
               }
             if (settings.debug.value)
-              log("" + sym + "; annotations = " + sym.annotations)
+              log("" + sym + "; annotations = " + sym.rawAnnotations)
           } else
             in.skip(attrLen)
 

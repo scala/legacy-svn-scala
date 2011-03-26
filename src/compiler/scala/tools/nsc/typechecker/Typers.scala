@@ -1425,7 +1425,7 @@ trait Typers extends Modes {
           val tpt1 = 
             checkNoEscaping.privates(
               clazz.thisSym, 
-              treeCopy.TypeTree(tpt) setType vd.symbol.tpe)
+              treeCopy.TypeTree(tpt).setOriginal(tpt) setType vd.symbol.tpe)
           treeCopy.ValDef(vd, mods, name, tpt1, EmptyTree) setType NoType
       }
 // was: 
@@ -3493,7 +3493,7 @@ trait Typers extends Modes {
 
           // try to expand according to Dynamic rules.
 
-          if (qual.tpe.widen.typeSymbol isNonBottomSubClass DynamicClass) {
+          if (settings.Xexperimental.value && (qual.tpe.widen.typeSymbol isNonBottomSubClass DynamicClass)) {
             var dynInvoke = Apply(Select(qual, nme.applyDynamic), List(Literal(Constant(name.decode))))
             context.tree match {
               case Apply(tree1, args) if tree1 eq tree => 

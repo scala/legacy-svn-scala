@@ -119,6 +119,22 @@ class Global(settings: Settings, reporter: Reporter)
         rmap -= source
     }
   }
+  
+  private def cleanAllResponses() {
+    cleanResponses(waitLoadedTypeResponses)
+    cleanResponses(getParsedEnteredResponses)
+  }
+  
+  private def checkNoOutstanding(rmap: ResponseMap): Unit =
+    for ((_, rs) <- rmap.toList; r <- rs) {
+      debugLog("ERROR: missing response, request will be discarded")
+      r raise new MissingResponse
+    }
+  
+  def checkNoResponsesOutstanding() {
+    checkNoOutstanding(waitLoadedTypeResponses)
+    checkNoOutstanding(getParsedEnteredResponses)
+  }
 
   /** The compilation unit corresponding to a source file
    *  if it does not yet exist create a new one atomically
@@ -417,9 +433,8 @@ class Global(settings: Settings, reporter: Reporter)
     }
         
     // clean out stale waiting responses
-    cleanResponses(waitLoadedTypeResponses)
-    cleanResponses(getParsedEnteredResponses)
-    
+    cleanAllResponses()
+ 
     // wind down
     if (waitLoadedTypeResponses.nonEmpty || getParsedEnteredResponses.nonEmpty) {
       // need another cycle to treat those
@@ -834,31 +849,36 @@ class Global(settings: Settings, reporter: Reporter)
   }
   
   /** Implements CompilerControl.askLoadedTyped */
-  protected def waitLoadedTyped(source: SourceFile, response: Response[Tree]) {
+  protected def waitLoadedTyped(source: SourceFile, response: Response[Tree], onSameThread: Boolean) {
     getUnit(source) match {
-      case Some(unit) =>
-        if (unit.isUpToDate) { debugLog("already typed"); response set unit.body }
-        else { debugLog("wait for later"); outOfDate = true; waitLoadedTypeResponses(source) += response }
-      case None =>
+      case Some(unit) if unit.isUpToDate =>
+        debugLog("already typed"); 
+        response set unit.body
+      case Some(_) if !onSameThread =>
+        debugLog("wait for later")
+        outOfDate = true
+        waitLoadedTypeResponses(source) += response
+      case _ =>
         debugLog("load unit and type")
-        reloadSources(List(source))
-        waitLoadedTyped(source, response)
+        try reloadSources(List(source))
+        finally waitLoadedTyped(source, response, onSameThread)
     }
   }
   
   /** Implements CompilerControl.askParsedEntered */
-  protected def getParsedEntered(source: SourceFile, keepLoaded: Boolean, response: Response[Tree]) {
+  protected def getParsedEntered(source: SourceFile, keepLoaded: Boolean, response: Response[Tree], onSameThread: Boolean) {
     getUnit(source) match {
       case Some(unit) =>
         getParsedEnteredNow(source, response)
       case None =>
-        if (keepLoaded) {
-          reloadSources(List(source))
-          getParsedEnteredNow(source, response)
-        } else if (outOfDate) {
-          getParsedEnteredResponses(source) += response
-        } else {
-          getParsedEnteredNow(source, response)
+        try {
+          if (keepLoaded || outOfDate && onSameThread)
+            reloadSources(List(source))
+        } finally {
+          if (keepLoaded || !outOfDate || onSameThread)
+            getParsedEnteredNow(source, response)
+          else 
+            getParsedEnteredResponses(source) += response
         }
     }
   }
