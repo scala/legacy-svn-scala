@@ -314,6 +314,18 @@ public abstract class Type extends MemberInfo {
         // overridden in TMVarUsage
         return false;
     }
+    
+    public boolean IsNestedType() {
+        return DeclaringType != null;
+    }
+    
+    public boolean IsDefinitelyInternal() {
+      if(IsNestedType()) {
+        return IsNestedPrivate(); 
+      } else {
+        return IsNotPublic();
+      }
+    }
 
     //public final boolean IsCOMObject;
     //public final boolean IsContextful;
