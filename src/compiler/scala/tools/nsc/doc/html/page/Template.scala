@@ -27,17 +27,17 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       <script type="text/javascript" src={ relativeLinkTo{List("template.js", "lib")} }></script>
       <script type="text/javascript" src={ relativeLinkTo{List("tools.tooltip.js", "lib")} }></script>
     </xml:group>
-
+  
   val valueMembers =
-    (tpl.methods ::: tpl.values ::: (tpl.templates filter { tpl => tpl.isObject || tpl.isPackage })) sortBy (_.name)
+    tpl.methods ++ tpl.values ++ tpl.templates.filter(x => x.isObject || x.isPackage) sorted
   
   val typeMembers =
-    (tpl.abstractTypes ::: tpl.aliasTypes ::: (tpl.templates filter { tpl => tpl.isTrait || tpl.isClass })) sortBy (_.name)
+    tpl.abstractTypes ++ tpl.aliasTypes ++ tpl.templates.filter(x => x.isTrait || x.isClass) sorted
   
   val constructors = (tpl match {
-    case cls: Class => cls.constructors
+    case cls: Class => (cls.constructors: List[MemberEntity]).sorted
     case _ => Nil
-  }) sortBy (_.name)
+  })
   
   /* for body, there is a special case for AnyRef, otherwise AnyRef appears like a package/object
    * this problem should be fixed, this implementation is just a patch 
