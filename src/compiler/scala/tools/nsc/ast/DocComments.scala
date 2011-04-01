@@ -336,13 +336,9 @@ trait DocComments { self: SymbolTable =>
         val start = skipWhitespace(str, "@define".length)
         var idx   = skipVariable(str, start)
         val vble  = variableName(str.substring(start, idx))
-
-        if (idx < str.length && isWhitespace(str charAt idx)) idx += 1
-        var end = str.lastIndexOf('\n')
-        if (end == -1) end = str.length
-        defs(sym) += vble -> str.substring(idx, end)
+        
+        defs(sym) += vble -> (str drop idx).trim.replaceAll("""\s+\*+$""", "")
       }
-      //if (defs(sym).nonEmpty) println("vars of "+sym+" = "+defs(sym))  // !!!
     }
   }
 
