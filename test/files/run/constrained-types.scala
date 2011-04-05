@@ -3,103 +3,91 @@
  * of DeBruijn's .  It runs the test using the interpreter so that
  * the resulting annotated types can be printed out.
  */
-import scala.tools.nsc._
-import java.io._
-import scala.Console
+import scala.tools.nsc.Settings
+import scala.tools.partest.ReplTest
 
-object Test {
+object Test extends ReplTest {
+  def code = """
 
-  val testCode = List(
-    "class Annot(obj: Any) extends annotation.Annotation with annotation.TypeConstraint",
+class Annot(obj: Any) extends annotation.Annotation with annotation.TypeConstraint
 
-    """class A {
-      |  val x = "hello"
-      |  val y: Int @Annot(x) = 10
-      |  override def toString = "an A"
-      |} """,
+class A {
+  val x = "hello"
+  val y: Int @Annot(x) = 10
+  override def toString = "an A"
+} 
 
+val a = new A
+val y = a.y   // should rewrite "this.x" to "a.x" 
+var a2 = new A
+val y2 = a2.y   // should drop the annotation
 
+object Stuff {
+  val x = "hello"
+  val y : Int @Annot(x) = 10
+}
 
-    "val a = new A",
-    
-    """val y = a.y   // should rewrite "this.x" to "a.x" """,
+val y = Stuff.y // should rewrite the annotation
 
+class B {
+  val y: Int @Annot(Stuff.x) = 10
+  override def toString = "a B"
+}
 
-    "var a2 = new A",
-    "val y2 = a2.y   // should drop the annotation",
+val b = new B
+val y = b.y  // should keep the annotation
+def m(x: String): String @Annot(x) = x
 
+val three = "three"
+val three2 = m(three:three.type)  // should change x to three
+var four = "four"
+val four2 = m(four) // should have an existential bound
+val four3 = four2   // should have the same type as four2
+val stuff = m("stuff") // should not crash
 
-    """object Stuff {
-      |  val x = "hello"
-      |  val y : Int @Annot(x) = 10
-      |}""",
+class peer extends annotation.Annotation // should not crash
 
-    "val y = Stuff.y // should rewrite the annotation",
+class NPE[T <: NPE[T] @peer] // should not crash
 
-    """class B {
-      |  val y: Int @Annot(Stuff.x) = 10
-      |  override def toString = "a B"
-      |}""",
+def m = {
+  val x = "three"
+  val y : String @Annot(x) = x
+  y
+} // x should not escape the local scope with a narrow type
 
-    "val b = new B",
-    "val y = b.y  // should keep the annotation",
+def n(y: String) = {
+  def m(x: String) : String @Annot(x) = {
+    (if (x == "")
+      m("default")
+    else
+      x)
+  }
+  m("stuff".stripMargin)
+} // x should be existentially bound
 
+class rep extends annotation.Annotation { }
 
-    "def m(x: String): String @Annot(x) = x",
-    "val three = \"three\"",
-    "val three2 = m(three:three.type)  // should change x to three",
-    "var four = \"four\"",
-    "val four2 = m(four) // should have an existential bound",
-    "val four3 = four2   // should have the same type as four2",
+object A { val x = "hello" : String @ rep }
 
-    """val stuff = m("stuff") // should not crash""",
+val y = a.x // should drop the annotation
 
-    """class peer extends annotation.Annotation // should not crash""", // reported by Manfred Stock
-    """class NPE[T <: NPE[T] @peer] // should not crash""",  // reported by Manfred Stock
+val x = 3 : Int @Annot(e+f+g+h) // should have a graceful error message
 
-    """def m = {
-      |  val x = "three"
-      |  val y : String @Annot(x) = x
-      |  y
-      |} // x should not escape the local scope with a narrow type""",
+class Where(condition: Boolean) extends annotation.Annotation
 
-    """def n(y: String) = {
-      |  def m(x: String) : String @Annot(x) = {
-      |    (if (x == "")
-      |      m("default")
-      |    else
-      |      x)
-      |  }
-      |  m("stuff".stripMargin)
-      |} // x should be existentially bound""",
+val x : Int @Where(self > 0 && self < 100) = 3
 
-    "class rep extends annotation.Annotation",
-    """object A { val x = "hello" : String @ rep }""",
-    "val y = a.x // should drop the annotation",
+"""
 
-    "val x = 3 : Int @Annot(e+f+g+h) //should have a graceful error message",  
+  override def settings: Settings = {
+    val s = new Settings
 
-    "class Where(condition: Boolean) extends annotation.Annotation",
-    "val x : Int @Where(self > 0 && self < 100) = 3"
-    ).map(_.stripMargin)
-
-
-
-  def main(args: Array[String]) {
-    val settings = new Settings
-    settings.Xexperimental.value = true
-    settings.selfInAnnots.value = true
-    settings.deprecation.value = true
+    s.Xexperimental.value = true
+    s.selfInAnnots.value = true
+    s.deprecation.value = true
     // when running that compiler, give it a scala-library to the classpath
-    settings.classpath.value = System.getProperty("java.class.path")
-
-    val interp = new Interpreter(settings)
-
-    for (cmd <- testCode) {
-      println(cmd)
-      interp.interpret(cmd)
-      println()
-      println("-----")
-    }
+    s.classpath.value = sys.props("java.class.path")
+    
+    s
   }
 }
