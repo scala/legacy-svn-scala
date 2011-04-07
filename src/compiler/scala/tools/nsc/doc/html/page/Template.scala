@@ -383,10 +383,12 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
     } 
     // end attributes block vals ---
       
-    val attributesBlock = 
-      <dl class="attributes block"> {
-        attributes ++ definitionClasses ++ selfType ++ annotations ++ sourceLink ++ deprecation ++ mainComment
-      }</dl>
+    val attributesInfo = attributes ++ definitionClasses ++ selfType ++ annotations ++ sourceLink ++ deprecation ++ mainComment
+    val attributesBlock =
+      if (attributesInfo.isEmpty)
+        NodeSeq.Empty
+      else 
+        <dl class="attributes block"> { attributesInfo }</dl>
 
     val linearization =
       mbr match {
