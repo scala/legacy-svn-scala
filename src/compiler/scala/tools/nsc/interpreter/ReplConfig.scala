@@ -9,7 +9,7 @@ package interpreter
 import sys.{ Prop, BooleanProp }
 
 trait ReplConfig {
-  
+
   class ReplProps {
     private def bool(name: String) = BooleanProp.keyExists(name)
     
