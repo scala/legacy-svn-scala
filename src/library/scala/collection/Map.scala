@@ -24,9 +24,9 @@ import generic._
  *  @tparam A     the type of the keys in this map.
  *  @tparam B     the type of the values associated with keys.
  *  
- *  @since 1
+ *  @since 1.0
  */
-trait Map[A, +B] extends Iterable[(A, B)] with MapLike[A, B, Map[A, B]] {
+trait Map[A, +B] extends Iterable[(A, B)] with GenMap[A, B] with MapLike[A, B, Map[A, B]] {
   def empty: Map[A, B] = Map.empty
   
   override def seq: Map[A, B] = this
@@ -37,9 +37,9 @@ trait Map[A, +B] extends Iterable[(A, B)] with MapLike[A, B, Map[A, B]] {
  *  @define coll map
  */
 object Map extends MapFactory[Map] {
-
+  
   private[collection] val hashSeed = "Map".hashCode
-
+  
   def empty[A, B]: immutable.Map[A, B] = immutable.Map.empty
   
   /** $mapCanBuildFromInfo */
