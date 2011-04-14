@@ -97,7 +97,7 @@ sealed abstract class List[+A] extends LinearSeq[A]
 
   /** Builds a new list by applying a function to all elements of this list.
    *  Like `xs map f`, but returns `xs` unchanged if function
-   *  `f` maps all elements to themselves (wrt eq).
+   *  `f` maps all elements to themselves (as determined by `eq`).
    * 
    *  @param f      the function to apply to each element.
    *  @tparam B     the element type of the returned collection.
@@ -286,20 +286,15 @@ sealed abstract class List[+A] extends LinearSeq[A]
   @deprecated("use `distinct' instead", "2.8.0")
   def removeDuplicates: List[A] = distinct
 
-  /** <p>
-   *    Sort the list according to the comparison function
-   *    `lt(e1: a, e2: a) =&gt; Boolean`,
-   *    which should be true iff `e1` precedes     
-   *    `e2` in the desired ordering.
-   *  !!! todo: move sorting to IterableLike
-   *  </p>
+  /** Sort the list according to the comparison function `lt(e1: a, e2: a) => Boolean`,
+   *  which should be true iff `e1` precedes `e2` in the desired ordering.
    *
-   *  @param lt the comparison function
+   *  @param    lt the comparison function
    *  @return   a list sorted according to the comparison function
-   *            `lt(e1: a, e2: a) =&gt; Boolean`.
+   *            `lt(e1: a, e2: a) => Boolean`.
    *  @example <pre>
    *    List("Steve", "Tom", "John", "Bob")
-   *      .sort((e1, e2) => (e1 compareTo e2) &lt; 0) =
+   *      .sort((e1, e2) => (e1 compareTo e2) < 0) =
    *    List("Bob", "John", "Steve", "Tom")</pre>
    */
   @deprecated("use `sortWith' instead", "2.8.0")

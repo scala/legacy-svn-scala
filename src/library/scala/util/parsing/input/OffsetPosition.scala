@@ -60,8 +60,8 @@ case class OffsetPosition(source: java.lang.CharSequence, offset: Int) extends P
    * and then -- if necessary -- using the columns to break a tie.
    *
    * @param `that' a `Position' to compare to this `Position'
-   * @return true if this position's line or (in case of a tie wrt. line numbers)
-   *         its column is smaller than the corresponding components of `that'
+   * @return true if this position's line number or (in case of equal line numbers)
+   *         column is smaller than the corresponding components of `that'hat'
    */
   override def <(that: Position) = that match {
     case OffsetPosition(_, that_offset) =>

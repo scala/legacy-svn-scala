@@ -447,8 +447,7 @@ self =>
     these
   }
 
-  /** Builds a new stream from this stream in which any duplicates (wrt to ==) removed.
-   *  Among duplicate elements, only the first one is retained in the result stream
+  /** Builds a new stream from this stream in which any duplicates (as determined by `==`) removed.   *  Among duplicate elements, only the first one is retained in the result stream
    */
   override def distinct: Stream[A] =
     if (isEmpty) this

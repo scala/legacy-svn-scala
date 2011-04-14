@@ -680,8 +680,8 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  $mayNotTerminateInf
    *
    *  @param elem  the element to test.
-   *  @return     `true` if this iterator produces some value that is
-   *               is equal (wrt `==`) to `elem`, `false` otherwise.
+   *  @return      `true` if this iterator produces some value that
+   *               is equal to `elem` (as determined by `==`), `false` otherwise.
    */
   def contains(elem: Any): Boolean = exists(_ == elem)
 

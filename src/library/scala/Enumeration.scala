@@ -112,14 +112,7 @@ abstract class Enumeration(initial: Int, names: String*) extends Serializable {
   /** Returns a Value from this Enumeration whose name matches 
    * the argument <var>s</var>.
    *
-   * You can pass a String* set of names to the constructor, or
-   * initialize each Enumeration with Value(String). Otherwise, the
-   * names are determined automatically through reflection.
-   *
-   * Note the change here wrt 2.7 is intentional. You should know whether
-   * a name is in an Enumeration beforehand. If not, just use find on
-   * values.
-   *
+   * @see `values.find` if it is unknown whether the Enumeration contains the Value.
    * @param  s an Enumeration name
    * @return   the Value of this Enumeration if its name matches <var>s</var>
    * @throws   java.util.NoSuchElementException if no Value with a matching
@@ -130,8 +123,7 @@ abstract class Enumeration(initial: Int, names: String*) extends Serializable {
   /** Creates a fresh value, part of this enumeration. */
   protected final def Value: Value = Value(nextId)
   
-  /** Creates a fresh value, part of this enumeration, identified by the integer
-   *  `i`.
+  /** Creates a fresh value, part of this enumeration, identified by the integer `i`.
    *
    *  @param i An integer that identifies this value at run-time. It must be
    *           unique amongst all values of the enumeration.

@@ -107,8 +107,8 @@ private[collection] trait GenSeqLike[+A, +Repr] extends GenIterableLike[A, Repr]
    *
    *  @param   elem   the element value to search for.
    *  @tparam  B      the type of the element `elem`. 
-   *  @return  the index of the first element of this $coll that is equal (wrt `==`)
-   *           to `elem`, or `-1`, if none exists.
+   *  @return  the index of the first element of this $coll that is equal
+   *           to `elem` (as determined by `==`), or `-1`, if none exists.
    *
    *  @usecase def indexOf(elem: A): Int
    */
@@ -121,8 +121,8 @@ private[collection] trait GenSeqLike[+A, +Repr] extends GenIterableLike[A, Repr]
    *  @param   elem   the element value to search for.
    *  @tparam  B      the type of the element `elem`. 
    *  @param   from   the start index
-   *  @return  the index `>= from` of the first element of this $coll that is equal (wrt `==`)
-   *           to `elem`, or `-1`, if none exists.
+   *  @return  the index `>= from` of the first element of this $coll that is equal
++   *           to `elem` (as determined by `==`), or `-1`, if none exists.
    *
    *  @usecase def indexOf(elem: A, from: Int): Int
    */
@@ -134,8 +134,8 @@ private[collection] trait GenSeqLike[+A, +Repr] extends GenIterableLike[A, Repr]
    *
    *  @param   elem   the element value to search for.
    *  @tparam  B      the type of the element `elem`. 
-   *  @return  the index of the last element of this $coll that is equal (wrt `==`)
-   *           to `elem`, or `-1`, if none exists.
+   *  @return  the index of the last element of this $coll that is equal
+   *           to `elem` (as determined by `==`), or `-1`, if none exists.
    *
    *  @usecase def lastIndexOf(elem: A): Int
    */
@@ -146,8 +146,8 @@ private[collection] trait GenSeqLike[+A, +Repr] extends GenIterableLike[A, Repr]
    *  @param   elem   the element value to search for.
    *  @param   end    the end index.
    *  @tparam  B      the type of the element `elem`. 
-   *  @return  the index `<= end` of the last element of this $coll that is equal (wrt `==`)
-   *           to `elem`, or `-1`, if none exists.
+   *  @return  the index `<= end` of the last element of this $coll that is equal
+   *           to `elem` (as determined by `==`), or `-1`, if none exists.
    *
    *  @usecase def lastIndexOf(elem: A, end: Int): Int
    */
