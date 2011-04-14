@@ -143,9 +143,6 @@ import annotation.unchecked.uncheckedVariance
  *  produce data-races, deadlocks or invalidation of state if care is not taken. It is up to the programmer
  *  to either avoid using side-effects or to use some form of synchronization when accessing mutable data.
  *  
- *  @define undefinedorder
- *  The order in which the operations on elements are performed is unspecified and may be nondeterministic.
- *  
  *  @define pbfinfo
  *  An implicit value of class `CanCombineFrom` which determines the
  *  result class `That` from the current representation type `Repr` and
@@ -212,6 +209,8 @@ self: ParIterableLike[T, Repr, Sequential] =>
   }
   
   def hasDefiniteSize = true
+  
+  def nonEmpty = size != 0
   
   /** Creates a new parallel iterator used to traverse the elements of this parallel collection.
    *  This iterator is more specific than the iterator of the returned by `iterator`, and augmented
@@ -430,6 +429,22 @@ self: ParIterableLike[T, Repr, Sequential] =>
   def aggregate[S](z: S)(seqop: (S, T) => S, combop: (S, S) => S): S = {
     executeAndWaitResult(new Aggregate(z, seqop, combop, splitter))
   }
+  
+  def /:[S](z: S)(op: (S, T) => S): S = foldLeft(z)(op)
+  
+  def :\[S](z: S)(op: (T, S) => S): S = foldRight(z)(op)
+  
+  def foldLeft[S](z: S)(op: (S, T) => S): S = seq.foldLeft(z)(op)
+  
+  def foldRight[S](z: S)(op: (T, S) => S): S = seq.foldRight(z)(op)
+  
+  def reduceLeft[U >: T](op: (U, T) => U): U = seq.reduceLeft(op)
+  
+  def reduceRight[U >: T](op: (T, U) => U): U = seq.reduceRight(op)
+  
+  def reduceLeftOption[U >: T](op: (U, T) => U): Option[U] = seq.reduceLeftOption(op)
+  
+  def reduceRightOption[U >: T](op: (T, U) => U): Option[U] = seq.reduceRightOption(op)
   
   /*
   /** Applies a function `f` to all the elements of $coll. Does so in a nondefined order,
