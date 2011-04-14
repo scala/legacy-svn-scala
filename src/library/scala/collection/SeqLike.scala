@@ -188,7 +188,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with GenSeqLike[A, Repr] 
 
   /** Returns index of the first element satisfying a predicate, or `-1`.
    */
-  @deprecated("Use indexWhere(p) instead.")
+  @deprecated("Use indexWhere(p) instead.", "2.8.0")
   def findIndexOf(p: A => Boolean): Int = indexWhere(p)
 
   /** Finds index of first occurrence of some value in this $coll.
@@ -453,7 +453,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with GenSeqLike[A, Repr] 
    */
   def reverseIterator: Iterator[A] = toCollection(reverse).iterator
 
-  @deprecated("use `reverseIterator' instead")
+  @deprecated("use `reverseIterator' instead", "2.8.0")
   def reversedElements = reverseIterator
 
   /** Tests whether this $coll contains the given sequence at a given index. 
@@ -889,7 +889,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with GenSeqLike[A, Repr] 
 
   /** Returns index of the last element satisfying a predicate, or -1.
    */
-  @deprecated("use `lastIndexWhere` instead")
+  @deprecated("use `lastIndexWhere` instead", "2.8.0")
   def findLastIndexOf(p: A => Boolean): Int = lastIndexWhere(p)
 
   /** Tests whether every element of this $coll relates to the
@@ -902,7 +902,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with GenSeqLike[A, Repr] 
    *                  `p(x, y)` is `true` for all corresponding elements `x` of this $coll
    *                  and `y` of `that`, otherwise `false`.
    */
-  @deprecated("use `corresponds` instead")
+  @deprecated("use `corresponds` instead", "2.8.0")
   def equalsWith[B](that: Seq[B])(f: (A,B) => Boolean): Boolean = corresponds(that)(f)
 
  /** 
@@ -910,7 +910,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with GenSeqLike[A, Repr] 
    * <code>map</code>, and <code>flatMap</code> methods that build projections
    * of the collection.
    */
-  @deprecated("use `view' instead")
+  @deprecated("use `view' instead", "2.8.0")
   override def projection = view
 }
 
