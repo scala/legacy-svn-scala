@@ -30,8 +30,8 @@ input { border-width: 0px; }
 /* Page */
 
 body {
-  font-family: Arial;
-  font-size: 10pt;
+	font-family: "Ubuntu", "Droid Sans", "Trebuchet MS", "Lucida Grande", "Lucida Sans", "DejaVu Sans Condensed", sans-serif;
+    font-size: 10pt;
 }
 
 a[href] {
