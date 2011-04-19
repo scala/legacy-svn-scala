@@ -31,10 +31,10 @@ extends GenIterable[(A, B)]
 }
 
 
-object GenMap extends MapFactory[GenMap] {
-  def empty[A, B]: Map[A, B] = Map.empty
+// object GenMap extends MapFactory[GenMap] {
+//   def empty[A, B]: Map[A, B] = Map.empty
   
-  /** $mapCanBuildFromInfo */
-  implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), GenMap[A, B]] = new MapCanBuildFrom[A, B]
-}
+//   /** $mapCanBuildFromInfo */
+//   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), GenMap[A, B]] = new MapCanBuildFrom[A, B]
+// }
 
