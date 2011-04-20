@@ -170,6 +170,12 @@ sealed abstract class List[+A] extends LinearSeq[A]
     }
     these
   }
+  
+  override def slice(from: Int, until: Int): List[A] = {
+    val lo = math.max(from, 0)
+    if (until <= lo || isEmpty) Nil
+    else this drop lo take (until - lo)
+  }
 
   override def takeRight(n: Int): List[A] = {
     @tailrec
