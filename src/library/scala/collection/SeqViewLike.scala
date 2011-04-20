@@ -92,6 +92,10 @@ trait SeqViewLike[+A,
     val replaced = _replaced
   } with Patched[B]
   protected def newPrepended[B >: A](elem: B): Transformed[B] = new { protected[this] val fst = elem } with Prepended[B]
+  
+  // see comment in IterableViewLike.
+  protected override def newTaken(n: Int): Transformed[A] = newSliced(SliceInterval(0, n))
+  protected override def newDropped(n: Int): Transformed[A] = newSliced(SliceInterval(n, Int.MaxValue))
 
   override def reverse: This = newReversed.asInstanceOf[This]
 
