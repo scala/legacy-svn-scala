@@ -68,13 +68,14 @@ trait Patterns extends ast.TreeDSL {
   // 8.1.2
   case class TypedPattern(tree: Typed) extends Pattern {
     private val Typed(expr, tpt) = tree
+    private lazy val exprPat = Pattern(expr)
     
     override def subpatternsForVars: List[Pattern] = List(Pattern(expr))
     override def simplify(pv: PatternVar) = Pattern(expr) match {
       case ExtractorPattern(ua) if pv.sym.tpe <:< tpt.tpe => this rebindTo expr
       case _                                              => this
     }
-    override def description = "Typ(%s: %s)".format(Pattern(expr), tpt)
+    override def description = "%s: %s".format(exprPat.boundNameString, tpt)
   }
   
   // 8.1.3
@@ -143,7 +144,7 @@ trait Patterns extends ast.TreeDSL {
 
   // 8.1.5
   case class ConstructorPattern(tree: Apply) extends ApplyPattern with NamePattern {
-    require(fn.isType && this.isCaseClass)
+    require(fn.isType && this.isCaseClass, "tree: " + tree + " fn: " + fn)
     def name = tpe.typeSymbol.name
     def cleanName = tpe.typeSymbol.decodedName
     def hasPrefix = tpe.prefix.prefixString != ""
@@ -173,9 +174,16 @@ trait Patterns extends ast.TreeDSL {
   
   // 8.1.7 / 8.1.8 (unapply and unapplySeq calls)
   case class ExtractorPattern(tree: UnApply) extends UnapplyPattern {
-    override def simplify(pv: PatternVar) =
+    override def simplify(pv: PatternVar) = {
+      if (pv.sym hasFlag NO_EXHAUSTIVE) ()
+      else {
+        TRACE("Setting NO_EXHAUSTIVE on " + pv.sym + " due to extractor " + tree)
+        pv.sym setFlag NO_EXHAUSTIVE
+      }
+  
       if (pv.tpe <:< arg.tpe) this
       else this rebindTo uaTyped
+    }
 
     override def description = "Unapply(%s => %s)".format(necessaryType, resTypesString)
   }
@@ -205,8 +213,6 @@ trait Patterns extends ast.TreeDSL {
     override def necessaryType = if (nonStarPatterns.nonEmpty) consRef else listRef
       
     override def simplify(pv: PatternVar) = {
-      pv.sym setFlag NO_EXHAUSTIVE
-    
       if (pv.tpe <:< necessaryType)
         foldedPatterns
       else
@@ -449,6 +455,11 @@ trait Patterns extends ast.TreeDSL {
       tree setType tpe
       this
     }
+    def boundName: Option[Name] = boundTree match {
+      case Bind(name, _)  => Some(name)
+      case _              => None
+    }
+    def boundNameString = "" + (boundName getOrElse "_")
 
     def equalsCheck =
       tracing("equalsCheck")(
