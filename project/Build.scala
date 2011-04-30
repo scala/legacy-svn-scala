@@ -10,10 +10,10 @@ object ScalaBuild extends Build {
 	)
 
 	def compiler(lib: ProjectReference, stage: String): Project =
-		Project("compiler-" + stage, file("trunk")) dependsOn(lib) aggregate(lib) settings(compilerSettings(stage) : _*)
+		Project("compiler-" + stage, file(".")) dependsOn(lib) aggregate(lib) settings(compilerSettings(stage) : _*)
 
 	def library(stage: String): Project =
-		Project("library-" + stage, file("trunk")) settings(librarySettings(stage) : _*)
+		Project("library-" + stage, file(".")) settings(librarySettings(stage) : _*)
 
 	def commonSettings(stage: String, component: String): Seq[Setting[_]] = Seq(
 		target <<= target(_ / stage / component),
