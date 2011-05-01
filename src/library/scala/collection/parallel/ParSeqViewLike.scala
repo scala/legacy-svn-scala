@@ -8,16 +8,12 @@
 
 package scala.collection.parallel
 
-import scala.collection.Parallel
-import scala.collection.{ SeqView, SeqViewLike }
-import scala.collection.{ GenSeqView, GenSeqViewLike }
-import scala.collection.GenSeq
-import scala.collection.GenIterable
-import scala.collection.GenTraversable
-import scala.collection.GenTraversableOnce
+import scala.collection.{ Parallel, SeqView, SeqViewLike, GenSeqView, GenSeqViewLike, GenSeq }
+import scala.collection.{ GenIterable, GenTraversable, GenTraversableOnce, Iterator }
 import scala.collection.generic.{ CanBuildFrom, SliceInterval }
 import scala.collection.generic.CanCombineFrom
 import scala.collection.parallel.immutable.ParRange
+
 
 /** A template view of a non-strict view of parallel sequence.
  *  
@@ -182,26 +178,5 @@ self =>
     def leaf(prev: Option[Combiner[U, That]]) = result = pit.copy2builder[U, That, Combiner[U, That]](reuse(prev, cbf(self.underlying)))
     protected[this] def newSubtask(p: SuperParIterator) = new Force(cbf, down(p))
     override def merge(that: Force[U, That]) = result = result combine that.result
-  }
-  
+  }  
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
