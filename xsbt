@@ -2,5 +2,5 @@
 #
 
 java $JAVA_OPTS \
-  -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=256m -Xmx2048M -Xss2M \
+  -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=256m -Xmx3g -Xss2M \
   -jar $(dirname $0)/xsbt-launch.jar "$@"
