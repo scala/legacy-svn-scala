@@ -56,6 +56,9 @@ object Predef extends LowPriorityImplicits {
   def identity[A](x: A): A         = x    // @see `conforms` for the implicit version
   def implicitly[T](implicit e: T) = e    // for summoning implicit values from the nether world
   @inline def locally[T](x: T): T  = x    // to communicate intent and avoid unmoored statements
+  
+  // Apparently needed for the xml library
+  val $scope = scala.xml.TopScope
 
   // Deprecated
 
@@ -312,7 +315,7 @@ object Predef extends LowPriorityImplicits {
   implicit def stringCanBuildFrom: CanBuildFrom[String, Char, String] = 
     new CanBuildFrom[String, Char, String] { 
       def apply(from: String) = apply()
-      def apply() = StringBuilder.newBuilder
+      def apply() = mutable.StringBuilder.newBuilder
     }
 
   implicit def seqToCharSequence(xs: collection.IndexedSeq[Char]): CharSequence = new CharSequence {
