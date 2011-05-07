@@ -426,12 +426,8 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     def elisionLevel        = getAnnotation(ElidableMethodClass) flatMap { _.intArg(0) }
     def implicitNotFoundMsg = getAnnotation(ImplicitNotFoundClass) flatMap { _.stringArg(0) }
 
-    /** Does this symbol denote a wrapper object of the interpreter or its class? */
-    final def isInterpreterWrapper = 
-      (isModule || isModuleClass) && 
-      owner.isEmptyPackageClass && 
-      (name startsWith nme.INTERPRETER_LINE_PREFIX) &&
-      (name endsWith nme.INTERPRETER_WRAPPER_SUFFIX)
+    /** Does this symbol denote a wrapper created by the repl? */
+    final def isInterpreterWrapper = (isModule || isModuleClass) && nme.isReplWrapperName(name)
 
     override def isEffectiveRoot = super.isEffectiveRoot || isInterpreterWrapper
 
@@ -1534,19 +1530,14 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       abort("sourceFile_= inapplicable for " + this)
     }
 
-    /** If this is a sealed class, its known direct subclasses. Otherwise Set.empty */
-    def children: List[Symbol] = Nil
-    
-    /** Recursively finds all sealed descendants and returns a sorted list.
-     *  Includes this symbol unless it is abstract, but as value classes are
-     *  marked abstract so they can't be instantiated, they are special cased.
+    /** If this is a sealed class, its known direct subclasses.
+     *  Otherwise, the empty set.
      */
-    def sealedDescendants: List[Symbol] = {
-      val kids = children flatMap (_.sealedDescendants)
-      val all = if (isAbstractClass && !isValueClass(this)) kids else this :: kids
-      
-      all.distinct sortBy (_.sealedSortName)
-    }
+    def children: Set[Symbol] = Set()
+    
+    /** Recursively assemble all children of this symbol.
+     */
+    def sealedDescendants: Set[Symbol] = children.flatMap(_.sealedDescendants) + this
 
 // ToString -------------------------------------------------------------------
 
@@ -2097,7 +2088,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       if (isModuleClass) companionModule else NoSymbol
 
     private var childSet: Set[Symbol] = Set()
-    override def children: List[Symbol] = childSet.toList sortBy (_.sealedSortName)
+    override def children = childSet
     override def addChild(sym: Symbol) { childSet = childSet + sym }
 
     incCounter(classSymbolCount)
