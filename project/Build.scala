@@ -22,7 +22,8 @@ object ScalaBuild extends Build {
 		classpathOptions := ClasspathOptions.manual,
 		sourceDirectory in Compile <<= baseDirectory(_ / "src"),
 		version := "2.10.1-SNAPSHOT",
-		scalaVersion := "2.10.0-SNAPSHOT"
+		scalaVersion := "2.9.0.RC3"
+    // scalaVersion := "2.10.0-SNAPSHOT"
 	)
 	def librarySettings(stage: String) = commonSettings(stage, "library") ++ Seq(
 		unmanaged(lib => Seq(lib / "fjbg.jar", lib / "jline.jar"))
@@ -36,5 +37,5 @@ object ScalaBuild extends Build {
 		scalaSource in Compile <<= sourceDirectory(_ / name)
 
 	def unmanaged(files: File => Seq[File]) =
-		unmanagedClasspath in Compile <<= unmanagedBase map {base => files(base) map Attributed.blank}
+		unmanagedClasspath in Compile <<= unmanagedBase map { base => files(base) map Attributed.blank }
 }
