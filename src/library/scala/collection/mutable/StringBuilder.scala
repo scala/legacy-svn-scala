@@ -170,6 +170,17 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
   /** Appends the given Char to the end of the sequence.
    */
   def +=(x: Char): this.type = { append(x); this }
+  
+  /** Optimization.
+   */
+  def ++=(s: String): this.type = {
+    underlying append s
+    this
+  }
+  def appendAll(xs: String): StringBuilder = {
+    underlying append xs
+    this
+  }
 
   /** !!! This should create a new sequence.
    */
