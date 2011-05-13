@@ -22,8 +22,7 @@ object ScalaBuild extends Build {
 		classpathOptions := ClasspathOptions.manual,
 		sourceDirectory in Compile <<= baseDirectory(_ / "src"),
 		version := "2.10.1-SNAPSHOT",
-		scalaVersion := "2.9.0.RC3"
-    // scalaVersion := "2.10.0-SNAPSHOT"
+		scalaVersion := "2.9.0"
 	)
 	def librarySettings(stage: String) = commonSettings(stage, "library") ++ Seq(
 		unmanaged(lib => Seq(lib / "fjbg.jar", lib / "jline.jar"))
