@@ -73,7 +73,7 @@ abstract class SymbolTable extends reflect.generic.Universe
   /** The phase identifier of the given period */
   final def phaseId(period: Period): Phase#Id = period & 0xFF
 
-  /** The period at the start of run that includes `period' */
+  /** The period at the start of run that includes `period` */
   final def startRun(period: Period): Period = period & 0xFFFFFF00
 
   /** The current period */

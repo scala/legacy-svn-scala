@@ -61,7 +61,7 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
     def isErroneous = (tree.tpe ne null) && tree.tpe.isErroneous
     def isTyped     = (tree.tpe ne null) && !tree.tpe.isErroneous
 
-    /** Apply `f' to each subtree */
+    /** Apply `f` to each subtree */
     def foreach(f: Tree => Unit) { new ForeachTreeTraverser(f).traverse(tree) }
     
     /** If 'pf' is defined for a given subtree, call super.traverse(pf(tree)),
@@ -69,14 +69,14 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
      */
     def foreachPartial(pf: PartialFunction[Tree, Tree]) { new ForeachPartialTreeTraverser(pf).traverse(tree) }
 
-    /** Find all subtrees matching predicate `p' */
+    /** Find all subtrees matching predicate `p` */
     def filter(f: Tree => Boolean): List[Tree] = {
       val ft = new FilterTreeTraverser(f)
       ft.traverse(tree)
       ft.hits.toList
     }
 
-    /** Returns optionally first tree (in a preorder traversal) which satisfies predicate `p',
+    /** Returns optionally first tree (in a preorder traversal) which satisfies predicate `p`,
      *  or None if none exists. 
      */
     def find(p: Tree => Boolean): Option[Tree] = {
@@ -91,7 +91,7 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
       }
     }
 
-    /** Is there part of this tree which satisfies predicate `p'? */
+    /** Is there part of this tree which satisfies predicate `p`? */
     def exists(p: Tree => Boolean): Boolean = !find(p).isEmpty
 
     def equalsStructure(that : Tree) = equalsStructure0(that)(_ eq _)
@@ -137,7 +137,7 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
    *  @param sym        the class symbol
    *  @param constrMods the modifiers for the class constructor, i.e. as in `class C private (...)'
    *  @param vparamss   the value parameters -- if they have symbols they
-   *                    should be owned by `sym'
+   *                    should be owned by `sym`
    *  @param argss      the supercall arguments
    *  @param body       the template statements without primary constructor
    *                    and value parameter fields.
@@ -196,13 +196,13 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
     DefDef(sym, rhs(sym.info.paramss))
   }
 
-  /** A TypeDef node which defines given `sym' with given tight hand side `rhs'. */
+  /** A TypeDef node which defines given `sym` with given tight hand side `rhs`. */
   def TypeDef(sym: Symbol, rhs: Tree): TypeDef =
     atPos(sym.pos) {
       TypeDef(Modifiers(sym.flags), sym.name.toTypeName, sym.typeParams map TypeDef, rhs) setSymbol sym
     }
 
-  /** A TypeDef node which defines abstract type or type parameter for given `sym' */
+  /** A TypeDef node which defines abstract type or type parameter for given `sym` */
   def TypeDef(sym: Symbol): TypeDef = 
     TypeDef(sym, TypeBoundsTree(TypeTree(sym.info.bounds.lo), TypeTree(sym.info.bounds.hi)))
 
@@ -791,7 +791,7 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
                            transformTypeDefs(tparams), transform(rhs))
         }
       case LabelDef(name, params, rhs) =>
-        treeCopy.LabelDef(tree, name, transformIdents(params), transform(rhs)) //bq: Martin, once, atOwner(...) works, also change `LamdaLifter.proxy'
+        treeCopy.LabelDef(tree, name, transformIdents(params), transform(rhs)) //bq: Martin, once, atOwner(...) works, also change `LamdaLifter.proxy`
       case Import(expr, selectors) =>
         treeCopy.Import(tree, transform(expr), selectors)
       case DocDef(comment, definition) =>

@@ -31,7 +31,7 @@ trait PatternBindings extends ast.TreeDSL
   // For spotting duplicate unapplies
   def isEquivalentTree(t1: Tree, t2: Tree) = (t1.symbol == t2.symbol) && (t1 equalsStructure t2)
   
-  // used as argument to `EqualsPatternClass'
+  // used as argument to `EqualsPatternClass`
   case class PseudoType(o: Tree) extends SimpleTypeProxy {
     override def underlying: Type = o.tpe
     override def safeToString: String = "PseudoType("+o+")"

@@ -407,7 +407,7 @@ trait Trees { self: Universe =>
    */
   case class ApplyDynamic(qual: Tree, args: List[Tree]) 
        extends TermTree with SymTree
-    // The symbol of an ApplyDynamic is the function symbol of `qual', or NoSymbol, if there is none.
+    // The symbol of an ApplyDynamic is the function symbol of `qual`, or NoSymbol, if there is none.
 
   /** Super reference, qual = corresponding this reference */
   case class Super(qual: Tree, mix: TypeName) extends TermTree {

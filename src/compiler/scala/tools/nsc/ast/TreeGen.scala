@@ -133,7 +133,7 @@ abstract class TreeGen {
       None
   }
 
-  /** Cast `tree' to type `pt' */
+  /** Cast `tree` to type `pt` */
   def mkCast(tree: Tree, pt: Type): Tree = {
     if (settings.debug.value) log("casting " + tree + ":" + tree.tpe + " to " + pt)
     assert(!tree.tpe.isInstanceOf[MethodType], tree)
@@ -190,7 +190,7 @@ abstract class TreeGen {
   def mkAsInstanceOf(value: Tree, tpe: Type, any: Boolean = true): Tree =
     mkTypeApply(value, tpe, (if (any) Any_asInstanceOf else Object_asInstanceOf))
 
-  /** Cast `tree' to 'pt', unless tpe is a subtype of pt, or pt is Unit.  */
+  /** Cast `tree` to 'pt', unless tpe is a subtype of pt, or pt is Unit.  */
   def maybeMkAsInstanceOf(tree: Tree, pt: Type, tpe: Type, beforeRefChecks: Boolean = false): Tree =
     if ((pt == UnitClass.tpe) || (tpe <:< pt)) {
       log("no need to cast from " + tpe + " to " + pt)
@@ -333,7 +333,7 @@ abstract class TreeGen {
     else arg
   }
 
-  /** Make forwarder to method `target', passing all parameters in `params' */
+  /** Make forwarder to method `target`, passing all parameters in `params` */
   def mkForwarder(target: Tree, vparamss: List[List[Symbol]]) =
     (target /: vparamss)((fn, vparams) => Apply(fn, vparams map paramToArg))
 

@@ -56,7 +56,7 @@ import scala.annotation.tailrec
   case PolyType(tparams, result) =>
     // [tparams]result where result is a (Nullary)MethodType or ClassInfoType
 
-  // The remaining types are not used after phase `typer'. 
+  // The remaining types are not used after phase `typer`.
   case OverloadedType(pre, tparams, alts) =>
     // all alternatives of an overloaded ident
   case AntiPolyType(pre, targs) =>
@@ -105,7 +105,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
     private type UndoLog = List[(TypeVar, TypeConstraint)]
     private[nsc] var log: UndoLog = List()
 
-    /** Undo all changes to constraints to type variables upto `limit'
+    /** Undo all changes to constraints to type variables upto `limit`
      */
     private def undoTo(limit: UndoLog) {
       while ((log ne limit) && log.nonEmpty) {
@@ -158,7 +158,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
 
   import gen._
 
-  /** A proxy for a type (identified by field `underlying') that forwards most 
+  /** A proxy for a type (identified by field `underlying`) that forwards most
    *  operations to it (for exceptions, see WrappingProxy, which forwards even more operations).
    *  every operation that is overridden for some kind of types should be forwarded.
    */
@@ -199,7 +199,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
     override def baseClasses = underlying.baseClasses
   }
 
-  /** A proxy for a type (identified by field `underlying') that forwards most 
+  /** A proxy for a type (identified by field `underlying`) that forwards most
    *  operations to it. Every operation that is overridden for some kind of types is
    *  forwarded here. Some operations are rewrapped again.
    */
@@ -257,7 +257,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
      */
     def isVolatile: Boolean = false
 
-    /** Is this type guaranteed not to have `null' as a value? */
+    /** Is this type guaranteed not to have `null` as a value? */
     def isNotNull: Boolean = false
 
     /** Is this type a structural refinement type (it 'refines' members that have not been inherited) */
@@ -297,7 +297,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
     def underlying: Type = this
 
     /** Widen from singleton type to its underlying non-singleton
-     *  base type by applying one or more `underlying' dereferences,
+     *  base type by applying one or more `underlying` dereferences,
      *  identity for all other types.
      *  
      *  class Outer { class C ; val x: C }
@@ -311,7 +311,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
      */
     def deconst: Type = this
 
-    /** The type of `this' of a class type or reference type
+    /** The type of `this` of a class type or reference type
      */
     def typeOfThis: Type = typeSymbol.typeOfThis
 
@@ -459,13 +459,13 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
      */
     def decls: Scope = EmptyScope
 
-    /** The defined or declared members with name `name' in this type;
+    /** The defined or declared members with name `name` in this type;
      *  an OverloadedSymbol if several exist, NoSymbol if none exist.
      *  Alternatives of overloaded symbol appear in the order they are declared.
      */
     def decl(name: Name): Symbol = findDecl(name, 0)
 
-    /** The non-private defined or declared members with name `name' in this type;
+    /** The non-private defined or declared members with name `name` in this type;
      *  an OverloadedSymbol if several exist, NoSymbol if none exist.
      *  Alternatives of overloaded symbol appear in the order they are declared.
      */
@@ -525,9 +525,9 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
      */
     def baseType(clazz: Symbol): Type = NoType
 
-    /** This type as seen from prefix `pre' and class `clazz'. This means:
-     *  Replace all thistypes of `clazz' or one of its subclasses
-     *  by `pre' and instantiate all parameters by arguments of `pre'.
+    /** This type as seen from prefix `pre` and class `clazz`. This means:
+     *  Replace all thistypes of `clazz` or one of its subclasses
+     *  by `pre` and instantiate all parameters by arguments of `pre`.
      *  Proceed analogously for thistypes referring to outer classes.
      *
      *  Example:
@@ -547,7 +547,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
         result
       } else this
 
-    /** The info of `sym', seen as a member of this type.
+    /** The info of `sym`, seen as a member of this type.
      *
      *  Example:
      *    class D[T] { def m: T }
@@ -558,7 +558,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
       sym.info.asSeenFrom(this, sym.owner)
     }
 
-    /** The type of `sym', seen as a member of this type. */
+    /** The type of `sym`, seen as a member of this type. */
     def memberType(sym: Symbol): Type = sym match {
       case meth: MethodSymbol =>
         meth.typeAsMemberOf(this)
@@ -573,14 +573,14 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
         tp.asSeenFrom(this, sym.owner)
     }
 
-    /** Substitute types `to' for occurrences of references to
-     *  symbols `from' in this type.
+    /** Substitute types `to` for occurrences of references to
+     *  symbols `from` in this type.
      */
     def subst(from: List[Symbol], to: List[Type]): Type =
       new SubstTypeMap(from, to) apply this
 
-    /** Substitute symbols `to' for occurrences of symbols
-     *  `from' in this type.
+    /** Substitute symbols `to` for occurrences of symbols
+     *  `from` in this type.
      * !!! NOTE !!!: If you need to do a substThis and a substSym, the substThis has to come
      * first, as otherwise symbols will immediately get rebound in typeRef to the old 
      * symbol.
@@ -589,8 +589,8 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
       if (from eq to) this
       else new SubstSymMap(from, to) apply this
 
-    /** Substitute all occurrences of `ThisType(from)' in this type
-     *  by `to'.
+    /** Substitute all occurrences of `ThisType(from)` in this type
+     *  by `to`.
      * !!! NOTE !!!: If you need to do a substThis and a substSym, the substThis has to come
      * first, as otherwise symbols will immediately get rebound in typeRef to the old 
      * symbol.
@@ -601,23 +601,23 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
     def substSuper(from: Type, to: Type): Type =
       new SubstSuperMap(from, to) apply this
 
-    /** Returns all parts of this type which satisfy predicate `p' */
+    /** Returns all parts of this type which satisfy predicate `p` */
     def filter(p: Type => Boolean): List[Type] = new FilterTypeCollector(p).collect(this).toList
 
-    /** Returns optionally first type (in a preorder traversal) which satisfies predicate `p',
+    /** Returns optionally first type (in a preorder traversal) which satisfies predicate `p`,
      *  or None if none exists. 
      */
     def find(p: Type => Boolean): Option[Type] = new FindTypeCollector(p).collect(this)
 
-    /** Apply `f' to each part of this type */
+    /** Apply `f` to each part of this type */
     def foreach(f: Type => Unit) { new ForEachTypeTraverser(f).traverse(this) }
 
-    /** Apply `f' to each part of this type; children get mapped before their parents */
+    /** Apply `f` to each part of this type; children get mapped before their parents */
     def map(f: Type => Type): Type = new TypeMap {
       def apply(x: Type) = f(mapOver(x))
     } apply this
 
-    /** Is there part of this type which satisfies predicate `p'? */
+    /** Is there part of this type which satisfies predicate `p`? */
     def exists(p: Type => Boolean): Boolean = !find(p).isEmpty
 
     /** Does this type contain a reference to this symbol? */
@@ -695,7 +695,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
        else isSameType(this, that))
     );
 
-    /** Does this type implement symbol `sym' with same or stronger type?
+    /** Does this type implement symbol `sym` with same or stronger type?
      */
     def specializes(sym: Symbol): Boolean =
       if (explainSwitch) explain("specializes", specializesSym, this, sym)
@@ -771,7 +771,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
     }
 
     /** If this is a poly- or methodtype, a copy with cloned type / value parameters
-     *  owned by `owner'. Identity for all other types.
+     *  owned by `owner`. Identity for all other types.
      */
     def cloneInfo(owner: Symbol) = this
 
@@ -809,7 +809,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
     }
 
     /** If this is a symbol loader type, load and assign a new type to
-     *  `sym'.
+     *  `sym`.
      */
     def load(sym: Symbol) {}
 
@@ -835,7 +835,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
      *  Find member(s) in this type. If several members matching criteria are found, they are
      *  returned in an OverloadedSymbol
      *  
-     *  @param name           The member's name, where nme.ANYNAME means `unspecified' 
+     *  @param name           The member's name, where nme.ANYNAME means `unspecified`
      *  @param excludedFlags  Returned members do not have these flags
      *  @param requiredFlags  Returned members do have these flags
      *  @param stableOnly     If set, return only members that are types or stable values
@@ -1138,7 +1138,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
 
   /** A class for singleton types of the form <prefix>.<sym.name>.type.
    *  Cannot be created directly; one should always use
-   *  `singleType' for creation.
+   *  `singleType` for creation.
    */
   case class SingleType(pre: Type, sym: Symbol) extends SingletonType {
     override val isTrivial: Boolean = pre.isTrivial
@@ -1380,7 +1380,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
   /** A class representing intersection types with refinements of the form
    *    `<parents_0> with ... with <parents_n> { decls }'
    *  Cannot be created directly;
-   *  one should always use `refinedType' for creation.
+   *  one should always use `refinedType` for creation.
    */
   case class RefinedType(override val parents: List[Type],
                          override val decls: Scope) extends CompoundType {
@@ -1425,7 +1425,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
      *  either i > 1, or decls or a following parent Pj, j > 1, contributes
      *  an abstract member.
      *  A type contributes an abstract member if it has an abstract member which
-     *  is also a member of the whole refined type. A scope `decls' contributes
+     *  is also a member of the whole refined type. A scope `decls` contributes
      *  an abstract member if it has an abstract definition which is also
      *  a member of the whole type.
      */
@@ -1486,7 +1486,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
       getRefs(Expansive, tparam)
     }
 
-    /* The rest of this class is auxiliary code for `expansiveRefs'
+    /* The rest of this class is auxiliary code for `expansiveRefs`
      */
 
     /** The type parameters which are referenced type parameters of this class.
@@ -1516,7 +1516,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
     }
 
     /** Augment existing refs map with references <pre>from -> sym</pre>, for
-     *  all elements <pre>sym</pre> of set `to'.
+     *  all elements <pre>sym</pre> of set `to`.
      *  @param  which <- {NonExpansive, Expansive}
      */
     private def addRefs(which: Int, from: Symbol, to: Set[Symbol]) {
@@ -1532,7 +1532,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
                                          // (this can happen only for erroneous programs).
       }
 
-    /** Compute initial (one-step) references and set state to `Initializing'.
+    /** Compute initial (one-step) references and set state to `Initializing`.
      */
     private def computeRefs() {
       refs = Array(Map(), Map())
@@ -1633,8 +1633,8 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
   private val pendingVolatiles = new mutable.HashSet[Symbol]
 
   /** A class for named types of the form
-   *  `<prefix>.<sym.name>[args]'
-   *  Cannot be created directly; one should always use `typeRef'
+   *  `<prefix>.<sym.name>[args]`
+   *  Cannot be created directly; one should always use `typeRef`
    *  for creation. (@M: Otherwise hashing breaks)
    *
    * @M: a higher-kinded type is represented as a TypeRef with sym.info.typeParams.nonEmpty, but args.isEmpty
@@ -1695,7 +1695,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
     override def isNotNull = 
       sym.isModuleClass || sym == NothingClass || isValueClass(sym) || super.isNotNull
 
-    // @M: propagate actual type params (args) to `tp', by replacing formal type parameters with actual ones
+    // @M: propagate actual type params (args) to `tp`, by replacing formal type parameters with actual ones
     // if tp is higher kinded, the "actual" type arguments are types that simply reference the corresponding type parameters  (unbound type variables) 
     def transform(tp: Type): Type = {
       val res = tp.asSeenFrom(pre, sym.owner)
@@ -1719,11 +1719,11 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
     override def termSymbolDirect = super.termSymbol
 
 /* @MAT
-whenever you see `tp.typeSymbol.isXXXX' and then act on tp based on that predicate, you're on thin ice, 
-as `typeSymbol' (and `prefix') automatically normalize, but the other inspectors don't. 
-In other words, even if `tp.normalize.sym.isXXX' is true, `tp.sym.isXXX' may be false (if sym were a public method to access the non-normalized typeSymbol)...
+whenever you see `tp.typeSymbol.isXXXX` and then act on tp based on that predicate, you're on thin ice,
+as `typeSymbol` (and `prefix`) automatically normalize, but the other inspectors don't.
+In other words, even if `tp.normalize.sym.isXXX` is true, `tp.sym.isXXX` may be false (if sym were a public method to access the non-normalized typeSymbol)...
 
-In retrospect, I think `tp.typeSymbol.isXXX' or (worse) `tp.typeSymbol==XXX' should be replaced by `val tp = tp0.asXXX'.  
+In retrospect, I think `tp.typeSymbol.isXXX` or (worse) `tp.typeSymbol==XXX` should be replaced by `val tp = tp0.asXXX'.
 A type's typeSymbol should never be inspected directly.
 */
 
@@ -1764,7 +1764,7 @@ A type's typeSymbol should never be inspected directly.
     override def typeParams: List[Symbol] = if (isHigherKinded) typeParamsDirect else List()
 
     override def typeConstructor = TypeRef(pre, sym, Nil) 
-      // note: does not go through typeRef. There's no need to because neither `pre' nor `sym' changes.
+      // note: does not go through typeRef. There's no need to because neither `pre` nor `sym` changes.
       // And there's a performance advantage to call TypeRef directly.
 
 
@@ -2214,7 +2214,7 @@ A type's typeSymbol should never be inspected directly.
   object ExistentialType extends ExistentialTypeExtractor 
 
   /** A class containing the alternatives and type prefix of an overloaded symbol.
-   *  Not used after phase `typer'.
+   *  Not used after phase `typer`.
    */
   case class OverloadedType(pre: Type, alternatives: List[Symbol]) extends Type {
     override def prefix: Type = pre
@@ -2225,7 +2225,7 @@ A type's typeSymbol should never be inspected directly.
 
   /** A class remembering a type instantiation for some a set of overloaded
    *  polymorphic symbols.
-   *  Not used after phase `typer'.
+   *  Not used after phase `typer`.
    */
   case class AntiPolyType(pre: Type, targs: List[Type]) extends Type {
     override def safeToString =
@@ -2274,7 +2274,7 @@ A type's typeSymbol should never be inspected directly.
   }
   
   /** A class representing a type variable 
-   * Not used after phase `typer'.
+   * Not used after phase `typer`.
    * A higher-kinded type variable has type arguments (a list of Type's) and type parameters (list of Symbols)
    * A TypeVar whose list of args is non-empty can only be instantiated by a higher-kinded type that can be applied to these args   
    * a typevar is much like a typeref, except it has special logic for type equality/subtyping
@@ -2435,8 +2435,8 @@ A type's typeSymbol should never be inspected directly.
       registerBound(bound, false)
     }
 
-    /** Can this variable be related in a constraint to type `tp'?
-     *  This is not the case if `tp' contains type skolems whose
+    /** Can this variable be related in a constraint to type `tp`?
+     *  This is not the case if `tp` contains type skolems whose
      *  skolemization level is higher than the level of this variable.
      */
     def isRelatable(tp: Type): Boolean =
@@ -2477,7 +2477,7 @@ A type's typeSymbol should never be inspected directly.
   }
 
   /** A type carrying some annotations. Created by the typechecker
-   *  when eliminating ``Annotated'' trees (see typedAnnotated).
+   *  when eliminating ``Annotated`' trees (see typedAnnotated).
    *
    *  @param annotations the list of annotations on the type
    *  @param underlying the type without the annotation
@@ -2566,8 +2566,8 @@ A type's typeSymbol should never be inspected directly.
 
 // Creators ---------------------------------------------------------------
 
-  /** Rebind symbol `sym' to an overriding member in type
-   *  `pre'.
+  /** Rebind symbol `sym` to an overriding member in type
+   *  `pre`.
    */
   private def rebind(pre: Type, sym: Symbol): Symbol = {
     val owner = sym.owner
@@ -2582,7 +2582,7 @@ A type's typeSymbol should never be inspected directly.
     } else sym
   }
 
-  /** Convert a `super' prefix to a this-type if `sym'
+  /** Convert a `super` prefix to a this-type if `sym`
    *  is abstract or final.
    */
   private def removeSuper(tp: Type, sym: Symbol): Type = tp match {
@@ -2763,15 +2763,15 @@ A type's typeSymbol should never be inspected directly.
    *  
    *  tpe1 where { tparams }
    *
-   *  where `tpe1' is the result of extrapolating `tpe' wrt to `tparams'. Extrapolating means
-   *  that type variables in `tparams' occurring in covariant positions are replaced by upper bounds,
+   *  where `tpe1` is the result of extrapolating `tpe` wrt to `tparams`. Extrapolating means
+   *  that type variables in `tparams` occurring in covariant positions are replaced by upper bounds,
    *  (minus any SingletonClass markers),
-   *  type variables in `tparams' occurring in contravariant positions are replaced by upper bounds,
+   *  type variables in `tparams` occurring in contravariant positions are replaced by upper bounds,
    *  provided the resulting type is legal wrt to stability, and does not contain any
-   *  type variable in `tparams'.
+   *  type variable in `tparams`.
    *  The abstraction drops all type parameters that are not directly or indirectly 
-   *  referenced by type `tpe1'.
-   *  If there are no remaining type parameters, simply returns result type `tpe'. 
+   *  referenced by type `tpe1`.
+   *  If there are no remaining type parameters, simply returns result type `tpe`.
    */
   def existentialAbstraction(tparams: List[Symbol], tpe0: Type): Type = 
     if (tparams.isEmpty) tpe0
@@ -3421,7 +3421,7 @@ A type's typeSymbol should never be inspected directly.
     val fromContains = from.toSet // avoiding repeatedly traversing from
     assert(sameLength(from, to), "Unsound substitution from "+ from +" to "+ to)
 
-    /** Are `sym' and `sym1' the same.
+    /** Are `sym` and `sym1` the same.
      *  Can be tuned by subclasses.
      */
     protected def matches(sym: Symbol, sym1: Symbol): Boolean = sym eq sym1
@@ -3476,7 +3476,7 @@ A type's typeSymbol should never be inspected directly.
     }
   }
 
-  /** A map to implement the `substSym' method. */
+  /** A map to implement the `substSym` method. */
   class SubstSymMap(from: List[Symbol], to: List[Symbol]) extends SubstMap(from, to) {
     protected def toType(fromtp: Type, sym: Symbol) = fromtp match {
       case TypeRef(pre, _, args) => typeRef(pre, sym, args)
@@ -3532,7 +3532,7 @@ A type's typeSymbol should never be inspected directly.
     }
   }
 
-  /** A map to implement the `subst' method. */
+  /** A map to implement the `subst` method. */
   class SubstTypeMap(from: List[Symbol], to: List[Type])
   extends SubstMap(from, to) {
     protected def toType(fromtp: Type, tp: Type) = tp 
@@ -3554,7 +3554,7 @@ A type's typeSymbol should never be inspected directly.
 
   }
 
-  /** A map to implement the `substThis' method. */
+  /** A map to implement the `substThis` method. */
   class SubstThisMap(from: Symbol, to: Type) extends TypeMap {
     def apply(tp: Type): Type = tp match {
       case ThisType(sym) if (sym == from) => to
@@ -3703,7 +3703,7 @@ A type's typeSymbol should never be inspected directly.
     }
   }
 
-  /** A map to implement the `contains' method */
+  /** A map to implement the `contains` method */
   class ContainsCollector(sym: Symbol) extends TypeCollector(false) {
     def traverse(tp: Type) {
       if (!result) {
@@ -3725,7 +3725,7 @@ A type's typeSymbol should never be inspected directly.
     }
   }
   
-  /** A map to implement the `contains' method */
+  /** A map to implement the `contains` method */
   class ContainsTypeCollector(t: Type) extends TypeCollector(false) {
     def traverse(tp: Type) {
       if (!result) {
@@ -3741,7 +3741,7 @@ A type's typeSymbol should never be inspected directly.
     }
   }
 
-  /** A map to implement the `filter' method */
+  /** A map to implement the `filter` method */
   class FilterTypeCollector(p: Type => Boolean) extends TypeCollector(new ListBuffer[Type]) {
     def traverse(tp: Type) {
       if (p(tp)) result += tp
@@ -3756,7 +3756,7 @@ A type's typeSymbol should never be inspected directly.
     }
   }
 
-  /** A map to implement the `filter' method */
+  /** A map to implement the `filter` method */
   class FindTypeCollector(p: Type => Boolean) extends TypeCollector[Option[Type]](None) {
     def traverse(tp: Type) {
       if (result.isEmpty) {
@@ -3766,7 +3766,7 @@ A type's typeSymbol should never be inspected directly.
     }
   }
 
-  /** A map to implement the `contains' method */
+  /** A map to implement the `contains` method */
   object ErroneousCollector extends TypeCollector(false) {
     def traverse(tp: Type) {
       if (!result) {
@@ -3936,9 +3936,9 @@ A type's typeSymbol should never be inspected directly.
 
   final val LubGlbMargin = 0
 
-  /** The maximum allowable depth of lubs or glbs over types `ts'
+  /** The maximum allowable depth of lubs or glbs over types `ts`
     * This is the maximum depth of all types in the base type sequences 
-    * of each of the types `ts', plus LubGlbMargin
+    * of each of the types `ts`, plus LubGlbMargin
     */
   def lubDepth(ts: List[Type]) = {
     var d = 0
@@ -3986,8 +3986,8 @@ A type's typeSymbol should never be inspected directly.
     check(tp1, tp2)/* && check(tp2, tp1)*/ // need to investgate why this can't be made symmetric -- neg/gadts1 fails, and run/existials also.
   }
 
-  /** Does a pattern of type `patType' need an outer test when executed against
-   *  selector type `selType' in context defined by `currentOwner'?
+  /** Does a pattern of type `patType` need an outer test when executed against
+   *  selector type `selType` in context defined by `currentOwner`?
    */
   def needsOuterTest(patType: Type, selType: Type, currentOwner: Symbol) = {
     def createDummyClone(pre: Type): Type = {
@@ -4045,7 +4045,7 @@ A type's typeSymbol should never be inspected directly.
     if (sym1 == sym2) sym1.hasPackageFlag || phase.erasedTypes || pre1 =:= pre2
     else (sym1.name == sym2.name) && isUnifiable(pre1, pre2)
 
-  /** Do `tp1' and `tp2' denote equivalent types?
+  /** Do `tp1` and `tp2` denote equivalent types?
    */
   def isSameType(tp1: Type, tp2: Type): Boolean = try {
     incCounter(sametypeCount)
@@ -4375,7 +4375,7 @@ A type's typeSymbol should never be inspected directly.
     }
   }
 
-  /** Are `tps1' and `tps2' lists of pairwise equivalent
+  /** Are `tps1` and `tps2` lists of pairwise equivalent
    *  types?
    */
   def isSameTypes(tps1: List[Type], tps2: List[Type]): Boolean = (tps1 corresponds tps2)(_ =:= _)
@@ -4513,7 +4513,7 @@ A type's typeSymbol should never be inspected directly.
 
   def differentOrNone(tp1: Type, tp2: Type) = if (tp1 eq tp2) NoType else tp1
 
-  /** Does type `tp1' conform to `tp2'?
+  /** Does type `tp1` conform to `tp2`?
    */
   private def isSubType2(tp1: Type, tp2: Type, depth: Int): Boolean = {
     if ((tp1 eq tp2) || isErrorOrWildcard(tp1) || isErrorOrWildcard(tp2)) return true
@@ -4703,14 +4703,14 @@ A type's typeSymbol should never be inspected directly.
     firstTry
   }
 
-  /** Are `tps1' and `tps2' lists of equal length such
-   *  that all elements of `tps1' conform to corresponding elements
-   *  of `tps2'?
+  /** Are `tps1` and `tps2` lists of equal length such
+   *  that all elements of `tps1` conform to corresponding elements
+   *  of `tps2`?
    */
   def isSubTypes(tps1: List[Type], tps2: List[Type]): Boolean = (tps1 corresponds tps2)(_ <:< _)
 
-  /** Does type `tp' implement symbol `sym' with same or
-   *  stronger type? Exact only if `sym' is a member of some
+  /** Does type `tp` implement symbol `sym` with same or
+   *  stronger type? Exact only if `sym` is a member of some
    *  refinement type, otherwise we might return false negatives.
    */
   def specializesSym(tp: Type, sym: Symbol): Boolean =
@@ -4719,8 +4719,8 @@ A type's typeSymbol should never be inspected directly.
     (tp.nonPrivateMember(sym.name).alternatives exists
       (alt => sym == alt || specializesSym(tp.narrow, alt, sym.owner.thisType, sym)))
 
-  /** Does member `sym1' of `tp1' have a stronger type
-   *  than member `sym2' of `tp2'?
+  /** Does member `sym1` of `tp1` have a stronger type
+   *  than member `sym2` of `tp2`?
    */
   private def specializesSym(tp1: Type, sym1: Symbol, tp2: Type, sym2: Symbol): Boolean = {
     val info1 = tp1.memberInfo(sym1)
@@ -4736,7 +4736,7 @@ A type's typeSymbol should never be inspected directly.
     sym2.isAliasType && tp2.memberType(sym2).substThis(tp2.typeSymbol, tp1) =:= tp1.memberType(sym1) //@MAT ok
   }
 
-  /** A function implementing `tp1' matches `tp2' */
+  /** A function implementing `tp1` matches `tp2` */
   final def matchesType(tp1: Type, tp2: Type, alwaysMatchSimple: Boolean): Boolean = {
     def matchesQuantified(tparams1: List[Symbol], tparams2: List[Symbol], res1: Type, res2: Type): Boolean = (
       sameLength(tparams1, tparams2) && 
@@ -4840,7 +4840,7 @@ A type's typeSymbol should never be inspected directly.
   }
 */
 
-  /** Are `syms1' and `syms2' parameter lists with pairwise equivalent types? */
+  /** Are `syms1` and `syms2` parameter lists with pairwise equivalent types? */
   private def matchingParams(syms1: List[Symbol], syms2: List[Symbol], syms1isJava: Boolean, syms2isJava: Boolean): Boolean = syms1 match {
     case Nil =>
       syms2.isEmpty
@@ -4858,8 +4858,8 @@ A type's typeSymbol should never be inspected directly.
       }
   }
 
-  /** like map2, but returns list `xs' itself - instead of a copy - if function
-   *  `f' maps all elements to themselves.
+  /** like map2, but returns list `xs` itself - instead of a copy - if function
+   *  `f` maps all elements to themselves.
    */
   def map2Conserve[A <: AnyRef, B](xs: List[A], ys: List[B])(f: (A, B) => A): List[A] = 
     if (xs.isEmpty) xs
@@ -4870,13 +4870,13 @@ A type's typeSymbol should never be inspected directly.
       else x1 :: xs1
     }    
 
-  /** Solve constraint collected in types `tvars'.
+  /** Solve constraint collected in types `tvars`.
    *
    *  @param tvars      All type variables to be instantiated.
-   *  @param tparams    The type parameters corresponding to `tvars'
+   *  @param tparams    The type parameters corresponding to `tvars`
    *  @param variances  The variances of type parameters; need to reverse
    *                    solution direction for all contravariant variables.
-   *  @param upper      When `true' search for max solution else min.
+   *  @param upper      When `true` search for max solution else min.
    */
   def solve(tvars: List[TypeVar], tparams: List[Symbol],
             variances: List[Int], upper: Boolean): Boolean =
@@ -4946,8 +4946,8 @@ A type's typeSymbol should never be inspected directly.
     tvars forall (tvar => tvar.constr.isWithinBounds(tvar.constr.inst))
   }
 
-  /** Do type arguments `targs' conform to formal parameters
-   *  `tparams'?
+  /** Do type arguments `targs` conform to formal parameters
+   *  `tparams`?
    *
    *  @param tparams ...
    *  @param targs   ...
@@ -5231,8 +5231,8 @@ A type's typeSymbol should never be inspected directly.
 
   val GlbFailure = new Throwable
 
-  /** A global counter for glb calls in the `specializes' query connected to the `addMembers'
-   *  call in `glb'. There's a possible infinite recursion when `specializes' calls
+  /** A global counter for glb calls in the `specializes` query connected to the `addMembers`
+   *  call in `glb`. There's a possible infinite recursion when `specializes` calls
    *  memberType, which calls baseTypeSeq, which calls mergePrefixAndArgs, which calls glb.
    *  The counter breaks this recursion after two calls.
    *  If the recursion is broken, no member is added to the glb.
@@ -5379,10 +5379,10 @@ A type's typeSymbol should never be inspected directly.
   }
 
   /** Compute lub (if variance == 1) or glb (if variance == -1) of given list
-   *  of types `tps'. All types in `tps' are typerefs or singletypes
+   *  of types `tps`. All types in `tps` are typerefs or singletypes
    *  with the same symbol.
-   *  Return `Some(x)' if the computation succeeds with result `x'.
-   *  Return `None' if the computation fails.
+   *  Return `Some(x)` if the computation succeeds with result `x`.
+   *  Return `None` if the computation fails.
    */
   def mergePrefixAndArgs(tps: List[Type], variance: Int, depth: Int): Option[Type] = tps match {
     case List(tp) =>
@@ -5453,8 +5453,8 @@ A type's typeSymbol should never be inspected directly.
       assert(false, tps); None
   }
 
-  /** Make symbol `sym' a member of scope `tp.decls'
-   *  where `thistp' is the narrowed owner type of the scope.
+  /** Make symbol `sym` a member of scope `tp.decls`
+   *  where `thistp` is the narrowed owner type of the scope.
    */
   def addMember(thistp: Type, tp: Type, sym: Symbol) {
     assert(sym != NoSymbol)
@@ -5636,8 +5636,8 @@ A type's typeSymbol should never be inspected directly.
   /** The current indentation string for traces */
   private var indent: String = ""
 
-  /** Perform operation `p' on arguments `tp1',
-   *  `arg2' and print trace of computation.
+  /** Perform operation `p` on arguments `tp1`,
+   *  `arg2` and print trace of computation.
    */
   private def explain[T](op: String, p: (Type, T) => Boolean, tp1: Type, arg2: T): Boolean = {
     Console.println(indent + tp1 + " " + op + " " + arg2 + "?" /* + "("+tp1.getClass+","+arg2.asInstanceOf[AnyRef].getClass+")"*/)
@@ -5648,21 +5648,21 @@ A type's typeSymbol should never be inspected directly.
     result
   }
 
-  /** If option `explaintypes' is set, print a subtype trace for
+  /** If option `explaintypes` is set, print a subtype trace for
    *  `found <:< required'.
    */
   def explainTypes(found: Type, required: Type) {
     if (settings.explaintypes.value) withTypesExplained(found <:< required)
   }
 
-  /** If option `explaintypes' is set, print a subtype trace for
+  /** If option `explaintypes` is set, print a subtype trace for
    *  `op(found, required)'.
    */
   def explainTypes(op: (Type, Type) => Any, found: Type, required: Type) {
     if (settings.explaintypes.value) withTypesExplained(op(found, required))
   }
 
-  /** Execute `op' while printing a trace of the operations on types executed.
+  /** Execute `op` while printing a trace of the operations on types executed.
    */
   def withTypesExplained[A](op: => A): A = {
     val s = explainSwitch

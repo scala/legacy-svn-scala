@@ -165,7 +165,7 @@ trait Names extends reflect.generic.Names {
     def debugString() = NameTransformer.decode(toString) + (if (isTypeName) "!" else "")
 
     /** Write to UTF8 representation of this name to given character array.
-     *  Start copying to index `to'. Return index of next free byte in array.
+     *  Start copying to index `to`. Return index of next free byte in array.
      *  Array must have enough remaining space for all bytes 
      *  (i.e. maximally 3*length bytes).
      */
