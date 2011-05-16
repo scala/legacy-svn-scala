@@ -3,17 +3,15 @@
  * @author  Martin Odersky
  */
 
-package scala.tools.nsc
-package symtab
+package scala.reflect
+package common
 
 import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.{ HashMap }
-import scala.tools.nsc.util.NoPosition
 import Flags._
 import PartialFunction._
-import classfile.ClassfileConstants
 
-trait Definitions extends reflect.generic.StandardDefinitions {
+trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
   self: SymbolTable =>
   
   // the scala value classes
@@ -117,7 +115,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     )
   }
 
-  object definitions extends AbsDefinitions with ValueClassDefinitions {
+  object definitions extends ValueClassDefinitions {
     private var isInitialized = false
     def isDefinitionsInitialized = isInitialized
 
@@ -135,7 +133,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     }
     // This is the actual root of everything, including the package _root_.
     lazy val RootClass: ModuleClassSymbol = NoSymbol.newModuleClass(NoPosition, tpnme.ROOT)
-          .setFlag(FINAL | MODULE | PACKAGE | JAVA).setInfo(rootLoader)
+          .setFlag(FINAL | MODULE | PACKAGE | JAVA).setInfo(rootLoader) 
 
     // The empty package, which holds all top level types without given packages.
     lazy val EmptyPackage       = RootClass.newPackage(NoPosition, nme.EMPTY_PACKAGE_NAME).setFlag(FINAL)

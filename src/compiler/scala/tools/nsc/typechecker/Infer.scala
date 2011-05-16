@@ -451,7 +451,7 @@ trait Infer {
           // If the restpe is an implicit method, and the expected type is fully defined
           // optimze type variables wrt to the implicit formals only; ignore the result type.
           // See test pos/jesper.scala 
-          val varianceType = restpe match {
+          val varianceType = restpe match { 
             case mt: MethodType if mt.isImplicit && isFullyDefined(pt) =>
               MethodType(mt.params, AnyClass.tpe)
             case _ =>
