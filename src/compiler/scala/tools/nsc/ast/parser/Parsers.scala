@@ -11,9 +11,9 @@ package ast.parser
 
 import scala.collection.mutable.ListBuffer
 import util.{ SourceFile, OffsetPosition, FreshNameCreator }
-import scala.reflect.generic.{ ModifierFlags => Flags }
+import scala.reflect.internal.{ ModifierFlags => Flags }
 import Tokens._
-import util.Chars.{ isScalaLetter }
+import scala.reflect.Chars.{ isScalaLetter }
 
 /** Historical note: JavaParsers started life as a direct copy of Parsers
  *  but at a time when that Parsers had been replaced by a different one.
@@ -1569,20 +1569,12 @@ self =>
      *                |  val Pattern1 `=' Expr
      */
     def enumerators(): List[Enumerator] = {
-      val newStyle = in.token != VAL
-      if (!newStyle)
-        deprecationWarning(in.offset, "for (val x <- ... ) has been deprecated; use for (x <- ... ) instead")
       val enums = new ListBuffer[Enumerator]
       generator(enums, false)
       while (isStatSep) {
         in.nextToken()
-        if (newStyle) {
-          if (in.token == IF) enums += makeFilter(in.offset, guard())
-          else generator(enums, true)
-        } else {
-          if (in.token == VAL) generator(enums, true) 
-          else enums += makeFilter(in.offset, expr())
-        }
+        if (in.token == IF) enums += makeFilter(in.offset, guard())
+        else generator(enums, true)
       }
       enums.toList
     }

@@ -23,6 +23,8 @@ abstract class GenMSIL extends SubComponent {
   import clrTypes.{types, constructors, methods, fields}
   import icodes._
   import icodes.opcodes._
+  
+  val x = loaders
 
   /** Create a new phase */
   override def newPhase(p: Phase) = new MsilPhase(p)

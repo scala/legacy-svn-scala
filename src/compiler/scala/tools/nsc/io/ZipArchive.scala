@@ -10,6 +10,7 @@ import java.net.URL
 import java.io.{ IOException, InputStream, ByteArrayInputStream }
 import java.util.zip.{ ZipEntry, ZipFile, ZipInputStream }
 import scala.collection.{ immutable, mutable }
+import annotation.tailrec
 
 /** An abstraction for zip files and streams.  Everything is written the way
  *  it is for performance: we come through here a lot on every run.  Be careful
@@ -20,66 +21,72 @@ import scala.collection.{ immutable, mutable }
  *  @version 2.0, 
  */
 object ZipArchive {
-  def fromPath(path: Path): ZipArchive = fromFile(path.toFile)
+  def fromPath(path: String): FileZipArchive = fromFile(new JFile(path))
+  def fromPath(path: Path): FileZipArchive = fromFile(path.toFile)
 
   /**
    * @param   file  a File
    * @return  A ZipArchive if `file` is a readable zip file, otherwise null.
    */
-  def fromFile(file: File): ZipArchive =
-    try new FileZipArchive(file, new ZipFile(file.jfile))
+  def fromFile(file: File): FileZipArchive = fromFile(file.jfile)
+  def fromFile(file: JFile): FileZipArchive =
+    try   { new FileZipArchive(file) }
     catch { case _: IOException => null }
-
-  /**
-   * @param   zipFile  a ZipFile
-   * @return  A ZipArchive if `zipFile` is a readable zip file, otherwise null.
-   */
-  def fromArchive(zipFile: ZipFile): ZipArchive =
-    new FileZipArchive(File(zipFile.getName()), zipFile)
 
   /**
    * @param   url  the url of a zip file
    * @return  A ZipArchive backed by the given url.
    */
-  def fromURL(url: URL): ZipArchive = new URLZipArchive(url)
-}
+  def fromURL(url: URL): URLZipArchive = new URLZipArchive(url)
+  def fromURL(url: String): URLZipArchive = fromURL(new URL(url))
+  
+  private def dirName(path: String)  = splitPath(path, true)
+  private def baseName(path: String) = splitPath(path, false)
+  private def splitPath(path0: String, front: Boolean): String = {
+    val isDir = path0.charAt(path0.length - 1) == '/'
+    val path  = if (isDir) path0.substring(0, path0.length - 1) else path0
+    val idx   = path.lastIndexOf('/')
 
-trait ZipArchive extends AbstractFile {
+    if (idx < 0)
+      if (front) "/"
+      else path
+    else
+      if (front) path.substring(0, idx + 1)
+      else path.substring(idx + 1)
+  }
+}
+import ZipArchive._
+
+abstract class ZipArchive(override val file: JFile) extends AbstractFile with Equals {
   self =>
 
-  // The root of this archive, populated lazily.  Implemented by File and URL.
-  def root: DirEntry
-
-  // AbstractFile members with common implementations in File and URL
-  override def lookupName(name: String, directory: Boolean) = root.lookupName(name, directory)
-  override def lookupNameUnchecked(name: String, directory: Boolean) = unsupported
-  override def iterator = root.iterator
-  override def isDirectory = true
-
-  // Will be the root dir entry node after being populated.
-  protected val rootDirEntry = new DirEntry("/")
-  // Collected Paths -> DirEntries
-  private val dirs = newHashMap[DirEntry]() += ("/" -> rootDirEntry)
-  // Override if there's one available
-  def zipFile: ZipFile = null
+  override def underlyingSource = Some(this)
+  def isDirectory = true
+  def lookupName(name: String, directory: Boolean) = unsupported
+  def lookupNameUnchecked(name: String, directory: Boolean) = unsupported
+  def create()  = unsupported
+  def delete()  = unsupported
+  def output    = unsupported
+  def container = unsupported
+  def absolute  = unsupported
   
+  private def walkIterator(its: Iterator[AbstractFile]): Iterator[AbstractFile] = {
+    its flatMap { f =>
+      if (f.isDirectory) walkIterator(f.iterator)
+      else Iterator(f)
+    }
+  }
+  def deepIterator = walkIterator(iterator)
+
   sealed abstract class Entry(path: String) extends VirtualFile(baseName(path), path) {
-    def zipEntry: ZipEntry
-    def parent: DirEntry
-    
-    override def container: DirEntry = parent
+    // have to keep this name for compat with sbt's compiler-interface
+    def getArchive: ZipFile = null
     override def underlyingSource = Some(self)
-    final override def path = self + "(" + super.path + ")"
-    final override def equals(other: Any) = this eq other.asInstanceOf[AnyRef]
-    final override def hashCode = super.path.##
+    override def toString = self.path + "(" + path + ")"
   }
   class DirEntry(path: String) extends Entry(path) {
-    var zipEntry: ZipEntry = _
-    val entries = newHashMap[Entry]()
-    
-    def parent = getDir(dirName(path))
-    override def lastModified: Long =
-      if (zipEntry ne null) zipEntry.getTime() else super.lastModified
+    val entries = mutable.HashMap[String, Entry]()
+
     override def isDirectory = true
     override def iterator = entries.valuesIterator
     override def lookupName(name: String, directory: Boolean): Entry = {
@@ -87,108 +94,140 @@ trait ZipArchive extends AbstractFile {
       else entries(name)
     }
   }
-  class FileEntry(path: String, archive: ZipFile, val zipEntry: ZipEntry) extends Entry(path) {
-    def parent = getDir(path)
-    override def input        = archive getInputStream zipEntry
-    override def lastModified = zipEntry.getTime()
-    override def sizeOption   = Some(zipEntry.getSize().toInt)
-  }
   
-  private def dirName(path: String)  = splitPath(path, true)
-  private def baseName(path: String) = splitPath(path, false)
-  private def splitPath(path0: String, front: Boolean): String = {
-    val start = path0.length - 1
-    val path  = if (path0.charAt(start) == '/') path0.substring(0, start) else path0
-    var i     = path.length - 1
-
-    while (i >= 0 && path.charAt(i) != '/')
-      i -= 1
-
-    if (i < 0)
-      if (front) "/"
-      else path
-    else
-      if (front) path.substring(0, i + 1)
-      else path.substring(i + 1)
-  }
-
-  // Not using withDefault to be certain of performance.
-  private def newHashMap[T >: Null]() =
-    new mutable.HashMap[String, T] { override def default(key: String) = null }
-
-  /** If the given path entry has already been created, return the DirEntry.
-   *  Otherwise create it and update both dirs and the parent's dirEntries.
-   *  Not using getOrElseUpdate to be sure of performance.
-   */
-  private def getDir(path: String): DirEntry = {
-    if (dirs contains path) dirs(path)
-    else {
-      val parent   = getDir(dirName(path))
-      val newEntry = new DirEntry(path)
-      parent.entries(newEntry.name) = newEntry
-      dirs(path) = newEntry
-      newEntry
+  private def newDir(dirs: mutable.Map[String, DirEntry], path: String, zipEntry: ZipEntry): DirEntry = {
+    val parent = {
+      val parentPath = dirName(path)
+      if (dirs contains parentPath) dirs(parentPath)
+      else newDir(dirs, parentPath, null)
     }
+    val dir = new DirEntry(path)
+    if (zipEntry != null)
+      dir.lastModified = zipEntry.getTime()
+    parent.entries(baseName(path)) = dir
+    dirs(path) = dir
+    dir    
   }
-
-  protected final def addZipEntry(entry: ZipEntry) {
-    val path = entry.getName
+  protected def getDir(dirs: mutable.Map[String, DirEntry], entry: ZipEntry): DirEntry = {
+    val name = entry.getName
     if (entry.isDirectory) {
-      val dir = getDir(path)
-      if (dir.zipEntry == null)
-        dir.zipEntry = entry
+      if (dirs contains name) {
+        val existing = dirs(name)
+        if (existing.lastModified <= 0)
+          existing.lastModified = entry.getTime()
+        existing
+      }
+      else newDir(dirs, name, entry)
     }
     else {
-      val parent   = getDir(dirName(path))
-      val newEntry = new FileEntry(path, zipFile, entry)
-
-      parent.entries(newEntry.name) = newEntry
+      val path = dirName(name)
+      if (dirs contains path) dirs(path)
+      else newDir(dirs, path, null)
     }
   }
 }
 
-final class FileZipArchive(file: File, override val zipFile: ZipFile) extends PlainFile(file) with ZipArchive {  
-  lazy val root: DirEntry = {
-    val enum = zipFile.entries()
-    while (enum.hasMoreElements)
-      addZipEntry(enum.nextElement)
-      
-    rootDirEntry
-  }
-}
-
-final class URLZipArchive(url: URL) extends AbstractFile with ZipArchive {
-  lazy val root: DirEntry = {
-    val in = new ZipInputStream(new ByteArrayInputStream(Streamable.bytes(input)))
+final class FileZipArchive(file: JFile) extends ZipArchive(file) {
+  def iterator = {
+    val zipFile = new ZipFile(file)
+    val root    = new DirEntry("/")
+    val dirs    = mutable.HashMap[String, DirEntry]("/" -> root)
+    val enum    = zipFile.entries()
     
-    @annotation.tailrec def loop() {
-      if (in.available != 0) {
-        val entry = in.getNextEntry()
-        if (entry != null) {
-          addZipEntry(entry)
-          in.closeEntry()
-          loop()
+    while (enum.hasMoreElements) {
+      val zipEntry = enum.nextElement
+      val dir = getDir(dirs, zipEntry)
+      if (zipEntry.isDirectory) dir
+      else {
+        class FileEntry() extends Entry(zipEntry.getName) {
+          override def getArchive = zipFile
+          override def input      = getArchive getInputStream zipEntry
+          override def sizeOption = Some(zipEntry.getSize().toInt)
         }
+        val f = new FileEntry()
+        f.lastModified = zipEntry.getTime()
+        dir.entries(f.name) = f
       }
     }
-    try loop()
-    finally in.close()
 
-    rootDirEntry
+    try root.iterator
+    finally dirs.clear()
   }
 
-  def name: String = url.getFile()
-  def path: String = url.getPath()
-  def input: InputStream = url.openStream()
+  def name         = file.getName
+  def path         = file.getPath
+  def input        = File(file).inputStream()
+  def lastModified = file.lastModified
+
+  override def sizeOption = Some(file.length.toInt)
+  override def canEqual(other: Any) = other.isInstanceOf[FileZipArchive]
+  override def hashCode() = file.hashCode
+  override def equals(that: Any) = that match {
+    case x: FileZipArchive => file.getAbsoluteFile == x.file.getAbsoluteFile
+    case _                 => false
+  }
+}
+
+final class URLZipArchive(val url: URL) extends ZipArchive(null) {
+  def iterator = {
+    val root     = new DirEntry("/")
+    val dirs     = mutable.HashMap[String, DirEntry]("/" -> root)
+    val in       = new ZipInputStream(new ByteArrayInputStream(Streamable.bytes(input)))
+    
+    @tailrec def loop() {
+      val zipEntry = in.getNextEntry()
+      class FileEntry() extends Entry(zipEntry.getName) {
+        override val toByteArray: Array[Byte] = {
+          val len    = zipEntry.getSize().toInt
+          val arr    = new Array[Byte](len)
+          var offset = 0
+
+          def loop() {
+            if (offset < len) {
+              val read = in.read(arr, offset, len - offset)
+              if (read >= 0) {
+                offset += read
+                loop()
+              }
+            }
+          }
+          loop()
+
+          if (offset == arr.length) arr
+          else throw new IOException("Input stream truncated: read %d of %d bytes".format(offset, len))
+        }
+        override def sizeOption = Some(zipEntry.getSize().toInt)
+      }
+
+      if (zipEntry != null) {
+        val dir = getDir(dirs, zipEntry)
+        if (zipEntry.isDirectory)
+          dir
+        else {
+          val f = new FileEntry()
+          dir.entries(f.name) = f
+        }
+        in.closeEntry()
+        loop()
+      }
+    }
+    
+    loop()
+    try root.iterator
+    finally dirs.clear()
+  }
+
+  def name  = url.getFile()
+  def path  = url.getPath()
+  def input = url.openStream()
   def lastModified =
     try url.openConnection().getLastModified()
-    catch { case _: IOException => 0 }
+    catch { case _: IOException => 0 }  
   
-  /** Methods we don't support but have to implement because of the design */
-  def absolute  = this
-  def file      = null
-  def create()  = unsupported
-  def delete()  = unsupported
-  def output    = unsupported
-  def container = unsupported
+  override def canEqual(other: Any) = other.isInstanceOf[URLZipArchive]
+  override def hashCode() = url.hashCode
+  override def equals(that: Any) = that match {
+    case x: URLZipArchive => url == x.url
+    case _                => false
+  }
 }

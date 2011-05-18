@@ -13,7 +13,7 @@ import io.AbstractFile
  *  interchangeably.   Except of course without the mutants.
  */
 
-trait AbsSettings {
+trait AbsSettings extends scala.reflect.internal.settings.AbsSettings {
   type Setting <: AbsSetting      // Fix to the concrete Setting type
   type ResultOfTryToSet           // List[String] in mutable, (Settings, List[String]) in immutable
   def errorFn: String => Unit
@@ -51,12 +51,6 @@ trait AbsSettings {
 
   implicit lazy val SettingOrdering: Ordering[Setting] = Ordering.ordered
   
-  trait AbsSettingValue {
-    type T <: Any
-    def value: T
-    def isDefault: Boolean
-  }
-
   trait AbsSetting extends Ordered[Setting] with AbsSettingValue {    
     def name: String
     def helpDescription: String

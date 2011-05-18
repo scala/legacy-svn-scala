@@ -10,9 +10,8 @@ package backend.jvm
 import java.io.{ DataOutputStream, OutputStream }
 import java.nio.ByteBuffer
 import scala.collection.{ mutable, immutable }
-import scala.reflect.generic.{ PickleFormat, PickleBuffer }
+import scala.reflect.internal.pickling.{ PickleFormat, PickleBuffer }
 import scala.tools.reflect.SigParser
-import scala.tools.nsc.io.{ AbstractFile, Path }
 import scala.tools.nsc.util.ScalaClassLoader
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.symtab.classfile.ClassfileConstants._
@@ -83,7 +82,13 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
           else new ClassBytecodeWriter with JavapBytecodeWriter { }
       }
       val codeGenerator = new BytecodeGenerator(bytecodeWriter)
-      classes.values foreach (codeGenerator genClass _)
+      classes.values foreach { c =>
+        try codeGenerator.genClass(c)
+        catch {
+          case e: JCode.CodeSizeTooBigException =>
+            log("Skipped class %s because it has methods that are too long.".format(c.toString))
+        }
+      }
       bytecodeWriter.close()
       classes.clear()
     }
@@ -786,6 +791,14 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       addExceptionsAttribute(jmethod, excs)
       addAnnotations(jmethod, others)
       addParamAnnotations(jmethod, m.params.map(_.sym.annotations))
+      
+      // check for code size
+      try jmethod.freeze()
+      catch {
+        case e: JCode.CodeSizeTooBigException =>
+          clasz.cunit.error(m.symbol.pos, "Code size exceeds JVM limits: %d".format(e.codeSize))
+          throw e
+      }
     }
 
     private def addRemoteException(jmethod: JMethod, meth: Symbol) {
