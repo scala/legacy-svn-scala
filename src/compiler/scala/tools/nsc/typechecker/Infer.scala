@@ -483,7 +483,7 @@ trait Infer {
     */
     def protoTypeArgs(tparams: List[Symbol], formals: List[Type], restpe: Type,
                       pt: Type): List[Type] = {
-      /** Map type variable to its instance, or, if `variance' is covariant/contravariant,
+      /** Map type variable to its instance, or, if `variance` is covariant/contravariant,
        *  to its upper/lower bound */
       def instantiateToBound(tvar: TypeVar, variance: Int): Type = try {
         lazy val hiBounds = tvar.constr.hiBounds
@@ -557,7 +557,7 @@ trait Infer {
      *
      * Rewrite for repeated param types:  Map T* entries to Seq[T].
      *  @return map from tparams to inferred arg, if inference was successful, tparams that map to None are considered left undetermined
-     *    type parameters that are inferred as `scala.Nothing' and that are not covariant in <code>restpe</code> are taken to be undetermined
+     *    type parameters that are inferred as `scala.Nothing` and that are not covariant in <code>restpe</code> are taken to be undetermined
      */
     def adjustTypeArgs(tparams: List[Symbol], targs: List[Type], restpe: Type = WildcardType): AdjustedTypeArgs.Result  = {
       @inline def notCovariantIn(tparam: Symbol, restpe: Type) =
@@ -581,7 +581,7 @@ trait Infer {
     /** Return inferred type arguments, given type parameters, formal parameters,
     *  argument types, result type and expected result type.
     *  If this is not possible, throw a <code>NoInstance</code> exception.
-    *  Undetermined type arguments are represented by `definitions.NothingClass.tpe'.
+    *  Undetermined type arguments are represented by `definitions.NothingClass.tpe`.
     *  No check that inferred parameters conform to their bounds is made here.
     *
     *  bq: was private, but need it for unapply checking
@@ -730,8 +730,8 @@ trait Infer {
      *  @param undetparams ...
      *  @param ftpe        the type of the function (often a MethodType)
      *  @param argtpes     the argument types; a NamedType(name, tp) for named
-     *    arguments. For each NamedType, if `name' does not exist in `ftpe', that
-     *    type is set to `Unit', i.e. the corresponding argument is treated as
+     *    arguments. For each NamedType, if `name` does not exist in `ftpe`, that
+     *    type is set to `Unit`, i.e. the corresponding argument is treated as
      *    an assignment expression (@see checkNames).
      *  @param pt          ...
      *  @return            ...
@@ -960,7 +960,7 @@ trait Infer {
         false
     }
 /*
-    /** Is type `tpe1' a strictly better expression alternative than type `tpe2'?
+    /** Is type `tpe1` a strictly better expression alternative than type `tpe2`?
      */
     def isStrictlyBetterExpr(tpe1: Type, tpe2: Type) = {
       isMethod(tpe2) && !isMethod(tpe1) ||
@@ -968,7 +968,7 @@ trait Infer {
       isStrictlyBetter(tpe1, tpe2)
     }
 
-    /** Is type `tpe1' a strictly better alternative than type `tpe2'?
+    /** Is type `tpe1` a strictly better alternative than type `tpe2`?
      *  non-methods are always strictly better than methods
      *  nullary methods are always strictly better than non-nullary
      *  if both are non-nullary methods, then tpe1 is strictly better than tpe2 if
@@ -1066,12 +1066,12 @@ trait Infer {
       }
       errorMessages.toList
     }
-    /** Substitute free type variables `undetparams' of polymorphic argument
-     *  expression `tree', given two prototypes `strictPt', and `lenientPt'.
-     *  `strictPt' is the first attempt prototype where type parameters
-     *  are left unchanged. `lenientPt' is the fall-back prototype where type
-     *  parameters are replaced by `WildcardType's. We try to instantiate
-     *  first to `strictPt' and then, if this fails, to `lenientPt'. If both
+    /** Substitute free type variables `undetparams` of polymorphic argument
+     *  expression `tree`, given two prototypes `strictPt`, and `lenientPt`.
+     *  `strictPt` is the first attempt prototype where type parameters
+     *  are left unchanged. `lenientPt` is the fall-back prototype where type
+     *  parameters are replaced by `WildcardType`s. We try to instantiate
+     *  first to `strictPt` and then, if this fails, to `lenientPt`. If both
      *  attempts fail, an error is produced.
      */
     def inferArgumentInstance(tree: Tree, undetparams: List[Symbol], strictPt: Type, lenientPt: Type) {
@@ -1113,8 +1113,8 @@ trait Infer {
       }
     }
 
-    /** Substitute free type variables `undetparams' of polymorphic argument
-     *  expression <code>tree</code> to `targs', Error if `targs' is null
+    /** Substitute free type variables `undetparams` of polymorphic argument
+     *  expression `tree` to `targs`, Error if `targs` is null.
      *
      *  @param tree ...
      *  @param undetparams ...
@@ -1492,8 +1492,8 @@ trait Infer {
 
     /** Assign <code>tree</code> the symbol and type of the alternative which
      *  matches prototype <code>pt</code>, if it exists.
-     *  If several alternatives match `pt', take parameterless one.
-     *  If no alternative matches `pt', take the parameterless one anyway.
+     *  If several alternatives match `pt`, take parameterless one.
+     *  If no alternative matches `pt`, take the parameterless one anyway.
      */
     def inferExprAlternative(tree: Tree, pt: Type): Unit = tree.tpe match {
       case OverloadedType(pre, alts) => tryTwice {
@@ -1545,7 +1545,7 @@ trait Infer {
     }
 
     /** Assign <code>tree</code> the type of an alternative which is applicable
-     *  to <code>argtpes</code>, and whose result type is compatible with `pt'.
+     *  to <code>argtpes</code>, and whose result type is compatible with `pt`.
      *  If several applicable alternatives exist, drop the alternatives which use
      *  default arguments, then select the most specialized one.
      *  If no applicable alternative exists, and pt != WildcardType, try again
@@ -1555,7 +1555,7 @@ trait Infer {
      *  @param argtpes contains the argument types. If an argument is named, as
      *    "a = 3", the corresponding type is `NamedType("a", Int)'. If the name
      *    of some NamedType does not exist in an alternative's parameter names,
-     *    the type is replaces by `Unit', i.e. the argument is treated as an
+     *    the type is replaces by `Unit`, i.e. the argument is treated as an
      *    assignment expression.
      */
     def inferMethodAlternative(tree: Tree, undetparams: List[Symbol],
@@ -1583,7 +1583,7 @@ trait Infer {
             if (allApplicable.lengthCompare(1) <= 0) allApplicable
             else allApplicable filter (alt => {
               val mtypes = followApply(alt.tpe) match {
-                // for functional values, the `apply' method might be overloaded
+                // for functional values, the `apply` method might be overloaded
                 case OverloadedType(_, alts) => alts map (_.tpe)
                 case t                       => List(t)
               }
