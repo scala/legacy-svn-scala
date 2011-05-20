@@ -125,22 +125,12 @@ text-decoration: none;
   padding: 8px;
 }
 
-#signature > span.kind {
+#signature > span {
+  padding-left: 0.0em;
   display: inline;
-  float: left;
-  text-align: left;
-  width: auto;
   position: static;
-  text-shadow: 2px white;
   text-shadow: white 0px 1px 0px;
-}
-
-#signature > span.symbol {
-  text-align: left;
-  display: inline;
-  padding-left: 0.7em;
-  text-shadow: 2px white;
-  text-shadow: white 0px 1px 0px;
+  width: auto;
 }
 
 /* Linear super types and known subclasses */
@@ -288,10 +278,10 @@ div.members > ol > li:last-child {
   text-shadow: white 0px 1px 0px;
 }
 
-.signature .kind {
+.signature_kind {
   position: absolute;
   text-align: right;
-  width: 8em;
+  width: 14em;
 }
 
 .signature > a > .symbol > .name {
@@ -308,7 +298,7 @@ div.members > ol > li:last-child {
 
 .signature .symbol {
   display: block;
-  padding-left: 8.7em;
+  padding-left: 14.7em;
 }
 
 .signature .name {
@@ -453,7 +443,7 @@ div.members > ol > li:last-child {
 
 p.comment {
   display: block;
-  margin-left: 8.7em;
+  margin-left: 14.7em;
   margin-top: 5px;
 }
 
@@ -475,11 +465,11 @@ div.fullcomment {
 #template div.fullcommenttop,
 #template div.fullcomment {
   display:none;
-  margin: 5px 0 0 8.7em;
+  margin: 5px 0 0 14.7em;
 }
 
 #template .shortcomment {
-  margin: 5px 0 0 8.7em;
+  margin: 5px 0 0 14.7em;
   padding: 0;
 }
 

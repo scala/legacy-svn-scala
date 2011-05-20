@@ -229,8 +229,8 @@ abstract class HtmlPage { thisPage =>
     case tpl :: tpls => templateToHtml(tpl) ++ sep ++ templatesToHtml(tpls, sep)
   }
   
-  def docEntityKindToString(ety: DocTemplateEntity) = 
-  	if (ety.isTrait) "trait" 
+  def docEntityKindToString(ety: DocTemplateEntity) =
+    if (ety.isTrait) "trait"
   	else if (ety.isCaseClass) "case class"
   	else if (ety.isClass) "class" 
   	else if (ety.isObject) "object" 
