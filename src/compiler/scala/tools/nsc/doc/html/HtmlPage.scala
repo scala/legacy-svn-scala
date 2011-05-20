@@ -214,7 +214,7 @@ abstract class HtmlPage { thisPage =>
   def templateToHtml(tpl: TemplateEntity) = tpl match {
     case dTpl: DocTemplateEntity =>
       if (hasPage(dTpl)) {
-        <a href={ relativeLinkTo(dTpl) } class="extype" name={ dTpl.qualifiedName }>{ dTpl.name }</a>
+        <a href={ relativeLinkTo(dTpl) } class="extype" name={ dTpl.qualifiedName + (if (dTpl.deprecation.isDefined) " deprecated" else "") }>{ dTpl.name }</a>
       } else {
         xml.Text(dTpl.name)
       }

@@ -28,20 +28,12 @@ class ReferenceIndex(letter: Char, index: doc.Index, universe: Universe) extends
 
   private def entry(name: String, methods: Iterable[MemberEntity]) = {
     val occurrences = methods.map(method => {
-      val html = templateToHtml(method.inDefinitionTemplates.head)
-      if (method.deprecation.isDefined) {
-        <strike>{ html }</strike>
-      } else {
-        html
-      }
+      templateToHtml(method.inDefinitionTemplates.head)
     })
 
     <div class="entry">
-      <div class="name">{
-        if (methods.find { ! _.deprecation.isDefined } != None)
-          name
-        else
-          <strike>{ name }</strike>
+      <div class={"name" + (if (methods.find { ! _.deprecation.isDefined } != None) "" else " deprecated")}>{
+        name
       }</div>
       <div class="occurrences">{
         for (owner <- occurrences) yield owner ++ xml.Text(" ")
