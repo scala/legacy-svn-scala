@@ -40,7 +40,9 @@ class Lexer extends StdLexical with ImplicitConversions {
   }
 
   /** A string is a collection of zero or more Unicode characters, wrapped in
-   *  double quotes, using backslash escapes (cf. http://www.json.org/).
+   *  double quotes, using backslash escapes.
+   *
+   *  @see [[http://www.json.org]]
    */
   def string = '\"' ~> rep(charSeq | chrExcept('\"', '\n', EofCh)) <~ '\"' ^^ { _ mkString "" }
 
