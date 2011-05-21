@@ -13,8 +13,6 @@ import java.{ lang => jl }
 import java.math.{ MathContext, BigDecimal => BigDec }
 import scala.collection.immutable.NumericRange
 
-import annotation.migration
-
 /** 
  *  @author  Stephane Micheloud
  *  @version 1.0
@@ -177,8 +175,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
     if (isWhole) unifiedPrimitiveHashcode
     else doubleValue.##
 
-  /** Compares this BigDecimal with the specified value for equality.
-   */
+  /** Compares this BigDecimal with the specified value for equality. */
   override def equals (that: Any): Boolean = that match {
     case that: BigDecimal     => this equals that 
     case that: BigInt         => this.toBigIntExact exists (that equals _)
@@ -203,40 +200,31 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
    */
   def equals (that: BigDecimal): Boolean = compare(that) == 0
 
-  /** Compares this BigDecimal with the specified BigDecimal
-   */
+  /** Compares this BigDecimal with the specified BigDecimal. */
   def compare (that: BigDecimal): Int = this.bigDecimal compareTo that.bigDecimal
 
-  /** Less-than-or-equals comparison of BigDecimals
-   */
+  /** Less-than-or-equals comparison of BigDecimals. */
   def <= (that: BigDecimal): Boolean = compare(that) <= 0
 
-  /** Greater-than-or-equals comparison of BigDecimals
-   */
+  /** Greater-than-or-equals comparison of BigDecimals. */
   def >= (that: BigDecimal): Boolean = compare(that) >= 0
 
-  /** Less-than of BigDecimals
-   */
+  /** Less-than of BigDecimals. */
   def <  (that: BigDecimal): Boolean = compare(that) <  0
 
-  /** Greater-than comparison of BigDecimals
-   */
+  /** Greater-than comparison of BigDecimals. */
   def >  (that: BigDecimal): Boolean = compare(that) > 0
 
-  /** Addition of BigDecimals
-   */
+  /** Addition of BigDecimals. */
   def +  (that: BigDecimal): BigDecimal = this.bigDecimal.add(that.bigDecimal, mc)
 
-  /** Subtraction of BigDecimals
-   */
+  /** Subtraction of BigDecimals. */
   def -  (that: BigDecimal): BigDecimal = this.bigDecimal.subtract(that.bigDecimal, mc)
 
-  /** Multiplication of BigDecimals
-   */
+  /** Multiplication of BigDecimals. */
   def *  (that: BigDecimal): BigDecimal = this.bigDecimal.multiply(that.bigDecimal, mc)
 
-  /** Division of BigDecimals
-   */
+  /** Division of BigDecimals. */
   def /  (that: BigDecimal): BigDecimal = this.bigDecimal.divide(that.bigDecimal, mc)
   
   /** Division and Remainder - returns tuple containing the result of 
@@ -247,37 +235,29 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
       case Array(q, r)  => (q, r)
     }
   
-  /** Divide to Integral value.
-   */
+  /** Divide to Integral value. */
   def quot (that: BigDecimal): BigDecimal =
     this.bigDecimal.divideToIntegralValue(that.bigDecimal, mc)
 
-  /** Returns the minimum of this and that
-   */
+  /** Returns the minimum of this and that. */
   def min (that: BigDecimal): BigDecimal = this.bigDecimal min that.bigDecimal
 
-  /** Returns the maximum of this and that
-   */
+  /** Returns the maximum of this and that. */
   def max (that: BigDecimal): BigDecimal = this.bigDecimal max that.bigDecimal
 
-  /** Remainder after dividing this by that.
-   */
+  /** Remainder after dividing this by that. */
   def remainder (that: BigDecimal): BigDecimal = this.bigDecimal.remainder(that.bigDecimal, mc)
   
-  /** Remainder after dividing this by that.
-   */
+  /** Remainder after dividing this by that. */
   def % (that: BigDecimal): BigDecimal = this.remainder(that)
   
-  /** Returns a BigDecimal whose value is this ** n.
-   */
+  /** Returns a BigDecimal whose value is this ** n. */
   def pow (n: Int): BigDecimal = this.bigDecimal.pow(n, mc)
 
-  /** Returns a BigDecimal whose value is the negation of this BigDecimal
-   */
+  /** Returns a BigDecimal whose value is the negation of this BigDecimal. */
   def unary_- : BigDecimal = this.bigDecimal.negate(mc)
   
-  /** Returns the absolute value of this BigDecimal
-   */
+  /** Returns the absolute value of this BigDecimal. */
   def abs: BigDecimal = this.bigDecimal abs mc
 
   /** Returns the sign of this BigDecimal, i.e. 
@@ -287,24 +267,33 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
    */
   def signum: Int = this.bigDecimal.signum()
 
-  /** Returns the precision of this `BigDecimal`.
-   */
+  /** Returns the precision of this `BigDecimal`. */
   def precision: Int = this.bigDecimal.precision()
   
-  /** Returns a BigDecimal rounded according to the MathContext settings.
-   */
+  /** Returns a BigDecimal rounded according to the MathContext settings. */
   def round(mc: MathContext): BigDecimal = this.bigDecimal round mc
 
-  /** Returns the scale of this `BigDecimal`.
-   */
+  /** Returns the scale of this `BigDecimal`. */
   def scale: Int = this.bigDecimal.scale()
   
-  /** Returns the size of an ulp, a unit in the last place, of this BigDecimal.
-   */
+  /** Returns the size of an ulp, a unit in the last place, of this BigDecimal. */
   def ulp: BigDecimal = this.bigDecimal.ulp
-  
-  /** Returns a new BigDecimal based on the supplied MathContext.
+
+  /** Moves the decimal point to the left by the specified amount of digits.
+   *
+   *  @param  by amount of digits by which the decimal point is moved to the left.
+   *  @return new BigDecimal with decimal point moved to the left
    */
+  def movePointLeft(by: Int) = this.bigDecimal.movePointLeft(by)
+
+  /** Moves the decimal point to the right by the specified amount of digits.
+   *
+   *  @param  by amount of digits by which the decimal point is moved to the right.
+   *  @return new BigDecimal with decimal point moved to the right
+   */
+  def movePointRight(by: Int) = this.bigDecimal.movePointRight(by)
+  
+  /** Returns a new BigDecimal based on the supplied MathContext. */
   def apply(mc: MathContext): BigDecimal = BigDecimal(this.bigDecimal.toString, mc)
 
   /** Returns a `BigDecimal` whose scale is the specified value, and whose value is
@@ -366,8 +355,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
    */
   def doubleValue = this.bigDecimal.doubleValue
   
-  /** This BigDecimal as an exact value.
-   */
+  /** This BigDecimal as an exact value. */
   def toByteExact = bigDecimal.byteValueExact
   def toShortExact = bigDecimal.shortValueExact
   def toIntExact = bigDecimal.intValueExact
@@ -399,8 +387,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
   /** Like `until`, but inclusive of the end value. */
   def to(end: BigDecimal, step: BigDecimal) = Range.BigDecimal.inclusive(this, end, step)
 
-  /** Converts this `BigDecimal` to a scala.BigInt.
-   */
+  /** Converts this `BigDecimal` to a scala.BigInt. */
   def toBigInt(): BigInt = new BigInt(this.bigDecimal.toBigInteger())
   
   /** Converts this `BigDecimal` to a scala.BigInt if it
@@ -410,8 +397,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
     try Some(new BigInt(this.bigDecimal.toBigIntegerExact()))
     catch { case _: ArithmeticException => None }
 
-  /** Returns the decimal String representation of this BigDecimal.
-   */
+  /** Returns the decimal String representation of this BigDecimal. */
   override def toString(): String = this.bigDecimal.toString()
 
 }
