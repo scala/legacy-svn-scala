@@ -42,8 +42,7 @@ sealed abstract class JSONType {
  */
 object JSONFormat {
   /**
-   * This type defines a function that can be used to
-   * format values into JSON format.
+   * This type defines a function that can be used to format values into JSON format.
    */
   type ValueFormatter = Any => String
 
@@ -60,8 +59,7 @@ object JSONFormat {
   }
 
   /**
-   * This function can be used to properly quote Strings
-   * for JSON output.
+   * This function can be used to properly quote Strings for JSON output.
    */
   def quoteString (s : String) : String =
     s.map {
@@ -97,7 +95,8 @@ case class JSONObject (obj : Map[String,Any]) extends JSONType {
 }
 
 /**
- *  Represents a JSON Array (list). 
+ *  Represents a JSON Array (list).
+ *
  *  @author Derek Chen-Becker <"java"+@+"chen-becker"+"."+"org">
  */
 case class JSONArray (list : List[Any]) extends JSONType {
@@ -119,7 +118,7 @@ class Parser extends StdTokenParsers with ImplicitConversions {
   lexical.reserved ++= List("true", "false", "null")
   lexical.delimiters ++= List("{", "}", "[", "]", ":", ",")
 
-  /** Type signature for functions that can parse numeric literals */
+  /** Type signature for functions that can parse numeric literals. */
   type NumericParser = String => Any
   
   // Global default number parsing function

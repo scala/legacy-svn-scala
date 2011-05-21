@@ -189,7 +189,7 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
     lookup((f, p, dir) => f.lookupName(p, dir), path, directory)
   }
 
-  /** Return an abstract file that does not check that `path' denotes
+  /** Return an abstract file that does not check that `path` denotes
    *  an existing file.
    */
   def lookupPathUnchecked(path: String, directory: Boolean): AbstractFile = {

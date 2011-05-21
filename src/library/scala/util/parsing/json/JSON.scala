@@ -15,12 +15,14 @@ import scala.util.parsing.combinator.lexical._
 
 /** 
  * This object provides a simple interface to the JSON parser class. The default conversion
- * for numerics is into a double. If you wish to override this behavior at the global level,
- * you can set the globalNumberParser property to your own (String => Any) function. If you only
- * want to override at the per-thread level then you can set the perThreadNumberParser property to your
- * function. For example:
- * 
- * <pre>
+ * for numerics is into a [[scala.Double]]. If you wish to override this behavior at the global level,
+ * you can set the globalNumberParser property to your own `(String => Any)` function. If you only
+ * want to override at the per-thread level then you can set the `perThreadNumberParser` property to your
+ * function.
+ *
+ * For example:
+ *
+ * {{{
  * val myConversionFunc = {input : String => BigDecimal(input)}
  * 
  * // Global override
@@ -28,7 +30,7 @@ import scala.util.parsing.combinator.lexical._
  * 
  * // Per-thread override
  * JSON.perThreadNumberParser = myConversionFunc
- * </pre>
+ * }}}
  *
  *  @author Derek Chen-Becker <"java"+@+"chen-becker"+"."+"org">
  */
@@ -73,9 +75,9 @@ object JSON extends Parser {
     }
   
   /**
-   * Parse the given JSON string and return either a <code>List[Any]</code>
-   * if the JSON string specifies an <code>Array</code>, or a
-   * <code>Map[String,Any]</code> if the JSON string specifies an object.
+   * Parse the given JSON string and return either a `List[Any]`
+   * if the JSON string specifies an `Array`, or a
+   * `Map[String,Any]` if the JSON string specifies an object.
    *
    * @param input the given JSON string.
    * @return      an optional list or map.
