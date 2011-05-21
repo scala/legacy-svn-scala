@@ -11,7 +11,7 @@
 package scala.swing
 
 import event._
-import javax.swing.{ JComponent, JComboBox, JTextField, ComboBoxModel, AbstractListModel, ListCellRenderer, DefaultComboBoxModel }
+import javax.swing.{ JComponent, JComboBox, JTextField, ComboBoxModel, AbstractListModel, ListCellRenderer }
 import java.awt.event.ActionListener
 
 object ComboBox {
@@ -120,18 +120,8 @@ object ComboBox {
   implicit def floatEditor(c: ComboBox[Float]): Editor[Float] = new BuiltInEditor(c)(s => s.toFloat, s => s.toString)
   implicit def doubleEditor(c: ComboBox[Double]): Editor[Double] = new BuiltInEditor(c)(s => s.toDouble, s => s.toString)
   
-  def newConstantModel[A](items: Seq[A]): ComboBoxModel = {
-    // [scalacfork]  anonymous class $anon inherits different type instances of trait ListModel:
-    // [scalacfork] javax.swing.ListModel and javax.swing.ListModel[AnyRef]
-    // [scalacfork]     new AbstractListModel[AnyRef] with ComboBoxModel {
-    // [scalacfork]         ^
-    //
-    // [scalacfork]  anonymous class $anon inherits different type instances of trait ListModel:
-    // [scalacfork] javax.swing.ListModel and javax.swing.ListModel[Nothing]
-    // [scalacfork]     new AbstractListModel with ComboBoxModel {
-    // [scalacfork]         ^
-    
-    new AbstractListModel[A] with ComboBoxModel {
+  def newConstantModel[A](items: Seq[A]): ComboBoxModel[A] = {
+    new AbstractListModel[A] with ComboBoxModel[A] {
       private var selected: A = if (items.isEmpty) null.asInstanceOf[A] else items(0)
       def getSelectedItem = selected.asInstanceOf[AnyRef]
       def setSelectedItem(a: Any) { 
@@ -169,7 +159,7 @@ object ComboBox {
  * @see javax.swing.JComboBox
  */
 class ComboBox[A](items: Seq[A]) extends Component with Publisher {
-  override lazy val peer: JComboBox = new JComboBox(ComboBox.newConstantModel(items)) with SuperMixin
+  override lazy val peer: JComboBox[A] = new JComboBox(ComboBox.newConstantModel(items)) with SuperMixin
   
   object selection extends Publisher {
     def index: Int = peer.getSelectedIndex
@@ -213,8 +203,8 @@ class ComboBox[A](items: Seq[A]) extends Component with Publisher {
     peer.setEditor(editor(this).comboBoxPeer)
   }
   
-  def prototypeDisplayValue: Option[A] = toOption[A](peer.getPrototypeDisplayValue)
+  def prototypeDisplayValue: Option[A] = Option(peer.getPrototypeDisplayValue)
   def prototypeDisplayValue_=(v: Option[A]) { 
-    peer.setPrototypeDisplayValue(v map toAnyRef orNull)
+    peer.setPrototypeDisplayValue(v getOrElse null.asInstanceOf[A])
   }
 }
