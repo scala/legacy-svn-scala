@@ -120,8 +120,7 @@ object ComboBox {
   implicit def floatEditor(c: ComboBox[Float]): Editor[Float] = new BuiltInEditor(c)(s => s.toFloat, s => s.toString)
   implicit def doubleEditor(c: ComboBox[Double]): Editor[Double] = new BuiltInEditor(c)(s => s.toDouble, s => s.toString)
   
-  // XXX Returning null since there's not yet a workaround for #3634.
-  def newConstantModel[A](items: Seq[A]): ComboBoxModel = { null
+  def newConstantModel[A](items: Seq[A]): ComboBoxModel = {
     // [scalacfork]  anonymous class $anon inherits different type instances of trait ListModel:
     // [scalacfork] javax.swing.ListModel and javax.swing.ListModel[AnyRef]
     // [scalacfork]     new AbstractListModel[AnyRef] with ComboBoxModel {
@@ -132,19 +131,19 @@ object ComboBox {
     // [scalacfork]     new AbstractListModel with ComboBoxModel {
     // [scalacfork]         ^
     
-    // new AbstractListModel[A] with ComboBoxModel {
-    //   private var selected: A = if (items.isEmpty) null.asInstanceOf[A] else items(0)
-    //   def getSelectedItem = selected.asInstanceOf[AnyRef]
-    //   def setSelectedItem(a: Any) { 
-    //     if ((selected != null && selected != a) ||
-    //         selected == null && a != null) {
-    //       selected = a.asInstanceOf[A]
-    //       fireContentsChanged(this, -1, -1)
-    //     }
-    //   } 
-    //   def getElementAt(n: Int) = items(n).asInstanceOf[A]
-    //   def getSize = items.size
-    // }
+    new AbstractListModel[A] with ComboBoxModel {
+      private var selected: A = if (items.isEmpty) null.asInstanceOf[A] else items(0)
+      def getSelectedItem = selected.asInstanceOf[AnyRef]
+      def setSelectedItem(a: Any) { 
+        if ((selected != null && selected != a) ||
+            selected == null && a != null) {
+          selected = a.asInstanceOf[A]
+          fireContentsChanged(this, -1, -1)
+        }
+      } 
+      def getElementAt(n: Int) = items(n).asInstanceOf[A]
+      def getSize = items.size
+    }
   }
   
   /*def newMutableModel[A, Self](items: Seq[A] with scala.collection.mutable.Publisher[scala.collection.mutable.Message[A], Self]): ComboBoxModel = {
