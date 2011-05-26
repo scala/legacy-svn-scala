@@ -95,35 +95,17 @@ abstract class ZipArchive(override val file: JFile) extends AbstractFile with Eq
     }
   }
   
-  private def newDir(dirs: mutable.Map[String, DirEntry], path: String, zipEntry: ZipEntry): DirEntry = {
-    val parent = {
-      val parentPath = dirName(path)
-      if (dirs contains parentPath) dirs(parentPath)
-      else newDir(dirs, parentPath, null)
-    }
-    val dir = new DirEntry(path)
-    if (zipEntry != null)
-      dir.lastModified = zipEntry.getTime()
-    parent.entries(baseName(path)) = dir
-    dirs(path) = dir
-    dir    
+  private def ensureDir(dirs: mutable.Map[String, DirEntry], path: String, zipEntry: ZipEntry): DirEntry = {
+    dirs.getOrElseUpdate(path, {
+      val parent = ensureDir(dirs, dirName(path), null)
+      val dir    = new DirEntry(path)
+      parent.entries(baseName(path)) = dir
+      dir
+    })
   }
   protected def getDir(dirs: mutable.Map[String, DirEntry], entry: ZipEntry): DirEntry = {
-    val name = entry.getName
-    if (entry.isDirectory) {
-      if (dirs contains name) {
-        val existing = dirs(name)
-        if (existing.lastModified <= 0)
-          existing.lastModified = entry.getTime()
-        existing
-      }
-      else newDir(dirs, name, entry)
-    }
-    else {
-      val path = dirName(name)
-      if (dirs contains path) dirs(path)
-      else newDir(dirs, path, null)
-    }
+    if (entry.isDirectory) ensureDir(dirs, entry.getName, entry)
+    else ensureDir(dirs, dirName(entry.getName), null)
   }
 }
 
@@ -140,12 +122,12 @@ final class FileZipArchive(file: JFile) extends ZipArchive(file) {
       if (zipEntry.isDirectory) dir
       else {
         class FileEntry() extends Entry(zipEntry.getName) {
-          override def getArchive = zipFile
-          override def input      = getArchive getInputStream zipEntry
-          override def sizeOption = Some(zipEntry.getSize().toInt)
+          override def getArchive   = zipFile
+          override def lastModified = zipEntry.getTime()
+          override def input        = getArchive getInputStream zipEntry
+          override def sizeOption   = Some(zipEntry.getSize().toInt)
         }
         val f = new FileEntry()
-        f.lastModified = zipEntry.getTime()
         dir.entries(f.name) = f
       }
     }
