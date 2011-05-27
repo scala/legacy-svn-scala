@@ -338,8 +338,8 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       // A list of annotations which don't show their arguments, e. g. because they are shown separately.
       val annotationsWithHiddenArguments = List("deprecated", "Deprecated", "migration")
 
-      def showArguments(annotation: Annotation) =
-        if (annotationsWithHiddenArguments.contains(annotation.qualifiedName)) false else true
+      def showArguments(annotation: Annotation): Boolean =
+        !annotationsWithHiddenArguments.contains(annotation.qualifiedName)
 
       if (!mbr.annotations.isEmpty) {
         <dt>Annotations</dt>
@@ -371,15 +371,12 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
         <dd class="cmt">{ bodyToHtml(mbr.deprecation.get) }</dd>
       }
 
-    val migration: Seq[scala.xml.Node] = {
-      mbr.annotations.find(_.qualifiedName == "migration") match {
-        case None => NodeSeq.Empty
-        case Some(mig) => {
+    val migration: Seq[scala.xml.Node] =
+      if(mbr.migration.isEmpty || isReduced) NodeSeq.Empty
+      else {
           <dt>Migration</dt>
-          <dd class="cmt"><p>{mig.arguments.view.map(_.value).drop(2).mkString(" ")}</p></dd>
-        }
+          <dd class="cmt">{ bodyToHtml(mbr.migration.get) }</dd>
       }
-    }
 
     val mainComment: Seq[scala.xml.Node] = mbr.comment match {
       case Some(comment) =>
