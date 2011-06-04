@@ -154,4 +154,3 @@ object Test extends Properties("RedBlack") {
   include(TestInsertion)
   include(TestDeletion)
 }
-
