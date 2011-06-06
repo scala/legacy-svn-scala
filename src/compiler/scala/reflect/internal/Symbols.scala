@@ -318,8 +318,11 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     final def isRootPackage = isPackage && owner == NoSymbol
     
     /** Does this symbol denote a wrapper created by the repl? */
-    final def isInterpreterWrapper = (isModule || isModuleClass) && nme.isReplWrapperName(name)
-
+    final def isInterpreterWrapper = (
+      (isModule || isModuleClass) 
+      && owner.isPackageClass
+      && nme.isReplWrapperName(name)
+    )
     /** Is this symbol an effective root for fullname string?
      */
     def isEffectiveRoot = isRoot || isEmptyPackageClass || isInterpreterWrapper
@@ -388,7 +391,8 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
      *  unpleasantries like Predef.String, $iw.$iw.Foo and <empty>.Bippy.
      */
     final def printWithoutPrefix = !settings.debug.value && (
-      isScalaPackageClass || isPredefModule || isEffectiveRoot || isAnonOrRefinementClass || isInterpreterWrapper
+      isScalaPackageClass || isPredefModule || isEffectiveRoot || isAnonOrRefinementClass ||
+      nme.isReplWrapperName(name) // not isInterpreterWrapper due to nesting
     )
     
     /** Is symbol a monomorphic type?
@@ -691,10 +695,13 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     final def hasAllFlags(mask: Long): Boolean = (flags & mask) == mask
 
     /** The class or term up to which this symbol is accessible,
-     *  or RootClass if it is public.
+     *  or RootClass if it is public.  As java protected statics are
+     *  otherwise completely inaccessible in scala, they are treated
+     *  as public.
      */
     def accessBoundary(base: Symbol): Symbol = {
       if (hasFlag(PRIVATE) || isLocal) owner
+      else if (hasAllFlags(PROTECTED | STATIC | JAVA)) RootClass
       else if (hasAccessBoundary && !phase.erasedTypes) privateWithin
       else if (hasFlag(PROTECTED)) base
       else RootClass

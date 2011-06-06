@@ -7,13 +7,12 @@ package scala.tools.nsc
 package interpreter
 
 import Predef.{ println => _, _ }
-import java.io.{ BufferedReader, FileReader, PrintWriter }
+import java.io.{ BufferedReader, FileReader }
+import java.util.concurrent.locks.ReentrantLock
 import scala.sys.process.Process
 import session._
-import scala.tools.nsc.interpreter.{ Results => IR }
-import scala.tools.util.{ SignalManager, Signallable, Javap }
+import scala.tools.util.{ Signallable, Javap }
 import scala.annotation.tailrec
-import scala.util.control.Exception.{ ignoring }
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ops
 import util.{ ClassPath, Exceptional, stringFromWriter, stringFromStream }
@@ -32,12 +31,13 @@ import io.{ File, Sources }
  *  @author  Lex Spoon
  *  @version 1.2
  */
-class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
+class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
                 extends AnyRef
                    with LoopCommands
+                   with ILoopInit
 {
-  def this(in0: BufferedReader, out: PrintWriter) = this(Some(in0), out)
-  def this() = this(None, new PrintWriter(Console.out, true))
+  def this(in0: BufferedReader, out: JPrintWriter) = this(Some(in0), out)
+  def this() = this(None, new JPrintWriter(Console.out, true))
   
   var in: InteractiveReader = _   // the input stream from which commands come
   var settings: Settings = _
@@ -78,34 +78,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
 
   /** Record a command for replay should the user request a :replay */
   def addReplay(cmd: String) = replayCommandStack ::= cmd
-  
-  /** Try to install sigint handler: ignore failure.  Signal handler
-   *  will interrupt current line execution if any is in progress.
-   * 
-   *  Attempting to protect the repl from accidental exit, we only honor
-   *  a single ctrl-C if the current buffer is empty: otherwise we look
-   *  for a second one within a short time.
-   */
-  private def installSigIntHandler() {
-    def onExit() {
-      Console.println("") // avoiding "shell prompt in middle of line" syndrome
-      sys.exit(1)
-    }
-    ignoring(classOf[Exception]) {
-      SignalManager("INT") = {
-        if (intp == null)
-          onExit()
-        else if (intp.lineManager.running)
-          intp.lineManager.cancel()
-        else if (in.currentLine != "") {
-          // non-empty buffer, so make them hit ctrl-C a second time
-          SignalManager("INT") = onExit()
-          io.timer(5)(installSigIntHandler())  // and restore original handler if they don't
-        }
-        else onExit()
-      }
-    }
-  }
 
   /** Close the interpreter and set the var to null. */
   def closeInterpreter() {
@@ -143,8 +115,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
       settings.classpath append addedClasspath
       
     intp = new ILoopInterpreter
-    intp.setContextClassLoader()
-    installSigIntHandler()
   }
 
   /** print a friendly help message */
@@ -184,19 +154,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     }
   }
   
-  /** Print a welcome message */
-  def printWelcome() {
-    import Properties._
-    val welcomeMsg = 
-     """|Welcome to Scala %s (%s, Java %s).
-        |Type in expressions to have them evaluated.
-        |Type :help for more information.""" .
-    stripMargin.format(versionString, javaVmName, javaVersion)
-    val addendum = if (isReplDebug) "\n" + new java.util.Date else ""
-      
-    echo(welcomeMsg + addendum)
-  }
-  
   /** Show the history */
   lazy val historyCommand = new LoopCommand("history", "show the history (optional num is commands to show)") {
     override def usage = "[num]"
@@ -217,11 +174,17 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     }
   }
 
-  private def echo(msg: String) = {
+  // When you know you are most likely breaking into the middle
+  // of a line being typed.  This softens the blow.
+  protected def echoAndRefresh(msg: String) = {
+    echo("\n" + msg)
+    in.redrawLine()
+  }
+  protected def echo(msg: String) = {
     out println msg
     out.flush()
   }
-  private def echoNoNL(msg: String) = {
+  protected def echoNoNL(msg: String) = {
     out print msg
     out.flush()
   }
@@ -419,10 +382,12 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     try newJavap()
     catch { case _: Exception => null }
   
+  // Still todo: modules.
   private def typeCommand(line: String): Result = {
-    intp.typeOfExpression(line) match {
-      case Some(tp) => tp.toString
-      case _        => "Failed to determine type."
+    if (line.trim == "") ":type <expression>"
+    else intp.typeOfExpression(line, false) match {
+      case Some(tp) => intp.afterTyper(tp.toString)
+      case _        => "" // the error message was already printed
     }
   }
   
@@ -523,8 +488,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
   )
   
   val replayQuestionMessage =
-    """|The repl compiler has crashed spectacularly. Shall I replay your
-       |session? I can re-run all lines except the last one.
+    """|That entry seems to have slain the compiler.  Shall I replay
+       |your session? I can re-run each line except the last one.
        |[y/n]
     """.trim.stripMargin
 
@@ -537,14 +502,12 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
           if (isReplDebug) "[searching " + sources.path + " for exception contexts...]"
           else "[searching for exception contexts...]"
         )
-        echo(Exceptional(ex).force().context())
       }
-      else {
-        echo(util.stackTraceString(ex))
-      }
+      echo(intp.global.throwableAsString(ex))
+
       ex match {
         case _: NoSuchMethodError | _: NoClassDefFoundError =>
-          echo("Unrecoverable error.")
+          echo("\nUnrecoverable error.")
           throw ex
         case _  =>
           def fn(): Boolean =
@@ -566,16 +529,19 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
       in readLine prompt
     }
     // return false if repl should exit
-    def processLine(line: String): Boolean =
+    def processLine(line: String): Boolean = {
+      awaitInitialized()
+      runThunks()
       if (line eq null) false               // assume null means EOF
       else command(line) match {
         case Result(false, _)           => false
         case Result(_, Some(finalLine)) => addReplay(finalLine) ; true
         case _                          => true
       }
+    }
 
     while (true) {
-      try if (!processLine(readOneLine)) return
+      try if (!processLine(readOneLine())) return
       catch crashRecovery
     }
   }
@@ -648,12 +614,13 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
   
   def powerCmd(): Result = {
     if (isReplPower) "Already in power mode."
-    else enablePowerMode()
+    else enablePowerMode(false)
   }
-  def enablePowerMode() = {
+  def enablePowerMode(isAsync: Boolean) = {
     replProps.power setValue true
     power.unleash()
-    echo(power.banner)
+    if (isAsync) asyncMessage(power.banner)
+    else echo(power.banner)
   }
   
   def verbosity() = {
@@ -804,7 +771,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
   def chooseReader(settings: Settings): InteractiveReader = {
     if (settings.Xnojline.value || Properties.isEmacsShell)
       SimpleReader()
-    else try JLineReader(
+    else try new JLineReader(
       if (settings.noCompletion.value) NoCompletion
       else new JLineCompletion(intp)
     )
@@ -814,7 +781,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
         SimpleReader()
     }
   }
-
   def process(settings: Settings): Boolean = {
     this.settings = settings
     createInterpreter()
@@ -822,7 +788,12 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     // sets in to some kind of reader depending on environmental cues
     in = in0 match {
       case Some(reader) => SimpleReader(reader, out, true)
-      case None         => chooseReader(settings)
+      case None         =>
+        // some post-initialization
+        chooseReader(settings) match {
+          case x: JLineReader => addThunk(x.consoleReader.postInit) ; x
+          case x              => x
+        }
     }
 
     loadFiles(settings)
@@ -830,21 +801,18 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     if (intp.reporter.hasErrors)
       return false
     
+    // This is about the illusion of snappiness.  We call initialize()
+    // which spins off a separate thread, then print the prompt and try
+    // our best to look ready.  The interlocking lazy vals tend to
+    // inter-deadlock, so we break the cycle with a single asynchronous
+    // message to an actor.
+    intp initialize initializedCallback()
     printWelcome()
-    try {      
-      // this is about the illusion of snappiness.  We call initialize()
-      // which spins off a separate thread, then print the prompt and try 
-      // our best to look ready.  Ideally the user will spend a
-      // couple seconds saying "wow, it starts so fast!" and by the time
-      // they type a command the compiler is ready to roll.
-      intp.initialize()
-      if (isReplPower) {
-        echo("Starting in power mode, one moment...\n")
-        enablePowerMode()
-      }
-      loop()
-    }
+
+    try loop()
+    catch AbstractOrMissingHandler()
     finally closeInterpreter()
+
     true
   }
 
@@ -885,7 +853,7 @@ object ILoop {
     
     stringFromStream { ostream =>
       Console.withOut(ostream) {
-        val output = new PrintWriter(new OutputStreamWriter(ostream), true) {
+        val output = new JPrintWriter(new OutputStreamWriter(ostream), true) {
           override def write(str: String) = {
             // completely skip continuation lines
             if (str forall (ch => ch.isWhitespace || ch == '|')) ()
@@ -921,7 +889,7 @@ object ILoop {
     stringFromStream { ostream =>
       Console.withOut(ostream) {
         val input    = new BufferedReader(new StringReader(code))
-        val output   = new PrintWriter(new OutputStreamWriter(ostream), true)
+        val output   = new JPrintWriter(new OutputStreamWriter(ostream), true)
         val repl     = new ILoop(input, output)
         
         if (sets.classpath.isDefault)
@@ -950,8 +918,8 @@ object ILoop {
     repl.settings = new Settings(echo)
     repl.settings.embeddedDefaults[T]
     repl.createInterpreter()
-    repl.in = JLineReader(repl)
-    
+    repl.in = new JLineReader(new JLineCompletion(repl))
+
     // rebind exit so people don't accidentally call sys.exit by way of predef
     repl.quietRun("""def exit = println("Type :quit to resume program execution.")""")
     args foreach (p => repl.bind(p.name, p.tpe, p.value))
