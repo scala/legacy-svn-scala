@@ -97,8 +97,8 @@ object Predef extends LowPriorityImplicits {
    *  @param p   the expression to test
    *  @param msg a String to include in the failure message
    */
-  @elidable(ASSERTION)
-  def assert(assertion: Boolean, message: => Any) {
+  @elidable(ASSERTION) @inline
+  final def assert(assertion: Boolean, message: => Any) {
     if (!assertion)
       throw new java.lang.AssertionError("assertion failed: "+ message)
   }
@@ -128,8 +128,8 @@ object Predef extends LowPriorityImplicits {
    *  @param p   the expression to test
    *  @param msg a String to include in the failure message
    */
-  @elidable(ASSERTION)
-  def assume(assumption: Boolean, message: => Any) {
+  @elidable(ASSERTION) @inline
+  final def assume(assumption: Boolean, message: => Any) {
     if (!assumption)
       throw new java.lang.AssertionError("assumption failed: "+ message)
   }
@@ -152,11 +152,11 @@ object Predef extends LowPriorityImplicits {
    *  @param p   the expression to test
    *  @param msg a String to include in the failure message
    */
-  def require(requirement: Boolean, message: => Any) {
+  @inline final def require(requirement: Boolean, message: => Any) {
     if (!requirement)
       throw new IllegalArgumentException("requirement failed: "+ message)
   }
-  
+
   final class Ensuring[A](val x: A) {
     def ensuring(cond: Boolean): A = { assert(cond); x }
     def ensuring(cond: Boolean, msg: => Any): A = { assert(cond, msg); x }
