@@ -404,7 +404,9 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
         var is = infos
         (is eq null) || {
           while (is.prev ne null) { is = is.prev }
-          is.info.isComplete && is.info.typeParams.isEmpty
+          is.info.isComplete && !is.info.isHigherKinded // was: is.info.typeParams.isEmpty. 
+          // YourKit listed the call to PolyType.typeParams as a hot spot but it is likely an artefact. 
+          // The change to isHigherKinded did not reduce the total running time.
         }
       }
 
@@ -693,6 +695,21 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     
     /** Does symbol have ALL the flags in `mask` set? */
     final def hasAllFlags(mask: Long): Boolean = (flags & mask) == mask
+    
+    /** If the given flag is set on this symbol, also set the corresponding
+     *  notFLAG.  For instance if flag is PRIVATE, the notPRIVATE flag will
+     *  be set if PRIVATE is currently set.
+     */
+    final def setNotFlag(flag: Int) = if (hasFlag(flag)) setFlag((flag: @annotation.switch) match {
+      case FINAL     => notFINAL
+      case PRIVATE   => notPRIVATE
+      case DEFERRED  => notDEFERRED
+      case PROTECTED => notPROTECTED
+      case ABSTRACT  => notABSTRACT
+      case OVERRIDE  => notOVERRIDE
+      case METHOD    => notMETHOD
+      case _         => abort("setNotFlag on invalid flag: " + flag)
+    })
 
     /** The class or term up to which this symbol is accessible,
      *  or RootClass if it is public.  As java protected statics are
@@ -1116,13 +1133,13 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
       this == that || this.isError || that.isError ||
       info.baseTypeIndex(that) >= 0
 
-    final def isSubClass(that: Symbol): Boolean = {
+    final def isSubClass(that: Symbol): Boolean = (
       isNonBottomSubClass(that) ||
       this == NothingClass ||
       this == NullClass &&
       (that == AnyClass ||
-       that != NothingClass && (that isSubClass AnyRefClass))
-    }
+       that != NothingClass && (that isSubClass ObjectClass))
+    )
     final def isNumericSubClass(that: Symbol): Boolean =
       definitions.isNumericSubClass(this, that)
 
@@ -1621,11 +1638,11 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
 
     def isExpandedModuleClass: Boolean = name(name.length - 1) == '$'
 */
-    def sourceFile: AbstractFile =
+    def sourceFile: AbstractFileType =
       if (isModule) moduleClass.sourceFile
       else toplevelClass.sourceFile
 
-    def sourceFile_=(f: AbstractFile) {
+    def sourceFile_=(f: AbstractFileType) {
       abort("sourceFile_= inapplicable for " + this)
     }
 
@@ -2105,7 +2122,7 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
   class ClassSymbol(initOwner: Symbol, initPos: Position, initName: TypeName)
   extends TypeSymbol(initOwner, initPos, initName) {
     
-    private var source: AbstractFile = null
+    private var source: AbstractFileType = null
     private var thissym: Symbol = this
     
     final override def isClass = true
@@ -2116,7 +2133,7 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     override def sourceFile =
       if (owner.isPackageClass) source
       else super.sourceFile
-    override def sourceFile_=(f: AbstractFile) { source = f }
+    override def sourceFile_=(f: AbstractFileType) { source = f }
 
     override def reset(completer: Type) {
       super.reset(completer)
@@ -2236,7 +2253,7 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     override def toplevelClass: Symbol = this
     override def enclMethod: Symbol = this
     override def owner: Symbol = abort("no-symbol does not have owner")
-    override def sourceFile: AbstractFile = null
+    override def sourceFile: AbstractFileType = null
     override def ownerChain: List[Symbol] = List()
     override def ownersIterator: Iterator[Symbol] = Iterator.empty
     override def alternatives: List[Symbol] = List()

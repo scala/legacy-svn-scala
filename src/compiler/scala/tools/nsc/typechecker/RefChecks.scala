@@ -1145,13 +1145,14 @@ abstract class RefChecks extends InfoTransform {
     /** If symbol is deprecated, and the point of reference is not enclosed
      *  in either a deprecated member or a scala bridge method, issue a warning.
      */
-    private def checkDeprecated(sym: Symbol, pos: Position) {
+    private def checkDeprecated(sym: Symbol, pos: Position) {      
       if (sym.isDeprecated && !currentOwner.ownerChain.exists(x => x.isDeprecated || x.hasBridgeAnnotation)) {
-        val dmsg = sym.deprecationMessage map (": " + _) getOrElse ""
-
-        unit.deprecationWarning(pos, sym.fullLocationString + " is deprecated" + dmsg)
+        unit.deprecationWarning(pos, "%s%s is deprecated%s".format(
+          sym, sym.locationString, sym.deprecationMessage map (": " + _) getOrElse "")
+        )
       }
     }
+
     /** Similar to deprecation: check if the symbol is marked with @migration
      *  indicating it has changed semantics between versions.
      */
@@ -1230,7 +1231,7 @@ abstract class RefChecks extends InfoTransform {
     private def transformCaseApply(tree: Tree, ifNot: => Unit) = {
       val sym = tree.symbol
       
-      if (sym.isSourceMethod && sym.hasFlag(CASE) && sym.name == nme.apply)
+      if (sym.isSourceMethod && sym.isCase && sym.name == nme.apply)
         toConstructor(tree.pos, tree.tpe)
       else {
         ifNot
@@ -1336,7 +1337,7 @@ abstract class RefChecks extends InfoTransform {
           case DefDef(mods, name, tparams, vparams, tpt, EmptyTree) if tree.symbol.hasAnnotation(NativeAttr) =>
             tree.symbol.resetFlag(DEFERRED)
             transform(treeCopy.DefDef(tree, mods, name, tparams, vparams, tpt, 
-                  typed(Apply(gen.mkAttributedRef(Predef_error), List(Literal("native method stub"))))))
+                  typed(Apply(gen.mkAttributedRef(Sys_error), List(Literal("native method stub"))))))
 
           case ValDef(_, _, _, _) | DefDef(_, _, _, _, _, _) =>
             checkDeprecatedOvers(tree)

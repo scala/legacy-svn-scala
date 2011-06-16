@@ -340,12 +340,21 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
 
     /** Map to a singleton type which is a subtype of this type.
      *  The fallback implemented here gives
-     *    T.narrow  = T' forSome { type T' <: T with Singleton }
+     *    T.narrow  =  (T {}).this.type
      *  Overridden where we know more about where types come from.
+     *
+     *  todo: change to singleton type of an existentially defined variable
+     *  of the right type instead of making this a `this` of a refined type.
      */
     def narrow: Type =
       if (phase.erasedTypes) this
-      else commonOwner(this) freshExistential ".type" setInfo singletonBounds(this) tpe
+      else if (alternativeNarrow) { // investigate why this does not work!
+        val tparam = commonOwner(this) freshExistential ".type" setInfo singletonBounds(this)
+        tparam.tpe
+      } else {
+        val cowner = commonOwner(this)
+        refinedType(List(this), cowner, EmptyScope, cowner.pos).narrow
+      }
 
     /** For a TypeBounds type, itself;
      *  for a reference denoting an abstract type, its bounds,
@@ -583,7 +592,8 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
      *  symbols `from' in this type.
      */
     def subst(from: List[Symbol], to: List[Type]): Type =
-      new SubstTypeMap(from, to) apply this
+      if (from.isEmpty) this
+      else new SubstTypeMap(from, to) apply this
 
     /** Substitute symbols `to' for occurrences of symbols
      *  `from' in this type.
@@ -861,7 +871,7 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
      */
     //TODO: use narrow only for modules? (correct? efficiency gain?)
     def findMember(name: Name, excludedFlags: Long, requiredFlags: Long, stableOnly: Boolean): Symbol = {
-      val suspension = TypeVar.Suspension
+      var suspension: mutable.HashSet[TypeVar] = null
       // if this type contains type variables, put them to sleep for a while -- don't just wipe them out by
       // replacing them by the corresponding type parameter, as that messes up (e.g.) type variables in type refinements
       // without this, the matchesType call would lead to type variables on both sides
@@ -878,10 +888,12 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
         // For now I modified it as below, which achieves the same without error.
         //
         // make each type var in this type use its original type for comparisons instead of collecting constraints
+        val susp = new mutable.HashSet[TypeVar] // use a local val so it remains unboxed
         this foreach {
-          case tv: TypeVar  => suspension suspend tv
-          case _            => ()
+          case tv: TypeVar  => tv.suspended = true; susp += tv
+          case _            => 
         }
+        suspension = susp
       }
 
       incCounter(findMemberCount)
@@ -913,7 +925,7 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
                    (bcs0.head.hasTransOwner(bcs.head)))) {
                 if (name.isTypeName || stableOnly && sym.isStable) {
                   stopTimer(findMemberNanos, start)
-                  suspension.resumeAll
+                  if (suspension ne null) suspension foreach (_.suspended = false)
                   return sym
                 } else if (member == NoSymbol) {
                   member = sym
@@ -930,12 +942,14 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
                   }
                 } else {
                   var prevEntry = members.lookupEntry(sym.name)
+                  var symtpe: Type = null
                   while ((prevEntry ne null) &&
                          !(prevEntry.sym == sym ||
                            prevEntry.sym.owner != sym.owner &&
                            !sym.hasFlag(PRIVATE) && {
                              if (self eq null) self = this.narrow
-                             self.memberType(prevEntry.sym) matches self.memberType(sym)
+                             if (symtpe eq null) symtpe = self.memberType(sym)
+                             self.memberType(prevEntry.sym) matches symtpe
                            })) {
                     prevEntry = members lookupNextEntry prevEntry
                   }
@@ -955,7 +969,7 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
         excluded = excludedFlags
       } // while (continue)
       stopTimer(findMemberNanos, start)
-      suspension.resumeAll
+      if (suspension ne null) suspension foreach (_.suspended = false)
       if (members eq null) {
         if (member == NoSymbol) incCounter(noMemberCount)
         member
@@ -1681,8 +1695,17 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
 
     private var parentsCache: List[Type] = _
     private var parentsPeriod = NoPeriod
+    
     private var baseTypeSeqCache: BaseTypeSeq = _
     private var baseTypeSeqPeriod = NoPeriod
+
+    private var symInfoCache: Type = _
+    private var memberInfoCache: Type = _
+    private var thisInfoCache: Type = _
+    private var relativeInfoCache: Type = _
+
+    private var normalized: Type = null
+    
 
     override def isStable: Boolean = {
       sym == NothingClass ||
@@ -1735,12 +1758,28 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
     //@M! use appliedType on the polytype that represents the bounds (or if aliastype, the rhs)
     def transformInfo(tp: Type): Type = appliedType(tp.asSeenFrom(pre, sym.owner), typeArgsOrDummies)
 
-    def thisInfo     = 
+    def thisInfo: Type = 
       if (sym.isAliasType) normalize
-      else if (sym.isNonClassType) transformInfo(sym.info) 
-      else sym.info
-
-    def relativeInfo = if (sym.isNonClassType) transformInfo(pre.memberInfo(sym)) else pre.memberInfo(sym)
+      else if (!sym.isNonClassType) sym.info
+      else {
+        val symInfo = sym.info
+        if (thisInfoCache == null || (symInfo ne symInfoCache)) {
+          symInfoCache = symInfo
+          thisInfoCache = transformInfo(symInfo)            
+        }
+        thisInfoCache
+      }
+    
+    def relativeInfo: Type = 
+      if (!sym.isNonClassType) pre.memberInfo(sym)
+      else {
+        val memberInfo = pre.memberInfo(sym)
+        if (relativeInfoCache == null || (memberInfo ne memberInfoCache)) {
+          memberInfoCache = memberInfo
+          relativeInfoCache = transformInfo(memberInfo)
+        }
+        relativeInfoCache
+      }
 
     override def typeSymbol = if (sym.isAliasType) normalize.typeSymbol else sym
     override def termSymbol = if (sym.isAliasType) normalize.termSymbol else super.termSymbol
@@ -1760,17 +1799,17 @@ A type's typeSymbol should never be inspected directly.
       if (sym.isAbstractType) thisInfo.bounds // transform(thisInfo.bounds).asInstanceOf[TypeBounds] // ??? seems to be doing asSeenFrom twice
       else super.bounds
 
-    override def parents: List[Type] = {
-      val period = parentsPeriod
-      if (period != currentPeriod) {
-        parentsPeriod = currentPeriod
-        if (!isValidForBaseClasses(period)) {
-          parentsCache = thisInfo.parents map transform
-        } else if (parentsCache == null) { // seems this can happen if things are currupted enough, see #2641
-          parentsCache = List(AnyClass.tpe)
-        }
-      }
-      parentsCache
+    override def parents: List[Type] = { 
+      val period = parentsPeriod 
+      if (period != currentPeriod) { 
+        parentsPeriod = currentPeriod 
+        if (!isValidForBaseClasses(period)) { 
+          parentsCache = thisInfo.parents map transform 
+        } else if (parentsCache == null) { // seems this can happen if things are currupted enough, see #2641 
+          parentsCache = List(AnyClass.tpe) 
+        } 
+      } 
+      parentsCache 
     }
     override def typeOfThis = transform(sym.typeOfThis)
 
@@ -1819,16 +1858,14 @@ A type's typeSymbol should never be inspected directly.
         val substTps = formals.intersect(typeParams)
 
         if (sameLength(substTps, typeParams))
-          typeRef(pre, sym, actuals)
+          copyTypeRef(this, pre, sym, actuals)
         else if (sameLength(formals, actuals)) // partial application (needed in infer when bunching type arguments from classes and methods together)
-          typeRef(pre, sym, dummyArgs).subst(formals, actuals)
+          copyTypeRef(this, pre, sym, dummyArgs).subst(formals, actuals)
         else ErrorType
       }
       else
         super.instantiateTypeParams(formals, actuals)
 
-
-    private var normalized: Type = null
 
     @inline private def betaReduce: Type = {
       assert(sameLength(sym.info.typeParams, typeArgs), this)
@@ -1841,7 +1878,7 @@ A type's typeSymbol should never be inspected directly.
     // @M: initialize (by sym.info call) needed (see test/files/pos/ticket0137.scala)
     @inline private def etaExpand: Type = {
       val tpars = sym.info.typeParams // must go through sym.info for typeParams to initialise symbol
-      typeFunAnon(tpars, typeRef(pre, sym, tpars map (_.tpeHK))) // todo: also beta-reduce?
+      typeFunAnon(tpars, copyTypeRef(this, pre, sym, tpars map (_.tpeHK))) // todo: also beta-reduce?
     }
 
     override def dealias: Type = 
@@ -1849,7 +1886,7 @@ A type's typeSymbol should never be inspected directly.
         betaReduce.dealias
       } else this
 
-    def normalize0: Type =
+    private def normalize0: Type =
       if (pre eq WildcardType) WildcardType // arises when argument-dependent types are approximated (see def depoly in implicits)
       else if (isHigherKinded) etaExpand   // eta-expand, subtyping relies on eta-expansion of higher-kinded types
       else if (sym.isAliasType && sameLength(sym.info.typeParams, args))
@@ -1931,8 +1968,16 @@ A type's typeSymbol should never be inspected directly.
           case TypeRef(_, RepeatedParamClass, arg :: _) => return arg + "*"
           case TypeRef(_, ByNameParamClass, arg :: _)   => return "=> " + arg
           case _ =>
-            if (isFunctionType(this))
-              return normalize.typeArgs.init.mkString("(", ", ", ")") + " => " + normalize.typeArgs.last
+            if (isFunctionType(this)) {
+              val targs = normalize.typeArgs
+              // Aesthetics: printing Function1 as T => R rather than (T) => R
+              val paramlist = targs.init match {
+                case Nil      => "()"
+                case x :: Nil => "" + x
+                case xs       => xs.mkString("(", ", ", ")")
+              }
+              return paramlist + " => " + targs.last
+            }
             else if (isTupleTypeOrSubtype(this)) 
               return normalize.typeArgs.mkString("(", ", ", if (hasLength(normalize.typeArgs, 1)) ",)" else ")")
             else if (sym.isAliasType && prefixChain.exists(_.termSymbol.isSynthetic)) {
@@ -2281,10 +2326,13 @@ A type's typeSymbol should never be inspected directly.
 
   //@M 
   // a TypeVar used to be a case class with only an origin and a constr
-  // then, constr became mutable (to support UndoLog, I guess), but pattern-matching returned the original constr0 (a bug)
+  // then, constr became mutable (to support UndoLog, I guess),
+  // but pattern-matching returned the original constr0 (a bug)
   // now, pattern-matching returns the most recent constr
   object TypeVar {
-    // encapsulate suspension so we can automatically link the suspension of cloned typevars to their original if this turns out to be necessary
+    // encapsulate suspension so we can automatically link the suspension of cloned
+    // typevars to their original if this turns out to be necessary
+/*
     def Suspension = new Suspension
     class Suspension {
       private val suspended = mutable.HashSet[TypeVar]()
@@ -2293,17 +2341,20 @@ A type's typeSymbol should never be inspected directly.
         suspended += tv
       }
       def resumeAll(): Unit = {
-        for(tv <- suspended) {
+        for (tv <- suspended) {
           tv.suspended = false
         }
-        suspended.clear
+        suspended.clear()
       }
     }
-
+*/
     def unapply(tv: TypeVar): Some[(Type, TypeConstraint)] = Some((tv.origin, tv.constr))
     def apply(origin: Type, constr: TypeConstraint) = new TypeVar(origin, constr, List(), List())
-    def apply(tparam: Symbol) = new TypeVar(tparam.tpeHK, new TypeConstraint, List(), tparam.typeParams) // TODO why not initialise TypeConstraint with bounds of tparam?
-    def apply(origin: Type, constr: TypeConstraint, args: List[Type], params: List[Symbol]) = new TypeVar(origin, constr, args, params)
+    // TODO why not initialise TypeConstraint with bounds of tparam?
+    // @PP: I tried that, didn't work out so well for me.
+    def apply(tparam: Symbol) = new TypeVar(tparam.tpeHK, new TypeConstraint, List(), tparam.typeParams) 
+    def apply(origin: Type, constr: TypeConstraint, args: List[Type], params: List[Symbol]) =
+      new TypeVar(origin, constr, args, params)
   }
   
   /** A class representing a type variable 
@@ -2367,7 +2418,7 @@ A type's typeSymbol should never be inspected directly.
     // </region>
 
     // ignore subtyping&equality checks while true -- see findMember
-    private[TypeVar] var suspended = false
+    private[Types] var suspended = false
 
     /** Called when a TypeVar is involved in a subtyping check.  Result is whether
      *  this TypeVar could plausibly be a [super/sub]type of argument `tp` and if so,
@@ -2433,12 +2484,14 @@ A type's typeSymbol should never be inspected directly.
       // this <: tp.baseType(sym)
       if (suspended) checkSubtype(tp, origin)
       else if (constr.instValid) checkSubtype(tp, constr.inst)  // type var is already set
-      else isRelatable(tp) && {
-        unifySimple || unifyFull(tp) || unifyFull(tp.dealias) || unifyFull(tp.widen) || unifyParents
+      else isRelatable(tp) && { // gradually let go of some type precision in hopes of finding a type that has the same shape as the type variable
+        // okay, this just screams "CLEAN ME UP" -- I think we could use tp.widen instead of tp straight from the get-go in registerBound, since we don't infer singleton types anyway (but maybe that'll change?)
+        unifySimple || unifyFull(tp) || unifyFull(tp.dealias) || unifyFull(tp.widen) || unifyFull(tp.widen.dealias) || unifyParents
       }
     }
 
-    def registerTypeEquality(tp: Type, typeVarLHS: Boolean): Boolean = { //println("regTypeEq: "+(safeToString, debugString(tp), typeVarLHS)) //@MDEBUG
+    def registerTypeEquality(tp: Type, typeVarLHS: Boolean): Boolean = {
+      //println("regTypeEq: "+(safeToString, debugString(tp), typeVarLHS)) //@MDEBUG
       def checkIsSameType(tp: Type) = 
         if(typeVarLHS) constr.inst =:= tp
         else           tp          =:= constr.inst
@@ -2600,8 +2653,7 @@ A type's typeSymbol should never be inspected directly.
 
 // Creators ---------------------------------------------------------------
 
-  /** Rebind symbol `sym' to an overriding member in type
-   *  `pre'.
+  /** Rebind symbol `sym' to an overriding member in type `pre'.
    */
   private def rebind(pre: Type, sym: Symbol): Symbol = {
     val owner = sym.owner
@@ -2642,7 +2694,7 @@ A type's typeSymbol should never be inspected directly.
   }
 
   /** the canonical creator for a refined type with a given scope */
-  def refinedType(parents: List[Type], owner: Symbol, decls: Scope, pos : Position): Type = {
+  def refinedType(parents: List[Type], owner: Symbol, decls: Scope, pos: Position): Type = {
     if (phase.erasedTypes)
       if (parents.isEmpty) ObjectClass.tpe else parents.head
     else { 
@@ -2711,6 +2763,27 @@ A type's typeSymbol should never be inspected directly.
     }
   }
 
+  def copyTypeRef(tp: Type, pre: Type, sym: Symbol, args: List[Type]): Type = tp match {
+    case TypeRef(pre0, sym0, args0) =>
+      if ((pre == pre0) && (sym.name == sym0.name)) {
+
+        val sym1 = sym
+        // we require that object is initialized, thus info.typeParams instead of typeParams.
+        if (sym1.isAliasType && sameLength(sym1.info.typeParams, args)) {
+          if (sym1.lockOK) TypeRef(pre, sym1, args) // don't expand type alias (cycles checked by lockOK)
+          else throw new TypeError("illegal cyclic reference involving " + sym1)
+        }
+        else {
+          TypeRef(pre, sym1, args)
+        }
+        
+      } else
+        typeRef(pre, sym, args)
+  }
+
+
+
+
   /** The canonical creator for implicit method types */
   def JavaMethodType(params: List[Symbol], resultType: Type): JavaMethodType =
     new JavaMethodType(params, resultType) // don't unique this!
@@ -2757,8 +2830,8 @@ A type's typeSymbol should never be inspected directly.
   def appliedType(tycon: Type, args: List[Type]): Type =  
     if (args.isEmpty) tycon //@M! `if (args.isEmpty) tycon' is crucial (otherwise we create new types in phases after typer and then they don't get adapted (??))
     else tycon match { 
-      case TypeRef(pre, sym @ (NothingClass|AnyClass), _) => typeRef(pre, sym, Nil)   //@M drop type args to Any/Nothing
-      case TypeRef(pre, sym, _)                           => typeRef(pre, sym, args)
+      case TypeRef(pre, sym @ (NothingClass|AnyClass), _) => copyTypeRef(tycon, pre, sym, Nil)   //@M drop type args to Any/Nothing
+      case TypeRef(pre, sym, _)                           => copyTypeRef(tycon, pre, sym, args)
       case PolyType(tparams, restpe)                      => restpe.instantiateTypeParams(tparams, args)
       case ExistentialType(tparams, restpe)               => ExistentialType(tparams, appliedType(restpe, args))
       case st: SingletonType                              => appliedType(st.widen, args) // @M TODO: what to do? see bug1
@@ -3042,7 +3115,7 @@ A type's typeSymbol should never be inspected directly.
                       else mapOverArgs(args, tparams)
                     }
         if ((pre1 eq pre) && (args1 eq args)) tp
-        else typeRef(pre1, coevolveSym(pre, pre1, sym), args1) 
+        else copyTypeRef(tp, pre1, coevolveSym(pre, pre1, sym), args1) 
       case ThisType(_) => tp
       case SingleType(pre, sym) =>
         if (sym.isPackageClass) tp // short path
@@ -3450,7 +3523,7 @@ A type's typeSymbol should never be inspected directly.
 
   /** A base class to compute all substitutions */
   abstract class SubstMap[T](from: List[Symbol], to: List[T]) extends TypeMap {
-    val fromContains = from.toSet // avoiding repeatedly traversing from
+    val fromContains = (x: Symbol) => from.contains(x) //from.toSet <-- traversing short lists seems to be faster than allocating sets
     assert(sameLength(from, to), "Unsound substitution from "+ from +" to "+ to)
 
     /** Are `sym' and `sym1' the same.
@@ -3460,12 +3533,6 @@ A type's typeSymbol should never be inspected directly.
 
     /** Map target to type, can be tuned by subclasses */
     protected def toType(fromtp: Type, tp: T): Type
-
-    def subst(tp: Type, sym: Symbol, from: List[Symbol], to: List[T]): Type =
-      if (from.isEmpty) tp
-      // else if (to.isEmpty) error("Unexpected substitution on '%s': from = %s but to == Nil".format(tp, from))
-      else if (matches(from.head, sym)) toType(tp, to.head)
-      else subst(tp, sym, from.tail, to.tail)
 
     protected def renameBoundSyms(tp: Type): Type = tp match {
       case MethodType(ps, restp) =>
@@ -3482,6 +3549,12 @@ A type's typeSymbol should never be inspected directly.
     }
 
     def apply(tp0: Type): Type = if (from.isEmpty) tp0 else {
+      @tailrec def subst(tp: Type, sym: Symbol, from: List[Symbol], to: List[T]): Type =
+        if (from.isEmpty) tp
+        // else if (to.isEmpty) error("Unexpected substitution on '%s': from = %s but to == Nil".format(tp, from))
+        else if (matches(from.head, sym)) toType(tp, to.head)
+        else subst(tp, sym, from.tail, to.tail)
+
       val boundSyms = tp0.boundSyms
       val tp1 = if (boundSyms exists fromContains) renameBoundSyms(tp0) else tp0
       val tp = mapOver(tp1)
@@ -3511,11 +3584,11 @@ A type's typeSymbol should never be inspected directly.
   /** A map to implement the `substSym' method. */
   class SubstSymMap(from: List[Symbol], to: List[Symbol]) extends SubstMap(from, to) {
     protected def toType(fromtp: Type, sym: Symbol) = fromtp match {
-      case TypeRef(pre, _, args) => typeRef(pre, sym, args)
+      case TypeRef(pre, _, args) => copyTypeRef(fromtp, pre, sym, args)
       case SingleType(pre, _) => singleType(pre, sym)
     }
     override def apply(tp: Type): Type = if (from.isEmpty) tp else {
-      def subst(sym: Symbol, from: List[Symbol], to: List[Symbol]): Symbol =
+      @tailrec def subst(sym: Symbol, from: List[Symbol], to: List[Symbol]): Symbol =
         if (from.isEmpty) sym
         // else if (to.isEmpty) error("Unexpected substitution on '%s': from = %s but to == Nil".format(sym, from))
         else if (matches(from.head, sym)) to.head
@@ -3524,7 +3597,7 @@ A type's typeSymbol should never be inspected directly.
         case TypeRef(pre, sym, args) if pre ne NoPrefix =>
           val newSym = subst(sym, from, to)
           // assert(newSym.typeParams.length == sym.typeParams.length, "typars mismatch in SubstSymMap: "+(sym, sym.typeParams, newSym, newSym.typeParams))
-          mapOver(typeRef(pre, newSym, args)) // mapOver takes care of subst'ing in args
+          mapOver(copyTypeRef(tp, pre, newSym, args)) // mapOver takes care of subst'ing in args
         case SingleType(pre, sym) if pre ne NoPrefix =>
           mapOver(singleType(pre, subst(sym, from, to)))
         case _ =>
@@ -3908,7 +3981,7 @@ A type's typeSymbol should never be inspected directly.
           try {
             val sym1 = adaptToNewRun(pre1, sym)
             if ((pre1 eq pre) && (sym1 eq sym) && (args1 eq args)/* && sym.isExternal*/) tp
-            else typeRef(pre1, sym1, args1)
+            else copyTypeRef(tp, pre1, sym1, args1)
           } catch {
             case ex: MissingAliasControl =>
               apply(tp.dealias)
@@ -4050,7 +4123,7 @@ A type's typeSymbol should never be inspected directly.
     patType match {
       case TypeRef(pre, sym, args) => 
         val pre1 = maybeCreateDummyClone(pre, sym)
-        (pre1 ne NoType) && isPopulated(typeRef(pre1, sym, args), selType)
+        (pre1 ne NoType) && isPopulated(copyTypeRef(patType, pre1, sym, args), selType)
       case _ =>
         false
     }
@@ -4475,7 +4548,7 @@ A type's typeSymbol should never be inspected directly.
 
   def instTypeVar(tp: Type): Type = tp match {
     case TypeRef(pre, sym, args) =>
-      typeRef(instTypeVar(pre), sym, args)
+      copyTypeRef(tp, instTypeVar(pre), sym, args)
     case SingleType(pre, sym) =>
       singleType(instTypeVar(pre), sym)
     case TypeVar(_, constr) =>
