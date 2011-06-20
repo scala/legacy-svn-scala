@@ -256,9 +256,12 @@ class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNumericCo
    */
   def signum: Int = this.bigInteger.signum()
 
-  /** Returns the bitwise complement of this BigNum
-   */
+  /** Returns the bitwise complement of this BigInt */
+  @deprecated("Use `~this` instead of `this.~`", "2.10.0")
   def ~ : BigInt   = new BigInt(this.bigInteger.not())
+
+  /** Returns the bitwise complement of this BigInt */
+  def unary_~ : BigInt   = new BigInt(this.bigInteger.not())
 
   /** Returns true if and only if the designated bit is set.
    */
