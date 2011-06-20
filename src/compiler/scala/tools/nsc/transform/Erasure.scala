@@ -230,11 +230,11 @@ abstract class Erasure extends AddInterfaces
     }
   }
   // for debugging signatures: traces logic given system property
-  private val traceProp = sys.BooleanProp keyExists "scalac.sigs.trace"
+  private val traceProp = (sys.BooleanProp keyExists "scalac.sigs.trace").value // performance: get the value here
   private val traceSig  = util.Tracer(traceProp)
   
   /** This object is only used for sanity testing when -check:genjvm is set.
-   *  In that case we make sure that the erasure of the `normalized' type
+   *  In that case we make sure that the erasure of the `normalized` type
    *  is the same as the erased type that's generated. Normalization means
    *  unboxing some primitive types and further simplifications as they are done in jsig.
    */
@@ -519,7 +519,7 @@ abstract class Erasure extends AddInterfaces
     private def safeToRemoveUnbox(cls: Symbol): Boolean = 
       (cls == definitions.NullClass) || isBoxedValueClass(cls)
       
-    /** Box `tree' of unboxed type */
+    /** Box `tree` of unboxed type */
     private def box(tree: Tree): Tree = tree match {
       case LabelDef(name, params, rhs) =>
         val rhs1 = box(rhs)
@@ -679,7 +679,7 @@ abstract class Erasure extends AddInterfaces
     override protected def adapt(tree: Tree, mode: Int, pt: Type, original: Tree = EmptyTree): Tree =
       adaptToType(tree, pt)
 
-    /** A replacement for the standard typer's `typed1' method.
+    /** A replacement for the standard typer's `typed1` method.
      */
     override protected def typed1(tree: Tree, mode: Int, pt: Type): Tree = {
       val tree1 = try { 
@@ -1022,9 +1022,18 @@ abstract class Erasure extends AddInterfaces
                       Apply(Select(qual, cmpOp), List(gen.mkAttributedQualifier(targ.tpe)))
                     }
                   case RefinedType(parents, decls) if (parents.length >= 2) =>
-                    gen.evalOnce(qual, currentOwner, unit) { q =>
+                    // Optimization: don't generate isInstanceOf tests if the static type
+                    // conforms, because it always succeeds.  (Or at least it had better.)
+                    // At this writing the pattern matcher generates some instance tests
+                    // involving intersections where at least one parent is statically known true.
+                    // That needs fixing, but filtering the parents here adds an additional
+                    // level of robustness (in addition to the short term fix.)
+                    val parentTests = parents filterNot (qual.tpe <:< _)
+
+                    if (parentTests.isEmpty) Literal(Constant(true))
+                    else gen.evalOnce(qual, currentOwner, unit) { q =>
                       atPos(tree.pos) {
-                        parents map mkIsInstanceOf(q) reduceRight gen.mkAnd
+                        parentTests map mkIsInstanceOf(q) reduceRight gen.mkAnd
                       }
                     }
                   case _ =>

@@ -14,6 +14,7 @@ import scala.tools.nsc.util.{ ClassPath }
 import classfile.ClassfileParser
 import reflect.internal.Flags._
 import util.Statistics._
+import scala.tools.nsc.io.AbstractFile
 
 /** This class ...
  *
@@ -83,7 +84,7 @@ abstract class SymbolLoaders {
    */
   abstract class SymbolLoader extends LazyType {
 
-    /** Load source or class file for `root', return */
+    /** Load source or class file for `root`, return */
     protected def doComplete(root: Symbol): Unit
     
     def sourcefile: Option[AbstractFile] = None
@@ -169,7 +170,7 @@ abstract class SymbolLoaders {
 
     /**
      * Tells whether a class should be loaded and entered into the package
-     * scope. On .NET, this method returns `false' for all synthetic classes
+     * scope. On .NET, this method returns `false` for all synthetic classes
      * (anonymous classes, implementation classes, module classes), their
      * symtab is encoded in the pickle of another class.
      */

@@ -9,8 +9,6 @@ package io
 
 import java.io.{ FileOutputStream, IOException, InputStream, OutputStream, BufferedOutputStream }
 import java.net.URL
-import PartialFunction._
-
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -136,6 +134,8 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
 
   /** size of this file if it is a concrete file. */
   def sizeOption: Option[Int] = None
+  
+  def toURL: URL = if (file == null) null else file.toURI.toURL
 
   /** Returns contents of file (if applicable) in a Char array.
    *  warning: use <code>Global.getSourceFile()</code> to use the proper
@@ -189,7 +189,7 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
     lookup((f, p, dir) => f.lookupName(p, dir), path, directory)
   }
 
-  /** Return an abstract file that does not check that `path' denotes
+  /** Return an abstract file that does not check that `path` denotes
    *  an existing file.
    */
   def lookupPathUnchecked(path: String, directory: Boolean): AbstractFile = {
@@ -199,7 +199,7 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
   private def lookup(getFile: (AbstractFile, String, Boolean) => AbstractFile,
                      path0: String,
                      directory: Boolean): AbstractFile = {    
-    val separator = JFile.separatorChar
+    val separator = java.io.File.separatorChar
     // trim trailing '/'s
     val path: String = if (path0.last == separator) path0 dropRight 1 else path0
     val length = path.length()

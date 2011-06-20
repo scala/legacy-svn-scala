@@ -141,13 +141,13 @@ abstract class TreeInfo {
     case _                  => false
   }
 
-  /** The first constructor definitions in `stats' */
+  /** The first constructor definitions in `stats` */
   def firstConstructor(stats: List[Tree]): Tree = stats find {
     case x: DefDef  => nme.isConstructorName(x.name)
     case _          => false
   } getOrElse EmptyTree
   
-  /** The arguments to the first constructor in `stats'. */
+  /** The arguments to the first constructor in `stats`. */
   def firstConstructorArgs(stats: List[Tree]): List[Tree] = firstConstructor(stats) match {
     case DefDef(_, _, _, args :: _, _, _) => args
     case _                                => Nil
@@ -204,7 +204,7 @@ abstract class TreeInfo {
     ((first.isLower && first.isLetter) || first == '_') && !reserved(name)
   }
 
-  /** Is tree a this node which belongs to `enclClass'? */
+  /** Is tree a this node which belongs to `enclClass`? */
   def isSelf(tree: Tree, enclClass: Symbol): Boolean = tree match {
     case This(_) => tree.symbol == enclClass
     case _ => false
@@ -367,8 +367,9 @@ abstract class TreeInfo {
     case _ => false
   }
   
-  /** Some handy extractors for spotting true and false expressions
-   *  through the haze of braces.
+  /** Some handy extractors for spotting trees through the
+   *  the haze of irrelevant braces: i.e. Block(Nil, SomeTree)
+   *  should not keep us from seeing SomeTree.
    */
   abstract class SeeThroughBlocks[T] {
     protected def unapplyImpl(x: Tree): T
@@ -378,9 +379,21 @@ abstract class TreeInfo {
     }
   }
   object IsTrue extends SeeThroughBlocks[Boolean] {
-    protected def unapplyImpl(x: Tree): Boolean = x equalsStructure Literal(Constant(true))
+    protected def unapplyImpl(x: Tree): Boolean = x match {
+      case Literal(Constant(true)) => true
+      case _                       => false
+    }
   }
   object IsFalse extends SeeThroughBlocks[Boolean] {
-    protected def unapplyImpl(x: Tree): Boolean = x equalsStructure Literal(Constant(false))
+    protected def unapplyImpl(x: Tree): Boolean = x match {
+      case Literal(Constant(false)) => true
+      case _                        => false
+    }
+  }
+  object IsIf extends SeeThroughBlocks[Option[(Tree, Tree, Tree)]] {
+    protected def unapplyImpl(x: Tree) = x match {
+      case If(cond, thenp, elsep) => Some(cond, thenp, elsep)
+      case _                      => None
+    }
   }
 }

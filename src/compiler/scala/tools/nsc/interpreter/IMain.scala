@@ -14,6 +14,7 @@ import Exceptional.unwrap
 import ScalaClassLoader.URLClassLoader
 import symtab.Flags
 import io.VirtualDirectory
+import scala.tools.nsc.io.AbstractFile
 import reporters._
 import symtab.Flags
 import scala.reflect.internal.Names
@@ -75,7 +76,7 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
   lazy val formatting: Formatting = new Formatting {
     val prompt = Properties.shellPromptString
   }
-  lazy val reporter: ReplReporter = new ReplReporter(this)
+  lazy val reporter: ConsoleReporter = new ReplReporter(this)
 
   import formatting._
   import reporter.{ printMessage, withoutTruncating }
@@ -128,18 +129,27 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
         result
       }
   }
+  def initializeSynchronous(): Unit = {
+    if (!isInitializeComplete) {
+      _initialize()
+      assert(global != null, global)
+    }
+  }
   def isInitializeComplete = _initializeComplete
 
   /** the public, go through the future compiler */
   lazy val global: Global = {
-    // If init hasn't been called yet you're on your own.
-    if (_isInitialized == null) {
-      repldbg("Warning: compiler accessed before init set up.  Assuming no postInit code.")
-      initialize(())
+    if (isInitializeComplete) _compiler
+    else {
+      // If init hasn't been called yet you're on your own.
+      if (_isInitialized == null) {
+        repldbg("Warning: compiler accessed before init set up.  Assuming no postInit code.")
+        initialize(())
+      }
+      // blocks until it is ; false means catastrophic failure
+      if (_isInitialized()) _compiler
+      else null
     }
-    // blocks until it is ; false means catastrophic failure
-    if (_isInitialized()) _compiler
-    else null
   }
   @deprecated("Use `global` for access to the compiler instance.", "2.9.0")
   lazy val compiler: global.type = global

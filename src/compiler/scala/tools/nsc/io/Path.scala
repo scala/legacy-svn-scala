@@ -65,9 +65,9 @@ object Path {
   def onlyFiles(xs: Iterator[Path]): Iterator[File] = xs filter (_.isFile) map (_.toFile)
   def onlyFiles(xs: List[Path]): List[File] = xs filter (_.isFile) map (_.toFile)
   
-  def roots: List[Path] = JFile.listRoots().toList map Path.apply
+  def roots: List[Path] = java.io.File.listRoots().toList map Path.apply
 
-  def apply(segments: Seq[String]): Path = apply(segments mkString JFile.separator)
+  def apply(segments: Seq[String]): Path = apply(segments mkString java.io.File.separator)
   def apply(path: String): Path = apply(new JFile(path))
   def apply(jfile: JFile): Path =
     if (jfile.isFile) new File(jfile)
@@ -84,8 +84,8 @@ import Path._
  *  semantics regarding how a Path might relate to the world.
  */
 class Path private[io] (val jfile: JFile) {
-  val separator = JFile.separatorChar
-  val separatorStr = JFile.separator
+  val separator = java.io.File.separatorChar
+  val separatorStr = java.io.File.separator
 
   // Validation: this verifies that the type of this object and the
   // contents of the filesystem are in agreement.  All objects are
@@ -97,6 +97,7 @@ class Path private[io] (val jfile: JFile) {
   def toFile: File = new File(jfile)
   def toDirectory: Directory = new Directory(jfile)
   def toAbsolute: Path = if (isAbsolute) this else Path(jfile.getAbsolutePath())
+  def toCanonical: Path = Path(jfile.getCanonicalPath())
   def toURI: URI = jfile.toURI()
   def toURL: URL = toURI.toURL()
   /** If this path is absolute, returns it: otherwise, returns an absolute
@@ -130,7 +131,7 @@ class Path private[io] (val jfile: JFile) {
   // identity
   def name: String = jfile.getName()
   def path: String = jfile.getPath()
-  def normalize: Path = Path(jfile.getCanonicalPath())
+  def normalize: Path = Path(jfile.getAbsolutePath())
   def isRootPath: Boolean = roots exists (_ isSame this)
   
   def resolve(other: Path) = if (other.isAbsolute || isEmpty) other else /(other)
@@ -212,7 +213,7 @@ class Path private[io] (val jfile: JFile) {
   def isHidden = jfile.isHidden()
   def isSymlink = {    
     val x = parent / name
-    x.normalize != x.toAbsolute
+    x.toCanonical != x.toAbsolute
   }
   def isEmpty = path.length == 0 
   
@@ -224,7 +225,7 @@ class Path private[io] (val jfile: JFile) {
   // Boolean path comparisons
   def endsWith(other: Path) = segments endsWith other.segments
   def startsWith(other: Path) = segments startsWith other.segments
-  def isSame(other: Path) = normalize == other.normalize
+  def isSame(other: Path) = toCanonical == other.toCanonical
   def isFresher(other: Path) = lastModified > other.lastModified
 
   // creations
