@@ -145,6 +145,10 @@ self =>
       else cons(head, asStream[A](tail ++ that))
     )
     else super.++(that)(bf)
+  
+  override def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[Stream[A], B, That]): That =
+    if (isStreamBuilder(bf)) asThat(cons(elem, this))
+    else super.+:(elem)(bf)
 
   /**
    * Create a new stream which contains all intermediate results of applying the operator
