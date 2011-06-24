@@ -2780,39 +2780,42 @@ trait Typers extends Modes {
     def isRawParameter(sym: Symbol) = // is it a type parameter leaked by a raw type?
       sym.isTypeParameter && sym.owner.isJavaDefined
 
-    /** Given a set `rawSyms` of term- and type-symbols, and a type `tp`.
-     *  produce a set of fresh type parameters and a type so that it can be 
-     *  abstracted to an existential type.
-     *  Every type symbol `T` in `rawSyms` is mapped to a clone.
-     *  Every term symbol `x` of type `T` in `rawSyms` is given an
-     *  associated type symbol of the following form:
+    /** Given a set `rawSyms` of term- and type-symbols, and a type
+     *  `tp`, produce a set of fresh type parameters and a type so that
+     *  it can be abstracted to an existential type. Every type symbol
+     *  `T` in `rawSyms` is mapped to a clone. Every term symbol `x` of
+     *  type `T` in `rawSyms` is given an associated type symbol of the
+     *  following form:
      *
-     *    type x.type <: T with <singleton>
+     *    type x.type <: T with Singleton
      *
-     *  The name of the type parameter is `x.type`, to produce nice diagnostics.
-     *  The <singleton> parent ensures that the type parameter is still seen as a stable type.
-     *  Type symbols in rawSyms are fully replaced by the new symbols.
-     *  Term symbols are also replaced, except when they are the term
-     *  symbol of an Ident tree, in which case only the type of the
-     *  Ident is changed.
+     *  The name of the type parameter is `x.type`, to produce nice
+     *  diagnostics. The Singleton parent ensures that the type
+     *  parameter is still seen as a stable type. Type symbols in
+     *  rawSyms are fully replaced by the new symbols. Term symbols are
+     *  also replaced, except for term symbols of an Ident tree, where
+     *  only the type of the Ident is changed.
      */
     protected def existentialTransform(rawSyms: List[Symbol], tp: Type) = {
       val typeParams: List[Symbol] = rawSyms map { sym =>
         val name = sym.name match {
           case x: TypeName  => x
-          case x            => newTypeName(x+".type")
+          case x            => newTypeName(x + ".type")
         }
-        val bound = sym.existentialBound
-        val sowner = if (isRawParameter(sym)) context.owner else sym.owner
-        val quantified: Symbol = sowner.newAbstractType(sym.pos, name).setFlag(EXISTENTIAL)
+        val bound      = sym.existentialBound
+        val sowner     = if (isRawParameter(sym)) context.owner else sym.owner
+        val quantified = sowner.newExistential(sym.pos, name)
         
-        quantified.setInfo(bound.cloneInfo(quantified))
-        quantified
+        quantified setInfo bound.cloneInfo(quantified)
       }
-      val typeParamTypes = typeParams map (_.tpe)
-      //println("ex trans "+rawSyms+" . "+tp+" "+typeParamTypes+" "+(typeParams map (_.info)))//DEBUG
-      for (tparam <- typeParams) tparam.setInfo(tparam.info.subst(rawSyms, typeParamTypes))
-      (typeParams, tp.subst(rawSyms, typeParamTypes))
+      // Higher-kinded existentials are not yet supported, but this is
+      // tpeHK for when they are: "if a type constructor is expected/allowed,
+      // tpeHK must be called instead of tpe."
+      val typeParamTypes = typeParams map (_.tpeHK)
+      (
+        typeParams map (tparam => tparam setInfo tparam.info.subst(rawSyms, typeParamTypes)),
+        tp.subst(rawSyms, typeParamTypes)
+      )
     }
 
     /** Compute an existential type from raw hidden symbols `syms` and type `tp`
@@ -3611,7 +3614,7 @@ trait Typers extends Modes {
           if (settings.Xchecknull.value && isPotentialNullDeference && unit != null)
             unit.warning(tree.pos, "potential null pointer dereference: "+tree)
 
-          result match {
+          val selection = result match {
             // could checkAccessible (called by makeAccessible) potentially have skipped checking a type application in qual?
             case SelectFromTypeTree(qual@TypeTree(), name) if qual.tpe.typeArgs nonEmpty => // TODO: somehow the new qual is not checked in refchecks
               treeCopy.SelectFromTypeTree(
@@ -3631,6 +3634,21 @@ trait Typers extends Modes {
             case _ =>
               result
           }
+          // To fully benefit from special casing the return type of
+          // getClass, we have to catch it immediately so expressions
+          // like x.getClass().newInstance() are typed with the type of x.
+          val isRefinableGetClass = (
+               selection.symbol.name == nme.getClass_
+            && selection.tpe.params.isEmpty
+            // TODO: If the type of the qualifier is inaccessible, we can cause private types
+            // to escape scope here, e.g. pos/t1107.  I'm not sure how to properly handle this
+            // so for now it requires the type symbol be public.
+            && qual.tpe.typeSymbol.isPublic
+          )
+          if (isRefinableGetClass)
+              selection setType MethodType(Nil, erasure.getClassReturnType(qual.tpe))
+          else
+            selection
         }
       }
 
