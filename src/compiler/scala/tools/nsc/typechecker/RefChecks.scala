@@ -632,7 +632,7 @@ abstract class RefChecks extends InfoTransform {
       }
 
       // 4. Check that every defined member with an `override` modifier overrides some other member.
-      for (member <- clazz.info.decls.toList)
+      for (member <- clazz.info.decls)
         if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) &&
             !(clazz.thisType.baseClasses exists (hasMatchingSym(_, member)))) {
           // for (bc <- clazz.info.baseClasses.tail) Console.println("" + bc + " has " + bc.info.decl(member.name) + ":" + bc.info.decl(member.name).tpe);//DEBUG
@@ -782,7 +782,7 @@ abstract class RefChecks extends InfoTransform {
             validateVariances(parents, variance)
           case RefinedType(parents, decls) =>
             validateVariances(parents, variance)
-            for (sym <- decls.toList)
+            for (sym <- decls)
               validateVariance(sym.info, if (sym.isAliasType) NoVariance else variance)
           case TypeBounds(lo, hi) =>
             validateVariance(lo, -variance)
@@ -1265,7 +1265,7 @@ abstract class RefChecks extends InfoTransform {
           }
         }
         val newResult = localTyper.typedPos(tree.pos) {
-          new ApplyToImplicitArgs(Apply(Select(gen.mkAttributedRef(ArrayModule), nme.ofDim), args), List(manif))
+          new ApplyToImplicitArgs(gen.mkMethodCall(ArrayModule, nme.ofDim, args), List(manif))
         }
         currentApplication = tree
         newResult
@@ -1336,8 +1336,10 @@ abstract class RefChecks extends InfoTransform {
         var result: Tree = tree match {
           case DefDef(mods, name, tparams, vparams, tpt, EmptyTree) if tree.symbol.hasAnnotation(NativeAttr) =>
             tree.symbol.resetFlag(DEFERRED)
-            transform(treeCopy.DefDef(tree, mods, name, tparams, vparams, tpt, 
-                  typed(Apply(gen.mkAttributedRef(Sys_error), List(Literal("native method stub"))))))
+            transform(treeCopy.DefDef(
+              tree, mods, name, tparams, vparams, tpt, 
+              typed(gen.mkSysErrorCall("native method stub"))
+            ))
 
           case ValDef(_, _, _, _) | DefDef(_, _, _, _, _, _) =>
             checkDeprecatedOvers(tree)
