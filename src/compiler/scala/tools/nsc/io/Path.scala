@@ -211,11 +211,7 @@ class Path private[io] (val jfile: JFile) {
   def isDirectory = jfile.isDirectory()
   def isAbsolute = jfile.isAbsolute()
   def isHidden = jfile.isHidden()
-  def isSymlink = {    
-    val x = parent / name
-    x.toCanonical != x.toAbsolute
-  }
-  def isEmpty = path.length == 0 
+  def isEmpty = path.length == 0
   
   // Information
   def lastModified = jfile.lastModified()

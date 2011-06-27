@@ -141,10 +141,7 @@ self =>
    *  @param key the key
    *  @return    `true` if there is a binding for `key` in this map, `false` otherwise.
    */
-  def contains(key: A): Boolean = get(key) match {
-    case None => false
-    case Some(_) => true
-  }
+  def contains(key: A): Boolean = get(key).isDefined
 
   /** Tests whether this map contains a binding for a key. This method,
    *  which implements an abstract method of trait `PartialFunction`,
@@ -248,7 +245,7 @@ self =>
     def get(key: A) = self.get(key).map(f)
   }
 
-  @deprecated("use `mapValues' instead", "2.8.0")
+  @deprecated("use `mapValues` instead", "2.8.0")
   def mapElements[C](f: B => C) = mapValues(f)
 
   // The following 5 operations (updated, two times +, two times ++) should really be

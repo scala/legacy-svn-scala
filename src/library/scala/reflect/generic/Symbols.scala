@@ -3,7 +3,7 @@ package generic
 
 import Flags._
 
-trait Symbols { self: Universe =>
+@deprecated("scala.reflect.generic will be removed", "2.9.1") trait Symbols { self: Universe =>
 
   type Symbol >: Null <: AbsSymbol
 
@@ -99,7 +99,7 @@ trait Symbols { self: Universe =>
      *    object Foo
      *    class Foo
      *
-     *  Then object Foo has a `moduleClass' (invisible to the user, the backend calls it Foo$
+     *  Then object Foo has a `moduleClass` (invisible to the user, the backend calls it Foo$
      *  linkedClassOfClass goes from class Foo$ to class Foo, and back.
      */
     def linkedClassOfClass: Symbol

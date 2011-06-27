@@ -1,7 +1,7 @@
 package scala.reflect
 package generic
 
-trait Types { self: Universe =>
+@deprecated("scala.reflect.generic will be removed", "2.9.1") trait Types { self: Universe =>
 
   abstract class AbsType {
     def typeSymbol: Symbol
@@ -11,7 +11,7 @@ trait Types { self: Universe =>
      */
     def isComplete: Boolean = true
     
-    /** If this is a lazy type, assign a new type to `sym'. */
+    /** If this is a lazy type, assign a new type to `sym`. */
     def complete(sym: Symbol) {}
 
     /** Convert toString avoiding infinite recursions by cutting off

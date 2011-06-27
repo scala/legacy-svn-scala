@@ -49,7 +49,7 @@ self =>
   protected[this] def newBuilder: Builder[Char, Repr]
 
   /** Return element at index `n`
-   *  @throws   IndexOutofBoundsException if the index is not valid
+   *  @throws   IndexOutOfBoundsException if the index is not valid
    */
   def apply(n: Int): Char = toString charAt n
 
@@ -218,10 +218,10 @@ self =>
     toString.split(re)
   }
 
-  /** You can follow a string with `.r', turning
+  /** You can follow a string with `.r`, turning
    *  it into a Regex. E.g.
    *
-   *  """A\w*""".r   is the regular expression for identifiers starting with `A'.
+   *  """A\w*""".r   is the regular expression for identifiers starting with `A`.
    */
   def r: Regex = new Regex(toString)
   

@@ -428,12 +428,12 @@ trait Implicits {
      case _ => tp.isStable
     }
 
-    /** Does type `tp' match expected type `pt'
-     *  This is the case if either `pt' is a unary function type with a
-     *  HasMethodMatching type as result, and `tp' is a unary function
+    /** Does type `tp` match expected type `pt`
+     *  This is the case if either `pt` is a unary function type with a
+     *  HasMethodMatching type as result, and `tp` is a unary function
      *  or method type whose result type has a method whose name and type
      *  correspond to the HasMethodMatching type,
-     *  or otherwise if `tp' is compatible with `pt'.
+     *  or otherwise if `tp` is compatible with `pt`.
      *  This method is performance critical: 5-8% of typechecking time.
      */
     private def matchesPt(tp: Type, pt: Type, undet: List[Symbol]) = {
@@ -620,15 +620,15 @@ trait Implicits {
       }
     }
 
-    /** Is `sym' the standard conforms method in Predef?
-     *  Note: DON't replace this by sym == Predef_conforms, as Predef_conforms is a `def'
+    /** Is `sym` the standard conforms method in Predef?
+     *  Note: DON't replace this by sym == Predef_conforms, as Predef_conforms is a `def`
      *  which does a member lookup (it can't be a lazy val because we might reload Predef
      *  during resident compilations). 
      */
     private def isConformsMethod(sym: Symbol) = 
       sym.name == nme.conforms && sym.owner == PredefModule.moduleClass
 
-    /** Should implicit definition symbol `sym' be considered for applicability testing?
+    /** Should implicit definition symbol `sym` be considered for applicability testing?
      *  This is the case if one of the following holds:
      *   - the symbol's type is initialized
      *   - the symbol comes from a classfile
@@ -1056,15 +1056,7 @@ trait Implicits {
       /** Creates a tree that calls the factory method called constructor in object reflect.Manifest */
       def manifestFactoryCall(constructor: String, tparg: Type, args: Tree*): Tree =
         if (args contains EmptyTree) EmptyTree
-        else typedPos(tree.pos.focus) {
-          Apply(
-            TypeApply(
-              Select(gen.mkAttributedRef(if (full) FullManifestModule else PartialManifestModule), constructor),
-              List(TypeTree(tparg))
-            ),
-            args.toList
-          )
-        }
+        else typedPos(tree.pos.focus)(gen.mkManifestFactoryCall(full, constructor, tparg, args.toList))
       
       /** Creates a tree representing one of the singleton manifests.*/
       def findSingletonManifest(name: String) = typedPos(tree.pos.focus) { 
@@ -1097,13 +1089,12 @@ trait Implicits {
               manifestFactoryCall("arrayType", args.head, findManifest(args.head))
             } else if (sym.isClass) {
               val classarg0 = gen.mkClassOf(tp1) 
-              val classarg = tp match {
-                case ExistentialType(_, _) => 
-                  TypeApply(Select(classarg0, Any_asInstanceOf), 
-                            List(TypeTree(appliedType(ClassClass.typeConstructor, List(tp)))))
-                case _ => 
+              val classarg = (
+                if (tp.isInstanceOf[ExistentialType])
+                  TypeApply(Select(classarg0, Any_asInstanceOf), List(TypeTree(ClassType(tp))))
+                else
                   classarg0
-              }
+              )
               val suffix = classarg :: (args map findSubManifest)
               manifestFactoryCall(
                 "classType", tp,
