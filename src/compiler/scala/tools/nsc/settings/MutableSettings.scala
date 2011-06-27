@@ -314,7 +314,7 @@ class MutableSettings(val errorFn: String => Unit) extends scala.reflect.interna
   }
 
   /** A base class for settings of all types.
-   *  Subclasses each define a `value' field of the appropriate type.
+   *  Subclasses each define a `value` field of the appropriate type.
    */
   abstract class Setting(val name: String, val helpDescription: String) extends AbsSetting with SettingValue with Mutable {
     /** Will be called after this Setting is set for any extra work. */
@@ -398,6 +398,8 @@ class MutableSettings(val errorFn: String => Unit) extends scala.reflect.interna
     def unparse: List[String] =
       if (value == default) Nil
       else List(name, value.toString)
+
+    withHelpSyntax(name + " <n>")
   }
 
   /** A setting represented by a boolean flag (false, unless set) */
@@ -435,7 +437,7 @@ class MutableSettings(val errorFn: String => Unit) extends scala.reflect.interna
     def unparse: List[String] = value
   }
 
-  /** A setting represented by a string, (`default' unless set) */
+  /** A setting represented by a string, (`default` unless set) */
   class StringSetting private[nsc](
     name: String,
     val arg: String,

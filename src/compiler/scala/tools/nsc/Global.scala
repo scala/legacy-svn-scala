@@ -52,9 +52,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     this(settings, new ConsoleReporter(settings))
   
   // fulfilling requirements
-    
-  type AbstractFile = scala.tools.nsc.io.AbstractFile
-  val AbstractFile = scala.tools.nsc.io.AbstractFile
+  // Renamed AbstractFile to AbstractFileType for backward compatibility:
+  // it is difficult for sbt to work around the ambiguity errors which result.
+  type AbstractFileType = scala.tools.nsc.io.AbstractFile
 
   def mkAttributedQualifier(tpe: Type, termSym: Symbol): Tree = gen.mkAttributedQualifier(tpe, termSym)
   
@@ -172,7 +172,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   def informTime(msg: String, start: Long) = informProgress(elapsedMessage(msg, start))
 
   def logError(msg: String, t: Throwable): Unit = ()
-  def log(msg: => AnyRef): Unit = if (opt.logPhase) inform("[log " + phase + "] " + msg)
+  // Over 200 closure objects are eliminated by inlining this.
+  @inline final def log(msg: => AnyRef): Unit =
+    if (settings.log containsPhase globalPhase)
+      inform("[log " + phase + "] " + msg)
   
   def logThrowable(t: Throwable): Unit = globalError(throwableAsString(t))
   def throwableAsString(t: Throwable): String =
@@ -247,7 +250,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     // debugging
     def checkPhase = wasActive(settings.check)
     def logPhase   = isActive(settings.log)
-    def typerDebug = settings.Ytyperdebug.value
     def writeICode = settings.writeICode.value
     
     // showing/printing things
@@ -270,9 +272,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     def profileClass = settings.YprofileClass.value
     def profileMem   = settings.YprofileMem.value
 
-    // XXX: short term, but I can't bear to add another option.
-    // scalac -Dscala.timings will make this true.
+    // shortish-term property based options
     def timings       = sys.props contains "scala.timings"
+    def inferDebug    = (sys.props contains "scalac.debug.infer") || settings.Yinferdebug.value
+    def typerDebug    = (sys.props contains "scalac.debug.typer") || settings.Ytyperdebug.value
   }
 
   // True if -Xscript has been set, indicating a script run.
@@ -338,7 +341,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
         currentRun.currentUnit = unit       
         if (!cancelled(unit)) {
           currentRun.informUnitStarting(this, unit)
-          reporter.withSource(unit.source) { apply(unit) }
+          apply(unit)
         }
         currentRun.advanceUnit
       } finally {
@@ -350,6 +353,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
   /** Switch to turn on detailed type logs */
   var printTypings = opt.typerDebug
+  var printInfers = opt.inferDebug
 
   // phaseName = "parser"
   object syntaxAnalyzer extends {
@@ -638,6 +642,28 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     val line2 = fmt.format("----------", "--", "-----------")
     val descs = phaseDescriptors.zipWithIndex map {
       case (ph, idx) => fmt.format(ph.phaseName, idx + 1, phasesDescMap(ph))
+    }
+    line1 :: line2 :: descs mkString
+  }
+  /** Summary of the per-phase values of nextFlags and newFlags, shown
+   *  with -Xshow-phases if -Ydebug also given.
+   */
+  def phaseFlagDescriptions: String = {
+    val width = phaseNames map (_.length) max
+    val fmt   = "%" + width + "s  %2s  %s\n"
+    
+    val line1 = fmt.format("phase name", "id", "new flags")
+    val line2 = fmt.format("----------", "--", "---------")
+    val descs = phaseDescriptors.zipWithIndex map {
+      case (ph, idx) =>
+        def fstr1 = if (ph.phaseNewFlags == 0L) "" else "[START] " + Flags.flagsToString(ph.phaseNewFlags)
+        def fstr2 = if (ph.phaseNextFlags == 0L) "" else "[END] " + Flags.flagsToString(ph.phaseNextFlags)
+        val fstr = (
+          if (ph.ownPhase.id == 1) Flags.flagsToString(Flags.InitialFlags)
+          else if (ph.phaseNewFlags != 0L && ph.phaseNextFlags != 0L) fstr1 + " " + fstr2
+          else fstr1 + fstr2
+        )
+        fmt.format(ph.phaseName, idx + 1, fstr)
     }
     line1 :: line2 :: descs mkString
   }
@@ -1066,9 +1092,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       def loop(ph: Phase) {
         if (stop(ph)) refreshProgress
         else {
-          reporter.withSource(unit.source) {
-            atPhase(ph)(ph.asInstanceOf[GlobalPhase] applyPhase unit)
-          }
+          atPhase(ph)(ph.asInstanceOf[GlobalPhase] applyPhase unit)
           loop(ph.next match {
             case `ph`   => null   // ph == ph.next implies terminal, and null ends processing
             case x      => x
@@ -1106,7 +1130,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     /**
      * Re-orders the source files to
      *  1. ScalaObject
-     *  2. LowPriorityImplicits / StandardEmbeddings (i.e. parents of Predef)
+     *  2. LowPriorityImplicits / EmbeddedControls (i.e. parents of Predef)
      *  3. the rest
      *
      * 1 is to avoid cyclic reference errors.
@@ -1136,6 +1160,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
           case "ScalaObject.scala"            => 1
           case "LowPriorityImplicits.scala"   => 2
           case "StandardEmbeddings.scala"     => 2
+          case "EmbeddedControls.scala"       => 2
           case "Predef.scala"                 => 3 /* Predef.scala before Any.scala, etc. */
           case _                              => goLast 
         }

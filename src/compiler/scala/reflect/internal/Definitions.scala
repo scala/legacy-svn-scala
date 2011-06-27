@@ -228,11 +228,12 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
     lazy val DynamicClass         = getClass("scala.Dynamic")
 
     // fundamental modules
+    lazy val SysPackage = getPackageObject("scala.sys")
+      def Sys_error    = getMember(SysPackage, nme.error)
     lazy val PredefModule: Symbol = getModule("scala.Predef")
     lazy val PredefModuleClass = PredefModule.tpe.typeSymbol
       def Predef_AnyRef = getMember(PredefModule, "AnyRef") // used by the specialization annotation
       def Predef_classOf = getMember(PredefModule, nme.classOf)
-      def Predef_error    = getMember(PredefModule, nme.error)
       def Predef_identity = getMember(PredefModule, nme.identity)
       def Predef_conforms = getMember(PredefModule, nme.conforms)
       def Predef_wrapRefArray = getMember(PredefModule, nme.wrapRefArray)
@@ -246,7 +247,6 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
       def arrayLengthMethod = getMember(ScalaRunTimeModule, "array_length")
       def arrayCloneMethod = getMember(ScalaRunTimeModule, "array_clone")
       def ensureAccessibleMethod = getMember(ScalaRunTimeModule, "ensureAccessible")
-      def scalaRuntimeHash = getMember(ScalaRunTimeModule, "hash")
       def scalaRuntimeSameElements = getMember(ScalaRunTimeModule, nme.sameElements)
     
     // classes with special meanings
@@ -487,7 +487,7 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
 
     def ClassType(arg: Type) = 
       if (phase.erasedTypes || forMSIL) ClassClass.tpe
-      else appliedType(ClassClass.tpe, List(arg))
+      else appliedType(ClassClass.typeConstructor, List(arg))
 
     //
     // .NET backend
@@ -525,6 +525,7 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
     var Any_equals      : Symbol = _
     var Any_hashCode    : Symbol = _
     var Any_toString    : Symbol = _
+    var Any_getClass    : Symbol = _
     var Any_isInstanceOf: Symbol = _
     var Any_asInstanceOf: Symbol = _
     var Any_##          : Symbol = _
@@ -596,6 +597,12 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
       attr.info.decls enter (attr newConstructor NoPosition setInfo MethodType(Nil, attr.tpe))
       attr
     }
+    
+    def getPackageObjectClass(fullname: Name): Symbol =
+      getPackageObject(fullname).companionClass
+    
+    def getPackageObject(fullname: Name): Symbol =
+      getModuleOrClass(fullname.toTermName).info.member(newTermName("package"))
 
     def getModule(fullname: Name): Symbol =
       getModuleOrClass(fullname.toTermName)
@@ -725,6 +732,7 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
     /** Is symbol a value class? */
     def isValueClass(sym: Symbol) = scalaValueClassesSet(sym)
     def isNonUnitValueClass(sym: Symbol) = (sym != UnitClass) && isValueClass(sym)
+    def isScalaValueType(tp: Type) = scalaValueClassesSet(tp.typeSymbol)
       
     /** Is symbol a boxed value class, e.g. java.lang.Integer? */
     def isBoxedValueClass(sym: Symbol) = boxedValueClassesSet(sym)
@@ -808,11 +816,24 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
       // members of class scala.Any
       Any_== = newMethod(AnyClass, nme.EQ, anyparam, booltype) setFlag FINAL
       Any_!= = newMethod(AnyClass, nme.NE, anyparam, booltype) setFlag FINAL
-      Any_equals = newMethod(AnyClass, nme.equals_, anyparam, booltype)
+      Any_equals   = newMethod(AnyClass, nme.equals_, anyparam, booltype)
       Any_hashCode = newMethod(AnyClass, nme.hashCode_, Nil, inttype)
       Any_toString = newMethod(AnyClass, nme.toString_, Nil, stringtype)
-      Any_## = newMethod(AnyClass, nme.HASHHASH, Nil, inttype) setFlag FINAL
-
+      Any_##       = newMethod(AnyClass, nme.HASHHASH, Nil, inttype) setFlag FINAL
+      
+      // Any_getClass requires special handling.  The return type is determined on
+      // a per-call-site basis as if the function being called were actually:
+      //
+      //    // Assuming `target.getClass()`
+      //    def getClass[T](target: T): Class[_ <: T]
+      //
+      // Since getClass is not actually a polymorphic method, this requires compiler
+      // participation.  At the "Any" level, the return type is Class[_] as it is in 
+      // java.lang.Object.  Java also special cases the return type.
+      Any_getClass = (
+        newMethod(AnyClass, nme.getClass_, Nil, getMember(ObjectClass, nme.getClass_).tpe.resultType)
+          setFlag DEFERRED
+      )
       Any_isInstanceOf = newPolyMethod(
         AnyClass, nme.isInstanceOf_, tparam => NullaryMethodType(booltype)) setFlag FINAL
       Any_asInstanceOf = newPolyMethod(

@@ -65,6 +65,48 @@ abstract class Erasure extends AddInterfaces
         None
     }
   }
+  
+  // A type function from T => Class[U], used to determine the return
+  // type of getClass calls.  The returned type is:
+  //
+  //  1. If T is a value type, Class[T].
+  //  2. If T is a phantom type (Any or AnyVal), Class[_].
+  //  3. If T is a local class, Class[_ <: |T|].
+  //  4. Otherwise, Class[_ <: T].
+  //
+  // Note: AnyVal cannot be Class[_ <: AnyVal] because if the static type of the
+  // receiver is AnyVal, it implies the receiver is boxed, so the correct
+  // class object is that of java.lang.Integer, not Int.
+  //
+  // TODO: If T is final, return type could be Class[T].  Should it?
+  def getClassReturnType(tp: Type): Type = {
+    val sym     = tp.typeSymbol
+    
+    if (phase.erasedTypes) ClassClass.tpe
+    else if (isValueClass(sym)) ClassType(tp.widen)
+    else {
+      val eparams    = typeParamsToExistentials(ClassClass, ClassClass.typeParams)
+      val upperBound = (
+        if (isPhantomClass(sym)) AnyClass.tpe
+        else if (sym.isLocalClass) erasure.intersectionDominator(tp.parents) // erasure(tp)
+        else tp.widen
+      )
+
+      existentialAbstraction(
+        eparams,
+        ClassType(eparams.head setInfo TypeBounds.upper(upperBound) tpe)
+      )
+    }
+  }
+
+  // convert a numeric with a toXXX method
+  def numericConversion(tree: Tree, numericSym: Symbol): Tree = {
+    val mname      = newTermName("to" + numericSym.name)
+    val conversion = tree.tpe member mname
+  
+    assert(conversion != NoSymbol, tree + " => " + numericSym)
+    atPos(tree.pos)(Apply(Select(tree, conversion), Nil))
+  }
 
   private def unboundedGenericArrayLevel(tp: Type): Int = tp match {
     case GenericArray(level, core) if !(core <:< AnyRefClass.tpe) => level
@@ -230,11 +272,11 @@ abstract class Erasure extends AddInterfaces
     }
   }
   // for debugging signatures: traces logic given system property
-  private val traceProp = sys.BooleanProp keyExists "scalac.sigs.trace"
+  private val traceProp = (sys.BooleanProp keyExists "scalac.sigs.trace").value // performance: get the value here
   private val traceSig  = util.Tracer(traceProp)
   
   /** This object is only used for sanity testing when -check:genjvm is set.
-   *  In that case we make sure that the erasure of the `normalized' type
+   *  In that case we make sure that the erasure of the `normalized` type
    *  is the same as the erased type that's generated. Normalization means
    *  unboxing some primitive types and further simplifications as they are done in jsig.
    */
@@ -491,6 +533,12 @@ abstract class Erasure extends AddInterfaces
       case _ => tp.deconst
     }
   }
+  // Methods on Any/Object which we rewrite here while we still know what
+  // is a primitive and what arrived boxed.
+  private lazy val interceptedMethods = Set[Symbol](Any_##, Object_##, Any_getClass) ++ (
+    // Each value class has its own getClass for ultra-precise class object typing.
+    ScalaValueClasses map (_.tpe member nme.getClass_)
+  )
 
 // -------- erasure on trees ------------------------------------------
 
@@ -519,7 +567,7 @@ abstract class Erasure extends AddInterfaces
     private def safeToRemoveUnbox(cls: Symbol): Boolean = 
       (cls == definitions.NullClass) || isBoxedValueClass(cls)
       
-    /** Box `tree' of unboxed type */
+    /** Box `tree` of unboxed type */
     private def box(tree: Tree): Tree = tree match {
       case LabelDef(name, params, rhs) =>
         val rhs1 = box(rhs)
@@ -577,8 +625,14 @@ abstract class Erasure extends AddInterfaces
     /** Generate a synthetic cast operation from tree.tpe to pt.
      *  @pre pt eq pt.normalize
      */
-    private def cast(tree: Tree, pt: Type): Tree =
-      tree AS_ATTR pt
+    private def cast(tree: Tree, pt: Type): Tree = {
+      if (pt.typeSymbol == UnitClass) {
+        // See SI-4731 for one example of how this occurs.
+        log("Attempted to cast to Unit: " + tree)
+        tree.duplicate setType pt
+      }
+      else tree AS_ATTR pt
+    }
 
     private def isUnboxedValueMember(sym: Symbol) =
       sym != NoSymbol && isValueClass(sym.owner)
@@ -597,7 +651,7 @@ abstract class Erasure extends AddInterfaces
       else if (isValueClass(tree.tpe.typeSymbol) && !isValueClass(pt.typeSymbol))
         adaptToType(box(tree), pt)
       else if (tree.tpe.isInstanceOf[MethodType] && tree.tpe.params.isEmpty) {
-        if (!tree.symbol.isStable) assert(false, "adapt "+tree+":"+tree.tpe+" to "+pt)
+        assert(tree.symbol.isStable, "adapt "+tree+":"+tree.tpe+" to "+pt)
         adaptToType(Apply(tree, List()) setPos tree.pos setType tree.tpe.resultType, pt)
       } else if (pt <:< tree.tpe) 
         cast(tree, pt)
@@ -679,7 +733,7 @@ abstract class Erasure extends AddInterfaces
     override protected def adapt(tree: Tree, mode: Int, pt: Type, original: Tree = EmptyTree): Tree =
       adaptToType(tree, pt)
 
-    /** A replacement for the standard typer's `typed1' method.
+    /** A replacement for the standard typer's `typed1` method.
      */
     override protected def typed1(tree: Tree, mode: Int, pt: Type): Tree = {
       val tree1 = try { 
@@ -974,32 +1028,36 @@ abstract class Erasure extends AddInterfaces
               SelectFromArray(qual, name, erasure(qual.tpe)).copyAttrs(fn),
               args)
 
-        case Apply(fn @ Select(qual, _), Nil) if fn.symbol == Any_## || fn.symbol == Object_## =>
-          // This is unattractive, but without it we crash here on ().## because after
-          // erasure the ScalaRunTime.hash overload goes from Unit => Int to BoxedUnit => Int.
-          // This must be because some earlier transformation is being skipped on ##, but so
-          // far I don't know what.  For null we now define null.## == 0.
-          val arg = qual.tpe.typeSymbolDirect match {
-            case UnitClass  => BLOCK(qual, REF(BoxedUnit_UNIT))   // ({ expr; UNIT }).##
-            case NullClass  => LIT(0)                             // (null: Object).##
-            case _          => qual
+        case Apply(fn @ Select(qual, _), Nil) if interceptedMethods(fn.symbol) =>          
+          if (fn.symbol == Any_## || fn.symbol == Object_##) {
+            // This is unattractive, but without it we crash here on ().## because after
+            // erasure the ScalaRunTime.hash overload goes from Unit => Int to BoxedUnit => Int.
+            // This must be because some earlier transformation is being skipped on ##, but so
+            // far I don't know what.  For null we now define null.## == 0.
+            qual.tpe.typeSymbol match {
+              case UnitClass | NullClass                    => LIT(0)
+              case IntClass                                 => qual
+              case s @ (ShortClass | ByteClass | CharClass) => numericConversion(qual, s)
+              case BooleanClass                             => If(qual, LIT(true.##), LIT(false.##))
+              case _                                        =>
+                global.typer.typed(gen.mkRuntimeCall(nme.hash_, List(qual)))
+            }
           }
-          Apply(gen.mkAttributedRef(scalaRuntimeHash), List(arg))
-
+          // Rewrite 5.getClass to ScalaRunTime.anyValClass(5)
+          else if (isValueClass(qual.tpe.typeSymbol))
+            global.typer.typed(gen.mkRuntimeCall(nme.anyValClass, List(qual)))
+          else
+            tree
+            
         case Apply(fn, args) =>
           if (fn.symbol == Any_asInstanceOf)
             (fn: @unchecked) match {
               case TypeApply(Select(qual, _), List(targ)) =>
-                if (qual.tpe <:< targ.tpe) {
+                if (qual.tpe <:< targ.tpe)
                   atPos(tree.pos) { Typed(qual, TypeTree(targ.tpe)) }
-                } else if (isNumericValueClass(qual.tpe.typeSymbol) && 
-                           isNumericValueClass(targ.tpe.typeSymbol)) {
-                  // convert numeric type casts
-                  val cname = newTermName("to" + targ.tpe.typeSymbol.name)
-                  val csym = qual.tpe.member(cname)
-                  assert(csym != NoSymbol)
-                  atPos(tree.pos) { Apply(Select(qual, csym), List()) }
-                } else 
+                else if (isNumericValueClass(qual.tpe.typeSymbol) && isNumericValueClass(targ.tpe.typeSymbol))
+                  atPos(tree.pos)(numericConversion(qual, targ.tpe.typeSymbol))
+                else
                   tree
             }
             // todo: also handle the case where the singleton type is buried in a compound
@@ -1022,9 +1080,18 @@ abstract class Erasure extends AddInterfaces
                       Apply(Select(qual, cmpOp), List(gen.mkAttributedQualifier(targ.tpe)))
                     }
                   case RefinedType(parents, decls) if (parents.length >= 2) =>
-                    gen.evalOnce(qual, currentOwner, unit) { q =>
+                    // Optimization: don't generate isInstanceOf tests if the static type
+                    // conforms, because it always succeeds.  (Or at least it had better.)
+                    // At this writing the pattern matcher generates some instance tests
+                    // involving intersections where at least one parent is statically known true.
+                    // That needs fixing, but filtering the parents here adds an additional
+                    // level of robustness (in addition to the short term fix.)
+                    val parentTests = parents filterNot (qual.tpe <:< _)
+
+                    if (parentTests.isEmpty) Literal(Constant(true))
+                    else gen.evalOnce(qual, currentOwner, unit) { q =>
                       atPos(tree.pos) {
-                        parents map mkIsInstanceOf(q) reduceRight gen.mkAnd
+                        parentTests map mkIsInstanceOf(q) reduceRight gen.mkAnd
                       }
                     }
                   case _ =>

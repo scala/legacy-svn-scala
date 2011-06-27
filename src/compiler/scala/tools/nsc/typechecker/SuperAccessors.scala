@@ -22,7 +22,7 @@ import symtab.Flags._
  *  @version 1.0
  */
 abstract class SuperAccessors extends transform.Transform with transform.TypingTransformers {
-  // inherits abstract value `global' and class `Phase' from Transform
+  // inherits abstract value `global` and class `Phase` from Transform
 
   import global._
   import definitions.{ UnitClass, isRepeatedParamType, isByNameParamType, Any_asInstanceOf }
@@ -149,7 +149,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         case ClassDef(_, _, _, _) =>
           checkCompanionNameClashes(sym)
           val decls = sym.info.decls
-          for (s <- decls.toList) {
+          for (s <- decls) {
             if (s.privateWithin.isClass && !s.privateWithin.isModuleClass &&
                 !s.hasFlag(EXPANDEDNAME) && !s.isConstructor) {
               decls.unlink(s)
@@ -402,7 +402,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       res
     }
         
-    /** Does `sym' need an accessor when accessed from `currentOwner'? 
+    /** Does `sym` need an accessor when accessed from `currentOwner`?
      *  A special case arises for classes with explicit self-types. If the
      *  self type is a Java class, and a protected accessor is needed, we issue
      *  an error. If the self type is a Scala class, we don't add an accessor.
