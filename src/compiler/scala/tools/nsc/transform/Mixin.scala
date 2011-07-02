@@ -892,8 +892,11 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           case DefDef(mods, name, tp, vp, tpt, rhs)
             if sym.isModule && (!clazz.isTrait || clazz.isImplClass) && !sym.hasFlag(BRIDGE) =>
               val attrThis =
-                if (clazz.isImplClass) gen.mkAttributedIdent(vp.head.head.symbol)
-                else gen.mkAttributedThis(clazz)
+                if (clazz.isImplClass) {
+                  gen.mkAttributedIdent(vp.head.head.symbol)
+                  // Martin to Hubert I think this can be replaced by selfRef(tree.pos)
+                } else 
+                  gen.mkAttributedThis(clazz)
               val rhs1 = mkInnerClassAccessorDoubleChecked(attrThis, rhs)
               treeCopy.DefDef(stat, mods, name, tp, vp, tpt, typedPos(stat.pos)(rhs1))
           case _ => stat
@@ -1063,12 +1066,8 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                 if (sym.isSetter) {
                   val isOverriddenSetter = 
                     nme.isTraitSetterName(sym.name) && {
-                      sym.allOverriddenSymbols match {
-                        case other :: _ => 
-                          isOverriddenAccessor(other.getter(other.owner), clazz.info.baseClasses)
-                        case _ =>
-                          false
-                      }
+                      val other = sym.nextOverriddenSymbol
+                      (other != NoSymbol) && isOverriddenAccessor(other.getter(other.owner), clazz.info.baseClasses)
                     }
                   if (isOverriddenSetter) UNIT
                   else accessedRef match {

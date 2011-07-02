@@ -892,10 +892,16 @@ trait Typers extends Modes {
                 case TypeRef(_, sym, _) =>
                   // note: was if (pt.typeSymbol == UnitClass) but this leads to a potentially
                   // infinite expansion if pt is constant type ()
-                  if (sym == UnitClass && tree.tpe <:< AnyClass.tpe) // (12)
+                  if (sym == UnitClass && tree.tpe <:< AnyClass.tpe) { // (12) 
+                    if (settings.warnValueDiscard.value)
+                      context.unit.warning(tree.pos, "discarded non-Unit value")
                     return typed(atPos(tree.pos)(Block(List(tree), Literal(()))), mode, pt)
-                  else if (isNumericValueClass(sym) && isNumericSubType(tree.tpe, pt))
+                  }
+                  else if (isNumericValueClass(sym) && isNumericSubType(tree.tpe, pt)) {
+                    if (settings.warnNumericWiden.value)
+                      context.unit.warning(tree.pos, "implicit numeric widening")
                     return typed(atPos(tree.pos)(Select(tree, "to"+sym.name)), mode, pt)
+                  }
                 case AnnotatedType(_, _, _) if canAdaptAnnotations(tree, mode, pt) => // (13)
                     return typed(adaptAnnotations(tree, mode, pt), mode, pt)
                 case _ =>
@@ -1637,31 +1643,35 @@ trait Typers extends Modes {
       }
     }
       
-    /** Check if a method is defined in such a way that it can be called.
-      * A method cannot be called if it is a non-private member of a structural type
-      * and if its parameter's types are not one of
-      * - this.type
-      * - a type member of the structural type
-      * - an abstract type declared outside of the structural type. */
-    def checkMethodStructuralCompatible(meth: Symbol): Unit =
-      if (meth.owner.isStructuralRefinement && meth.allOverriddenSymbols.isEmpty && !(meth.isPrivate || meth.hasAccessBoundary)) {
-        val tp: Type = meth.tpe match {
-          case mt: MethodType => mt
-          case NullaryMethodType(res) => res
- // TODO_NMT: drop NullaryMethodType from resultType?
-          case pt: PolyType => pt.resultType
-          case _ => NoType
-        }
-        for (paramType <- tp.paramTypes)  {
-          if (paramType.typeSymbol.isAbstractType && !(paramType.typeSymbol.hasTransOwner(meth.owner)))
-            unit.error(meth.pos,"Parameter type in structural refinement may not refer to an abstract type defined outside that refinement")
-          else if (paramType.typeSymbol.isAbstractType && !(paramType.typeSymbol.hasTransOwner(meth)))
-            unit.error(meth.pos,"Parameter type in structural refinement may not refer to a type member of that refinement")
-          else if (paramType.isInstanceOf[ThisType] && paramType.typeSymbol == meth.owner)
-            unit.error(meth.pos,"Parameter type in structural refinement may not refer to the type of that refinement (self type)")
-        }
+    /** Check if a structurally defined method violates implementation restrictions.
+     *  A method cannot be called if it is a non-private member of a refinement type
+     *  and if its parameter's types are any of:
+     *    - this.type
+     *    - a type member of the refinement
+     *    - an abstract type declared outside of the refinement.
+     */
+    def checkMethodStructuralCompatible(meth: Symbol): Unit = {
+      def fail(msg: String) = unit.error(meth.pos, msg)
+      val tp: Type = meth.tpe match {
+        case mt @ MethodType(_, _)     => mt
+        case NullaryMethodType(restpe) => restpe  // TODO_NMT: drop NullaryMethodType from resultType?
+        case PolyType(_, restpe)       => restpe
+        case _                         => NoType
       }
 
+      for (paramType <- tp.paramTypes) {
+        val sym = paramType.typeSymbol
+        
+        if (sym.isAbstractType) {  
+          if (!sym.hasTransOwner(meth.owner))
+            fail("Parameter type in structural refinement may not refer to an abstract type defined outside that refinement")
+          else if (!sym.hasTransOwner(meth))
+            fail("Parameter type in structural refinement may not refer to a type member of that refinement")
+        }          
+        if (paramType.isInstanceOf[ThisType] && sym == meth.owner)
+          fail("Parameter type in structural refinement may not refer to the type of that refinement (self type)")
+      }
+    }
     def typedUseCase(useCase: UseCase) {
       def stringParser(str: String): syntaxAnalyzer.Parser = {
         val file = new BatchSourceFile(context.unit.source.file, str) {
@@ -1774,7 +1784,8 @@ trait Typers extends Modes {
         }
       }
 
-      checkMethodStructuralCompatible(meth)
+      if (meth.isStructuralRefinementMember)
+        checkMethodStructuralCompatible(meth)
 
       treeCopy.DefDef(ddef, typedMods, ddef.name, tparams1, vparamss1, tpt1, rhs1) setType NoType
     }
@@ -1862,51 +1873,51 @@ trait Typers extends Modes {
         for (stat <- block.stats) enterLabelDef(stat)
 
         if (phaseId(currentPeriod) <= currentRun.typerPhase.id) {
-          // This is very tricky stuff, because we are navigating
-          // the Skylla and Charybdis of anonymous classes and what to return
-          // from them here. On the one hand, we cannot admit
-          // every non-private member of an anonymous class as a part of
-          // the structural type of the enclosing block. This runs afoul of
-          // the restriction that a structural type may not refer to an enclosing
-          // type parameter or abstract types (which in turn is necessitated
-          // by what can be done in Java reflection. On the other hand,
-          // making every term member private conflicts with private escape checking
-          // see ticket #3174 for an example.
-          // The cleanest way forward is if we would find a way to suppress
-          // structural type checking for these members and maybe defer 
-          // type errors to the places where members are called. But that would
-          // be a big refactoring and also a  big departure from existing code.
-          // The probably safest fix for 2.8 is to keep members of an anonymous
-          // class that are not mentioned in a parent type private (as before)
-          // but to disable escape checking for code that's in the same anonymous class.
-          // That's what's done here. 
-          // We really should go back and think hard whether we find a better
-          // way to address the problem of escaping idents on the one hand and well-formed
-          // structural types on the other.
+          // This is very tricky stuff, because we are navigating the Skylla and Charybdis of
+          // anonymous classes and what to return from them here. On the one hand, we cannot admit
+          // every non-private member of an anonymous class as a part of the structural type of the
+          // enclosing block. This runs afoul of the restriction that a structural type may not
+          // refer to an enclosing type parameter or abstract types (which in turn is necessitated
+          // by what can be done in Java reflection). On the other hand, making every term member
+          // private conflicts with private escape checking - see ticket #3174 for an example.
+          //
+          // The cleanest way forward is if we would find a way to suppress structural type checking
+          // for these members and maybe defer type errors to the places where members are called.
+          // But that would be a big refactoring and also a big departure from existing code. The
+          // probably safest fix for 2.8 is to keep members of an anonymous class that are not
+          // mentioned in a parent type private (as before) but to disable escape checking for code
+          // that's in the same anonymous class. That's what's done here.
+          //
+          // We really should go back and think hard whether we find a better way to address the
+          // problem of escaping idents on the one hand and well-formed structural types on the
+          // other.
           block match {
-            case block @ Block(List(classDef @ ClassDef(_, _, _, _)), newInst @ Apply(Select(New(_), _), _)) =>
+            case Block(List(classDef @ ClassDef(_, _, _, _)), Apply(Select(New(_), _), _)) =>
+              val classDecls = classDef.symbol.info.decls
+              val visibleMembers = pt match {
+                case WildcardType                           => classDecls.toList
+                case BoundedWildcardType(TypeBounds(lo, _)) => lo.members
+                case _                                      => pt.members
+              }
+              def matchesVisibleMember(member: Symbol) = visibleMembers exists { vis =>
+                (member.name == vis.name) &&
+                (member.tpe <:< vis.tpe.substThis(vis.owner, ThisType(classDef.symbol)))
+              }
               // The block is an anonymous class definitions/instantiation pair
               //   -> members that are hidden by the type of the block are made private
-              val visibleMembers = pt match {
-                case WildcardType => classDef.symbol.info.decls.toList
-                case BoundedWildcardType(TypeBounds(lo, hi)) => lo.members
-                case _ => pt.members
-              }
-              for (member <- classDef.symbol.info.decls
-                   if member.isTerm && !member.isConstructor &&
-                      member.allOverriddenSymbols.isEmpty &&
-                      (!member.isPrivate && !member.hasAccessBoundary) &&
-                      !(visibleMembers exists { visible =>
-                        visible.name == member.name &&
-                        member.tpe <:< visible.tpe.substThis(visible.owner, ThisType(classDef.symbol))
-                      })
-              ) {
-                member.resetFlag(PROTECTED)
-                member.resetFlag(LOCAL)
-                member.setFlag(PRIVATE | SYNTHETIC_PRIVATE)
-                syntheticPrivates += member
-                member.privateWithin = NoSymbol
-              }
+              ( classDecls filter (member =>
+                     member.isTerm
+                  && member.isPossibleInRefinement
+                  && member.isPublic
+                  && !matchesVisibleMember(member)
+                )
+                foreach { member =>
+                  member resetFlag (PROTECTED | LOCAL)
+                  member   setFlag (PRIVATE | SYNTHETIC_PRIVATE)
+                  syntheticPrivates += member
+                  member.privateWithin = NoSymbol
+                }
+              )
             case _ =>
           }
         }
@@ -1917,7 +1928,7 @@ trait Typers extends Modes {
       } finally {
         // enable escaping privates checking from the outside and recycle
         // transient flag
-        for (sym <- syntheticPrivates) sym resetFlag SYNTHETIC_PRIVATE
+        syntheticPrivates foreach (_ resetFlag SYNTHETIC_PRIVATE)
       }
     }
  
@@ -3611,7 +3622,7 @@ trait Typers extends Modes {
             !(List(Any_isInstanceOf, Any_asInstanceOf) contains result.symbol)  // null.is/as is not a dereference
           }
           // unit is null here sometimes; how are we to know when unit might be null? (See bug #2467.)
-          if (settings.Xchecknull.value && isPotentialNullDeference && unit != null)
+          if (settings.warnSelectNullable.value && isPotentialNullDeference && unit != null)
             unit.warning(tree.pos, "potential null pointer dereference: "+tree)
 
           val selection = result match {

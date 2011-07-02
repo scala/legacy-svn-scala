@@ -527,10 +527,15 @@ abstract class Erasure extends AddInterfaces
   }
 
   val deconstMap = new TypeMap {
+    // For some reason classOf[Foo] creates ConstantType(Constant(tpe)) with an actual Type for tpe,
+    // which is later translated to a Class. Unfortunately that means we have bugs like the erasure
+    // of Class[Foo] and classOf[Bar] not being seen as equivalent, leading to duplicate method
+    // generation and failing bytecode. See ticket #4753.
     def apply(tp: Type): Type = tp match {
-      case PolyType(_, _) => mapOver(tp)
-      case MethodType(_, _) => mapOver(tp) // nullarymethod was eliminated during uncurry
-      case _ => tp.deconst
+      case PolyType(_, _)                  => mapOver(tp)
+      case MethodType(_, _)                => mapOver(tp)     // nullarymethod was eliminated during uncurry
+      case ConstantType(Constant(_: Type)) => ClassClass.tpe  // all classOfs erase to Class
+      case _                               => tp.deconst
     }
   }
   // Methods on Any/Object which we rewrite here while we still know what
@@ -1102,7 +1107,7 @@ abstract class Erasure extends AddInterfaces
           }
           else {
             def doDynamic(fn: Tree, qual: Tree): Tree = {
-              if (fn.symbol.owner.isRefinementClass && fn.symbol.allOverriddenSymbols.isEmpty)
+              if (fn.symbol.owner.isRefinementClass && !fn.symbol.isOverridingSymbol)
                 ApplyDynamic(qual, args) setSymbol fn.symbol setPos tree.pos
               else tree
             }
@@ -1118,9 +1123,9 @@ abstract class Erasure extends AddInterfaces
           val owner = tree.symbol.owner
           // println("preXform: "+ (tree, tree.symbol, tree.symbol.owner, tree.symbol.owner.isRefinementClass))
           if (owner.isRefinementClass) {
-            val overridden = tree.symbol.allOverriddenSymbols
-            assert(!overridden.isEmpty, tree.symbol)
-            tree.symbol = overridden.head
+            val overridden = tree.symbol.nextOverriddenSymbol
+            assert(overridden != NoSymbol, tree.symbol)
+            tree.symbol = overridden
           }
           def isAccessible(sym: Symbol) = localTyper.context.isAccessible(sym, sym.owner.thisType)
           if (!isAccessible(owner) && qual.tpe != null) {
