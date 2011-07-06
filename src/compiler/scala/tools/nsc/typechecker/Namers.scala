@@ -632,19 +632,13 @@ trait Namers { self: Analyzer =>
           false
       }
 
-      val tpe1 = tpe.deconst
+      val tpe1 = dropRepeatedParamType(tpe.deconst)
       val tpe2 = tpe1.widen
 
       // This infers Foo.type instead of "object Foo"
       // See Infer#adjustTypeArgs for the polymorphic case.
-      //
-      // XXX - disabled for now due to impact on implicit search, visible
-      // when trying to compile scalaz.  Example:
-      // scalaz/Each.scala:27: value toList is not a member of scalaz.Scalaz.IndSeq[A]
-      //          def each[A](e: IndSeq[A], f: A => Unit) = e.toList foreach f
-      // if (tpe.typeSymbolDirect.isModuleClass) tpe1
-      // else
-      if (sym.isVariable || sym.isMethod && !sym.hasAccessorFlag)
+      if (tpe.typeSymbolDirect.isModuleClass) tpe1
+      else if (sym.isVariable || sym.isMethod && !sym.hasAccessorFlag)
         if (tpe2 <:< pt) tpe2 else tpe1
       else if (isHidden(tpe)) tpe2
       // In an attempt to make pattern matches involving method local vals
@@ -1264,12 +1258,12 @@ trait Namers { self: Analyzer =>
                         return
                       }
                       
-                      def notMember = context.error(tree.pos, from.decode + " is not a member of " + expr)
+                      def notMember() = context.error(tree.pos, from.decode + " is not a member of " + expr)
                       // for Java code importing Scala objects
                       if (from endsWith nme.raw.DOLLAR)
-                        isValidSelector(from stripEnd "$")(notMember)
+                        isValidSelector(from stripEnd "$")(notMember())
                       else
-                        notMember
+                        notMember()
                     }
 
                     if (checkNotRedundant(tree.pos, from, to))

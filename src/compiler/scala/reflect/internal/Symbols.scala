@@ -307,8 +307,8 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     final def isModuleClass = isClass && hasFlag(MODULE)
     final def isOverloaded = hasFlag(OVERLOADED)
     final def isRefinementClass = isClass && name == tpnme.REFINE_CLASS_NAME
-    final def isRefinementMember = owner.isStructuralRefinement && isVisibleInRefinement && !hasAccessBoundary
-    final def isVisibleInRefinement = !(isConstructor || isOverridingSymbol || isPrivate)
+    final def isPossibleInRefinement = !isConstructor && !isOverridingSymbol
+    final def isStructuralRefinementMember = owner.isStructuralRefinement && isPossibleInRefinement && isPublic
     final def isSourceMethod = isMethod && !hasFlag(STABLE) // exclude all accessors!!!
     final def isTypeParameter = isType && isParameter && !isSkolem
     
@@ -683,7 +683,7 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     final def setFlag(mask: Long): this.type = { rawflags = rawflags | mask; this }
     final def resetFlag(mask: Long): this.type = { rawflags = rawflags & ~mask; this }
     final def getFlag(mask: Long): Long = flags & mask
-    final def resetFlags { rawflags = rawflags & TopLevelCreationFlags }
+    final def resetFlags() { rawflags = rawflags & TopLevelCreationFlags }
 
     /** Does symbol have ANY flag in `mask` set? */
     final def hasFlag(mask: Long): Boolean = (flags & mask) != 0L
@@ -1023,7 +1023,7 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     /** Reset symbol to initial state
      */
     def reset(completer: Type) {
-      resetFlags
+      resetFlags()
       infos = null
       validTo = NoPeriod
       //limit = NoPhase.id
@@ -2082,11 +2082,12 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
      * info for T in Test1 should be >: Nothing <: Test3[_]
      */
     protected def doCookJavaRawInfo() {
-      // don't require isJavaDefined, since T in the above example does not have that flag
-      val tpe1 = rawToExistential(info)
-      // println("cooking type: "+ this +": "+ info +" to "+ tpe1)
-      if (tpe1 ne info) {
-        setInfo(tpe1)
+      if (isJavaDefined || owner.isJavaDefined) {
+        val tpe1 = rawToExistential(info)
+        // println("cooking type: "+ this +": "+ info +" to "+ tpe1)
+        if (tpe1 ne info) {
+          setInfo(tpe1)
+        }
       }
     }
     

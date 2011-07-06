@@ -130,6 +130,13 @@ abstract class RangeTest(kind: String) extends Properties("Range "+kind) {
     (t.size == (0 max x min r.size) && t.start == r.start && t.step == r.step) :| str(r)+" / "+str(t)+": "+x
   }
   
+  property("init") = forAll(myGen suchThat (r => expectedSize(r).toInt == expectedSize(r))) { r =>
+    (r.size == 0) || {
+      val t = r.init
+      (t.size + 1 == r.size) && (t.isEmpty || t.head == r.head)
+    }
+  }
+  
   property("takeWhile") = forAll(myGen suchThat (r => expectedSize(r).toInt == expectedSize(r)), arbInt.arbitrary) { (r, x) =>
     val t = (if (r.step > 0) r takeWhile (_ <= x) else r takeWhile(_ >= x))
     if (r.size == 0) {
@@ -218,3 +225,5 @@ def testRange(i: Int, j: Int, k: Int) = {
 testRange(10, 1000, 10000)
 testRange(10000, 1000, 10)
 */
+
+

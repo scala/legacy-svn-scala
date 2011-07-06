@@ -1410,7 +1410,7 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
     override def isNotNull: Boolean = parents exists (_.isNotNull)
     
     override def isStructuralRefinement: Boolean =
-      typeSymbol.isAnonOrRefinementClass && decls.exists(_.isVisibleInRefinement)
+      typeSymbol.isAnonOrRefinementClass && decls.exists(_.isPossibleInRefinement)
 
     // override def isNullable: Boolean =
     // parents forall (p => p.isNullable && !p.typeSymbol.isAbstractType);
@@ -2019,7 +2019,7 @@ A type's typeSymbol should never be inspected directly.
       else if (sym.isAnonymousClass && sym.isInitialized && !settings.debug.value && !phase.erasedTypes)
         thisInfo.parents.mkString(" with ") + {
           if (sym.isStructuralRefinement)
-            decls filter (_.isVisibleInRefinement) map (_.defString) mkString("{", "; ", "}")
+            decls filter (sym => sym.isPossibleInRefinement && sym.isPublic) map (_.defString) mkString("{", "; ", "}")
           else ""
         }
       else if (sym.isRefinementClass && sym.isInitialized)
@@ -2995,6 +2995,27 @@ A type's typeSymbol should never be inspected directly.
     }
   }
   
+  // Set to true for A* => Seq[A]
+  //   (And it will only rewrite A* in method result types.)
+  //   This is the pre-existing behavior.
+  // Or false for Seq[A] => Seq[A]
+  //   (It will rewrite A* everywhere but method parameters.)
+  //   This is the specified behavior.
+  private final val etaExpandKeepsStar = true
+  
+  object dropRepeatedParamType extends TypeMap {
+    def apply(tp: Type): Type = tp match {
+      case MethodType(params, restpe) =>
+        MethodType(params, apply(restpe))
+      case PolyType(tparams, restpe) =>
+        PolyType(tparams, apply(restpe))
+      case TypeRef(_, RepeatedParamClass, arg :: Nil) =>
+        seqType(arg)
+      case _ =>
+        if (etaExpandKeepsStar) tp else mapOver(tp)
+    }
+  }
+
 // Hash consing --------------------------------------------------------------
 
   private val initialUniquesCapacity = 4096
