@@ -15,7 +15,8 @@ import java.security.MessageDigest
  *  @author  Martin Odersky
  *  @version 1.0, 05/02/2005
  */
-trait Names extends api.Names { 
+trait Names extends api.Names {
+  implicit def promoteTermNamesAsNecessary(name: Name): TermName = name.toTermName
 
 // Operations -------------------------------------------------------------
 
