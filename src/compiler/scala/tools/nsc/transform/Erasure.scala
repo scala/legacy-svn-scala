@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package transform
 
-import scala.tools.nsc.symtab.classfile.ClassfileConstants._
+import scala.reflect.internal.ClassfileConstants._
 import scala.collection.{ mutable, immutable }
 import symtab._
 import Flags._
@@ -103,7 +103,7 @@ abstract class Erasure extends AddInterfaces
   def numericConversion(tree: Tree, numericSym: Symbol): Tree = {
     val mname      = newTermName("to" + numericSym.name)
     val conversion = tree.tpe member mname
-  
+
     assert(conversion != NoSymbol, tree + " => " + numericSym)
     atPos(tree.pos)(Apply(Select(tree, conversion), Nil))
   }
