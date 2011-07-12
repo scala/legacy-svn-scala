@@ -75,6 +75,7 @@ sealed abstract class List[+A] extends LinearSeq[A]
    */
   def :::[B >: A](prefix: List[B]): List[B] =
     if (isEmpty) prefix
+    else if (prefix.isEmpty) this
     else (new ListBuffer[B] ++= prefix).prependToList(this)
 
   /** Adds the elements of a given list in reverse order in front of this list.
@@ -373,7 +374,7 @@ case object Nil extends List[Nothing] {
     throw new UnsupportedOperationException("tail of empty list")
   // Removal of equals method here might lead to an infinite recursion similar to IntMap.equals.
   override def equals(that: Any) = that match {
-    case that1: collection.Seq[_] => that1.isEmpty
+    case that1: collection.GenSeq[_] => that1.isEmpty
     case _ => false
   }
 }
@@ -425,7 +426,8 @@ object List extends SeqFactory[List] {
   import scala.collection.{Iterable, Seq, IndexedSeq}
 
   /** $genericCanBuildFromInfo */
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, List[A]] = new GenericCanBuildFrom[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, List[A]] =
+    ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 
   def newBuilder[A]: Builder[A, List[A]] = new ListBuffer[A]
 

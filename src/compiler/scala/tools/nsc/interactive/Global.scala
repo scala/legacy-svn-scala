@@ -30,6 +30,7 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
      with RangePositions
      with ContextTrees 
      with RichCompilationUnits 
+     with ScratchPadMaker
      with Picklers { 
 
   import definitions._
@@ -408,7 +409,7 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
 
     // ensure all loaded units are parsed
     for (s <- allSources; unit <- getUnit(s)) {
-      checkForMoreWork(NoPosition)
+      // checkForMoreWork(NoPosition)  // disabled, as any work done here would be in an inconsistent state
       if (!unit.isUpToDate && unit.status != JustParsed) reset(unit) // reparse previously typechecked units.
       parseAndEnter(unit)
       serviceParsedEntered()
@@ -608,7 +609,7 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
       debugLog("at pos "+pos+" was found: "+tree.getClass+" "+tree.pos.show)
       tree match {
         case Import(expr, _) =>
-          debugLog("import found"+expr.tpe+" "+expr.tpe.members)
+          debugLog("import found"+expr.tpe+(if (expr.tpe == null) "" else " "+expr.tpe.members))
         case _ =>
       }
       if (stabilizedType(tree) ne null) {
@@ -630,7 +631,7 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
   }
 
   /** A fully attributed tree corresponding to the entire compilation unit  */
-  private def typedTree(source: SourceFile, forceReload: Boolean): Tree = {
+  private[interactive] def typedTree(source: SourceFile, forceReload: Boolean): Tree = {
     informIDE("typedTree " + source + " forceReload: " + forceReload)
     val unit = getOrCreateUnitOf(source)
     if (forceReload) reset(unit)
@@ -909,6 +910,12 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
         parseAndEnter(unit)
         unit.body
       }
+    }
+  }
+
+  def getInstrumented(source: SourceFile, line: Int, response: Response[(String, Array[Char])]) {
+    respond(response) {
+      instrument(source, line)
     }
   }
 

@@ -484,7 +484,7 @@ self =>
     result
   }
 
-  override def flatten[B](implicit asTraversable: A => /*<:<!!!*/ TraversableOnce[B]): Stream[B] = {
+  override def flatten[B](implicit asTraversable: A => /*<:<!!!*/ GenTraversableOnce[B]): Stream[B] = {
     def flatten1(t: Traversable[B]): Stream[B] =
       if (!t.isEmpty)
         cons(t.head, flatten1(t.tail))
@@ -492,7 +492,7 @@ self =>
         tail.flatten
 
     if (isEmpty) Stream.empty
-    else flatten1(asTraversable(head).toTraversable)
+    else flatten1(asTraversable(head).seq.toTraversable)
   }
   
   override def view = new StreamView[A, Stream[A]] {
@@ -569,7 +569,7 @@ object Stream extends SeqFactory[Stream] {
     def result: Stream[A] = parts.toStream flatMap (_.toStream)
   }
 
-  object Empty extends Stream[Nothing] { 
+  object Empty extends Stream[Nothing] with Serializable { 
     override def isEmpty = true
     override def head = throw new NoSuchElementException("head of empty stream")
     override def tail = throw new UnsupportedOperationException("tail of empty stream")

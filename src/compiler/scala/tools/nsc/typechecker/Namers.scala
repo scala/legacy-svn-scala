@@ -632,7 +632,7 @@ trait Namers { self: Analyzer =>
           false
       }
 
-      val tpe1 = tpe.deconst
+      val tpe1 = dropRepeatedParamType(tpe.deconst)
       val tpe2 = tpe1.widen
 
       // This infers Foo.type instead of "object Foo"
@@ -1258,12 +1258,12 @@ trait Namers { self: Analyzer =>
                         return
                       }
                       
-                      def notMember = context.error(tree.pos, from.decode + " is not a member of " + expr)
+                      def notMember() = context.error(tree.pos, from.decode + " is not a member of " + expr)
                       // for Java code importing Scala objects
                       if (from endsWith nme.raw.DOLLAR)
-                        isValidSelector(from stripEnd "$")(notMember)
+                        isValidSelector(from stripEnd "$")(notMember())
                       else
-                        notMember
+                        notMember()
                     }
 
                     if (checkNotRedundant(tree.pos, from, to))
@@ -1278,6 +1278,9 @@ trait Namers { self: Analyzer =>
               }
               checkSelectors(selectors)
               transformed(tree) = treeCopy.Import(tree, expr1, selectors)
+              expr.symbol = expr1.symbol // copy symbol and type attributes back into old expression
+                                         // so that the structure builder will find it.
+              expr.tpe = expr1.tpe 
               ImportType(expr1)
           }
         } catch {

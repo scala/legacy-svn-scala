@@ -56,7 +56,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
     /** A map from entry numbers to symbols, types, or annotations */
     private val entries = new Array[AnyRef](index.length)
     
-    /** A map from symbols to their associated `decls' scopes */
+    /** A map from symbols to their associated `decls` scopes */
     private val symScopes = new HashMap[Symbol, Scope]
 
     //println("unpickled " + classRoot + ":" + classRoot.rawInfo + ", " + moduleRoot + ":" + moduleRoot.rawInfo);//debug
@@ -105,7 +105,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
                               " in "+filename)
     }
 
-    /** The `decls' scope associated with given symbol */
+    /** The `decls` scope associated with given symbol */
     protected def symScope(sym: Symbol) = symScopes.getOrElseUpdate(sym, newScope)
 
     /** Does entry represent an (internal) symbol */
@@ -192,7 +192,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
         val name  = readNameRef()
         val owner = if (atEnd) definitions.RootClass else readSymbolRef()
         
-        def fromName(name: Name) = mkTermName(name) match {
+        def fromName(name: Name) = name.toTermName match {
           case nme.ROOT     => definitions.RootClass
           case nme.ROOTPKG  => definitions.RootPackage
           case _            =>
@@ -276,14 +276,14 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
       }
       
       finishSym(tag match {
-        case TYPEsym  => owner.newAbstractType(mkTypeName(name))
-        case ALIASsym => owner.newAliasType(mkTypeName(name))
+        case TYPEsym  => owner.newAbstractType(name.toTypeName)
+        case ALIASsym => owner.newAliasType(name.toTypeName)
         case CLASSsym =>
           val sym = (isClassRoot, isModuleFlag) match {
             case (true, true)   => moduleRoot.moduleClass
             case (true, false)  => classRoot
-            case (false, true)  => owner.newModuleClass(mkTypeName(name))
-            case (false, false) => owner.newClass(mkTypeName(name))
+            case (false, true)  => owner.newModuleClass(name.toTypeName)
+            case (false, false) => owner.newClass(name.toTypeName)
           }
           if (!atEnd)
             sym.typeOfThis = newLazyTypeRef(readNat())
@@ -369,8 +369,14 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
           else
             NullaryMethodType(restpe)
         case EXISTENTIALtpe =>
-          val restpe = readTypeRef()
-          ExistentialType(until(end, readSymbolRef), restpe)
+          val restpe  = readTypeRef()
+          // @PP: Where is the flag setting supposed to happen? I infer
+          // from the lack of flag setting in the rest of the unpickler
+          // that it isn't right here. See #4757 for the immediate
+          // motivation to fix it.
+          val tparams = until(end, readSymbolRef) map (_ setFlag EXISTENTIAL)
+          ExistentialType(tparams, restpe)
+
         case ANNOTATEDtpe =>
           var typeRef = readNat()
           val selfsym = if (isSymbolRef(typeRef)) {
@@ -536,7 +542,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
           setSymModsName()
           val impl = readTemplateRef()
           val tparams = until(end, readTypeDefRef)
-          ClassDef(mods, mkTypeName(name), tparams, impl)
+          ClassDef(mods, name.toTypeName, tparams, impl)
 
         case MODULEtree =>
           setSymModsName()
@@ -560,7 +566,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
           setSymModsName()
           val rhs = readTreeRef()
           val tparams = until(end, readTypeDefRef)
-          TypeDef(mods, mkTypeName(name), tparams, rhs)
+          TypeDef(mods, name.toTypeName, tparams, rhs)
 
         case LABELtree =>
           setSymName()
@@ -771,8 +777,8 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
     protected def readModifiersRef(): Modifiers       = at(readNat(), readModifiers)
     protected def readTreeRef(): Tree                 = at(readNat(), readTree)
 
-    protected def readTypeNameRef(): TypeName         = mkTypeName(readNameRef())
-    protected def readTermNameRef(): TermName         = mkTermName(readNameRef())
+    protected def readTypeNameRef(): TypeName         = readNameRef().toTypeName
+    protected def readTermNameRef(): TermName         = readNameRef().toTermName
 
     protected def readTemplateRef(): Template =
       readTreeRef() match {

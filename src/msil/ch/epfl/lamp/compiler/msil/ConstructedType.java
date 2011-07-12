@@ -3,7 +3,7 @@ package ch.epfl.lamp.compiler.msil;
 import java.util.Arrays;
 
 /* The only reason for ConstructedType to extend Type is complying with existing code
-  (e.g., caseFieldBuilder in ILPrinterVisitor) expecting a Type. 
+  (e.g., caseFieldBuilder in ILPrinterVisitor) expecting a Type.
  */
 public class ConstructedType extends Type {
 

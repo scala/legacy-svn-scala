@@ -162,7 +162,7 @@ trait Typers extends Modes {
       else from match {
         case MethodType(_, _) => EmptyTree
         case OverloadedType(_, _) => EmptyTree
-        case PolyType(_, _) => EmptyTree
+        case PolyType(_, _) => EmptyTree 
         case _ =>
           def wrapImplicit(from: Type): Tree = {
             val result = inferImplicit(tree, functionType(List(from), to), reportAmbiguous, true, context)
@@ -950,7 +950,7 @@ trait Typers extends Modes {
                   // 
                   //   val x: T forSome { ts } = expr
                   // 
-                  // would typecheck. Or one can simply leave out the type of the `val':
+                  // would typecheck. Or one can simply leave out the type of the `val`:
                   //
                   //   val x = expr
                   context.unit.warning(tree.pos, "recovering from existential Skolem type error in tree \n"+tree+"\nwith type "+tree.tpe+"\n expected type = "+pt+"\n context = "+context.tree)
@@ -2086,7 +2086,7 @@ trait Typers extends Modes {
         tree.pos.isRange && context.unit != null && (tree.pos includes context.unit.targetPos)
       val localTarget = stats exists includesTargetPos
       def typedStat(stat: Tree): Tree = {
-        if (context.owner.isRefinementClass && !treeInfo.isDeclaration(stat))
+        if (context.owner.isRefinementClass && !treeInfo.isDeclarationOrTypeDef(stat))
           errorTree(stat, "only declarations allowed here")
         else 
           stat match {
