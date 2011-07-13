@@ -21,11 +21,11 @@ import scala.runtime.ScalaRunTime.{ array_apply, array_update }
 class FallbackArrayBuilding {
 
   /** A builder factory that generates a generic array.
-   *  Called instead of Array.newBuilder if the element type of an array
+   *  Called instead of `Array.newBuilder` if the element type of an array
    *  does not have a class manifest. Note that fallbackBuilder factory
-   *  needs an implicit parameter (otherwise it would not be dominated in implicit search
-   *  by Array.canBuildFrom). We make sure that that implicit search is always
-   *  successful. 
+   *  needs an implicit parameter (otherwise it would not be dominated in
+   *  implicit search by `Array.canBuildFrom`). We make sure that that
+   *  implicit search is always successful. 
    */
   implicit def fallbackCanBuildFrom[T](implicit m: DummyImplicit): CanBuildFrom[Array[_], T, ArraySeq[T]] = 
     new CanBuildFrom[Array[_], T, ArraySeq[T]] { 
@@ -91,7 +91,7 @@ object Array extends FallbackArrayBuilding {
 
   /** Returns an array of length 0 */
   def empty[T: ClassManifest]: Array[T] = new Array[T](0)
- 
+
   /** Creates an array with given elements.
    *
    *  @param xs the elements to put in the array
@@ -103,7 +103,7 @@ object Array extends FallbackArrayBuilding {
     for (x <- xs.iterator) { array(i) = x; i += 1 }
     array
   }
-            
+
   /** Creates an array of `Boolean` objects */
   def apply(x: Boolean, xs: Boolean*): Array[Boolean] = {
     val array = new Array[Boolean](xs.length + 1)
@@ -306,8 +306,8 @@ object Array extends FallbackArrayBuilding {
     b.result
   }
 
-  /** Returns a two-dimensional array containing values of a given function over
-   *  ranges of integer values starting from 0.
+  /** Returns a two-dimensional array containing values of a given function
+   *  over ranges of integer values starting from `0`.
    *
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
@@ -316,35 +316,35 @@ object Array extends FallbackArrayBuilding {
   def tabulate[T: ClassManifest](n1: Int, n2: Int)(f: (Int, Int) => T): Array[Array[T]] = 
     tabulate(n1)(i1 => tabulate(n2)(f(i1, _)))
 
-  /** Returns a three-dimensional array containing values of a given function over
-   *  ranges of integer values starting from 0.
+  /** Returns a three-dimensional array containing values of a given function
+   *  over ranges of integer values starting from `0`.
    *
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
-   *  @param   n3  the number of elements in the 3nd dimension
+   *  @param   n3  the number of elements in the 3rd dimension
    *  @param   f   The function computing element values
    */	
   def tabulate[T: ClassManifest](n1: Int, n2: Int, n3: Int)(f: (Int, Int, Int) => T): Array[Array[Array[T]]] = 
     tabulate(n1)(i1 => tabulate(n2, n3)(f(i1, _, _)))
 
-  /** Returns a four-dimensional array containing values of a given function over
-   *  ranges of integer values starting from 0.
+  /** Returns a four-dimensional array containing values of a given function
+   *  over ranges of integer values starting from `0`.
    *
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
-   *  @param   n3  the number of elements in the 3nd dimension
+   *  @param   n3  the number of elements in the 3rd dimension
    *  @param   n4  the number of elements in the 4th dimension
    *  @param   f   The function computing element values
    */	
   def tabulate[T: ClassManifest](n1: Int, n2: Int, n3: Int, n4: Int)(f: (Int, Int, Int, Int) => T): Array[Array[Array[Array[T]]]] = 
     tabulate(n1)(i1 => tabulate(n2, n3, n4)(f(i1, _, _, _)))
 
-  /** Returns a five-dimensional array containing values of a given function over
-   *  ranges of integer values starting from 0.
+  /** Returns a five-dimensional array containing values of a given function
+   *  over ranges of integer values starting from `0`.
    *
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
-   *  @param   n3  the number of elements in the 3nd dimension
+   *  @param   n3  the number of elements in the 3rd dimension
    *  @param   n4  the number of elements in the 4th dimension
    *  @param   n5  the number of elements in the 5th dimension
    *  @param   f   The function computing element values
@@ -390,13 +390,13 @@ object Array extends FallbackArrayBuilding {
    */
   def iterate[T: ClassManifest](start: T, len: Int)(f: T => T): Array[T] = {
     val b = newBuilder[T]
-    
+
     if (len > 0) {
       b.sizeHint(len)
       var acc = start
       var i = 1
       b += acc
-      
+
       while (i < len) {
         acc = f(acc)
         i += 1
@@ -409,7 +409,7 @@ object Array extends FallbackArrayBuilding {
   /** Called in a pattern match like `{ case Array(x,y,z) => println('3 elements')}`.
    *
    *  @param x the selector value
-   *  @return  sequence wrapped in a [[scala.Some]], if x is a Seq, otherwise `None`
+   *  @return  sequence wrapped in a [[scala.Some]], if `x` is a Seq, otherwise `None`
    */
   def unapplySeq[T](x: Array[T]): Option[IndexedSeq[T]] =
     if (x == null) None else Some(x.toIndexedSeq) 
@@ -446,14 +446,14 @@ object Array extends FallbackArrayBuilding {
     }
     a
   }
-  
+
   /** Creates an array containing the values of a given function `f` 
    *  over given range `[0..n1, 0..n2)`
    */
   @deprecated("use `Array.tabulate` instead", "2.8.0")
   def fromFunction[T: ClassManifest](f: (Int, Int) => T)(n1: Int, n2: Int): Array[Array[T]] =
     fromFunction(i => fromFunction(f(i, _))(n2))(n1)
-  
+
   /** Creates an array containing the values of a given function `f` 
    *  over given range `[0..n1, 0..n2, 0..n3)`
    */
@@ -564,7 +564,7 @@ final class Array[T](_length: Int) extends java.io.Serializable with java.lang.C
    *  @throws       ArrayIndexOutOfBoundsException if `i < 0` or `length <= i`
    */
   def update(i: Int, x: T) { throw new Error() }
-  
+
   /** Clone the Array.
    *
    *  @return A clone of the Array.
