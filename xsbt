@@ -1,6 +1,0 @@
-#!/usr/bin/env bash
-#
-
-java $JAVA_OPTS \
-  -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=256m -Xmx3g -Xss2M \
-  -jar $(dirname $0)/sbt-launch*.jar "$@"
