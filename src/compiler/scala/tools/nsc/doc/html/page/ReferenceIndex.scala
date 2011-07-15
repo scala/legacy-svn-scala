@@ -2,7 +2,7 @@
  * Copyright 2007-2011 LAMP/EPFL
  * @author  Pedro Furlanetto
  */
- 
+
 package scala.tools.nsc
 package doc
 package html
@@ -10,8 +10,8 @@ package page
 import doc.model._
 
 class ReferenceIndex(letter: Char, index: doc.Index, universe: Universe) extends HtmlPage {
-  
-  def path = List("index-"+letter+".html","index")
+
+  def path = List("index-"+letter+".html", "index")
 
   def title = {
     val s = universe.settings
@@ -24,7 +24,7 @@ class ReferenceIndex(letter: Char, index: doc.Index, universe: Universe) extends
       <link href={ relativeLinkTo(List("ref-index.css", "lib")) }  media="screen" type="text/css" rel="stylesheet"/>
       <script type="text/javascript" src={ relativeLinkTo{List("jquery.js", "lib")} }></script>
     </xml:group>
-    
+
 
   private def entry(name: String, methods: Iterable[MemberEntity]) = {
     val occurrences = methods.map(method => {
