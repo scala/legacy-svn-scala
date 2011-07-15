@@ -3,6 +3,9 @@
 package scala.util.continuations
 import annotation.{ Annotation, StaticAnnotation, TypeConstraint }
 
+/**
+ *
+ */
 class cpsParam[-B,+C] extends StaticAnnotation with TypeConstraint
 
 private class cpsSym[B] extends Annotation // implementation detail
