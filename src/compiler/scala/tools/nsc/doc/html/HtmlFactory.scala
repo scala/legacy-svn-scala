@@ -16,16 +16,19 @@ import scala.collection._
   * @author David Bernard
   * @author Gilles Dubochet */
 class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
-  /** The character encoding to be used for generated Scaladoc sites. This value is currently always UTF-8. */
+
+  /** The character encoding to be used for generated Scaladoc sites.
+    * This value is currently always UTF-8. */
   def encoding: String = "UTF-8"
 
   def siteRoot: JFile = new JFile(universe.settings.outdir.value)
 
-  /** Generates the Scaladoc site for a model into the site root. A scaladoc site is a set of HTML and related files
+  /** Generates the Scaladoc site for a model into the site root.
+    * A scaladoc site is a set of HTML and related files
     * that document a model extracted from a compiler run.
     * @param model The model to generate in the form of a sequence of packages. */
   def generate() {
-    
+
     def copyResource(subPath: String) {
       val bytes = new Streamable.Bytes {
         val inputStream = getClass.getResourceAsStream("/scala/tools/nsc/doc/html/resource/" + subPath)
@@ -45,11 +48,11 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
     copyResource("lib/scheduler.js")
     copyResource("lib/index.js")
     copyResource("lib/template.js")
-    
+
     copyResource("lib/index.css")
     copyResource("lib/ref-index.css")
     copyResource("lib/template.css")
-    
+
     copyResource("lib/class.png")
     copyResource("lib/class_big.png")
     copyResource("lib/object.png")
@@ -58,7 +61,7 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
     copyResource("lib/trait_big.png")
     copyResource("lib/package.png")
     copyResource("lib/package_big.png")
-    
+
     copyResource("lib/class_to_object_big.png")
     copyResource("lib/object_to_class_big.png")
     copyResource("lib/object_to_trait_big.png")
@@ -72,7 +75,7 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
     copyResource("lib/filterbg.gif")
     copyResource("lib/filterboxbarbg.gif")
     copyResource("lib/filterboxbg.gif")
-    
+
     copyResource("lib/constructorsbg.gif")
     copyResource("lib/defbg-blue.gif")
     copyResource("lib/defbg-green.gif")
@@ -94,27 +97,28 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
     copyResource("lib/selected.png")
     copyResource("lib/selected2-right.png")
     copyResource("lib/selected2.png")
-    copyResource("lib/unselected.png")    
+    copyResource("lib/unselected.png")
 
     new page.Index(universe, index) writeFor this
     new page.IndexScript(universe, index) writeFor this
 
     writeTemplates(page => page.writeFor(this))
-    
+
     for(letter <- index.firstLetterIndex) {
       new html.page.ReferenceIndex(letter._1, index, universe) writeFor this
     }
   }
 
-  def writeTemplates(writeForThis: HtmlPage => Unit): Unit = {
+  def writeTemplates(writeForThis: HtmlPage => Unit) {
     val written = mutable.HashSet.empty[DocTemplateEntity]
 
-    def writeTemplate(tpl: DocTemplateEntity): Unit =
+    def writeTemplate(tpl: DocTemplateEntity) {
       if (!(written contains tpl)) {
         writeForThis(new page.Template(tpl))
         written += tpl
         tpl.templates map (writeTemplate(_))
       }
+    }
 
     writeTemplate(universe.rootPackage)
   }

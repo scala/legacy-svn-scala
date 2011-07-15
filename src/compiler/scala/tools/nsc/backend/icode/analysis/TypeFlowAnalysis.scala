@@ -3,13 +3,12 @@
  * @author  Martin Odersky
  */
 
-
 package scala.tools.nsc
 package backend.icode.analysis
 
 import scala.collection.{mutable, immutable}
 
-/** A data-flow analysis on types, that works on <code>ICode</code>.
+/** A data-flow analysis on types, that works on `ICode`.
  *
  *  @author Iulian Dragos
  */
@@ -95,7 +94,7 @@ abstract class TypeFlowAnalysis {
   }
 
   val timer = new Timer
-  
+
   class MethodTFA extends DataFlowAnalysis[typeFlowLattice.type] {
     import icodes._
     import icodes.opcodes._
