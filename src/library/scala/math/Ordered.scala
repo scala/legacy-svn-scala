@@ -64,11 +64,11 @@ trait Ordered[A] extends java.lang.Comparable[A] {
    *
    * Returns `x` where:
    *
-   *   1. `x < 0` when `this > that`
+   *   - `x < 0` when `this > that`
    *
-   *   1. `x == 0` when `this == that`
+   *   - `x == 0` when `this == that`
    *
-   *   1. `x < 0` when  `this > that`
+   *   - `x < 0` when  `this > that`
    *
    */
   def compare(that: A): Int
