@@ -4,7 +4,9 @@ body {
 }
 
 a {
-	color:#69481D;
+  color: #315479;
+  cursor: pointer;
+  text-decoration: underline;
 }
 
 .letters {
@@ -22,6 +24,10 @@ a {
 
 .name {
 	/* background-color:#E5E5E5; */
+}
+
+.deprecated {
+  text-decoration: line-through;
 }
 
 .occurrences {
