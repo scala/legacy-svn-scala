@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package immutable
 
@@ -34,9 +32,9 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
             with Serializable {
 
   override def companion: GenericCompanion[Queue] = Queue  
-  
+
   /** Returns the `n`-th element of this queue. 
-   *  The first element is at position 0.
+   *  The first element is at position `0`.
    *
    *  @param  n index of the element to return
    *  @return   the element at position `n` in this queue.
@@ -91,22 +89,22 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
    */
   def enqueue[B >: A](elem: B) = new Queue(elem :: in, out)
 
-  /** Returns a new queue with all all elements provided by 
-   *  an <code>Iterable</code> object added at the end of 
-   *  the queue. 
-   *  The elements are prepended in the order they
-   *  are given out by the iterator.
+  /** Returns a new queue with all elements provided by an `Iterable` object
+   *  added at the end of the queue.
+   *
+   *  The elements are prepended in the order they are given out by the
+   *  iterator.
    *
    *  @param  iter        an iterable object
    */
   @deprecated("Use `enqueue` instead", "2.7.2")
   def +[B >: A](iter: Iterable[B]) = enqueue(iter)
 
-  /** Returns a new queue with all elements provided by 
-   *  an <code>Iterable</code> object added at the end of 
-   *  the queue. 
-   *  The elements are prepended in the order they
-   *  are given out by the iterator.
+  /** Returns a new queue with all elements provided by an `Iterable` object
+   *  added at the end of the queue.
+   *
+   *  The elements are prepended in the order they are given out by the
+   *  iterator.
    *
    *  @param  iter        an iterable object
    */
@@ -133,7 +131,7 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
    */
   def front: A = head
 
-  /** Returns a string representation of this queue. 
+  /** Returns a string representation of this queue.
    */
   override def toString() = mkString("Queue(", ", ", ")")
 }
@@ -148,9 +146,9 @@ object Queue extends SeqFactory[Queue] {
   def newBuilder[A]: Builder[A, Queue[A]] = new ListBuffer[A] mapResult (x => new Queue[A](Nil, x.toList))
   override def empty[A]: Queue[A] = EmptyQueue.asInstanceOf[Queue[A]]
   override def apply[A](xs: A*): Queue[A] = new Queue[A](Nil, xs.toList)
-  
+
   private object EmptyQueue extends Queue[Nothing](Nil, Nil) { }
-  
+
   @deprecated("Use Queue.empty instead", "2.8.0")
   val Empty: Queue[Nothing] = Queue()
 }

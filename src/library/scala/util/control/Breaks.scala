@@ -6,44 +6,41 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.util.control
 
 /** A class that can be instantiated for the break control abstraction.
  *  Example usage:
- *
- *  <pre>
+ *  {{{
  *  val mybreaks = new Breaks
- *  import</b> mybreaks.{break, breakable}
+ *  import mybreaks.{break, breakable}
  *
  *  breakable {
- *    <b>for</b> (...) {
- *      <b>if</b> (...) break
+ *    for (...) {
+ *      if (...) break
  *    }
- *  }</pre>
- *
+ *  }
+ *  }}}
  *  Calls to break from one instantiation of `Breaks` will never
- *  target breakable objects of some other instantion.
+ *  target breakable objects of some other instantiation.
  */  
 class Breaks {
 
   private val breakException = new BreakControl
 
-  /** A block from which one can exit with a `break`'. */
+  /** A block from which one can exit with a `break`. */
   def breakable(op: => Unit) {
     try {
       op
     } catch {
-      case ex: BreakControl => 
+      case ex: BreakControl =>
         if (ex ne breakException) throw ex
     }
   }
-  
+
   trait TryBlock {
     def catchBreak(onBreak: => Unit): Unit
   }
-  
+
   def tryBreakable(op: => Unit) = new TryBlock {
     def catchBreak(onBreak: => Unit) = try {
       op
@@ -54,26 +51,25 @@ class Breaks {
     }
   }
 
-  /* Break from dynamically closest enclosing breakable block.
+  /** Break from dynamically closest enclosing breakable block.
    *
-   * @note This might be different than the statically closest enclosing block!
+   *  @note This might be different than the statically closest enclosing block!
    */
   def break() { throw breakException }
 } 
 
 /** An object that can be used for the break control abstraction.
- *  Example usage:<pre>
- *
- *  <b>import</b> Breaks.{break, breakable}
+ *  Example usage:
+ *  {{{
+ *  import Breaks.{break, breakable}
  *
  *  breakable {
- *    <b>for</b> (...) {
- *      <b>if</b> (...) break
+ *    for (...) {
+ *      if (...) break
  *    }
- *  }</pre>
- *
+ *  }
+ *  }}}
  */  
 object Breaks extends Breaks
 
 private class BreakControl extends ControlThrowable
-
