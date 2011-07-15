@@ -15,9 +15,8 @@ import generic.CanBuildFrom
 import annotation.{ elidable, implicitNotFound }
 import annotation.elidable.ASSERTION
 
-/** The <code>Predef</code> object provides definitions that are
- *  accessible in all Scala compilation units without explicit
- *  qualification.
+/** The `Predef` object provides definitions that are accessible in all Scala
+ *  compilation units without explicit qualification.
  */
 object Predef extends LowPriorityImplicits {
   /** Return the runtime representation of a class type.  This is a stub method.
@@ -33,7 +32,7 @@ object Predef extends LowPriorityImplicits {
   scala.collection.immutable.List         // to force Nil, :: to be seen.
 
   type Function[-A, +B] = Function1[A, B]
-    
+
   type Map[A, +B] = immutable.Map[A, B]
   type Set[A]     = immutable.Set[A]
   val Map         = immutable.Map
@@ -47,7 +46,7 @@ object Predef extends LowPriorityImplicits {
   val ClassManifest     = scala.reflect.ClassManifest
   val Manifest          = scala.reflect.Manifest
   val NoManifest        = scala.reflect.NoManifest
-  
+
   def manifest[T](implicit m: Manifest[T])           = m
   def classManifest[T](implicit m: ClassManifest[T]) = m
   def optManifest[T](implicit m: OptManifest[T])     = m
@@ -56,7 +55,7 @@ object Predef extends LowPriorityImplicits {
   def identity[A](x: A): A         = x    // @see `conforms` for the implicit version
   def implicitly[T](implicit e: T) = e    // for summoning implicit values from the nether world
   @inline def locally[T](x: T): T  = x    // to communicate intent and avoid unmoored statements
-  
+
   // Apparently needed for the xml library
   val $scope = scala.xml.TopScope
 
@@ -76,9 +75,9 @@ object Predef extends LowPriorityImplicits {
 
   // errors and asserts -------------------------------------------------
 
-  /** Tests an expression, throwing an AssertionError if false.
-   *  Calls to this method will not be generated if -Xelide-below
-   *  is at least ASSERTION.
+  /** Tests an expression, throwing an `AssertionError` if false.
+   *  Calls to this method will not be generated if `-Xelide-below`
+   *  is at least `ASSERTION`.
    *
    *  @see elidable
    *  @param p   the expression to test
@@ -89,9 +88,9 @@ object Predef extends LowPriorityImplicits {
       throw new java.lang.AssertionError("assertion failed")
   }
 
-  /** Tests an expression, throwing an AssertionError if false.
-   *  Calls to this method will not be generated if -Xelide-below
-   *  is at least ASSERTION.
+  /** Tests an expression, throwing an `AssertionError` if false.
+   *  Calls to this method will not be generated if `-Xelide-below`
+   *  is at least `ASSERTION`.
    *
    *  @see elidable
    *  @param p   the expression to test
@@ -103,11 +102,11 @@ object Predef extends LowPriorityImplicits {
       throw new java.lang.AssertionError("assertion failed: "+ message)
   }
 
-  /** Tests an expression, throwing an AssertionError if false.
+  /** Tests an expression, throwing an `AssertionError` if false.
    *  This method differs from assert only in the intent expressed:
    *  assert contains a predicate which needs to be proven, while
    *  assume contains an axiom for a static checker.  Calls to this method
-   *  will not be generated if -Xelide-below is at least ASSERTION.
+   *  will not be generated if `-Xelide-below` is at least `ASSERTION`.
    *
    *  @see elidable
    *  @param p   the expression to test
@@ -118,11 +117,11 @@ object Predef extends LowPriorityImplicits {
       throw new java.lang.AssertionError("assumption failed")
   }
 
-  /** Tests an expression, throwing an AssertionError if false.
+  /** Tests an expression, throwing an `AssertionError` if false.
    *  This method differs from assert only in the intent expressed:
    *  assert contains a predicate which needs to be proven, while
    *  assume contains an axiom for a static checker.  Calls to this method
-   *  will not be generated if -Xelide-below is at least ASSERTION.
+   *  will not be generated if `-Xelide-below` is at least `ASSERTION`.
    *
    *  @see elidable
    *  @param p   the expression to test
@@ -134,8 +133,8 @@ object Predef extends LowPriorityImplicits {
       throw new java.lang.AssertionError("assumption failed: "+ message)
   }
 
-  /** Tests an expression, throwing an IllegalArgumentException if false.
-   *  This method is similar to assert, but blames the caller of the method
+  /** Tests an expression, throwing an `IllegalArgumentException` if false.
+   *  This method is similar to `assert`, but blames the caller of the method
    *  for violating the condition.
    *
    *  @param p   the expression to test
@@ -145,8 +144,8 @@ object Predef extends LowPriorityImplicits {
       throw new IllegalArgumentException("requirement failed")
   }
 
-  /** Tests an expression, throwing an IllegalArgumentException if false.
-   *  This method is similar to assert, but blames the caller of the method
+  /** Tests an expression, throwing an `IllegalArgumentException` if false.
+   *  This method is similar to `assert`, but blames the caller of the method
    *  for violating the condition.
    *
    *  @param p   the expression to test
@@ -206,11 +205,11 @@ object Predef extends LowPriorityImplicits {
   def readf1(format: String) = Console.readf1(format)
   def readf2(format: String) = Console.readf2(format)
   def readf3(format: String) = Console.readf3(format)
-  
+
   // views --------------------------------------------------------------
 
   implicit def exceptionWrapper(exc: Throwable) = new runtime.RichException(exc)
-  
+
   implicit def zipped2ToTraversable[El1, El2](zz: Tuple2[_, _]#Zipped[_, El1, _, El2]): Traversable[(El1, El2)] =
     new Traversable[(El1, El2)] {
       def foreach[U](f: ((El1, El2)) => U): Unit = zz foreach Function.untupled(f)
@@ -234,7 +233,7 @@ object Predef extends LowPriorityImplicits {
     case x: Array[Unit]    => unitArrayOps(x).asInstanceOf[ArrayOps[T]]
     case null              => null
   }
-  
+
   implicit def refArrayOps[T <: AnyRef](xs: Array[T]): ArrayOps[T] = new ArrayOps.ofRef[T](xs)
   implicit def intArrayOps(xs: Array[Int]): ArrayOps[Int] = new ArrayOps.ofInt(xs)
   implicit def doubleArrayOps(xs: Array[Double]): ArrayOps[Double] = new ArrayOps.ofDouble(xs)
@@ -272,7 +271,7 @@ object Predef extends LowPriorityImplicits {
   implicit def long2double(x: Long): Double = x.toDouble
 
   implicit def float2double(x: Float): Double = x.toDouble
-  
+
   // "Autoboxing" and "Autounboxing" ---------------------------------------------------
 
   implicit def byte2Byte(x: Byte)           = java.lang.Byte.valueOf(x)
@@ -283,7 +282,7 @@ object Predef extends LowPriorityImplicits {
   implicit def float2Float(x: Float)        = java.lang.Float.valueOf(x)
   implicit def double2Double(x: Double)     = java.lang.Double.valueOf(x)
   implicit def boolean2Boolean(x: Boolean)  = java.lang.Boolean.valueOf(x)
-  
+
   // These next eight implicits exist solely to exclude AnyRef methods from the
   // eight implicits above so that primitives are not coerced to AnyRefs.  They
   // only create such conflict for AnyRef methods, so the methods on the java.lang
@@ -296,7 +295,7 @@ object Predef extends LowPriorityImplicits {
   implicit def float2FloatConflict(x: Float)        = new AnyRef
   implicit def double2DoubleConflict(x: Double)     = new AnyRef
   implicit def boolean2BooleanConflict(x: Boolean)  = new AnyRef
-  
+
   implicit def Byte2byte(x: java.lang.Byte): Byte             = x.byteValue
   implicit def Short2short(x: java.lang.Short): Short         = x.shortValue
   implicit def Character2char(x: java.lang.Character): Char   = x.charValue
@@ -313,7 +312,7 @@ object Predef extends LowPriorityImplicits {
   implicit def unaugmentString(x: StringOps): String = x.repr
 
   implicit def stringCanBuildFrom: CanBuildFrom[String, Char, String] = 
-    new CanBuildFrom[String, Char, String] { 
+    new CanBuildFrom[String, Char, String] {
       def apply(from: String) = apply()
       def apply() = mutable.StringBuilder.newBuilder
     }
@@ -331,7 +330,7 @@ object Predef extends LowPriorityImplicits {
     def subSequence(start: Int, end: Int): CharSequence = arrayToCharSequence(xs.slice(start, end))
     override def toString: String = xs.mkString("")
   }
-  
+
   // Type Constraints --------------------------------------------------------------
 
   /**
@@ -341,12 +340,12 @@ object Predef extends LowPriorityImplicits {
    *
    * @note we need a new type constructor `<:<` and evidence `conforms`,
    * as reusing `Function1` and `identity` leads to ambiguities in
-   * case of type errors (any2stringadd is inferred)
+   * case of type errors (`any2stringadd` is inferred)
    *
    * To constrain any abstract type T that's in scope in a method's
    * argument list (not just the method's own type parameters) simply
-   * add an implicit argument of type `T <:< U`, where U is the required
-   * upper bound; or for lower-bounds, use: `L <:< T`, where L is the
+   * add an implicit argument of type `T <:< U`, where `U` is the required
+   * upper bound; or for lower-bounds, use: `L <:< T`, where `L` is the
    * required lower bound.
    *
    * In part contributed by Jason Zaugg.
@@ -360,7 +359,7 @@ object Predef extends LowPriorityImplicits {
 
   /** An instance of `A =:= B` witnesses that the types `A` and `B` are equal.
    *
-   * @see <:< for expressing subtyping constraints
+   * @see `<:<` for expressing subtyping constraints
    */
   @implicitNotFound(msg = "Cannot prove that ${From} =:= ${To}.")
   sealed abstract class =:=[From, To] extends (From => To) with Serializable
@@ -375,15 +374,15 @@ object Predef extends LowPriorityImplicits {
   object <%< {
     implicit def conformsOrViewsAs[A <% B, B]: A <%< B = new (A <%< B) {def apply(x: A) = x}
   }
- 
+
   /** A type for which there is always an implicit value.
    *  @see fallbackCanBuildFrom in Array.scala
    */
   class DummyImplicit
-  
+
   object DummyImplicit {
-  
-    /** An implicit value yielding a DummyImplicit.
+
+    /** An implicit value yielding a `DummyImplicit`.
      *   @see fallbackCanBuildFrom in Array.scala
      */
     implicit def dummyImplicit: DummyImplicit = new DummyImplicit

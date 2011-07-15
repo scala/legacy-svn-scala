@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.xml
 package persistent
 
@@ -17,21 +16,21 @@ import java.lang.Thread
 import scala.util.logging.Logged
 import scala.collection.Iterator
 
-/** <p>
- *    Mutable storage of immutable xml trees. Everything is kept in memory,
- *    with a thread periodically checking for changes and writing to file.
- *    To ensure atomicity, two files are used, filename1 and '$'+filename1.
- *    The implementation switches between the two, deleting the older one
- *    after a complete dump of the database has been written.
- *  </p>
+/** Mutable storage of immutable xml trees. Everything is kept in memory,
+ *  with a thread periodically checking for changes and writing to file.
+ *
+ *  To ensure atomicity, two files are used, `filename1` and `'$'+filename1`.
+ *  The implementation switches between the two, deleting the older one
+ *  after a complete dump of the database has been written.
  *
  *  @author Burak Emir
  */
 abstract class CachedFileStorage(private val file1: File) extends Thread with Logged {
 
   private val file2 = new File(file1.getParent, file1.getName+"$")
-    
-  /**  either equals file1 or file2, references the next file in which updates will be stored
+
+  /** Either equals `file1` or `file2`, references the next file in which
+   *  updates will be stored.
    */
   private var theFile: File = null
 
@@ -47,7 +46,7 @@ abstract class CachedFileStorage(private val file1: File) extends Thread with Lo
    *  prior to any other, but only once, to obtain the initial sequence of nodes.
    */
   protected def initialNodes: Iterator[Node] = (file1.exists, file2.exists) match {
-    case (false,false) => 
+    case (false,false) =>
       theFile = file1
       Iterator.empty
     case (true, true ) if (file1.lastModified < file2.lastModified) => 
@@ -62,13 +61,13 @@ abstract class CachedFileStorage(private val file1: File) extends Thread with Lo
   }
 
   /** returns an iterator over the nodes in this storage */
-  def nodes: Iterator[Node]  
+  def nodes: Iterator[Node]
 
   /** adds a node, setting this.dirty to true as a side effect */
-  def += (e: Node): Unit 
+  def += (e: Node): Unit
 
   /** removes a tree, setting this.dirty to true as a side effect */
-  def -= (e: Node): Unit 
+  def -= (e: Node): Unit
 
   /* loads and parses XML from file */
   private def load: Iterator[Node] = {
@@ -82,23 +81,23 @@ abstract class CachedFileStorage(private val file1: File) extends Thread with Lo
     log("[load done]")
     res.child.iterator
   }
-  
+
   /** saves the XML to file */
   private def save() = if (this.dirty) {
-    log("[save]\ndeleting "+theFile);
-    theFile.delete();
-    log("creating new "+theFile);
-    theFile.createNewFile();
+    log("[save]\ndeleting "+theFile)
+    theFile.delete()
+    log("creating new "+theFile)
+    theFile.createNewFile()
     val fos = new FileOutputStream(theFile)
     val c   = fos.getChannel()
-    
+
     // @todo: optimize
     val storageNode = <nodes>{ nodes.toList }</nodes>
     val w = Channels.newWriter(c, "utf-8")
     XML.write(w, storageNode, "utf-8", true, null)
-    
-    log("writing to "+theFile);
-    
+
+    log("writing to "+theFile)
+
     w.close
     c.close
     fos.close
@@ -106,20 +105,21 @@ abstract class CachedFileStorage(private val file1: File) extends Thread with Lo
     switch
     log("[save done]")
   }
-  
-  /** run method of the thread. remember to use start() to start a thread, not run. */
+
+  /** Run method of the thread. remember to use `start()` to start a thread,
+    * not `run`. */
   override def run = {
-    log("[run]\nstarting storage thread, checking every "+interval+" ms");
-    while(true) { 
-      Thread.sleep( this.interval ); 
-      save 
+    log("[run]\nstarting storage thread, checking every "+interval+" ms")
+    while (true) {
+      Thread.sleep( this.interval )
+      save
     }
   }
-  
-  /** forces writing of contents to the file, even if there has not been any update. */
+
+  /** Force writing of contents to the file, even if there has not been any
+    * update. */
   def flush() = {
-    this.dirty = true; 
+    this.dirty = true
     save
   }
 }
-

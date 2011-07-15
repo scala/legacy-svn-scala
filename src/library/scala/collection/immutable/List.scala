@@ -242,24 +242,22 @@ sealed abstract class List[+A] extends LinearSeq[A]
 
   override def stringPrefix = "List"
 
-  override def toStream : Stream[A] = 
+  override def toStream : Stream[A] =
     if (isEmpty) Stream.Empty
     else new Stream.Cons(head, tail.toStream)
-    
-  /** Like <code>span</code> but with the predicate inverted.
+
+  /** Like `span` but with the predicate inverted.
    */
   @deprecated("use `span { x => !p(x) }` instead", "2.8.0")
   def break(p: A => Boolean): (List[A], List[A]) = span { x => !p(x) }
-  
+
   @deprecated("use `filterNot` instead", "2.8.0")
   def remove(p: A => Boolean): List[A] = filterNot(p)
 
-  /** Computes the difference between this list and the given list
-   *  `that`.
+  /** Computes the difference between this list and the given list `that`.
    *
    *  @param that the list of elements to remove from this list.
-   *  @return     this list without the elements of the given list
-   *              `that`.
+   *  @return     this list without the elements of the given list `that`.
    */
   @deprecated("use `list1 filterNot (list2 contains)` instead", "2.8.0")
   def -- [B >: A](that: List[B]): List[B] = {
@@ -272,8 +270,7 @@ sealed abstract class List[+A] extends LinearSeq[A]
     b.toList
   }
 
-  /** Computes the difference between this list and the given object
-   *  `x`.
+  /** Computes the difference between this list and the given object `x`.
    *
    *  @param x    the object to remove from this list.
    *  @return     this list without occurrences of the given object
@@ -289,7 +286,7 @@ sealed abstract class List[+A] extends LinearSeq[A]
     }
     b.toList
   }
-  
+
   @deprecated("use `distinct` instead", "2.8.0")
   def removeDuplicates: List[A] = distinct
 
@@ -317,7 +314,7 @@ sealed abstract class List[+A] extends LinearSeq[A]
       res.toList
     }
 
-    /** Split a list into two lists of about the same size */
+    /** Split a list `lst` into two lists of about the same size */
     def split(lst: List[A]) = {
       val res1 = new ListBuffer[A]
       val res2 = new ListBuffer[A]
@@ -334,7 +331,6 @@ sealed abstract class List[+A] extends LinearSeq[A]
 
       (res1.toList, res2.toList)
     }
-
 
     /** Merge-sort the specified list */
     def ms(lst: List[A]): List[A] =
@@ -435,18 +431,16 @@ object List extends SeqFactory[List] {
 
   override def apply[A](xs: A*): List[A] = xs.toList
 
-  /** Create a sorted list with element values
-   * `v<sub>n+1</sub> = step(v<sub>n</sub>)`
-   * where `v<sub>0</sub> = start`
-   * and elements are in the range between `start` (inclusive)
-   * and `end` (exclusive)
+  /** Create a sorted list with element values `v,,>n+1,, = step(v,,n,,)`
+   * where `v,,0,, = start` and elements are in the range between `start`
+   * (inclusive) and `end` (exclusive).
    *
    *  @param start the start value of the list
    *  @param end  the end value of the list
-   *  @param step the increment function of the list, which given `v<sub>n</sub>`,
-   *              computes `v<sub>n+1</sub>`. Must be monotonically increasing
+   *  @param step the increment function of the list, which given `v,,n,,`,
+   *              computes `v,,n+1,,`. Must be monotonically increasing
    *              or decreasing.
-   *  @return     the sorted list of all integers in range [start;end).
+   *  @return     the sorted list of all integers in range `[start;end)`.
    */
   @deprecated("use `iterate` instead", "2.8.0")
   def range(start: Int, end: Int, step: Int => Int): List[Int] = {
@@ -468,7 +462,7 @@ object List extends SeqFactory[List] {
    *
    *  @param n    the length of the resulting list
    *  @param elem the element composing the resulting list
-   *  @return     a list composed of n elements all equal to elem
+   *  @return     a list composed of `n` elements all equal to `elem`
    */
   @deprecated("use `fill` instead", "2.8.0")
   def make[A](n: Int, elem: A): List[A] = {
@@ -523,27 +517,26 @@ object List extends SeqFactory[List] {
    *  @return a pair of lists.
    */
   @deprecated("use `xs.unzip` instead of `List.unzip(xs)`", "2.8.0")
-  def unzip[A,B](xs: Iterable[(A,B)]): (List[A], List[B]) = 
+  def unzip[A,B](xs: Iterable[(A,B)]): (List[A], List[B]) =
       xs.foldRight[(List[A], List[B])]((Nil, Nil)) {
         case ((x, y), (xs, ys)) => (x :: xs, y :: ys)
       }
 
   /**
-   * Returns the `Left` values in the given `Iterable`
-   * of `Either`s.
+   * Returns the `Left` values in the given `Iterable` of `Either`s.
    */
   @deprecated("use `xs collect { case Left(x: A) => x }` instead of `List.lefts(xs)`", "2.8.0")
-  def lefts[A, B](es: Iterable[Either[A, B]]) = 
+  def lefts[A, B](es: Iterable[Either[A, B]]) =
     es.foldRight[List[A]](Nil)((e, as) => e match {
       case Left(a) => a :: as
       case Right(_) => as
     })     
- 
+
   /**
-   * Returns the `Right` values in the given`Iterable` of  `Either`s.
+   * Returns the `Right` values in the given `Iterable` of  `Either`s.
    */
   @deprecated("use `xs collect { case Right(x: B) => x }` instead of `List.rights(xs)`", "2.8.0")
-  def rights[A, B](es: Iterable[Either[A, B]]) = 
+  def rights[A, B](es: Iterable[Either[A, B]]) =
     es.foldRight[List[B]](Nil)((e, bs) => e match {
       case Left(_) => bs
       case Right(b) => b :: bs
@@ -597,7 +590,7 @@ object List extends SeqFactory[List] {
     }
     res
   }
-  
+
   /** Parses a string which contains substrings separated by a
    *  separator character and returns a list of all substrings.
    *
@@ -667,8 +660,8 @@ object List extends SeqFactory[List] {
    *  to corresponding elements of the argument lists.
    *
    *  @param f function to apply to each pair of elements.
-   *  @return `[f(a0,b0), ..., f(an,bn)]` if the lists are 
-   *          `[a0, ..., ak]`, `[b0, ..., bl]` and
+   *  @return `[f(a,,0,,,b,,0,,), ..., f(a,,n,,,b,,n,,)]` if the lists are 
+   *          `[a,,0,,, ..., a,,k,,]`, `[b,,0,,, ..., b,,l,,]` and
    *          `n = min(k,l)`
    */
   @deprecated("use `(xs, ys).zipped.map(f)` instead of `List.map2(xs, ys)(f)`", "2.8.0")
@@ -688,12 +681,10 @@ object List extends SeqFactory[List] {
    *  `f` to corresponding elements of the argument lists.
    *
    *  @param f function to apply to each pair of elements.
-   *  @return  `[f(a<sub>0</sub>,b<sub>0</sub>,c<sub>0</sub>),
-   *           ..., f(a<sub>n</sub>,b<sub>n</sub>,c<sub>n</sub>)]`
-   *           if the lists are `[a<sub>0</sub>, ..., a<sub>k</sub>]`,
-   *           `[b<sub>0</sub>, ..., b<sub>l</sub>]`,
-   *           `[c<sub>0</sub>, ..., c<sub>m</sub>]` and
-   *           `n = min(k,l,m)`
+   *  @return  `[f(a,,0,,,b,,0,,,c,,0,,), ..., f(a,,n,,,b,,n,,,c,,n,,)]`
+   *           if the lists are `[a,,0,,, ..., a,,k,,]`,
+   *           `[b<sub>0</sub>, ..., b,,l,,]`,
+   *           `[c<sub>0</sub>, ..., c,,m,,]` and `n = min(k,l,m)`
    */
   @deprecated("use `(xs, ys, zs).zipped.map(f)` instead of `List.map3(xs, ys, zs)(f)`", "2.8.0")
   def map3[A,B,C,D](xs: List[A], ys: List[B], zs: List[C])(f: (A, B, C) => D): List[D] = {
@@ -775,4 +766,3 @@ object List extends SeqFactory[List] {
 /** Only used for list serialization */
 @SerialVersionUID(0L - 8476791151975527571L)
 private[scala] case object ListSerializeEnd
-

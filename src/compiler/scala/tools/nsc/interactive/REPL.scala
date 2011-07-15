@@ -59,7 +59,7 @@ object REPL {
       }
     }
   }
- 
+
   def main(args: Array[String]) {
     process(args)
     /*sys.*/exit(if (reporter.hasErrors) 1 else 0)// Don't use sys yet as this has to run on 2.8.2 also.
@@ -97,12 +97,12 @@ object REPL {
       val source = toSourceFile(file)
       comp.rangePos(source, off1.toInt, off1.toInt, off2.toInt)
     }
-    
+
     def doTypeAt(pos: Position) {
       comp.askTypeAt(pos, typeatResult)
       show(typeatResult)
     }
-    
+
     def doComplete(pos: Position) {
       comp.askTypeCompletion(pos, completeResult)
       show(completeResult)
@@ -176,8 +176,7 @@ object REPL {
           println(instrument(toSourceFile(file), line.toInt).map(_.mkString))
         case List("quit") =>
           comp.askShutdown()
-          // deleted sys. as this has to run on 2.8 also
-          exit(1)
+          exit(1) // Don't use sys yet as this has to run on 2.8.2 also.
         case List("structure", file) =>
           doStructure(file)
         case _ =>
