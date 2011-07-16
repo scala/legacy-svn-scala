@@ -6,22 +6,19 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.swing
 
 import javax.swing.JComponent
-import scala.collection.mutable.Map
+import scala.collection.mutable
 
-/** <p>
- *    A container that associates layout constraints of member type
- *    <code>Constraints</code> with its children. See <code>GridBagPanel</code>
- *    for an example container with custom constraints. 
- *  </p>
+/** A container that associates layout constraints of member type
+ *  `Constraints` with its children.
+ *
+ *  See `GridBagPanel` for an example container with custom constraints.
  *
  *  @note [Java Swing] In scala.swing, panels and layout managers are 
- *  combined into subclasses of this base class. This approach allows for typed
- *  component constraints.
+ *  combined into subclasses of this base class. This approach allows for
+ *  typed component constraints.
  */
 trait LayoutContainer extends Container.Wrapper {
   /**
@@ -57,7 +54,7 @@ trait LayoutContainer extends Container.Wrapper {
    * 
    * also ensures that myComponent is properly added to this container.
    */
-  def layout: Map[Component, Constraints] = new Map[Component, Constraints] {
+  def layout: mutable.Map[Component, Constraints] = new mutable.Map[Component, Constraints] {
     def -= (c: Component): this.type = { _contents -= c; this }
     def += (cl: (Component, Constraints)): this.type = { update(cl._1, cl._2); this }
     override def update (c: Component, l: Constraints) {

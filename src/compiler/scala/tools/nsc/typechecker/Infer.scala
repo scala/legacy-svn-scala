@@ -425,19 +425,20 @@ trait Infer {
     private def isPlausiblySubType(tp1: Type, tp2: Type) = !isImpossibleSubType(tp1, tp2)
     private def isImpossibleSubType(tp1: Type, tp2: Type) = tp1.normalize.widen match {
       case tr1 @ TypeRef(_, sym1, _) =>
-        tp2.normalize.widen match {
+        // We can only rule out a subtype relationship if the left hand
+        // side is a class, else we may not know enough.
+        sym1.isClass && (tp2.normalize.widen match {
           case TypeRef(_, sym2, _) =>
-             sym1.isClass &&
              sym2.isClass &&
             !(sym1 isSubClass sym2) &&
             !(sym1 isNumericSubClass sym2)
-          // XXX - disabled for preventing scalaz from building.
-          // case RefinedType(_, decls) =>
-          //   decls.nonEmpty && tp1.member(decls.head.name) == NoSymbol
+          case RefinedType(parents, decls) =>
+            decls.nonEmpty &&
+            tr1.member(decls.head.name) == NoSymbol
           case _ => false
-        }
+        })
       case _ => false
-    }      
+    }
 
     def isCompatible(tp: Type, pt: Type): Boolean = {
       val tp1 = normalize(tp)
@@ -1073,12 +1074,15 @@ trait Infer {
       //@M TODO: errors for getters & setters are reported separately
       val kindErrors = checkKindBounds(tparams, targs, pre, owner)
            
-      if(!kindErrors.isEmpty) {
-        error(pos, 
+      if (!kindErrors.isEmpty) {
+        if (targs contains WildcardType) ()
+        else error(pos,
           prefix + "kinds of the type arguments " + targs.mkString("(", ",", ")") + 
-          " do not conform to the expected kinds of the type parameters "+ tparams.mkString("(", ",", ")") + tparams.head.locationString+ "." +
+          " do not conform to the expected kinds of the type parameters "+ 
+          tparams.mkString("(", ",", ")") + tparams.head.locationString+ "." +
           kindErrors.toList.mkString("\n", ", ", "")) 
-      } else if (!isWithinBounds(pre, owner, tparams, targs)) { 
+      } 
+      else if (!isWithinBounds(pre, owner, tparams, targs)) { 
         if (!(targs exists (_.isErroneous)) && !(tparams exists (_.isErroneous))) {
           //val bounds = instantiatedBounds(pre, owner, tparams, targs)//DEBUG
           //println("bounds = "+bounds+", targs = "+targs+", targclasses = "+(targs map (_.getClass))+", parents = "+(targs map (_.parents)))
@@ -1780,19 +1784,22 @@ trait Infer {
       // Side effects tree with symbol and type
       tree setSymbol resSym setType resTpe
     }
+    
+    abstract class TreeForwarder(forwardTo: Tree) extends Tree {
+      override def pos       = forwardTo.pos
+      override def hasSymbol = forwardTo.hasSymbol
+      override def symbol    = forwardTo.symbol
+      override def symbol_=(x: Symbol) = forwardTo.symbol = x
+    }
 
-    case class AccessError(tree: Tree, sym: Symbol, pre: Type, explanation: String) extends Tree {
-      override def pos = tree.pos
-      override def hasSymbol = tree.hasSymbol
-      override def symbol = tree.symbol
-      override def symbol_=(x: Symbol) = tree.symbol = x
+    case class AccessError(tree: Tree, sym: Symbol, pre: Type, explanation: String) extends TreeForwarder(tree) {
       setError(this)
       
+      // @PP: It is improbable this logic shouldn't be in use elsewhere as well.
+      private def location = if (sym.isClassConstructor) context.enclClass.owner else pre.widen
       def emit(): Tree = {
         val realsym = underlying(sym)
-        errorTree(tree, realsym + realsym.locationString + " cannot be accessed in " +
-            (if (sym.isClassConstructor) context.enclClass.owner else pre.widen) +
-            explanation)
+        errorTree(tree, realsym.fullLocationString + " cannot be accessed in " + location + explanation)
       }
     }
   }

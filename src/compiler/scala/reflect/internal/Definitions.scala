@@ -7,11 +7,10 @@ package scala.reflect
 package internal
 
 import scala.collection.{ mutable, immutable }
-import scala.collection.mutable.{ HashMap }
 import Flags._
 import PartialFunction._
 
-trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
+trait Definitions extends reflect.api.StandardDefinitions {
   self: SymbolTable =>
   
   // the scala value classes
@@ -100,6 +99,7 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
     lazy val BooleanClass = valueCache(tpnme.Boolean)
       def Boolean_and = getMember(BooleanClass, nme.ZAND)
       def Boolean_or  = getMember(BooleanClass, nme.ZOR)
+      def Boolean_not = getMember(BooleanClass, nme.UNARY_!)
 
     def ScalaValueClassesNoUnit = ScalaValueClasses filterNot (_ eq UnitClass)
     def ScalaValueClasses: List[Symbol] = List(
@@ -115,7 +115,7 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
     )
   }
 
-  object definitions extends ValueClassDefinitions {
+  object definitions extends AbsDefinitions with ValueClassDefinitions {
     private var isInitialized = false
     def isDefinitionsInitialized = isInitialized
 
@@ -361,6 +361,7 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
     lazy val OptionClass: Symbol = getClass("scala.Option")
     lazy val SomeClass: Symbol   = getClass("scala.Some")
     lazy val NoneModule: Symbol  = getModule("scala.None")
+    lazy val SomeModule: Symbol  = getModule("scala.Some")
 
     def isOptionType(tp: Type)  = cond(tp.normalize) { case TypeRef(_, OptionClass, List(_)) => true }
     def isSomeType(tp: Type)    = cond(tp.normalize) { case TypeRef(_,   SomeClass, List(_)) => true }
@@ -501,7 +502,7 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
     var Delegate_scalaCallers: List[Symbol] = List()
     // Symbol -> (Symbol, Type): scalaCaller -> (scalaMethodSym, DelegateType)
     // var Delegate_scalaCallerInfos: HashMap[Symbol, (Symbol, Type)] = _
-    lazy val Delegate_scalaCallerTargets: HashMap[Symbol, Symbol] = new HashMap()
+    lazy val Delegate_scalaCallerTargets: mutable.HashMap[Symbol, Symbol] = mutable.HashMap()
     
     def isCorrespondingDelegate(delegateType: Type, functionType: Type): Boolean = {
       isSubType(delegateType, DelegateClass.tpe) &&

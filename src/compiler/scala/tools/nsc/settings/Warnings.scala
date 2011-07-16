@@ -7,10 +7,6 @@ package scala.tools
 package nsc
 package settings
 
-import annotation.elidable
-import scala.tools.util.PathResolver.Defaults
-import scala.collection.mutable.HashSet
-
 /** Settings influencing the printing of warnings.
  */
 trait Warnings {
@@ -54,4 +50,9 @@ trait Warnings {
   val warnInaccessible     = BooleanSetting   ("-Ywarn-inaccessible", "Warn about inaccessible types in method signatures.")
   val warnNullaryOverride  = BooleanSetting   ("-Ywarn-nullary-override", 
     "Warn when non-nullary overrides nullary, e.g. `def foo()` over `def foo`.")  
+  
+  // Backward compatibility.
+  def Xwarnfatal    = fatalWarnings
+  def Xchecknull    = warnSelectNullable
+  def Ywarndeadcode = warnDeadCode
 }

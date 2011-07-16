@@ -1,6 +1,6 @@
 package ch.epfl.lamp.compiler.msil;
 
-import ch.epfl.lamp.compiler.msil.util.PECustomMod; 
+import ch.epfl.lamp.compiler.msil.util.PECustomMod;
 
 public final class PrimitiveType extends Type {
     public PrimitiveType(Module module,
@@ -29,11 +29,11 @@ public final class PrimitiveType extends Type {
         initMethods();
         initEvents();
         initProperties();
-        initNestedTypes();        
+        initNestedTypes();
     }
 
     public FieldInfo addField(String name, int attrs, Type fieldType) {
-        PECustomMod fieldTypeWithMods = new PECustomMod(fieldType, null); 
+        PECustomMod fieldTypeWithMods = new PECustomMod(fieldType, null);
         FieldInfo res = new FieldInfo(name, this, attrs, fieldTypeWithMods, null);
         FieldInfo[] ms = new FieldInfo[fields.length + 1];
         System.arraycopy(fields, 0, ms, 0, fields.length);
@@ -49,7 +49,7 @@ public final class PrimitiveType extends Type {
         ms[ms.length - 1] = res;
         return res;
     }
-    
+
     public ConstructorInfo addConstructor(int attrs, Type[] paramTypes) {
         ConstructorInfo res = new ConstructorInfo(this, attrs, paramTypes);
         ConstructorInfo[] ms = new ConstructorInfo[constructors.length + 1];

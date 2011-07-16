@@ -12,7 +12,8 @@ import java.lang.Double.longBitsToDouble
 
 import Flags._
 import PickleFormat._
-import collection.mutable.{HashMap, ListBuffer}
+import scala.collection.{ mutable, immutable }
+import mutable.ListBuffer
 import annotation.switch
 
 /** @author Martin Odersky
@@ -62,13 +63,13 @@ abstract class UnPickler {
     private val entries = new Array[AnyRef](index.length)
     
     /** A map from symbols to their associated `decls` scopes */
-    private val symScopes = new HashMap[Symbol, Scope]
+    private val symScopes = new mutable.HashMap[Symbol, Scope]
 
     //println("unpickled " + classRoot + ":" + classRoot.rawInfo + ", " + moduleRoot + ":" + moduleRoot.rawInfo);//debug
 
     def run() {
       // read children last, fix for #3951
-      val queue = new collection.mutable.ListBuffer[() => Unit]()
+      val queue = new ListBuffer[() => Unit]()
       def delay(i: Int, action: => Unit) {
         queue += (() => at(i, {() => action; null}))
       }
@@ -146,9 +147,9 @@ abstract class UnPickler {
       result
     }
 
-    /** If entry at <code>i</code> is undefined, define it by performing
-     *  operation <code>op</code> with <code>readIndex at start of i'th
-     *  entry. Restore <code>readIndex</code> afterwards.
+    /** If entry at `i` is undefined, define it by performing operation `op`
+     *  with `readIndex` at start of `i`'th entry. Restore `readIndex`
+     *  afterwards.
      */
     protected def at[T <: AnyRef](i: Int, op: () => T): T = {
       var r = entries(i)

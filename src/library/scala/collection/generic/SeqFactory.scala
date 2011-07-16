@@ -11,8 +11,6 @@
 package scala.collection
 package generic
 
-import annotation.bridge
-
 /** A template for companion objects of Seq and subclasses thereof.
  *
  *  @since 2.8
@@ -26,6 +24,6 @@ extends GenSeqFactory[CC] with TraversableFactory[CC] {
    *  @return  sequence wrapped in an option, if this is a Seq, otherwise none
    */
   def unapplySeq[A](x: CC[A]): Some[CC[A]] = Some(x)
-
+  
 }
 

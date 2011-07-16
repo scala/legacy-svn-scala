@@ -50,7 +50,6 @@ trait Typers extends Modes {
     resetNamer()
     resetImplicits()
     transformed.clear()
-    resetSynthetics()
   }
 
   object UnTyper extends Traverser {
@@ -162,7 +161,7 @@ trait Typers extends Modes {
       else from match {
         case MethodType(_, _) => EmptyTree
         case OverloadedType(_, _) => EmptyTree
-        case PolyType(_, _) => EmptyTree
+        case PolyType(_, _) => EmptyTree 
         case _ =>
           def wrapImplicit(from: Type): Tree = {
             val result = inferImplicit(tree, functionType(List(from), to), reportAmbiguous, true, context)
@@ -223,15 +222,24 @@ trait Typers extends Modes {
 
     /** Check that `tpt` refers to a non-refinement class type */
     def checkClassType(tpt: Tree, existentialOK: Boolean, stablePrefix: Boolean) {
+      def errorNotClass(found: AnyRef) = error(tpt.pos, "class type required but "+found+" found")
       def check(tpe: Type): Unit = tpe.normalize match {
         case TypeRef(pre, sym, _) if sym.isClass && !sym.isRefinementClass => 
-          if (stablePrefix && phase.id <= currentRun.typerPhase.id && !pre.isStable)
-            error(tpt.pos, "type "+pre+" is not a stable prefix")
+          if (stablePrefix && phase.id <= currentRun.typerPhase.id) {
+            if (!pre.isStable)
+              error(tpt.pos, "type "+pre+" is not a stable prefix")
+            // A type projection like X#Y can get by the stable check if the
+            // prefix is singleton-bounded, so peek at the tree too.
+            else tpt match {
+              case SelectFromTypeTree(qual, _) if !isSingleType(qual.tpe) => errorNotClass(tpt)
+              case _                                                      => ;
+            }
+          }
         case ErrorType => ;
         case PolyType(_, restpe) => check(restpe)
         case ExistentialType(_, restpe) if existentialOK => check(restpe)
         case AnnotatedType(_, underlying, _) => check(underlying)
-        case t => error(tpt.pos, "class type required but "+t+" found")
+        case t => errorNotClass(t)
       }
       check(tpt.tpe)
     }
@@ -950,7 +958,7 @@ trait Typers extends Modes {
                   // 
                   //   val x: T forSome { ts } = expr
                   // 
-                  // would typecheck. Or one can simply leave out the type of the `val':
+                  // would typecheck. Or one can simply leave out the type of the `val`:
                   //
                   //   val x = expr
                   context.unit.warning(tree.pos, "recovering from existential Skolem type error in tree \n"+tree+"\nwith type "+tree.tpe+"\n expected type = "+pt+"\n context = "+context.tree)
@@ -1067,10 +1075,9 @@ trait Typers extends Modes {
     private def validateNoCaseAncestor(clazz: Symbol) = {
       if (!phase.erasedTypes) {
         for (ancestor <- clazz.ancestors find (_.isCase)) {
-          unit.deprecationWarning(clazz.pos, ( 
-            "case class `%s' has case ancestor `%s'.  Case-to-case inheritance has potentially "+
-            "dangerous bugs which are unlikely to be fixed.  You are strongly encouraged to "+
-            "instead use extractors to pattern match on non-leaf nodes."
+          unit.error(clazz.pos, ( 
+            "case class `%s' has case ancestor `%s'. Case-to-case inheritance is prohibited."+
+            " To overcome this limitation use extractors to pattern match on non-leaf nodes."
           ).format(clazz, ancestor))
         }
       }
@@ -1784,7 +1791,7 @@ trait Typers extends Modes {
         }
       }
 
-      if (meth.isRefinementMember)
+      if (meth.isStructuralRefinementMember)
         checkMethodStructuralCompatible(meth)
 
       treeCopy.DefDef(ddef, typedMods, ddef.name, tparams1, vparamss1, tpt1, rhs1) setType NoType
@@ -1907,8 +1914,8 @@ trait Typers extends Modes {
               //   -> members that are hidden by the type of the block are made private
               ( classDecls filter (member =>
                      member.isTerm
-                  && member.isVisibleInRefinement
-                  && !member.hasAccessBoundary
+                  && member.isPossibleInRefinement
+                  && member.isPublic
                   && !matchesVisibleMember(member)
                 )
                 foreach { member =>
@@ -2086,7 +2093,7 @@ trait Typers extends Modes {
         tree.pos.isRange && context.unit != null && (tree.pos includes context.unit.targetPos)
       val localTarget = stats exists includesTargetPos
       def typedStat(stat: Tree): Tree = {
-        if (context.owner.isRefinementClass && !treeInfo.isDeclaration(stat))
+        if (context.owner.isRefinementClass && !treeInfo.isDeclarationOrTypeDef(stat))
           errorTree(stat, "only declarations allowed here")
         else 
           stat match {
@@ -2511,7 +2518,7 @@ trait Typers extends Modes {
         case otpe if inPatternMode(mode) && unapplyMember(otpe).exists =>
           if (args.length > MaxTupleArity)
             error(fun.pos, "too many arguments for unapply pattern, maximum = "+MaxTupleArity)
-        
+
           def freshArgType(tp: Type): (Type, List[Symbol]) = (tp: @unchecked) match {
             case MethodType(param :: _, _) => 
               (param.tpe, Nil)
@@ -2557,10 +2564,13 @@ trait Typers extends Modes {
             val formals1 = formalTypes(formals0, args.length)
             if (sameLength(formals1, args)) {
               val args1 = typedArgs(args, mode, formals0, formals1)
-              assert(isFullyDefined(pt), tree+" ==> "+UnApply(fun1, args1)+", pt = "+pt)
+              // This used to be the following (failing) assert:
+              //   assert(isFullyDefined(pt), tree+" ==> "+UnApply(fun1, args1)+", pt = "+pt)
+              // I modified as follows.  See SI-1048.
+              val pt1 = if (isFullyDefined(pt)) pt else makeFullyDefined(pt)
 
-              val itype = glb(List(pt, arg.tpe))
-              arg.tpe = pt    // restore type (arg is a dummy tree, just needs to pass typechecking)
+              val itype = glb(List(pt1, arg.tpe))
+              arg.tpe = pt1    // restore type (arg is a dummy tree, just needs to pass typechecking)
               UnApply(fun1, args1) setPos tree.pos setType itype
             }
             else {

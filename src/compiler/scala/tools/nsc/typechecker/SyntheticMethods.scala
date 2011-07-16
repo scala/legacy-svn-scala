@@ -34,22 +34,6 @@ trait SyntheticMethods extends ast.TreeDSL {
   
   import global._                  // the global environment
   import definitions._             // standard classes and methods
-  
-  /** In general case classes/objects are not given synthetic equals methods if some
-   *  non-AnyRef implementation is inherited.  However if you let a case object inherit
-   *  an implementation from a case class, it creates an asymmetric equals with all the
-   *  associated badness: see ticket #883.  So if it sees such a thing this has happened
-   *  (by virtue of the symbol being in createdMethodSymbols) it re-overrides it with
-   *  reference equality.
-   *
-   *  TODO: remove once (deprecated) case class inheritance is dropped form nsc.
-   */  
-  private val createdMethodSymbols = new mutable.HashSet[Symbol]
-
-  /** Clear the cache of createdMethodSymbols.  */
-  def resetSynthetics() {
-    createdMethodSymbols.clear()
-  }
 
   /** Add the synthetic methods to case classes.  Note that a lot of the
    *  complexity herein is a consequence of case classes inheriting from
@@ -64,7 +48,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     def hasOverridingImplementation(meth: Symbol): Boolean = {
       val sym = clazz.info nonPrivateMember meth.name
       def isOverride(s: Symbol) = {
-        s != meth && !s.isDeferred && !s.isSynthetic && !createdMethodSymbols(s) &&
+        s != meth && !s.isDeferred && !s.isSynthetic &&
         (clazz.thisType.memberType(s) matches clazz.thisType.memberType(meth))
       }
       sym.alternatives exists isOverride
@@ -75,7 +59,6 @@ trait SyntheticMethods extends ast.TreeDSL {
 
     def newSyntheticMethod(name: Name, flags: Int, tpeCons: Symbol => Type) = {
       val method = clazz.newMethod(clazz.pos.focus, name.toTermName) setFlag flags
-      createdMethodSymbols += method
       method setInfo tpeCons(method)
       clazz.info.decls.enter(method)
     }
@@ -125,6 +108,13 @@ trait SyntheticMethods extends ast.TreeDSL {
     def moduleToStringMethod: Tree = {
       val method = syntheticMethod(nme.toString_, FINAL, makeNoArgConstructor(StringClass.tpe))
       typer typed { DEF(method) === LIT(clazz.name.decode) }
+    }
+    def moduleHashCodeMethod: Tree = {
+      val method = syntheticMethod(nme.hashCode_, FINAL, makeNoArgConstructor(IntClass.tpe))
+      // The string being used as hashcode basis is also productPrefix.
+      val code   = clazz.name.decode.hashCode
+
+      typer typed { DEF(method) === LIT(code) }
     }
 
     def forwardingMethod(name: Name, targetName: Name): Tree = {
@@ -182,7 +172,7 @@ trait SyntheticMethods extends ast.TreeDSL {
       def makeTrees(acc: Symbol, cpt: Type): (Tree, Bind) = {
         val varName     = context.unit.freshTermName(acc.name + "$")
         val isRepeated  = isRepeatedParamType(cpt)
-        val binding     = if (isRepeated) Star(WILD()) else WILD()
+        val binding     = if (isRepeated) Star(WILD.empty) else WILD.empty
         val eqMethod: Tree  =
           if (isRepeated) gen.mkRuntimeCall(nme.sameElements, List(Ident(varName), Ident(acc)))
           else (Ident(varName) DOT nme.EQ)(Ident(acc))
@@ -262,6 +252,7 @@ trait SyntheticMethods extends ast.TreeDSL {
         )
         // methods for case objects only
         def objectMethods = List(
+          Object_hashCode -> (() => moduleHashCodeMethod),
           Object_toString -> (() => moduleToStringMethod)
         )
         // methods for both classes and objects
@@ -276,13 +267,6 @@ trait SyntheticMethods extends ast.TreeDSL {
             // Product_productElementName  -> (() => productElementNameMethod(accessors)),
             Product_canEqual        -> (() => canEqualMethod)
           )
-        }
-
-        if (clazz.isModuleClass) {
-          // if there's a synthetic method in a parent case class, override its equality
-          // with eq (see #883)
-          val otherEquals = clazz.info.nonPrivateMember(Object_equals.name) 
-          if (otherEquals.owner != clazz && createdMethodSymbols(otherEquals)) ts += equalsModuleMethod
         }
 
         val methods = (if (clazz.isModuleClass) objectMethods else classMethods) ++ everywhereMethods

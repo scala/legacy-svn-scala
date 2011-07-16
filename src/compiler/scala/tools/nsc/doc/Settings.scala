@@ -12,7 +12,7 @@ import java.lang.System
 /** An extended version of compiler settings, with additional Scaladoc-specific options.
   * @param error A function that prints a string to the appropriate error stream. */
 class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
-  
+
   /** A setting that defines in which format the documentation is output. ''Note:'' this setting is currently always
     * `html`. */
   val docformat = ChoiceSetting (
@@ -40,13 +40,14 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
     "An optional version number, to be appended to the title",
     ""
   )
-  
+
   val docUncompilable = StringSetting (
     "-doc-no-compile",
     "path",
     "A directory containing sources which should be parsed, no more (e.g. AnyRef.scala)",
     ""
   )
+
   lazy val uncompilableFiles = docUncompilable.value match {
     case ""     => Nil
     case path   => io.Directory(path).deepFiles filter (_ hasExtension "scala") toList
@@ -57,7 +58,7 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
   val docsourceurl = StringSetting (
     "-doc-source-url",
     "url",
-    "A URL pattern used to build links to template sources; use variables, for example: €{TPL_NAME} ('Seq'), €{TPL_OWNER} ('scala.collection'), €{FILE_PATH} ('scala/collection/Seq')",
+    "A URL pattern used to build links to template sources; use variables, for example: ?{TPL_NAME} ('Seq'), ?{TPL_OWNER} ('scala.collection'), ?{FILE_PATH} ('scala/collection/Seq')",
     ""
   )
 

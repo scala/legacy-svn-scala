@@ -16,7 +16,7 @@ import java.io.{DataInputStream, DataOutputStream, IOException}
 import java.lang.{Thread, SecurityException}
 import java.net.{InetAddress, ServerSocket, Socket, UnknownHostException}
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable
 import scala.util.Random
 
 /* Object TcpService.
@@ -26,7 +26,7 @@ import scala.util.Random
  */
 object TcpService {
   private val random = new Random
-  private val ports = new HashMap[Int, TcpService]
+  private val ports = new mutable.HashMap[Int, TcpService]
 
   def apply(port: Int, cl: ClassLoader): TcpService =
     ports.get(port) match {
@@ -73,11 +73,11 @@ class TcpService(port: Int, cl: ClassLoader) extends Thread with Service {
   private val internalNode = new Node(InetAddress.getLocalHost().getHostAddress(), port)
   def node: Node = internalNode
 
-  private val pendingSends = new HashMap[Node, List[Array[Byte]]]
+  private val pendingSends = new mutable.HashMap[Node, List[Array[Byte]]]
 
   /**
    * Sends a byte array to another node on the network.
-   * If the node is not yet up, up to <code>TcpService.BufSize</code>
+   * If the node is not yet up, up to `TcpService.BufSize`
    * messages are buffered.
    */
   def send(node: Node, data: Array[Byte]): Unit = synchronized {
@@ -161,7 +161,7 @@ class TcpService(port: Int, cl: ClassLoader) extends Thread with Service {
   // connection management
 
   private val connections =
-    new scala.collection.mutable.HashMap[Node, TcpServiceWorker]
+    new mutable.HashMap[Node, TcpServiceWorker]
 
   private[actors] def addConnection(node: Node, worker: TcpServiceWorker) = synchronized {
     connections += Pair(node, worker)

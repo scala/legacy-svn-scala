@@ -11,26 +11,22 @@ package scala.xml
 package include.sax
 
 import scala.xml.include._
-import collection.mutable.Stack
-
+import scala.collection.mutable
 import org.xml.sax.{ ContentHandler, XMLReader, Locator, Attributes }
 import org.xml.sax.ext.LexicalHandler
 import java.io.{ File, OutputStream, OutputStreamWriter, Writer, IOException }
 
-/** XIncluder is a SAX <code>ContentHandler</code> 
- * that writes its XML document onto an output stream after resolving
- * all <code>xinclude:include</code> elements.
+/** XIncluder is a SAX `ContentHandler` that writes its XML document onto
+ * an output stream after resolving all `xinclude:include` elements.
  *
- * <p>
- *   based on Eliotte Rusty Harold's SAXXIncluder
- * </p>
+ * Based on Eliotte Rusty Harold's SAXXIncluder.
  */
 class XIncluder(outs: OutputStream, encoding: String) extends ContentHandler with LexicalHandler {
 
   var out = new OutputStreamWriter(outs, encoding)
 
   def setDocumentLocator(locator: Locator) {}
-    
+
   def startDocument() {
     try {
       out.write("<?xml version='1.0' encoding='" 
@@ -51,9 +47,9 @@ class XIncluder(outs: OutputStream, encoding: String) extends ContentHandler wit
         throw new SAXException("Flush failed", e)
     }
   }
-    
+
   def startPrefixMapping(prefix: String , uri: String) {}
-    
+
   def endPrefixMapping(prefix: String) {}
 
   def startElement(namespaceURI: String, localName: String, qualifiedName: String, atts: Attributes) = {
@@ -77,7 +73,7 @@ class XIncluder(outs: OutputStream, encoding: String) extends ContentHandler wit
         throw new SAXException("Write failed", e)
     }        
   }
-  
+
   def endElement(namespaceURI: String, localName:String, qualifiedName: String) {
     try {
       out.write("</" + qualifiedName + ">")
@@ -101,7 +97,7 @@ class XIncluder(outs: OutputStream, encoding: String) extends ContentHandler wit
         // (The end CDATA section delimiter)
         else if (c == '>') out.write("&gt;");
         else out.write(c);
-        i = i+1;
+        i += 1
       }
     }
     catch { 
@@ -113,7 +109,7 @@ class XIncluder(outs: OutputStream, encoding: String) extends ContentHandler wit
   def  ignorableWhitespace(ch: Array[Char], start: Int , length: Int) {
     this.characters(ch, start, length)
   }
-  
+
   // do I need to escape text in PI????
   def processingInstruction(target: String, data: String) {
     try {
@@ -124,7 +120,7 @@ class XIncluder(outs: OutputStream, encoding: String) extends ContentHandler wit
         throw new SAXException("Write failed", e)
     }
   }
-  
+
   def skippedEntity(name: String) {
     try {
       out.write("&" + name + ";")
@@ -137,7 +133,7 @@ class XIncluder(outs: OutputStream, encoding: String) extends ContentHandler wit
 
   // LexicalHandler methods
   private var inDTD: Boolean = false
-  private val entities = new Stack[String]()
+  private val entities = new mutable.Stack[String]()
 
   def startDTD(name: String, publicID: String, systemID: String) {
     inDTD = true
@@ -156,7 +152,7 @@ class XIncluder(outs: OutputStream, encoding: String) extends ContentHandler wit
     }
   }
   def endDTD() {}
-    
+
   def startEntity(name: String) {
     entities push name
   }
@@ -171,7 +167,7 @@ class XIncluder(outs: OutputStream, encoding: String) extends ContentHandler wit
   // Just need this reference so we can ask if a comment is 
   // inside an include element or not
   private var filter: XIncludeFilter = null
-  
+
   def setFilter(filter: XIncludeFilter) {
     this.filter = filter
   }

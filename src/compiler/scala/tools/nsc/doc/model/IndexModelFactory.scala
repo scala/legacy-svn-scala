@@ -10,7 +10,7 @@ package model
 import scala.collection._
 
 object IndexModelFactory {
-  
+
   def makeIndex(universe: Universe): Index = new Index {
 
     lazy val firstLetterIndex: Map[Char, SymbolMap] = {
@@ -61,5 +61,5 @@ object IndexModelFactory {
     }
 
   }
-  
+
 }

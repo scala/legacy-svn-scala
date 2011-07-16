@@ -29,7 +29,7 @@ abstract class HtmlPage extends Page { thisPage =>
   /** The body of this page. */
   def body: NodeSeq
 
-  def writeFor(site: HtmlFactory): Unit = {
+  def writeFor(site: HtmlFactory) {
     val doctype =
       DocType("html", PublicID("-//W3C//DTD XHTML 1.1//EN", "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"), Nil)
     val html =
@@ -45,7 +45,7 @@ abstract class HtmlPage extends Page { thisPage =>
     val w = Channels.newWriter(fos.getChannel, site.encoding)
     try {
       w.write("<?xml version='1.0' encoding='" + site.encoding + "'?>\n")
-      w.write( doctype.toString + "\n")
+      w.write(doctype.toString + "\n")
       w.write(xml.Xhtml.toXhtml(html))
     }
     finally {
@@ -59,7 +59,7 @@ abstract class HtmlPage extends Page { thisPage =>
     * node sequence if it is not. */
   def commentToHtml(comment: Option[Comment]): NodeSeq =
     (comment map (commentToHtml(_))) getOrElse NodeSeq.Empty
-  
+
   /** Transforms a comment into an styled HTML tree representing its body. */
   def commentToHtml(comment: Comment): NodeSeq =
     bodyToHtml(comment.body)
@@ -73,7 +73,8 @@ abstract class HtmlPage extends Page { thisPage =>
     case Title(in, 3) => <h5>{ inlineToHtml(in) }</h5>
     case Title(in, _) => <h6>{ inlineToHtml(in) }</h6>
     case Paragraph(in) => <p>{ inlineToHtml(in) }</p>
-    case Code(data) => <pre>{ xml.Text(data) }</pre>
+    case Code(data) =>
+      <pre>{ SyntaxHigh(data) }</pre> //<pre>{ xml.Text(data) }</pre>
     case UnorderedList(items) =>
       <ul>{ listItemsToHtml(items) }</ul>
     case OrderedList(items, listStyle) =>
@@ -83,7 +84,7 @@ abstract class HtmlPage extends Page { thisPage =>
     case HorizontalRule() =>
       <hr/>
   }
-  
+
   def listItemsToHtml(items: Seq[Block]) =
     items.foldLeft(xml.NodeSeq.Empty){ (xmlList, item) =>
       item match {
@@ -95,7 +96,7 @@ abstract class HtmlPage extends Page { thisPage =>
           xmlList :+ <li>{ blockToHtml(block) }</li>
       }
   }
-  
+
   def inlineToHtml(inl: Inline): NodeSeq = inl match {
     case Chain(items) => items flatMap (inlineToHtml(_))
     case Italic(in) => <i>{ inlineToHtml(in) }</i>
@@ -105,7 +106,7 @@ abstract class HtmlPage extends Page { thisPage =>
     case Subscript(in) => <sub>{ inlineToHtml(in) }</sub>
     case Link(raw, title) => <a href={ raw }>{ inlineToHtml(title) }</a>
     case EntityLink(entity) => templateToHtml(entity)
-    case Monospace(text) => <code>{ xml.Text(text) }</code>
+    case Monospace(in) => <code>{ inlineToHtml(in) }</code>
     case Text(text) => xml.Text(text)
     case Summary(in) => inlineToHtml(in)
     case HtmlTag(tag) => xml.Unparsed(tag)
@@ -169,16 +170,17 @@ abstract class HtmlPage extends Page { thisPage =>
     case tpl :: Nil  => templateToHtml(tpl)
     case tpl :: tpls => templateToHtml(tpl) ++ sep ++ templatesToHtml(tpls, sep)
   }
-  
+
   /** Returns the _big image name corresponding to the DocTemplate Entity (upper left icon) */
   def docEntityKindToBigImage(ety: DocTemplateEntity) = 
-    	if (ety.isTrait && !ety.companion.isEmpty && ety.companion.get.visibility.isPublic && ety.companion.get.inSource != None) "trait_to_object_big.png" 
-    	else if (ety.isTrait) "trait_big.png" 
-    	else if (ety.isClass && !ety.companion.isEmpty && ety.companion.get.visibility.isPublic && ety.companion.get.inSource != None) "class_to_object_big.png" 
-    	else if (ety.isClass) "class_big.png" 
-    	else if (ety.isObject && !ety.companion.isEmpty && ety.companion.get.visibility.isPublic && ety.companion.get.inSource != None && ety.companion.get.isClass) "object_to_class_big.png" 
-    	else if (ety.isObject && !ety.companion.isEmpty && ety.companion.get.visibility.isPublic && ety.companion.get.inSource != None && ety.companion.get.isTrait) "object_to_trait_big.png" 
-    	else if (ety.isObject) "object_big.png" 
-    	else if (ety.isPackage) "package_big.png"
-    	else "class_big.png"	// FIXME: an entity *should* fall into one of the above categories, but AnyRef is somehow not
+    if (ety.isTrait && !ety.companion.isEmpty && ety.companion.get.visibility.isPublic && ety.companion.get.inSource != None) "trait_to_object_big.png" 
+    else if (ety.isTrait) "trait_big.png" 
+    else if (ety.isClass && !ety.companion.isEmpty && ety.companion.get.visibility.isPublic && ety.companion.get.inSource != None) "class_to_object_big.png" 
+    else if (ety.isClass) "class_big.png" 
+    else if (ety.isObject && !ety.companion.isEmpty && ety.companion.get.visibility.isPublic && ety.companion.get.inSource != None && ety.companion.get.isClass) "object_to_class_big.png" 
+    else if (ety.isObject && !ety.companion.isEmpty && ety.companion.get.visibility.isPublic && ety.companion.get.inSource != None && ety.companion.get.isTrait) "object_to_trait_big.png" 
+    else if (ety.isObject) "object_big.png" 
+    else if (ety.isPackage) "package_big.png"
+    else "class_big.png"	// FIXME: an entity *should* fall into one of the above categories, but AnyRef is somehow not
+
 }

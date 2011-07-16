@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package transform
 
-import scala.tools.nsc.symtab.classfile.ClassfileConstants._
+import scala.reflect.internal.ClassfileConstants._
 import scala.collection.{ mutable, immutable }
 import symtab._
 import Flags._
@@ -103,7 +103,7 @@ abstract class Erasure extends AddInterfaces
   def numericConversion(tree: Tree, numericSym: Symbol): Tree = {
     val mname      = newTermName("to" + numericSym.name)
     val conversion = tree.tpe member mname
-  
+
     assert(conversion != NoSymbol, tree + " => " + numericSym)
     atPos(tree.pos)(Apply(Select(tree, conversion), Nil))
   }
@@ -527,10 +527,15 @@ abstract class Erasure extends AddInterfaces
   }
 
   val deconstMap = new TypeMap {
+    // For some reason classOf[Foo] creates ConstantType(Constant(tpe)) with an actual Type for tpe,
+    // which is later translated to a Class. Unfortunately that means we have bugs like the erasure
+    // of Class[Foo] and classOf[Bar] not being seen as equivalent, leading to duplicate method
+    // generation and failing bytecode. See ticket #4753.
     def apply(tp: Type): Type = tp match {
-      case PolyType(_, _) => mapOver(tp)
-      case MethodType(_, _) => mapOver(tp) // nullarymethod was eliminated during uncurry
-      case _ => tp.deconst
+      case PolyType(_, _)                  => mapOver(tp)
+      case MethodType(_, _)                => mapOver(tp)     // nullarymethod was eliminated during uncurry
+      case ConstantType(Constant(_: Type)) => ClassClass.tpe  // all classOfs erase to Class
+      case _                               => tp.deconst
     }
   }
   // Methods on Any/Object which we rewrite here while we still know what

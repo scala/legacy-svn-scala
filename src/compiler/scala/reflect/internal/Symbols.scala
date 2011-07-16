@@ -11,8 +11,9 @@ import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.ListBuffer
 import util.Statistics._
 import Flags._
+import api.Modifier
 
-trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
+trait Symbols extends api.Symbols { self: SymbolTable =>
   import definitions._
 
   private var ids = 0
@@ -38,10 +39,10 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
   /** The original owner of a class. Used by the backend to generate
    *  EnclosingMethod attributes.
    */
-  val originalOwner = mutable.HashMap[Symbol, Symbol]()
+  val originalOwner = perRunCaches.newMap[Symbol, Symbol]()
 
   /** The class for all symbols */
-  abstract class Symbol(initOwner: Symbol, initPos: Position, initName: Name) extends HasFlags /*AbsSymbol */ {
+  abstract class Symbol(initOwner: Symbol, initPos: Position, initName: Name) extends AbsSymbol with HasFlags {
 
     type FlagsType          = Long
     type AccessBoundaryType = Symbol
@@ -58,6 +59,14 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
 
     def pos = rawpos
     def setPos(pos: Position): this.type = { this.rawpos = pos; this }
+    
+    override def hasModifier(mod: Modifier.Value) = 
+      hasFlag(flagOfModifier(mod)) &&
+      (!(mod == Modifier.bynameParameter) || isTerm) &&
+      (!(mod == Modifier.covariant) || isType)
+
+    override def allModifiers: Set[Modifier.Value] = 
+      Modifier.values filter hasModifier
 
 // ------ creators -------------------------------------------------------------------
 
@@ -291,34 +300,34 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     /** Is this symbol a type but not a class? */
     def isNonClassType = false // to be overridden
 
-    override final def isTrait: Boolean = isClass && hasFlag(TRAIT | notDEFERRED)     // A virtual class becomes a trait (part of DEVIRTUALIZE)
-    final def isAbstractClass = isClass && hasFlag(ABSTRACT)
-    final def isConcreteClass = isClass && !hasFlag(ABSTRACT | TRAIT)
-    final def isBridge = hasFlag(BRIDGE)
-    final def isContravariant = isType && hasFlag(CONTRAVARIANT)
-    final def isCovariant = isType && hasFlag(COVARIANT)
-    final def isEarlyInitialized: Boolean = isTerm && hasFlag(PRESUPER)
+    override final def isTrait     = isClass && hasFlag(TRAIT)
+    final def isAbstractClass      = isClass && hasFlag(ABSTRACT)
+    final def isBridge             = hasFlag(BRIDGE)
+    final def isContravariant      = isType && hasFlag(CONTRAVARIANT)
+    final def isConcreteClass      = isClass && !hasFlag(ABSTRACT | TRAIT)
+    final def isCovariant          = isType && hasFlag(COVARIANT)
+    final def isEarlyInitialized   = isTerm && hasFlag(PRESUPER)
     final def isExistentiallyBound = isType && hasFlag(EXISTENTIAL)
-    final def isImplClass = isClass && hasFlag(IMPLCLASS) // Is this symbol an implementation class for a mixin?
-    final def isLazyAccessor = isLazy && lazyAccessor != NoSymbol
-    final def isMethod = isTerm && hasFlag(METHOD)
-    final def isVarargsMethod = isMethod && hasFlag(VARARGS)
-    final def isModule = isTerm && hasFlag(MODULE)
-    final def isModuleClass = isClass && hasFlag(MODULE)
-    final def isOverloaded = hasFlag(OVERLOADED)
-    final def isRefinementClass = isClass && name == tpnme.REFINE_CLASS_NAME
-    final def isRefinementMember = owner.isStructuralRefinement && isVisibleInRefinement && !hasAccessBoundary
-    final def isVisibleInRefinement = !(isConstructor || isOverridingSymbol || isPrivate)
-    final def isSourceMethod = isMethod && !hasFlag(STABLE) // exclude all accessors!!!
-    final def isTypeParameter = isType && isParameter && !isSkolem
-    
+    final def isImplClass          = isClass && hasFlag(IMPLCLASS)
+    final def isLazyAccessor       = isLazy && lazyAccessor != NoSymbol
+    final def isMethod             = isTerm && hasFlag(METHOD)
+    final def isModule             = isTerm && hasFlag(MODULE)
+    final def isModuleClass        = isClass && hasFlag(MODULE)
+    final def isNumericValueClass  = definitions.isNumericValueClass(this)
+    final def isOverloaded         = hasFlag(OVERLOADED)
+    final def isRefinementClass    = isClass && name == tpnme.REFINE_CLASS_NAME
+    final def isSourceMethod       = isMethod && !hasFlag(STABLE) // exclude all accessors!!!
+    final def isTypeParameter      = isType && isParameter && !isSkolem
+    final def isValueClass         = definitions.isValueClass(this)
+    final def isVarargsMethod      = isMethod && hasFlag(VARARGS)
+
     /** Package tests */
-    final def isEmptyPackage = isPackage && name == nme.EMPTY_PACKAGE_NAME
+    final def isEmptyPackage      = isPackage && name == nme.EMPTY_PACKAGE_NAME
     final def isEmptyPackageClass = isPackageClass && name == tpnme.EMPTY_PACKAGE_NAME
-    final def isPackage = isModule && hasFlag(PACKAGE)
-    final def isPackageClass = isClass && hasFlag(PACKAGE)
-    final def isRoot = isPackageClass && owner == NoSymbol 
-    final def isRootPackage = isPackage && owner == NoSymbol
+    final def isPackage           = isModule && hasFlag(PACKAGE)
+    final def isPackageClass      = isClass && hasFlag(PACKAGE)
+    final def isRoot              = isPackageClass && owner == NoSymbol 
+    final def isRootPackage       = isPackage && owner == NoSymbol
     
     /** Does this symbol denote a wrapper created by the repl? */
     final def isInterpreterWrapper = (
@@ -329,6 +338,9 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     /** Is this symbol an effective root for fullname string?
      */
     def isEffectiveRoot = isRoot || isEmptyPackageClass
+    
+    final def isPossibleInRefinement       = !isConstructor && !isOverridingSymbol
+    final def isStructuralRefinementMember = owner.isStructuralRefinement && isPossibleInRefinement && isPublic
     
     /** Term symbols with the exception of static parts of Java classes and packages.
      */
@@ -381,6 +393,7 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     final def isPredefModule      = this == PredefModule
     final def isScalaPackage      = (this == ScalaPackage) || (isPackageObject && owner == ScalaPackageClass)
     final def isScalaPackageClass = skipPackageObject == ScalaPackageClass
+    def inDefaultNamespace        = owner.isPredefModule || owner.isScalaPackageClass
     
     /** If this is a package object or package object class, its owner: otherwise this.
      */
@@ -587,8 +600,13 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
 
     def owner: Symbol = rawowner
     final def owner_=(owner: Symbol) {
-      if (originalOwner contains this) ()
-      else originalOwner(this) = rawowner
+      // don't keep the original owner in presentation compiler runs
+      // (the map will grow indefinitely, and the only use case is the 
+      // backend). 
+      if (!forInteractive) {
+        if (originalOwner contains this) ()
+        else originalOwner(this) = rawowner
+      }
 
       rawowner = owner
     }
@@ -683,7 +701,7 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     final def setFlag(mask: Long): this.type = { rawflags = rawflags | mask; this }
     final def resetFlag(mask: Long): this.type = { rawflags = rawflags & ~mask; this }
     final def getFlag(mask: Long): Long = flags & mask
-    final def resetFlags { rawflags = rawflags & TopLevelCreationFlags }
+    final def resetFlags() { rawflags = rawflags & TopLevelCreationFlags }
 
     /** Does symbol have ANY flag in `mask` set? */
     final def hasFlag(mask: Long): Boolean = (flags & mask) != 0L
@@ -1023,7 +1041,7 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     /** Reset symbol to initial state
      */
     def reset(completer: Type) {
-      resetFlags
+      resetFlags()
       infos = null
       validTo = NoPeriod
       //limit = NoPhase.id
@@ -1319,8 +1337,13 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     /** Return the original enclosing method of this symbol. It should return
      *  the same thing as enclMethod when called before lambda lift,
      *  but it preserves the original nesting when called afterwards.
+     *  
+     *  @note This method is NOT available in the presentation compiler run. The 
+     *        originalOwner map is not populated for memory considerations (the symbol
+     *        may hang on to lazy types and in turn to whole (outdated) compilation units.
      */
     def originalEnclosingMethod: Symbol = {
+      assert(!forInteractive, "originalOwner is not kept in presentation compiler runs.")
       if (isMethod) this
       else {
         val owner = originalOwner.getOrElse(this, rawowner)
@@ -2082,11 +2105,12 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
      * info for T in Test1 should be >: Nothing <: Test3[_]
      */
     protected def doCookJavaRawInfo() {
-      // don't require isJavaDefined, since T in the above example does not have that flag
-      val tpe1 = rawToExistential(info)
-      // println("cooking type: "+ this +": "+ info +" to "+ tpe1)
-      if (tpe1 ne info) {
-        setInfo(tpe1)
+      if (isJavaDefined || owner.isJavaDefined) {
+        val tpe1 = rawToExistential(info)
+        // println("cooking type: "+ this +": "+ info +" to "+ tpe1)
+        if (tpe1 ne info) {
+          setInfo(tpe1)
+        }
       }
     }
     

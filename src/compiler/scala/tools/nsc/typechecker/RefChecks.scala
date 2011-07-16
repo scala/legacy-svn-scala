@@ -116,10 +116,12 @@ abstract class RefChecks extends InfoTransform {
           }
         }
       }
-      clazz.info.decls filter (x => x.isImplicit && x.typeParams.nonEmpty) foreach { sym =>
-        val alts = clazz.info.decl(sym.name).alternatives
-        if (alts.size > 1)
-          alts foreach (x => unit.warning(x.pos, "parameterized overloaded implicit methods are not visible as view bounds"))
+      if (settings.lint.value) {
+        clazz.info.decls filter (x => x.isImplicit && x.typeParams.nonEmpty) foreach { sym =>
+          val alts = clazz.info.decl(sym.name).alternatives
+          if (alts.size > 1)
+            alts foreach (x => unit.warning(x.pos, "parameterized overloaded implicit methods are not visible as view bounds"))
+        }
       }
     }
 
@@ -860,7 +862,7 @@ abstract class RefChecks extends InfoTransform {
     }
 
     private var currentLevel: LevelInfo = null
-    private val symIndex = new mutable.HashMap[Symbol, Int]
+    private val symIndex = perRunCaches.newMap[Symbol, Int]()
 
     private def pushLevel() {
       currentLevel = new LevelInfo(currentLevel)

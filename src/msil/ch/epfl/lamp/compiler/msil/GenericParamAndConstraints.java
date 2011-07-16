@@ -10,7 +10,7 @@ public class GenericParamAndConstraints {
                                       boolean isReferenceType, boolean isValueType, boolean hasDefaultConstructor) {
         this.Number = Number;
         this.Name = Name;
-        this.Constraints = Constraints; // TODO representation for the class and new() constraints missing 
+        this.Constraints = Constraints; // TODO representation for the class and new() constraints missing
         this.isInvariant = isInvariant;
         this.isCovariant = isCovariant;
         this.isContravariant = isContravariant;

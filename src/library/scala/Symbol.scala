@@ -10,19 +10,14 @@
 
 package scala
 
-/** <p>
- *    This class provides a simple way to get unique objects for
- *    equal strings. Since symbols are interned, they can be compared using
- *    reference equality. Instances of 
- *    <code>Symbol</code> can be created easily with Scala's built-in
-*     quote mechanism.
- *  </p>
- *  <p>
- *    For instance, the <a href="http://scala-lang.org/" target="_top">Scala</a>
- *    term <code>'mysym</code> will invoke the constructor of the
- *    <code>Symbol</code> class in the following way:
- *    <code>Symbol("mysym")</code>.
- *  </p>
+/** This class provides a simple way to get unique objects for equal strings.
+ *  Since symbols are interned, they can be compared using reference equality.
+ *  Instances of `Symbol` can be created easily with Scala's built-in quote
+ *  mechanism.
+ *  
+ *  For instance, the [[http://scala-lang.org/#_top Scala]] term `'mysym` will
+ *  invoke the constructor of the `Symbol` class in the following way:
+ *  `Symbol("mysym")`.
  *  
  *  @author  Martin Odersky, Iulian Dragos
  *  @version 1.8
@@ -49,15 +44,15 @@ private[scala] abstract class UniquenessCache[K, V >: Null]
   import java.lang.ref.WeakReference
   import java.util.WeakHashMap
   import java.util.concurrent.locks.ReentrantReadWriteLock
-  
+
   private val rwl = new ReentrantReadWriteLock()
   private val rlock = rwl.readLock
   private val wlock = rwl.writeLock
   private val map = new WeakHashMap[K, WeakReference[V]]
-  
+
   protected def valueFromKey(k: K): V
   protected def keyFromValue(v: V): Option[K]
-  
+
   def apply(name: K): V = {
     def cached(): V = {
       rlock.lock
@@ -81,7 +76,7 @@ private[scala] abstract class UniquenessCache[K, V >: Null]
       }
       finally wlock.unlock
     }
-    
+
     val res = cached()
     if (res == null) updateCache()
     else res

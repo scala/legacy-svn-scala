@@ -15,7 +15,7 @@ import scala.xml._
 import scala.util.parsing.json.{JSONObject, JSONArray}
 
 class Index(universe: doc.Universe, index: doc.Index) extends HtmlPage {
-  
+
   def path = List("index.html")
 
   def title = {
@@ -47,7 +47,7 @@ class Index(universe: doc.Universe, index: doc.Index) extends HtmlPage {
         <iframe name="template" src={ relativeLinkTo{List("package.html")} }/>
       </div>
     </body>
-  
+
   def browser =
     <div id="browser" class="ui-layout-west">
       <div class="ui-west-center">
@@ -62,9 +62,9 @@ class Index(universe: doc.Universe, index: doc.Index) extends HtmlPage {
             <ol class="templates">{
               val tpls: Map[String, Seq[DocTemplateEntity]] =
                 (pack.templates filter (t => !t.isPackage && !isExcluded(t) )) groupBy (_.name)
-              
+
               val placeholderSeq: NodeSeq = <div class="placeholder"></div>
-              
+
               def createLink(entity: DocTemplateEntity, includePlaceholder: Boolean, includeText: Boolean) = {
                 val entityType = docEntityKindToString(entity)
                 val linkContent = (
@@ -109,6 +109,7 @@ class Index(universe: doc.Universe, index: doc.Index) extends HtmlPage {
     </div>
 
   def packageQualifiedName(ety: DocTemplateEntity): String =
-    if (ety.inTemplate.isPackage) ety.name else (packageQualifiedName(ety.inTemplate) + "." + ety.name)
+    if (ety.inTemplate.isPackage) ety.name
+    else (packageQualifiedName(ety.inTemplate) + "." + ety.name)
 
 }

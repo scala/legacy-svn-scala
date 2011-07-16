@@ -6,10 +6,11 @@
 package scala.reflect
 package internal
 
+import scala.collection.{ mutable, immutable }
 import util._
 
-abstract class SymbolTable extends /*reflect.generic.Universe
-                              with*/ Names
+abstract class SymbolTable extends api.Universe
+                              with Names
                               with Symbols
                               with Types
                               with Scopes
@@ -49,7 +50,7 @@ abstract class SymbolTable extends /*reflect.generic.Universe
   final val NoRunId = 0
 
   private var ph: Phase = NoPhase
-  private var per = NoPeriod
+  protected var per = NoPeriod
 
   final def phase: Phase = ph
 
@@ -111,6 +112,61 @@ abstract class SymbolTable extends /*reflect.generic.Universe
       if (phase.id > pid) noChangeInBaseClasses(infoTransformers.nextFrom(pid), phase.id)
       else noChangeInBaseClasses(infoTransformers.nextFrom(phase.id), pid)
     }
+  }
+ 
+  object perRunCaches {
+    import java.lang.ref.WeakReference
+    import scala.tools.util.Signallable
+    import scala.runtime.ScalaRunTime.stringOf
+    
+    
+    // We can allow ourselves a structural type, these methods
+    // amount to a few calls per run at most.  This does suggest
+    // a "Clearable" trait may be useful.
+    private type Clearable = {
+      def size: Int
+      def clear(): Unit
+    }
+    // Weak references so the garbage collector will take care of
+    // letting us know when a cache is really out of commission.
+    private val caches = mutable.HashSet[WeakReference[Clearable]]()
+
+    private def dumpCaches() {
+      println(caches.size + " structures are in perRunCaches.")
+      caches.zipWithIndex foreach { case (ref, index) =>
+        val cache = ref.get()
+        println("(" + index + ")" + (
+          if (cache == null) " has been collected."
+          else " has " + cache.size + " entries:\n" + stringOf(cache)
+        ))
+      }
+    }
+    if (settings.debug.value) {
+      println(Signallable("dump compiler caches")(dumpCaches()))
+    }
+    
+    def recordCache[T <: Clearable](cache: T): T = {
+      caches += new WeakReference(cache)
+      cache
+    }
+
+    def clearAll() = {
+      if (settings.debug.value) {
+        val size = caches flatMap (ref => Option(ref.get)) map (_.size) sum;
+        log("Clearing " + caches.size + " caches totalling " + size + " entries.")
+      }
+      caches foreach { ref =>
+        val cache = ref.get()
+        if (cache == null)
+          caches -= ref
+        else
+          cache.clear()
+      }
+    }
+
+    def newWeakMap[K, V]() = recordCache(mutable.WeakHashMap[K, V]())
+    def newMap[K, V]()     = recordCache(mutable.HashMap[K, V]())
+    def newSet[K]()        = recordCache(mutable.HashSet[K]())
   }
 
   /** Break into repl debugger if assertion is true. */

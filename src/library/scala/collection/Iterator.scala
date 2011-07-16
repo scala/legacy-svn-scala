@@ -507,7 +507,14 @@ trait Iterator[+A] extends TraversableOnce[A] {
    */
   def span(p: A => Boolean): (Iterator[A], Iterator[A]) = {
     val self = buffered
-    val leading = new Iterator[A] {
+
+    /**
+     * Giving a name to following iterator (as opposed to trailing) because
+     * anonymous class is represented as a structural type that trailing
+     * iterator is referring (the finish() method) and thus triggering
+     * handling of structural calls. It's not what's intended here.
+     */
+    class Leading extends Iterator[A] {
       private var isDone = false
       val lookahead = new mutable.Queue[A]
       def advance() = {
@@ -528,6 +535,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
         lookahead.dequeue()
       }
     }
+    val leading = new Leading
     val trailing = new Iterator[A] {
       private lazy val it = {
         leading.finish()
@@ -776,7 +784,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  Iterator[Seq[A]], with configurable sequence size, step, and
    *  strategy for dealing with elements which don't fit evenly.
    * 
-   *  Typical uses can be achieved via methods `grouped' and `sliding'.
+   *  Typical uses can be achieved via methods `grouped` and `sliding`.
    */
   class GroupedIterator[B >: A](self: Iterator[A], size: Int, step: Int) extends Iterator[Seq[B]] {
     require(size >= 1 && step >= 1, "size=%d and step=%d, but both must be positive".format(size, step))

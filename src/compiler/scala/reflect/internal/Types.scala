@@ -9,8 +9,6 @@ package internal
 import scala.collection.{ mutable, immutable }
 import scala.ref.WeakReference
 import mutable.ListBuffer
-//import ast.TreeGen
-//import util.{ Position, NoPosition }
 import Flags._
 import scala.util.control.ControlThrowable
 import scala.annotation.tailrec
@@ -70,7 +68,7 @@ import util.Statistics._
     // Not presently used, it seems.
 */
 
-trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
+trait Types extends api.Types { self: SymbolTable =>
   import definitions._
   
   //statistics
@@ -89,7 +87,7 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
   /** Decrement depth unless it is a don't care. */
   private final def decr(depth: Int) = if (depth == AnyDepth) AnyDepth else depth - 1
 
-  private final val printLubs = false
+  private final val printLubs = sys.props contains "scala.debug.lub"
   /** In case anyone wants to turn off lub verification without reverting anything. */
   private final val verifyLubs = true
 
@@ -104,6 +102,9 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
   object undoLog {
     private type UndoLog = List[(TypeVar, TypeConstraint)]
     private[scala] var log: UndoLog = List()
+    
+    // register with the auto-clearing cache manager
+    perRunCaches.recordCache(this)
 
     /** Undo all changes to constraints to type variables upto `limit`. */
     private def undoTo(limit: UndoLog) {
@@ -123,6 +124,7 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
 
       log = Nil
     }
+    def size = log.size
 
     // `block` should not affect constraints on typevars
     def undo[T](block: => T): T = {
@@ -149,7 +151,7 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
    *  It makes use of the fact that these two operations depend only on the parents,
    *  not on the refinement.
    */
-  val intersectionWitness = new mutable.WeakHashMap[List[Type], WeakReference[Type]]
+  val intersectionWitness = perRunCaches.newWeakMap[List[Type], WeakReference[Type]]()
 
   //private object gen extends {
   //  val global : Types.this.type = Types.this
@@ -235,7 +237,7 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
   }
 
   /** The base class for all types */
-  abstract class Type {
+  abstract class Type extends AbsType {
     
     /** Types for which asSeenFrom always is the identity, no matter what
      *  prefix or owner.
@@ -1164,9 +1166,10 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
     override def narrow: Type = this
     override def kind = "ThisType"
   }
-
+  
   final class UniqueThisType(sym: Symbol) extends ThisType(sym) with UniqueType { }
-  object ThisType {
+
+  object ThisType extends ThisTypeExtractor {
     def apply(sym: Symbol): Type = {
       if (!phase.erasedTypes) unique(new UniqueThisType(sym))
       else if (sym.isImplClass) sym.typeOfThis
@@ -1223,7 +1226,8 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
   }
 
   final class UniqueSingleType(pre: Type, sym: Symbol) extends SingleType(pre, sym) with UniqueType { }
-  object SingleType {
+
+  object SingleType extends SingleTypeExtractor {
     def apply(pre: Type, sym: Symbol): Type = {
       unique(new UniqueSingleType(pre, sym))
     }
@@ -1241,7 +1245,8 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
   }
 
   final class UniqueSuperType(thistp: Type, supertp: Type) extends SuperType(thistp, supertp) with UniqueType { }
-  object SuperType {
+ 
+  object SuperType extends SuperTypeExtractor {
     def apply(thistp: Type, supertp: Type): Type = {
       if (phase.erasedTypes) supertp
       else unique(new UniqueSuperType(thistp, supertp))
@@ -1264,7 +1269,8 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
   }
 
   final class UniqueTypeBounds(lo: Type, hi: Type) extends TypeBounds(lo, hi) with UniqueType { }
-  object TypeBounds {
+
+  object TypeBounds extends TypeBoundsExtractor {
     def empty: TypeBounds           = apply(NothingClass.tpe, AnyClass.tpe)
     def upper(hi: Type): TypeBounds = apply(NothingClass.tpe, hi)
     def lower(lo: Type): TypeBounds = apply(lo, AnyClass.tpe)
@@ -1410,7 +1416,7 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
     override def isNotNull: Boolean = parents exists (_.isNotNull)
     
     override def isStructuralRefinement: Boolean =
-      typeSymbol.isAnonOrRefinementClass && decls.exists(_.isVisibleInRefinement)
+      typeSymbol.isAnonOrRefinementClass && decls.exists(_.isPossibleInRefinement)
 
     // override def isNullable: Boolean =
     // parents forall (p => p.isNullable && !p.typeSymbol.isAbstractType);
@@ -1497,7 +1503,8 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
   final class RefinedType0(parents: List[Type], decls: Scope, clazz: Symbol) extends RefinedType(parents, decls) {
     override def typeSymbol = clazz
   }
-  object RefinedType {
+  
+  object RefinedType extends RefinedTypeExtractor {
     def apply(parents: List[Type], decls: Scope, clazz: Symbol): RefinedType =
       new RefinedType0(parents, decls, clazz)
   }
@@ -1641,6 +1648,8 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
     // override def isNonNull: Boolean = symbol == NonNullClass || super.isNonNull;
     override def kind = "ClassInfoType"
   }
+  
+  object ClassInfoType extends ClassInfoTypeExtractor
 
   class PackageClassInfoType(decls: Scope, clazz: Symbol)
   extends ClassInfoType(List(), decls, clazz)
@@ -1668,7 +1677,8 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
     private lazy val _tpe: Type = value.tpe
     override def underlying: Type = _tpe
   }
-  object ConstantType {
+  
+  object ConstantType extends ConstantTypeExtractor {
     def apply(value: Constant): ConstantType = {
       unique(new UniqueConstantType(value)).asInstanceOf[ConstantType]
     }
@@ -1782,8 +1792,8 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
         relativeInfoCache
       }
 
-    override def typeSymbol = if (sym.isAliasType) normalize.typeSymbol else sym
-    override def termSymbol = if (sym.isAliasType) normalize.termSymbol else super.termSymbol
+    override def typeSymbol = if (sym.isAliasType && (this ne normalize)) normalize.typeSymbol else sym
+    override def termSymbol = if (sym.isAliasType && (this ne normalize)) normalize.termSymbol else super.termSymbol
     override def typeSymbolDirect = sym
     override def termSymbolDirect = super.termSymbol
 
@@ -2019,7 +2029,7 @@ A type's typeSymbol should never be inspected directly.
       else if (sym.isAnonymousClass && sym.isInitialized && !settings.debug.value && !phase.erasedTypes)
         thisInfo.parents.mkString(" with ") + {
           if (sym.isStructuralRefinement)
-            decls filter (_.isVisibleInRefinement) map (_.defString) mkString("{", "; ", "}")
+            decls filter (sym => sym.isPossibleInRefinement && sym.isPublic) map (_.defString) mkString("{", "; ", "}")
           else ""
         }
       else if (sym.isRefinementClass && sym.isInitialized)
@@ -2043,7 +2053,8 @@ A type's typeSymbol should never be inspected directly.
   }
 
   final class UniqueTypeRef(pre: Type, sym: Symbol, args: List[Type]) extends TypeRef(pre, sym, args) with UniqueType { }
-  object TypeRef {
+
+  object TypeRef extends TypeRefExtractor {
     def apply(pre: Type, sym: Symbol, args: List[Type]): Type = {
       unique(new UniqueTypeRef(pre, sym, args))
     }
@@ -2119,6 +2130,8 @@ A type's typeSymbol should never be inspected directly.
 
     override def kind = "MethodType"
   }
+  
+  object MethodType extends MethodTypeExtractor
 
   class JavaMethodType(ps: List[Symbol], rt: Type) extends MethodType(ps, rt) {
     override def isJava = true
@@ -2146,6 +2159,8 @@ A type's typeSymbol should never be inspected directly.
     override def safeToString: String = "=> "+ resultType
     override def kind = "NullaryMethodType"
   }
+  
+  object NullaryMethodType extends NullaryMethodTypeExtractor
 
   /** A type function or the type of a polymorphic value (and thus of kind *).
    *
@@ -2207,6 +2222,8 @@ A type's typeSymbol should never be inspected directly.
 
     override def kind = "PolyType"
   }
+  
+  object PolyType extends PolyTypeExtractor
 
   case class ExistentialType(quantified: List[Symbol], 
                              override val underlying: Type) extends RewrappingTypeProxy
@@ -2304,6 +2321,8 @@ A type's typeSymbol should never be inspected directly.
       }
     }
   }
+  
+  object ExistentialType extends ExistentialTypeExtractor
 
   /** A class containing the alternatives and type prefix of an overloaded symbol.
    *  Not used after phase `typer`.
@@ -2371,13 +2390,19 @@ A type's typeSymbol should never be inspected directly.
       new TypeVar(origin, constr, args, params)
   }
   
-  /** A class representing a type variable 
-   * Not used after phase `typer`.
-   * A higher-kinded type variable has type arguments (a list of Type's) and type parameters (list of Symbols)
-   * A TypeVar whose list of args is non-empty can only be instantiated by a higher-kinded type that can be applied to these args   
-   * a typevar is much like a typeref, except it has special logic for type equality/subtyping
+  /** A class representing a type variable: not used after phase `typer`.
+   *
+   *  A higher-kinded TypeVar has params (Symbols) and typeArgs (Types).
+   *  A TypeVar with nonEmpty typeArgs can only be instantiated by a higher-kinded
+   *  type that can be applied to those args.  A TypeVar is much like a TypeRef,
+   *  except it has special logic for equality and subtyping.
    */
-  class TypeVar(val origin: Type, val constr0: TypeConstraint, override val typeArgs: List[Type], override val params: List[Symbol]) extends Type {
+  class TypeVar(
+    val origin: Type,
+    val constr0: TypeConstraint,
+    override val typeArgs: List[Type],
+    override val params: List[Symbol]
+  ) extends Type {
     // params are needed to keep track of variance (see mapOverArgs in SubstMap)
     assert(typeArgs.isEmpty || sameLength(typeArgs, params))
     // var tid = { tidCount += 1; tidCount } //DEBUG
@@ -2390,14 +2415,16 @@ A type's typeSymbol should never be inspected directly.
     val level = skolemizationLevel
 
     /** Two occurrences of a higher-kinded typevar, e.g. `?CC[Int]` and `?CC[String]`, correspond to 
-     *  ''two instances'' of `TypeVar` that share the ''same'' `TypeConstraint`
-     *  `constr` for `?CC` only tracks type constructors anyway, so when `?CC[Int] <:< List[Int]` and `?CC[String] <:< Iterable[String]`
-     *  `?CC's` hibounds contains List and Iterable
+     *  ''two instances'' of `TypeVar` that share the ''same'' `TypeConstraint`.
+     *
+     *  `constr` for `?CC` only tracks type constructors anyway,
+     *   so when `?CC[Int] <:< List[Int]` and `?CC[String] <:< Iterable[String]`
+     *  `?CC's` hibounds contains List and Iterable.
      */
     def applyArgs(newArgs: List[Type]): TypeVar =
       if (newArgs.isEmpty) this // SubstMap relies on this (though this check is redundant when called from appliedType...)
       else TypeVar(origin, constr, newArgs, params) // @M TODO: interaction with undoLog??
-        // newArgs.length may differ from args.length (could've been empty before)
+      // newArgs.length may differ from args.length (could've been empty before)
       // example: when making new typevars, you start out with C[A], then you replace C by ?C, which should yield ?C[A], then A by ?A, ?C[?A]
       // we need to track a TypeVar's arguments, and map over them (see TypeMap::mapOver)
       // TypeVars get applied to different arguments over time (in asSeenFrom)
@@ -2408,7 +2435,8 @@ A type's typeSymbol should never be inspected directly.
       // they share the same TypeConstraint instance
 
     // <region name="constraint mutators + undoLog">
-    // invariant: before mutating constr, save old state in undoLog (undoLog is used to reset constraints to avoid piling up unrelated ones)
+    // invariant: before mutating constr, save old state in undoLog
+    // (undoLog is used to reset constraints to avoid piling up unrelated ones)
     def setInst(tp: Type) {
 //      assert(!(tp containsTp this), this)
       undoLog record this
@@ -2416,7 +2444,7 @@ A type's typeSymbol should never be inspected directly.
     }
 
     def addLoBound(tp: Type, isNumericBound: Boolean = false) {
-      assert(tp != this) // implies there is a cycle somewhere (?)
+      assert(tp != this, tp) // implies there is a cycle somewhere (?)
       //println("addLoBound: "+(safeToString, debugString(tp))) //DEBUG
       undoLog record this
       constr.addLoBound(tp, isNumericBound)
@@ -2485,27 +2513,38 @@ A type's typeSymbol should never be inspected directly.
        *  Checks subtyping of higher-order type vars, and uses variances as defined in the
        *  type parameter we're trying to infer (the result will be sanity-checked later).
        */
-      def unifyFull(tp: Type) = sameLength(typeArgs, tp.typeArgs) && { // this is a higher-kinded type var with same arity as tp
-        // side effect: adds the type constructor itself as a bound
-        addBound(tp.typeConstructor)
-        if (isLowerBound) isSubArgs(tp.typeArgs, typeArgs, params)
-        else isSubArgs(typeArgs, tp.typeArgs, params)
+      def unifyFull(tpe: Type) = {
+        // Since the alias/widen variations are often no-ops, this
+        // keenly collects them in a Set to avoid redundant tests.
+        Set(tpe, tpe.widen, tpe.dealias, tpe.widen.dealias) exists { tp =>
+          sameLength(typeArgs, tp.typeArgs) && {
+            // this is a higher-kinded type var with same arity as tp.
+            // side effect: adds the type constructor itself as a bound
+            addBound(tp.typeConstructor)
+            if (isLowerBound) isSubArgs(tp.typeArgs, typeArgs, params)
+            else isSubArgs(typeArgs, tp.typeArgs, params)
+          }
+        }
       }
+      
+      // There's a <:< test taking place right now, where tp is a concrete type and this is
+      // a typevar attempting to satisfy that test.  If we determine that the subtype test is
+      // infeasible, we'll return false. Otherwise will retain all the constraints implied by
+      // this test, which will eventually be lub/glbed to instantiate the typevar. We must
+      // be able to find a type with the same number of typeargs among the base types of tp,
+      // or tp after dealiasing/widening.
 
       /** TODO: need positive/negative test cases demonstrating this is correct. */
-      def unifyParents =
-        if (isLowerBound) tp.parents exists unifyFull
-        else tp.parents forall unifyFull        
-      
-      // TODO: fancier unification, maybe rewrite constraint as follows?
-      // val sym = constr.hiBounds map {_.typeSymbol} find { _.typeParams.length == typeArgs.length}
-      // this <: tp.baseType(sym)
-      if (suspended) checkSubtype(tp, origin)
-      else if (constr.instValid) checkSubtype(tp, constr.inst)  // type var is already set
-      else isRelatable(tp) && { // gradually let go of some type precision in hopes of finding a type that has the same shape as the type variable
-        // okay, this just screams "CLEAN ME UP" -- I think we could use tp.widen instead of tp straight from the get-go in registerBound, since we don't infer singleton types anyway (but maybe that'll change?)
-        unifySimple || unifyFull(tp) || unifyFull(tp.dealias) || unifyFull(tp.widen) || unifyFull(tp.widen.dealias) || unifyParents
-      }
+      def unifyBaseTypes =
+        if (isLowerBound) tp.baseTypeSeq exists unifyFull
+        else tp.baseTypeSeq.toList forall unifyFull
+
+      if (suspended)
+        checkSubtype(tp, origin)
+      else if (constr.instValid)  // type var is already set
+        checkSubtype(tp, constr.inst)
+      else  // relax precision seeking a type whose shape matches the typevar
+        isRelatable(tp) && (unifySimple || unifyFull(tp) || unifyBaseTypes)
     }
 
     def registerTypeEquality(tp: Type, typeVarLHS: Boolean): Boolean = {
@@ -2651,6 +2690,8 @@ A type's typeSymbol should never be inspected directly.
 
     override def kind = "AnnotatedType"
   }
+  
+  object AnnotatedType extends AnnotatedTypeExtractor
 
   /** A class representing types with a name. When an application uses
    *  named arguments, the named argument types for calling isApplicable
@@ -2995,6 +3036,27 @@ A type's typeSymbol should never be inspected directly.
     }
   }
   
+  // Set to true for A* => Seq[A]
+  //   (And it will only rewrite A* in method result types.)
+  //   This is the pre-existing behavior.
+  // Or false for Seq[A] => Seq[A]
+  //   (It will rewrite A* everywhere but method parameters.)
+  //   This is the specified behavior.
+  private final val etaExpandKeepsStar = true
+  
+  object dropRepeatedParamType extends TypeMap {
+    def apply(tp: Type): Type = tp match {
+      case MethodType(params, restpe) =>
+        MethodType(params, apply(restpe))
+      case PolyType(tparams, restpe) =>
+        PolyType(tparams, apply(restpe))
+      case TypeRef(_, RepeatedParamClass, arg :: Nil) =>
+        seqType(arg)
+      case _ =>
+        if (etaExpandKeepsStar) tp else mapOver(tp)
+    }
+  }
+
 // Hash consing --------------------------------------------------------------
 
   private val initialUniquesCapacity = 4096
@@ -3393,9 +3455,7 @@ A type's typeSymbol should never be inspected directly.
     }
   }
 
-  def singletonBounds(hi: Type) = {
-    TypeBounds.upper(intersectionType(List(hi, SingletonClass.tpe)))
-  }
+  def singletonBounds(hi: Type) = TypeBounds.upper(intersectionType(List(hi, SingletonClass.tpe)))
 
   /** A map to compute the asSeenFrom method  */
   class AsSeenFromMap(pre: Type, clazz: Symbol) extends TypeMap {
@@ -3616,7 +3676,6 @@ A type's typeSymbol should never be inspected directly.
           super.apply(tp)
       }
     }
-
 
     override def mapOver(tree: Tree, giveup: ()=>Nothing): Tree = {
       object trans extends TypeMapTransformer {
@@ -5079,12 +5138,38 @@ A type's typeSymbol should never be inspected directly.
     tparams map (_.info.asSeenFrom(pre, owner).instantiateTypeParams(tparams, targs).bounds)
 
 // Lubs and Glbs ---------------------------------------------------------
+  
+  private def printLubMatrix(btsMap: Map[Type, List[Type]], depth: Int) {
+    import scala.tools.nsc.util.TableDef
+    import TableDef.Column
+    def str(tp: Type) = {      
+      if (tp == NoType) ""
+      else {
+        val s = ("" + tp).replaceAll("""[\w.]+\.(\w+)""", "$1")
+        if (s.length < 60) s
+        else (s take 57) + "..."
+      }
+    }
+    
+    val sorted       = btsMap.toList.sortWith((x, y) => x._1.typeSymbol isLess y._1.typeSymbol)
+    val maxSeqLength = sorted map (_._2.size) max
+    val padded       = sorted map (_._2.padTo(maxSeqLength, NoType))
+    val transposed   = padded.transpose
+    
+    val columns: List[Column[List[Type]]] = sorted.zipWithIndex map {
+      case ((k, v), idx) =>
+        Column(str(k), (xs: List[Type]) => str(xs(idx)), true)
+    }
+    
+    val tableDef = TableDef(columns: _*)
+    val formatted = tableDef.table(transposed)
+    println("** Depth is " + depth + "\n" + formatted)
+  }
 
   /** Given a matrix `tsBts` whose columns are basetype sequences (and the symbols `tsParams` that should be interpreted as type parameters in this matrix),
    * compute its least sorted upwards closed upper bound relative to the following ordering <= between lists of types:
    *
    *    xs <= ys   iff   forall y in ys exists x in xs such that x <: y
-   *
    *
    *  @arg tsParams for each type in the original list of types `ts0`, its list of type parameters (if that type is a type constructor)
    *                (these type parameters may be referred to by type arguments in the BTS column of those types,
@@ -5094,41 +5179,70 @@ A type's typeSymbol should never be inspected directly.
    *                  (except that type constructors have been applied to their dummyArgs)
    *  @See baseTypeSeq  for a definition of sorted and upwards closed.
    */
-  private def lubList(tsParams: List[List[Symbol]], tsBts: List[List[Type]], depth: Int): List[Type] = {
-    // strip typerefs in ts from their arguments if those refer to type parameters that are meant to be bound
-    // TODO: this only deals with the simplest of type constructors
-    // a better fix would be to actually bind those type parameters that appear free in error, but that would require major changes to the BTS infrastructure
-    // example that only kindasorta works now...
-      // given: trait Container[+T]; trait Template[+CC[X] <: Container[X]]; class C1[T] extends Template[Container] with Container[T]
-    // C1's BTS contains Template[Container] with Container[T], but that should really be [T] => Template[Container] with Container[T]
-    // instead of wrapping it in a polytype, the current approach uses elimHOTparams to patch up this type so that 
-    // it looks more like a type ctor: Template[Container] with Container, but this is ill-kinded as Template[Container] is a proper type, whereas Container is not
-    def elimHOTparams(ts: List[Type]) = ts map { 
-      case tp@TypeRef(pre, sym, args) if args.nonEmpty && tsParams.contains(args.map(_.typeSymbol)) => tp.typeConstructor
-      case tp => tp
+  private def lubList(ts: List[Type], depth: Int): List[Type] = {
+    // Matching the type params of one of the initial types means dummies.
+    val initialTypeParams = ts map (_.typeParams)
+    def isHotForTs(xs: List[Type]) = initialTypeParams contains xs.map(_.typeSymbol)
+    
+    def elimHigherOrderTypeParam(tp: Type) = tp match {
+      case TypeRef(pre, sym, args) if args.nonEmpty && isHotForTs(args) => tp.typeConstructor
+      case _                                                            => tp
     }
+    var lubListDepth = 0
+    def loop(tsBts: List[List[Type]]): List[Type] = {
+      lubListDepth += 1
 
-    if (tsBts.tail.isEmpty) tsBts.head
-    else if (tsBts exists (_.isEmpty)) List()
-    else {
-      val ts0 = tsBts map (_.head) // ts0 is the 1-dimensional frontier of symbols cutting through 2-dimensional tsBts, 
-      // invariant: all symbols "under" (closer to the first row) the frontier are smaller (according to _.isLess) than the ones "on and beyond" the frontier
+      if (tsBts.isEmpty || tsBts.exists(_.isEmpty)) Nil
+      else if (tsBts.tail.isEmpty) tsBts.head
+      else {
+        // ts0 is the 1-dimensional frontier of symbols cutting through 2-dimensional tsBts.        
+        // Invariant: all symbols "under" (closer to the first row) the frontier
+        // are smaller (according to _.isLess) than the ones "on and beyond" the frontier
+        val ts0  = tsBts map (_.head)
 
-      // is the frontier made up of types with the same symbol? 
-      // --> produce a single type for this frontier by merging the prefixes and arguments of these typerefs that share the same symbol
-      // due to the invariant, that symbol is the current maximal symbol for which this holds, i.e., the one that conveys most information wrt subtyping
-      // before merging, strip type arguments that refer to bound type params (when we're computing the lub of type constructors)
-      // furthermore, the number of types to merge is reduced without losing information by dropping types that are a subtype of some other type
-      val sym0 = ts0.head.typeSymbol
-      if (ts0.tail forall (_.typeSymbol == sym0)){
-        mergePrefixAndArgs(elimSub(elimHOTparams(ts0), depth), 1, depth).toList ::: lubList(tsParams, tsBts map (_.tail), depth)
-      } else { 
-        // frontier is not uniform yet, move it beyond the current minimal symbol; lather, rince, repeat
-        val sym = minSym(ts0)
-        lubList(tsParams, tsBts map (ts => if (ts.head.typeSymbol == sym) ts.tail else ts), depth)
+        // Is the frontier made up of types with the same symbol?
+        val isUniformFrontier = (ts0: @unchecked) match {
+          case t :: ts  => ts forall (_.typeSymbol == t.typeSymbol)
+        }
+
+        // Produce a single type for this frontier by merging the prefixes and arguments of those
+        // typerefs that share the same symbol: that symbol is the current maximal symbol for which
+        // the invariant holds, i.e., the one that conveys most information wrt subtyping. Before
+        // merging, strip targs that refer to bound tparams (when we're computing the lub of type
+        // constructors.) Also filter out all types that are a subtype of some other type.
+        if (isUniformFrontier) {
+          val tails = tsBts map (_.tail)
+          mergePrefixAndArgs(elimSub(ts0 map elimHigherOrderTypeParam, depth), 1, depth) match {
+            case Some(tp) => tp :: loop(tails)
+            case _        => loop(tails)
+          }
+        }
+        else { 
+          // frontier is not uniform yet, move it beyond the current minimal symbol;
+          // lather, rinSe, repeat
+          val sym    = minSym(ts0)
+          val newtps = tsBts map (ts => if (ts.head.typeSymbol == sym) ts.tail else ts)
+          if (printLubs) {
+            val str = (newtps.zipWithIndex map { case (tps, idx) => 
+              tps.map("        " + _ + "\n").mkString("   (" + idx + ")\n", "", "\n")
+            }).mkString("")
+              
+            println("Frontier(\n" + str + ")")
+            printLubMatrix(ts zip tsBts toMap, lubListDepth)
+          }
+
+          loop(newtps)
+        }
       }
     }
+    
+    val initialBTSes = ts map (_.baseTypeSeq.toList)
+    if (printLubs)
+      printLubMatrix(ts zip initialBTSes toMap, depth)
+
+    loop(initialBTSes)
   }
+
   // @AM the following problem is solved by elimHOTparams in lublist
   // @PP lubLists gone bad: lubList(List(
   //   List(scala.collection.generic.GenericCompanion[scala.collection.immutable.Seq], ScalaObject, java.lang.Object, Any)
@@ -5308,7 +5422,7 @@ A type's typeSymbol should never be inspected directly.
     }
     def lub1(ts0: List[Type]): Type = {
       val (ts, tparams) = stripExistentialsAndTypeVars(ts0)
-      val lubBaseTypes: List[Type] = lubList(ts map (_.typeParams), ts map (_.baseTypeSeq.toList), depth)
+      val lubBaseTypes: List[Type] = lubList(ts, depth)
       val lubParents = spanningTypes(lubBaseTypes)
       val lubOwner = commonOwner(ts)
       val lubBase = intersectionType(lubParents, lubOwner)
@@ -5365,7 +5479,7 @@ A type's typeSymbol should never be inspected directly.
             // parameters are not handled correctly.
             val ok = ts forall { t =>
               (t <:< lubRefined) || {
-                if (settings.debug.value) {
+                if (settings.debug.value || printLubs) {
                   Console.println(
                     "Malformed lub: " + lubRefined + "\n" +
                     "Argument " + t + " does not conform.  Falling back to " + lubBase
