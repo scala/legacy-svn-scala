@@ -31,7 +31,7 @@ trait GenMapLike[A, +B, +Repr] extends GenIterableLike[(A, B), Repr] with Equals
   
   // This hash code must be symmetric in the contents but ought not
   // collide trivially.
-  override def hashCode() = util.MurmurHash.symmetricHash(seq, Map.hashSeed)
+  override def hashCode() = util.MurmurHash3.symmetricHash(seq, Map.hashSeed)
   
   /** Compares two maps structurally; i.e. checks if all mappings
    *  contained in this map are also contained in the other map,
