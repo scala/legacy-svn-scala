@@ -15,6 +15,13 @@ import scala.collection.generic._
 import scala.collection.mutable.Builder
 import scala.collection.parallel.immutable.ParVector
 
+/** Vector is a general-purpose, immutable data structure.  It provides random access and updates 
+ * in effectively constant time, as well as very fast append and prepend.  Because vectors strike
+ * a good balance between fast random selections and fast random functional updates, they are 
+ * currently the default implementation of immutable indexed sequences.  It is backed by a little
+ * endian bit-mapped vector trie with a branching factor of 32.  Locality is very good, but not 
+ * contiguous, which is good for very large sequences.
+ */
 object Vector extends SeqFactory[Vector] {
   @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Vector[A]] =
     ReusableCBF.asInstanceOf[CanBuildFrom[Coll, A, Vector[A]]]
@@ -26,6 +33,24 @@ object Vector extends SeqFactory[Vector] {
 // in principle, most members should be private. however, access privileges must
 // be carefully chosen to not prevent method inlining
 
+/** A class implementing an immutable indexed sequence.
+ *
+ * @tparam A the element type
+ *
+ *  @define Coll Vector
+ *  @define coll vector
+ *  @define thatinfo the class of the returned collection. In the standard library configuration,
+ *    `That` is always `Vector[B]` because an implicit of type `CanBuildFrom[Vector, B, That]`
+ *    is defined in object `Vector`.
+ *  @define bfinfo an implicit value of class `CanBuildFrom` which determines the
+ *    result class `That` from the current representation type `Repr`
+ *    and the new element type `B`. This is usually the `canBuildFrom` value
+ *    defined in object `Vector`.
+ *  @define orderDependent
+ *  @define orderDependentFold
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
+ */
 final class Vector[+A](private[collection] val startIndex: Int, private[collection] val endIndex: Int, focus: Int)
 extends IndexedSeq[A]
    with GenericTraversableTemplate[A, Vector]

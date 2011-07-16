@@ -8,17 +8,17 @@
 
 package scala
 
-/** The package object <code>scala.math</code> contains methods for performing basic numeric
- *  operations such as the elementary exponential, logarithm, square root, and
- *  trigonometric functions.
+/** The package object `scala.math` contains methods for performing basic
+ *  numeric operations such as the elementary exponential, logarithm,
+ *  square root, and trigonometric functions.
  */
 
 package object math extends MathCommon {
   // These are new in 2.8, so they don't belong in the deprecated scala.Math.
-  
+
   def log10(x: Double): Double = java.lang.Math.log10(x)
   def cbrt(x: Double): Double = java.lang.Math.cbrt(x)
-  
+
   def ulp(x: Double): Double = java.lang.Math.ulp(x)
   def ulp(x: Float): Float = java.lang.Math.ulp(x)
   def sinh(x: Double): Double = java.lang.Math.sinh(x)
