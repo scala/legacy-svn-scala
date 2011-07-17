@@ -51,6 +51,26 @@ import generic._
   *  @define orderDependentFold
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
+  *  @define collectExample Example:
+  *  {{{
+  *    scala>     val a = LinkedList(1, 2, 3)
+  *    a: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2, 3)
+  *
+  *    scala>     val addOne: PartialFunction[Any, Float] = {case i: Int => i + 1.0f}
+  *    addOne: PartialFunction[Any,Float] = <function1>
+  *
+  *    scala>     val b = a.collect(addOne)
+  *    b: scala.collection.mutable.LinkedList[Float] = LinkedList(2.0, 3.0, 4.0)
+  *
+  *    scala> val c = LinkedList('a')
+  *    c: scala.collection.mutable.LinkedList[Char] = LinkedList(a)
+  *
+  *    scala> val d = a ++ c
+  *    d: scala.collection.mutable.LinkedList[AnyVal] = LinkedList(1, 2, 3, a)
+  *
+  *    scala> val e = d.collect(addOne)
+  *    e: scala.collection.mutable.LinkedList[Float] = LinkedList(2.0, 3.0, 4.0)
+  *  }}}
   */
 @SerialVersionUID(-7308240733518833071L)
 class LinkedList[A]() extends LinearSeq[A] 

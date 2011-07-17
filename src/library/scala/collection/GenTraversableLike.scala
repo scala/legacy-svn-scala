@@ -45,6 +45,7 @@ import annotation.migration
  *  
  *  @define Coll GenTraversable
  *  @define coll general collection
+ *  @define collectExample
  *  @tparam A    the collection element type.
  *  @tparam Repr the actual type of the element container.
  *
@@ -159,6 +160,8 @@ trait GenTraversableLike[+A, +Repr] extends GenTraversableOnce[A] with Paralleli
   
   /** Builds a new collection by applying a partial function to all elements of this $coll
    *  on which the function is defined.
+   *
+   *  $collectExample
    *
    *  @param pf     the partial function which filters and maps the $coll.
    *  @tparam B     the element type of the returned collection.

@@ -34,6 +34,16 @@ trait GenSeqLike[+A, +Repr] extends GenIterableLike[A, Repr] with Equals with Pa
   
   /** Selects an element by its index in the $coll.
    *
+   * Example:
+   *
+   * {{{
+   *    scala> val x = LinkedList(1, 2, 3, 4, 5)
+   *    x: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2, 3, 4, 5)
+   *
+   *    scala> x(3)
+   *    res1: Int = 4
+   * }}}
+   *
    *  @param  idx  The index to select.
    *  @return the element of this $coll at index `idx`, where `0` indicates the first element.
    *  @throws `IndexOutOfBoundsException` if `idx` does not satisfy `0 <= idx < length`.
