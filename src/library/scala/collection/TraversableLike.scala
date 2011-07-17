@@ -157,7 +157,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
   def ++[B >: A, That](that: TraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That =
     ++(that: GenTraversableOnce[B])(bf)
 
-  /** As `++`, returns a new collection containing the elements from the left operand followed by the
+  /** As with `++`, returns a new collection containing the elements from the left operand followed by the
    *  elements from the right operand.
    *  It differs from `++` in that the right operand determines the type of
    *  the resulting collection rather than the left one.
@@ -193,7 +193,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
     b.result
   }
 
-  /** As `++`, returns a new collection containing the elements from the left operand followed by the
+  /** As with `++`, returns a new collection containing the elements from the left operand followed by the
    *  elements from the right operand.
    *  It differs from `++` in that the right operand determines the type of
    *  the resulting collection rather than the left one.

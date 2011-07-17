@@ -128,7 +128,16 @@ trait GenTraversableOnce[+A] {
    */
   def fold[A1 >: A](z: A1)(op: (A1, A1) => A1): A1
 
-  /** A syntactic sugar for out of order folding. See `fold`. */
+  /** A syntactic sugar for out of order folding. See `fold`.
+   * 
+   * Example:
+   * {{{
+   *      scala> val a = LinkedList(1,2,3,4)
+   *      a: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2, 3, 4)
+   *
+   *      scala> val b = (a /:\ 5)(_+_)
+   *      b: Int = 15
+   * }}}*/
   def /:\[A1 >: A](z: A1)(op: (A1, A1) => A1): A1 = fold(z)(op)
 
   /** Applies a binary operator to a start value and all elements of this $coll,

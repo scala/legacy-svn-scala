@@ -81,7 +81,8 @@ trait LinkedListLike[A, This <: Seq[A] with LinkedListLike[A, This]] extends Seq
     next
   }
 
-  /** Append linked list `that` at current position of this linked list
+  /** If `this` is empty then it does nothing and returns `that`. Otherwise, appends `that` to `this`. The append
+   * requires a full traversal 
    *  @return the list after append (this is the list itself if nonempty,
    *  or list `that` if list this is empty. )
    */

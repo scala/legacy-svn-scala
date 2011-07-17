@@ -293,7 +293,7 @@ trait GenSeqLike[+A, +Repr] extends GenIterableLike[A, Repr] with Equals with Pa
   
   /** A copy of this $coll with an element appended.
    *
-   * Novices please not that, since original $coll is not modified, you will want to capture the result (see example).
+   * Novices please note that, since the original $coll is not modified, you will want to capture the result (see example).
    *
    *  $willNotTerminateInf
    *  @param  elem   the appended element
