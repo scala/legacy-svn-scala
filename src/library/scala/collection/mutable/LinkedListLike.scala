@@ -82,7 +82,38 @@ trait LinkedListLike[A, This <: Seq[A] with LinkedListLike[A, This]] extends Seq
   }
 
   /** If `this` is empty then it does nothing and returns `that`. Otherwise, appends `that` to `this`. The append
-   * requires a full traversal 
+   * requires a full traversal of `this`.
+   *
+   * Examples:
+   *
+   * {{{
+   *      scala> val a = LinkedList(1, 2)
+   *      a: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2)
+   *
+   *      scala> val b = LinkedList(1, 2)
+   *      b: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2)
+   *
+   *      scala> a.append(b)
+   *      res0: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2, 1, 2)
+   *
+   *      scala> println(a)
+   *      LinkedList(1, 2, 1, 2)
+   * }}}
+   *
+   * {{{
+   *    scala> val a = new LinkedList[Int]()
+   *    a: scala.collection.mutable.LinkedList[Int] = LinkedList()
+   *
+   *    scala> val b = LinkedList(1, 2)
+   *    b: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2)
+   *
+   *    scala> val c = a.append(b)
+   *    c: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2)
+   *
+   *    scala> println(a)
+   *    LinkedList()
+   * }}}
+   * 
    *  @return the list after append (this is the list itself if nonempty,
    *  or list `that` if list this is empty. )
    */
