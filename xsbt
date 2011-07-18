@@ -1,13 +1,35 @@
 #!/usr/bin/env bash
 #
+# by jsuereth and paulp
+
+gitignore="$(dirname $0)/.gitignore"
+sbtjar="$(dirname $0)/lib/sbt-launch.jar"
+sbtversion=0.10.1
+sbturl="http://typesafe.artifactoryonline.com/typesafe/ivy-releases/org.scala-tools.sbt/sbt-launch/$sbtversion/sbt-launch.jar"
+
+if [[ ! -f "$gitignore" ]]; then
+  echo "Creating .gitignore containing:"
+  cat > "$gitignore" <<EOM
+.gitignore
+lib/sbt-launch.jar
+EOM
+  cat "$gitignore"
+  echo ""
+elif ! grep -Fq "sbt-launch.jar" "$gitignore"; then
+  echo "Appending lib/sbt-launch.jar to .gitignore."
+  echo "lib/sbt-launch.jar" >> "$gitignore"
+fi
 
 # TODO - Version the sbt-launch jar and hide somewhere less obvious than the
 # current directory!
-if [ ! -e $(dirname $0)/sbt-launch.jar ]; then
-  pushd $(dirname $0)
-  wget http://typesafe.artifactoryonline.com/typesafe/ivy-releases/org.scala-tools.sbt/sbt-launch/0.10.0/sbt-launch.jar 
-  popd
+if [[ ! -f "$sbtjar" ]]; then
+  echo "Downloading sbt version $sbtversion to $sbtjar ..."
+  echo ""
+  curl --silent "$sbturl" > "$sbtjar"
 fi
+
 java $JAVA_OPTS \
-  -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=256m -Xmx3g -Xss2M \
-  -jar $(dirname $0)/sbt-launch*.jar "$@"
+  -XX:+CMSClassUnloadingEnabled \
+  -XX:MaxPermSize=256m \
+  -Xmx3g -Xss2M \
+  -jar "$sbtjar" "$@"
