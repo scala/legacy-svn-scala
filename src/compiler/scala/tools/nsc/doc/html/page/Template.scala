@@ -63,8 +63,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
         <p id="owner">{ templatesToHtml(tpl.inTemplate.toRoot.reverse.tail, xml.Text(".")) }</p>
     }
 
-    <body class={ if (tpl.isTrait || tpl.isClass || tpl.qualifiedName == "scala.AnyRef") "type" else "value" }
-          onload={ "sh_highlightDocument('../lib/', '.min.js');" }>
+    <body class={ if (tpl.isTrait || tpl.isClass || tpl.qualifiedName == "scala.AnyRef") "type" else "value" }>
       <div id="definition">
         {
           tpl.companion match {
@@ -80,34 +79,36 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       { signature(tpl, true) }
       { memberToCommentHtml(tpl, true) }
 
-      <div id="template">
-
-        <div id="mbrsel">
-          <div id='textfilter'><span class='pre'/><span class='input'><input type='text' accesskey='/'/></span><span class='post'/></div>
-          { if (tpl.linearizationTemplates.isEmpty) NodeSeq.Empty else
-              <div id="order">
-                <span class="filtertype">Ordering</span>
-                <ol><li class="alpha in"><span>Alphabetic</span></li><li class="inherit out"><span>By inheritance</span></li></ol>
-              </div>
-          }
-          { if (tpl.linearizationTemplates.isEmpty) NodeSeq.Empty else
-              <div id="ancestors">
-                <span class="filtertype">Inherited</span>
-                <ol><li class="hideall out"><span>Hide All</span></li>
-                <li class="showall in"><span>Show all</span></li></ol>
-                <ol id="linearization">{ 
-                  (tpl :: tpl.linearizationTemplates) map { wte => <li class="in" name={ wte.qualifiedName }><span>{ wte.name }</span></li> } 
-                }</ol>
-              </div>
-          }
-          {
-            <div id="visbl">
-              <span class="filtertype">Visibility</span>
-              <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
-            </div>
-          }
+      <div id="mbrsel">
+        <div id="visibility" class="button">
+          <div class="public">Show Protected</div>
+          <div class="all">Hide Protected</div>
         </div>
+        { if (tpl.linearizationTemplates.isEmpty) NodeSeq.Empty else
+          <div id="order" class="button">
+            <div class="alpha">Group by Inheritance</div>
+            <div class="inherit">Ungroup by Inheritance</div>
+          </div>
+          <div id="inheritance" class="button">
+            <div class="show">Hide Inherited</div>
+            <div class="hide">Show Inherited</div>
+          </div>
+          <div id="linearization" class="button">
+            <div class="show">Show Linearization</div>
+            <div class="hide">Hide Linearization</div>
+          </div>
+        }
+        <div id="textfilter"><span class="pre"></span><span class="input"><input type="text" /></span><span class="post"></span></div>
+        { if (tpl.linearizationTemplates.isEmpty) NodeSeq.Empty else
+          <div id="ancestors">{ 
+            (tpl :: tpl.linearizationTemplates) map { wte => <div class="toggleButton" name={ wte.qualifiedName }><div>{ wte.name }</div></div> } 
+          }</div>
+        }
+      </div>
 
+
+      <div id="template">
+        <div id="allMembers">
         { if (constructors.isEmpty) NodeSeq.Empty else
             <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
@@ -142,7 +143,9 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
               <ol>{ deprValueMembers map (memberToHtml(_)) }</ol>
             </div>
         }
+        </div>
 
+        <div id="inheritedMembers">
         {
           NodeSeq fromSeq (for ((superTpl, superType) <- (tpl.linearizationTemplates zip tpl.linearizationTypes)) yield
             <div class="parent" name={ superTpl.qualifiedName }>
@@ -161,6 +164,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
             </div>
           )
         }
+        </div>
 
       </div>
 
@@ -222,36 +226,20 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
         memberToInlineCommentHtml(mbr, isSelf)
       case _ =>
         // comment of non-class member or non-documentented inner class
-        val commentBody = memberToCommentBodyHtml(mbr, isSelf = false)
-        if (commentBody.isEmpty)
+        val commentBody = memberToCommentBodyHtml(mbr, isSelf)
+        val useCase = isUseCaseMember(mbr)
+        if (commentBody.isEmpty && !useCase)
           NodeSeq.Empty
         else {
-          val shortComment = memberToShortCommentHtml(mbr, isSelf)
-          val longComment = memberToUseCaseCommentHtml(mbr, isSelf) ++ memberToCommentBodyHtml(mbr, isSelf)
-          
-          val includedLongComment = if (shortComment.text.trim == longComment.text.trim)
-            NodeSeq.Empty
-          else
-            <div class="fullcomment">{ longComment }</div>
-          
-          shortComment ++ includedLongComment
+          val styleClass = if(useCase) "fullcomment useCase" else "fullcomment"
+          <div class={ styleClass }>{ commentBody }</div>
         }
     }
   }
-
-  def memberToUseCaseCommentHtml(mbr: MemberEntity, isSelf: Boolean): NodeSeq = {
-    mbr match {
-      case nte: NonTemplateMemberEntity if nte.isUseCase =>
-        inlineToHtml(comment.Text("[use case] "))
-      case _ => NodeSeq.Empty
-    }
-  }
-
-  def memberToShortCommentHtml(mbr: MemberEntity, isSelf: Boolean): NodeSeq = {
-    if (mbr.comment.isEmpty)
-      NodeSeq.Empty
-    else
-      <p class="shortcomment cmt">{ memberToUseCaseCommentHtml(mbr, isSelf) }{ inlineToHtml(mbr.comment.get.short) }</p>
+  
+  def isUseCaseMember(mbr: MemberEntity): Boolean = mbr match {
+    case nte: NonTemplateMemberEntity => nte.isUseCase
+    case _ => false
   }
 
   def memberToInlineCommentHtml(mbr: MemberEntity, isSelf: Boolean): NodeSeq =
@@ -324,7 +312,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       if ((inDefTpls.tail.isEmpty && (inDefTpls.head == mbr.inTemplate)) || isReduced) NodeSeq.Empty 
       else {
         <dt>Definition Classes</dt>
-        <dd>{ templatesToHtml(inDefTpls, xml.Text(" → ")) }</dd>
+        <dd>{ templatesToHtml(inDefTpls, xml.Text(" â†’ ")) }</dd>
       }
     } 
 

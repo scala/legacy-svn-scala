@@ -31,8 +31,9 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
 
     def copyResource(subPath: String) {
       val bytes = new Streamable.Bytes {
-        val inputStream = getClass.getResourceAsStream("/scala/tools/nsc/doc/html/resource/" + subPath)
-        assert(inputStream != null)
+        val path = "/scala/tools/nsc/doc/html/resource/" + subPath
+        val inputStream = getClass.getResourceAsStream(path)
+        assert(inputStream != null, "Resource not found: " + path)
       }.toByteArray
       val dest = Directory(siteRoot) / subPath
       dest.parent.createDirectory()
@@ -98,6 +99,7 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
     copyResource("lib/selected2-right.png")
     copyResource("lib/selected2.png")
     copyResource("lib/unselected.png")
+    copyResource("lib/unselected-right.png")    
 
     new page.Index(universe, index) writeFor this
     new page.IndexScript(universe, index) writeFor this

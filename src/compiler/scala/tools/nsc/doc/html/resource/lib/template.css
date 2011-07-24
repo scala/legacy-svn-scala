@@ -51,14 +51,6 @@ a[href]:hover {
   margin-bottom: 5px;
 }
 
-/*
-#definition {
-  padding: 6px 0 6px 6px;
-  min-height: 59px;
-  color: white;
-}
-*/
-
 #definition {
   display: block-inline;
   padding: 5px 0px;
@@ -121,7 +113,7 @@ text-decoration: none;
   min-height: 18px;
   background-repeat:repeat-x;
   font-size: 11.5pt;
-/*  margin-bottom: 10px;*/
+  text-shadow: white 0px 1px 0px;
   padding: 8px;
 }
 
@@ -131,21 +123,19 @@ text-decoration: none;
   text-align: left;
   width: auto;
   position: static;
-  text-shadow: 2px white;
-  text-shadow: white 0px 1px 0px;
 }
 
 #signature > span.symbol {
   text-align: left;
   display: inline;
   padding-left: 0.7em;
-  text-shadow: 2px white;
-  text-shadow: white 0px 1px 0px;
 }
 
 /* Linear super types and known subclasses */
-.hiddenContent {
+.toggleContainer .hiddenContent {
   display: none;
+  margin-top: 5px;
+  padding-left: 15px;
 }
 
 .toggleContainer .toggle {
@@ -156,14 +146,6 @@ text-decoration: none;
   
 .toggleContainer.open .toggle {
   background: url("arrow-down.png") no-repeat 0 3px transparent;
-}
-
-.toggleContainer .hiddenContent {
-  margin-top: 5px;
-}
-
-.toggleContainer .showElement {
-  padding-left: 15px;
 }
 
 .value #definition {
@@ -198,7 +180,7 @@ dl.attributes > dt {
 
 dl.attributes > dd {
   display: block;
-  padding-left: 10em;
+  padding-left: 110px;
   margin-bottom: 5px;
 }
 
@@ -227,28 +209,20 @@ dl.attributes > dd {
   height: 18px;
 }
 
-#template > div.parent > h3 {
+#inheritedMembers > .parent > h3 {
   background-color: #dadada;
-/*  border:1px solid #6f6f6f;
-  border-left:0;
-  border-right:0;*/
   background: url("constructorsbg.gif");
   background-repeat:repeat-x;
   height: 17px;
-/*  margin-top: 10px;*/
-/*  color: black;
-  text-shadow: white 0px 1px 0px;
-  font-weight: normal;8*/
   font-style: italic;
   font-size: 12pt;
 }
 
-#template > div.parent > h3 * {
+#inheritedMembers > .parent > h3 * {
   color: white;
 }
 
 /* Member cells */
-
 div.members > ol {
   background-color: white;
   list-style: none
@@ -268,7 +242,6 @@ div.members > ol > li:last-child {
 }
 
 /* Member signatures */
-
 #tooltip {
   background: #EFD5B5;
   border: 1px solid gray;
@@ -347,19 +320,16 @@ div.members > ol > li:last-child {
 }
 
 /* Comments text formating */
-
-.cmt {}
-
 .cmt p {
-	margin: 0.7em 0;
+  margin: 0.7em 0;
 }
 
 .cmt p:first-child {
-	margin-top: 0;
+  margin-top: 0;
 }
 
 .cmt p:last-child {
-	margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 .cmt h3,
@@ -474,31 +444,34 @@ div.members > ol > li:last-child {
 }
 
 /* Comments structured layout */
-
 p.comment {
   display: block;
   margin-left: 8.7em;
   margin-top: 5px;
 }
 
+/*
 .shortcomment {
   display: block;
   margin: 5px 10px;
 }
+*/
 
 div.fullcommenttop {
-  padding: 10px 10px;
-  background-image:url('fullcommenttopbg.gif');
-  background-repeat:repeat-x;
+  padding: 10px 10px 0 10px;
+  background-image: url('fullcommenttopbg.gif');
+  background-repeat: repeat-x;
+  margin-bottom: 5px;
 }
 
 div.fullcomment {
   margin: 5px 10px;
+  overflow: hidden;
 }
 
 #template div.fullcommenttop,
 #template div.fullcomment {
-  display:none;
+  /*display:none;*/
   margin: 5px 0 0 8.7em;
 }
 
@@ -512,6 +485,12 @@ div.fullcomment .block {
   border-top: 1px solid #EBEBEB;
   margin-top: 5px;
   overflow: hidden;
+}
+
+div.fullcomment .block:first-child {
+  padding-top: 0;
+  border-top: 0;
+  margin-top: 0;
 }
 
 div.fullcommenttop .block {
@@ -534,6 +513,10 @@ div.fullcomment .block > h5 {
 
 div.fullcomment .comment {
   margin: 5px 0 10px;
+}
+
+div.fullcomment .comment:first-child {
+  margin: 0 0 10px;
 }
 
 div.fullcommenttop .comment:last-child,
@@ -559,170 +542,123 @@ div.fullcomment dl.paramcmts > dd {
 }
 
 /* Members filter tool */
+#mbrsel > #textfilter {
+  position: relative;
+  height: 20px;
+  margin-top: 3px;
+  width: 100px;
+}
 
-#textfilter {
-	position: relative;
-	display: block;
-    height: 20px;
-	margin-bottom: 5px;
+#visibility {
+  width: 102px;
+}
+
+#order {
+  width: 143px;
+}
+
+#inheritance {
+  width: 95px;
+}
+
+#linearization {
+  width: 119px;
 }
 
 #textfilter > .pre {
-    display: block;
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 23px;
-    width: 21px;
-    background: url("filter_box_left.png");
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 23px;
+  width: 21px;
+  background: url("filter_box_left.png");
 }
 
 #textfilter > .input {
-	display: block;
-    position: absolute;
-    top: 0;
-    right: 20px;
-    left: 20px;
+  display: block;
+  position: absolute;
+  top: 0;
+  right: 20px;
+  left: 20px;
 }
 
-#textfilter > .input > input {
-	height: 21px;
-	padding: 1px;
- 	font-weight: bold;
-	color: #000000;
-	background-color: white;
-        background: url("filterboxbarbg.png");
-        background-repeat:repeat-x;
-        width: 100%;
+#textfilter input {
+  height: 21px;
+  padding: 1px;
+  font-weight: bold;
+  color: #000000;
+  background-color: white;
+  background: url("filterboxbarbg.png");
+  background-repeat:repeat-x;
+  width: 100%;
 }
 
 #textfilter > .post {
-    display: block;
-    position: absolute;
-    top: 0;
-    right: 0;
-    height: 23px;
-    width: 21px;
-    background: url("filter_box_right.png");
-}
-
-#mbrsel {
-  padding: 5px 10px;
-  background-color: #ededee; /* light gray */
-  background-image:url('filterboxbg.gif');
-  background-repeat:repeat-x;
-  font-size: 9.5pt;
   display: block;
-  margin-top: 1em;
-/*  margin-bottom: 1em; */
-}
-
-#mbrsel > div {
-  margin-bottom: 5px;
-}
-
-#mbrsel > div:last-child {
-  margin-bottom: 0;
-}
-
-#mbrsel > div > span.filtertype {
-  padding: 4px;
-  margin-right: 5px;
-  float: left;
-  display: inline-block;
-  color: #000000;
-  font-weight: bold;
-  text-shadow: white 0px 1px 0px;
-  width: 4.5em;
-}
-
-#mbrsel > div > ol {
-  display: inline-block;
-}
-
-#mbrsel > div > ol#linearization {
-  display: table;
-  margin-left: 70px;
-}
-
-#mbrsel > div > ol#linearization > li.in {
-  text-decoration: none;
-  float: left;
-  padding-right: 10px;
-  margin-right: 5px;
-  background: url(selected-right.png) no-repeat;
-  background-position: right 0px;
-}
-
-#mbrsel > div > ol#linearization > li.in > span{
-  color: #4C4C4C;
-  float: left;
-  padding: 1px 0 1px 10px;
-  background: url(selected.png) no-repeat;
-  background-position: 0px 0px;
-  text-shadow: #ffffff 0 1px 0;
-}
-
-#mbrsel > div > ol > li {
-/*  padding: 3px 10px;*/
-  line-height: 16pt; 
-  display: inline-block;
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 23px;
+  width: 21px;
+  background: url("filter_box_right.png");
   cursor: pointer;
 }
 
-#mbrsel > div > ol > li.in {
+#mbrsel {
+  background: #ededee url('filterbg.gif') repeat-x 0 -1px;
+  border-bottom: 1px solid #ababab;
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  margin: 0;
+  z-index: 1;
+}
+
+#mbrsel > div {
+  float: left;
+  margin: 2px 0 0 5px;
+}
+
+#ancestors {
+  display: none;
+  clear: both;
+}
+
+.button,
+.toggleButton {
+  float: left;
+  line-height: 22px; 
+  cursor: pointer;
   text-decoration: none;
-  float: left;
   padding-right: 10px;
+  padding-bottom: 3px;
   margin-right: 5px;
-  background: url(selected-right.png) no-repeat;
-  background-position: right 0px;
+  text-align: center;
+  background: url("unselected-right.png") no-repeat right 0;
 }
 
-#mbrsel > div > ol > li.in > span{
-  color: #4C4C4C;
-  float: left;
-  padding: 1px 0 1px 10px;
-  background: url(selected.png) no-repeat;
-  background-position: 0px 0px;
+.button.in,
+.toggleButton.in {
+  background: url("selected-right.png") no-repeat right 0;
+}
+
+.button > div,
+.toggleButton > div {
+  color: #333;
+  padding-left: 10px;
   text-shadow: #ffffff 0 1px 0;
+  background: url("unselected.png") no-repeat 0 0;
 }
 
-#mbrsel > div > ol > li.out {
-	text-decoration: none;
-	float: left;
-	padding-right: 10px;
-	margin-right: 5px;
+.toggleButton,
+.toggleButton > div {
+  background: none;
 }
 
-#mbrsel > div > ol > li.out > span{
-  color: #4B4B4B;
-/*  background-color: #999; */
-  float: left;
-  padding: 1px 0 1px 10px;
-/*  background: url(unselected.png) no-repeat;*/
-  background-position: 0px -1px;
-  text-shadow: #ffffff 0 1px 0;
-}
-/*
-#mbrsel .hideall {
-  color: #4C4C4C;
-  line-height: 16px;
-  font-weight: bold;
+.button.in > div,
+.toggleButton.in > div {
+  background: url("selected.png") no-repeat 0 0;
 }
 
-#mbrsel .hideall span {
-  color: #4C4C4C;
-  font-weight: bold;
-}
-
-#mbrsel .showall {
-  color: #4C4C4C;
-  line-height: 16px;
-  font-weight: bold;  
-}
-
-#mbrsel .showall span {
-  color: #4C4C4C;
-  font-weight: bold;  
-}*/

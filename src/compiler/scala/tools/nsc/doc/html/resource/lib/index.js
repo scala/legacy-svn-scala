@@ -30,10 +30,10 @@ $(document).ready(function() {
     // workaround for IE's iframe sizing lack of smartness
     if($.browser.msie) {
         function fixIFrame() {
-            $('iframe').height($(window).height() )
+            $('iframe').height($(window).height());
         }
-        $('iframe').bind("load",fixIFrame)
-        $('iframe').bind("resize",fixIFrame)
+        $('iframe').bind("load",fixIFrame);
+        $('iframe').bind("resize",fixIFrame);
     }
 
     scheduler = new Scheduler();
@@ -179,7 +179,7 @@ var Index = {};
             html,
             '</ol></ol>'
         ].join('');
-    }
+    };
 
     ns.keys = function (obj) {
         var result = [];
@@ -188,7 +188,7 @@ var Index = {};
             result.push(key);
         }
         return result;
-    }
+    };
 
     var hiddenPackages = {};
 
@@ -208,7 +208,7 @@ var Index = {};
         $.each(subPackages(selected), function (index, element) {
             $(element).hide();
         });
-    }
+    };
 
     ns.showPackage = function (ol, state) {
         var selected = $('li.pack > .tplshow', ol).text();
@@ -226,7 +226,7 @@ var Index = {};
                 $('ol.templates', element).hide();
             }
         });
-    }
+    };
 
 })(Index);
 
@@ -349,10 +349,10 @@ function textFilter() {
 /* Configures the hide tool by adding the hide link to all packages. */
 function configureHideFilter() {
     $('#tpl li.pack a.packhide').click(function () {
-        var packhide = $(this)
+        var packhide = $(this);
         var action = packhide.text();
 
-        var ol = $(this).parent().parent();
+        var ol = packhide.parent().parent();
 
         if (action == "hide") {
             Index.hidePackage(ol);
@@ -415,7 +415,7 @@ function focusFilter(package) {
 function configureKindFilter() {
     scheduler.add("init", function() {
         kindFilterState = "all";
-        $("#filter").append("<div id='kindfilter'><a>display packages only</a></div>");
+        $("#filter").append("<div id='kindfilter'><a>Display Packages Only</a></div>");
         $("#kindfilter > a").click(function(event) { kindFilter("packs"); });
         resizeFilterBlock();
     });
@@ -425,13 +425,13 @@ function kindFilter(kind) {
     if (kind == "packs") {
         kindFilterState = "packs";
         kindFilterSync();
-        $("#kindfilter > a").replaceWith("<a>display all entities</a>");
+        $("#kindfilter > a").replaceWith("<a>Display All Entities</a>");
         $("#kindfilter > a").click(function(event) { kindFilter("all"); });
     }
     else {
         kindFilterState = "all";
         kindFilterSync();
-        $("#kindfilter > a").replaceWith("<a>display packages only</a>");
+        $("#kindfilter > a").replaceWith("<a>Display Packages Only</a>");
         $("#kindfilter > a").click(function(event) { kindFilter("packs"); });
     }
 }

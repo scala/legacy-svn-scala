@@ -82,10 +82,10 @@ object Test extends Properties("HtmlFactory") {
     createTemplates(scala)(html)
   }
 
-  def shortComments(root: scala.xml.Node) =
+  def fullComments(root: scala.xml.Node) =
     XMLUtil.stripGroup(root).descendant.flatMap {
       case e: scala.xml.Elem => {
-        if (e.attribute("class").toString.contains("shortcomment")) {
+        if (e.attribute("class").toString.contains("fullcomment")) {
           Some(e)
         } else {
           None
@@ -97,10 +97,10 @@ object Test extends Properties("HtmlFactory") {
   property("Trac #3790") = {
     createTemplate("Trac3790.scala") match {
       case node: scala.xml.Node => {
-        val comments = shortComments(node)
+        val comments = fullComments(node)
 
         comments.exists { _.toString.contains(">A lazy String\n</p>") } &&
-          comments.exists { _.toString.contains(">A non-lazy String\n</p>") }
+            comments.exists { _.toString.contains(">A non-lazy String\n</p>") }
       }
       case _ => false
     }
@@ -114,7 +114,7 @@ object Test extends Properties("HtmlFactory") {
   property("Trac #4366") = {
     createTemplate("Trac4366.scala") match {
       case node: scala.xml.Node => {
-        shortComments(node).exists { n => {
+        fullComments(node).exists { n => {
           val str = n.toString
           str.contains("<code>foo</code>") && str.contains("</strong>")
         } }
@@ -126,7 +126,7 @@ object Test extends Properties("HtmlFactory") {
   property("Trac #4358") = {
     createTemplate("Trac4358.scala") match {
       case node: scala.xml.Node =>
-        ! shortComments(node).exists {
+        ! fullComments(node).exists {
           _.toString.contains("<em>i.</em>")
         }
       case _ => false
