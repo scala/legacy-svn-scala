@@ -12,6 +12,7 @@ import symtab._
 import Flags._
 
 abstract class Erasure extends AddInterfaces 
+                          with reflect.internal.transform.Erasure
                           with typechecker.Analyzer
                           with TypingTransformers
                           with ast.TreeDSL
@@ -29,43 +30,6 @@ abstract class Erasure extends AddInterfaces
 
 // -------- erasure on types --------------------------------------------------------
 
-  /** An extractor object for generic arrays */
-  object GenericArray {
-    
-    /** Is `tp` an unbounded generic type (i.e. which could be instantiated
-     *  with primitive as well as class types)?. 
-     */
-    private def genericCore(tp: Type): Type = tp.normalize match {
-      case TypeRef(_, sym, _) if sym.isAbstractType && !sym.owner.isJavaDefined =>
-        tp
-      case ExistentialType(tparams, restp) => 
-        genericCore(restp)
-      case _ => 
-        NoType
-    }
-
-    /** If `tp` is of the form Array[...Array[T]...] where `T` is an abstract type
-     *  then Some(N, T) where N is the number of Array constructors enclosing `T`,
-     *  otherwise None. Existentials on any level are ignored.
-     */
-    def unapply(tp: Type): Option[(Int, Type)] = tp.normalize match {
-      case TypeRef(_, ArrayClass, List(arg)) =>
-        genericCore(arg) match {
-          case NoType => 
-            unapply(arg) match {
-              case Some((level, core)) => Some((level + 1, core))
-              case None => None
-            }
-          case core => 
-            Some(1, core)
-        }
-      case ExistentialType(tparams, restp) =>
-        unapply(restp)
-      case _ =>
-        None
-    }
-  }
-  
   // A type function from T => Class[U], used to determine the return
   // type of getClass calls.  The returned type is:
   //
@@ -88,7 +52,7 @@ abstract class Erasure extends AddInterfaces
       val eparams    = typeParamsToExistentials(ClassClass, ClassClass.typeParams)
       val upperBound = (
         if (isPhantomClass(sym)) AnyClass.tpe
-        else if (sym.isLocalClass) erasure.intersectionDominator(tp.parents) // erasure(tp)
+        else if (sym.isLocalClass) intersectionDominator(tp.parents)
         else tp.widen
       )
 
@@ -108,113 +72,6 @@ abstract class Erasure extends AddInterfaces
     atPos(tree.pos)(Apply(Select(tree, conversion), Nil))
   }
 
-  private def unboundedGenericArrayLevel(tp: Type): Int = tp match {
-    case GenericArray(level, core) if !(core <:< AnyRefClass.tpe) => level
-    case _ => 0
-  }
-
-  // @M #2585 when generating a java generic signature that includes a selection of an inner class p.I,  (p = `pre`, I = `cls`)
-  // must rewrite to p'.I, where p' refers to the class that directly defines the nested class I
-  // see also #2585 marker in javaSig: there, type arguments must be included (use pre.baseType(cls.owner))
-  // requires cls.isClass
-  @inline private def rebindInnerClass(pre: Type, cls: Symbol): Type =
-    if (cls.owner.isClass) cls.owner.tpe else pre // why not cls.isNestedClass?
-
-  /**   The erasure |T| of a type T. This is:
-   *
-   *   - For a constant type, itself.
-   *   - For a type-bounds structure, the erasure of its upper bound.
-   *   - For every other singleton type, the erasure of its supertype.
-   *   - For a typeref scala.Array+[T] where T is an abstract type, AnyRef.
-   *   - For a typeref scala.Array+[T] where T is not an abstract type, scala.Array+[|T|].
-   *   - For a typeref scala.Any or scala.AnyVal, java.lang.Object.
-   *   - For a typeref scala.Unit, scala.runtime.BoxedUnit.
-   *   - For a typeref P.C[Ts] where C refers to a class, |P|.C.
-   *     (Where P is first rebound to the class that directly defines C.)
-   *   - For a typeref P.C[Ts] where C refers to an alias type, the erasure of C's alias.
-   *   - For a typeref P.C[Ts] where C refers to an abstract type, the
-   *     erasure of C's upper bound.
-   *   - For a non-empty type intersection (possibly with refinement),
-   *     the erasure of its first parent.
-   *   - For an empty type intersection, java.lang.Object.
-   *   - For a method type (Fs)scala.Unit, (|Fs|)scala#Unit.
-   *   - For any other method type (Fs)Y, (|Fs|)|T|.
-   *   - For a polymorphic type, the erasure of its result type.
-   *   - For the class info type of java.lang.Object, the same type without any parents.
-   *   - For a class info type of a value class, the same type without any parents.
-   *   - For any other class info type with parents Ps, the same type with
-   *     parents |Ps|, but with duplicate references of Object removed.
-   *   - for all other types, the type itself (with any sub-components erased)
-   */
-  object erasure extends TypeMap {
-    // Compute the dominant part of the intersection type with given `parents` according to new spec.
-    def intersectionDominator(parents: List[Type]): Type =
-      if (parents.isEmpty) ObjectClass.tpe
-      else {
-        val psyms = parents map (_.typeSymbol)
-        if (psyms contains ArrayClass) {
-          // treat arrays specially
-          arrayType(
-            intersectionDominator(
-              parents filter (_.typeSymbol == ArrayClass) map (_.typeArgs.head)))
-        } else {
-          // implement new spec for erasure of refined types.
-          def isUnshadowed(psym: Symbol) =
-            !(psyms exists (qsym => (psym ne qsym) && (qsym isNonBottomSubClass psym)))
-          val cs = parents.iterator.filter { p => // isUnshadowed is a bit expensive, so try classes first
-            val psym = p.typeSymbol
-            psym.initialize
-            psym.isClass && !psym.isTrait && isUnshadowed(psym)
-          }
-          (if (cs.hasNext) cs else parents.iterator.filter(p => isUnshadowed(p.typeSymbol))).next()
-        }
-      }
-
-    def apply(tp: Type): Type = {
-      tp match {
-        case ConstantType(_) =>
-          tp
-        case st: SubType =>
-          apply(st.supertype)
-        case TypeRef(pre, sym, args) =>
-          if (sym == ArrayClass)
-            if (unboundedGenericArrayLevel(tp) == 1) ObjectClass.tpe
-            else if (args.head.typeSymbol == NothingClass || args.head.typeSymbol == NullClass) arrayType(ObjectClass.tpe)
-            else typeRef(apply(pre), sym, args map this)
-          else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass || sym == NotNullClass) erasedTypeRef(ObjectClass)
-          else if (sym == UnitClass) erasedTypeRef(BoxedUnitClass)
-          else if (sym.isRefinementClass) apply(intersectionDominator(tp.parents))
-          else if (sym.isClass) typeRef(apply(rebindInnerClass(pre, sym)), sym, List())  // #2585
-          else apply(sym.info) // alias type or abstract type
-        case PolyType(tparams, restpe) =>
-          apply(restpe)
-        case ExistentialType(tparams, restpe) =>
-          apply(restpe)
-        case mt @ MethodType(params, restpe) =>
-          MethodType(
-            cloneSymbols(params) map (p => p.setInfo(apply(p.tpe))),
-            if (restpe.typeSymbol == UnitClass)
-              erasedTypeRef(UnitClass) 
-            else if (settings.YdepMethTpes.value)
-              // this replaces each typeref that refers to an argument by the type `p.tpe` of the actual argument p (p in params)
-              apply(mt.resultType(params map (_.tpe)))
-            else
-              apply(restpe))
-        case RefinedType(parents, decls) =>
-          apply(intersectionDominator(parents))
-        case AnnotatedType(_, atp, _) =>
-          apply(atp)
-        case ClassInfoType(parents, decls, clazz) =>
-          ClassInfoType(
-            if (clazz == ObjectClass || isValueClass(clazz)) Nil
-            else if (clazz == ArrayClass) List(erasedTypeRef(ObjectClass))
-            else removeDoubleObject(parents map this),
-            decls, clazz)
-        case _ =>
-          mapOver(tp)
-      }
-    }
-  }
 
   private object NeedsSigCollector extends TypeCollector(false) {
     def traverse(tp: Type) { 
@@ -229,8 +86,8 @@ abstract class Erasure extends AddInterfaces
             else if (!sym.owner.isPackageClass) traverse(pre)
           case PolyType(_, _) | ExistentialType(_, _) =>
             result = true
-          case RefinedType(parents, decls) =>
-            if (!parents.isEmpty) traverse(parents.head)
+          case RefinedType(parents, _) =>
+            parents foreach traverse
           case ClassInfoType(parents, _, _) =>
             parents foreach traverse
           case AnnotatedType(_, atp, _) =>
@@ -242,6 +99,7 @@ abstract class Erasure extends AddInterfaces
     }
   }
 
+  override protected def verifyJavaErasure = settings.Xverify.value || settings.debug.value
   private def needsJavaSig(tp: Type) = !settings.Ynogenericsig.value && NeedsSigCollector.collect(tp)
 
   // only refer to type params that will actually make it into the sig, this excludes:
@@ -353,7 +211,11 @@ abstract class Erasure extends AddInterfaces
       case RefinedType(parents, _) => parents map normalize
       case tp                      => tp :: Nil
     }
-    
+    // Anything which could conceivably be a module (i.e. isn't known to be
+    // a type parameter or similar) must go through here or the signature is
+    // likely to end up with Foo<T>.Empty where it needs Foo<T>.Empty$.
+    def fullNameInSig(sym: Symbol) = "L" + atPhase(currentRun.icodePhase)(sym.javaBinaryName)
+
     def jsig(tp0: Type, existentiallyBound: List[Symbol] = Nil, toplevel: Boolean = false, primitiveOK: Boolean = true): String = {
       val tp = tp0.dealias 
       tp match {
@@ -371,10 +233,6 @@ abstract class Erasure extends AddInterfaces
             } else {
               boxedSig(tp)
             }
-          def classSig: String = 
-            "L"+atPhase(currentRun.icodePhase)(sym.fullName + global.genJVM.moduleSuffix(sym)).replace('.', '/')
-          def classSigSuffix: String = 
-            "."+sym.name
 
           // If args isEmpty, Array is being used as a higher-kinded type
           if (sym == ArrayClass && args.nonEmpty) {
@@ -383,7 +241,7 @@ abstract class Erasure extends AddInterfaces
           }
           else if (isTypeParameterInSig(sym, sym0)) {
             assert(!sym.isAliasType, "Unexpected alias type: " + sym)
-            TVAR_TAG.toString+sym.name+";"
+            "" + TVAR_TAG + sym.name + ";"
           }
           else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass) 
             jsig(ObjectClass.tpe)
@@ -405,10 +263,10 @@ abstract class Erasure extends AddInterfaces
                 (
                   if (needsJavaSig(preRebound)) {
                     val s = jsig(preRebound, existentiallyBound)
-                    if (s.charAt(0) == 'L') s.substring(0, s.length - 1) + classSigSuffix
-                    else classSig
+                    if (s.charAt(0) == 'L') s.substring(0, s.length - 1) + "." + sym.javaSimpleName
+                    else fullNameInSig(sym)
                   }
-                  else classSig
+                  else fullNameInSig(sym)
                 ) + (
                   if (args.isEmpty) "" else
                   "<"+(args map argSig).mkString+">"
@@ -418,7 +276,7 @@ abstract class Erasure extends AddInterfaces
               )
             }
           }
-          else jsig(erasure(tp), existentiallyBound, toplevel, primitiveOK)
+          else jsig(erasure(sym0, tp), existentiallyBound, toplevel, primitiveOK)
         case PolyType(tparams, restpe) =>
           assert(tparams.nonEmpty)
           def boundSig(bounds: List[Type]) = {
@@ -447,7 +305,7 @@ abstract class Erasure extends AddInterfaces
           println("something's wrong: "+sym0+":"+sym0.tpe+" has a bounded wildcard type")
           jsig(bounds.hi, existentiallyBound, toplevel, primitiveOK)
         case _ =>
-          val etp = erasure(tp)
+          val etp = erasure(sym0, tp)
           if (etp eq tp) throw new UnknownSig
           else jsig(etp)
       }
@@ -463,18 +321,6 @@ abstract class Erasure extends AddInterfaces
 
   class UnknownSig extends Exception
 
-  /** Type reference after erasure */
-  def erasedTypeRef(sym: Symbol): Type =
-    typeRef(erasure(sym.owner.tpe), sym, List())
-
-  /** Remove duplicate references to class Object in a list of parent classes */
-  private def removeDoubleObject(tps: List[Type]): List[Type] = tps match {
-    case List() => List()
-    case tp :: tps1 => 
-      if (tp.typeSymbol == ObjectClass) tp :: tps1.filter(_.typeSymbol != ObjectClass)
-      else tp :: removeDoubleObject(tps1)
-  }
-
   /**  The symbol's erased info. This is the type's erasure, except for the following symbols:
    *
    *   - For $asInstanceOf      : [T]T
@@ -483,48 +329,8 @@ abstract class Erasure extends AddInterfaces
    *   - For Array[T].<init>    : {scala#Int)Array[T]
    *   - For a type parameter   : A type bounds type consisting of the erasures of its bounds.
    */
-  def transformInfo(sym: Symbol, tp: Type): Type = {
-    if (sym == Object_asInstanceOf)
-      sym.info
-    else if (sym == Object_isInstanceOf || sym == ArrayClass) 
-      PolyType(sym.info.typeParams, erasure(sym.info.resultType))
-    else if (sym.isAbstractType) 
-      TypeBounds(WildcardType, WildcardType)
-    else if (sym.isTerm && sym.owner == ArrayClass) {
-      if (sym.isClassConstructor)
-        tp match {
-          case MethodType(params, TypeRef(pre, sym, args)) =>
-            MethodType(cloneSymbols(params) map (p => p.setInfo(erasure(p.tpe))),
-                       typeRef(erasure(pre), sym, args))
-        }
-      else if (sym.name == nme.apply) 
-        tp
-      else if (sym.name == nme.update)
-        (tp: @unchecked) match {
-          case MethodType(List(index, tvar), restpe) =>
-            MethodType(List(index.cloneSymbol.setInfo(erasure(index.tpe)), tvar),
-                       erasedTypeRef(UnitClass))
-        }
-      else erasure(tp)
-    } else if (
-      sym.owner != NoSymbol &&
-      sym.owner.owner == ArrayClass &&
-      sym == Array_update.paramss.head(1)) {
-      // special case for Array.update: the non-erased type remains, i.e. (Int,A)Unit
-      // since the erasure type map gets applied to every symbol, we have to catch the
-      // symbol here
-      tp
-    } else {
-/*
-      val erased = 
-        if (sym.isGetter && sym.tpe.isInstanceOf[MethodType]) 
-          erasure mapOver sym.tpe // for getters, unlike for normal methods, always convert Unit to BoxedUnit.
-        else 
-          erasure(tp)
-*/
-      transformMixinInfo(erasure(tp))
-    }
-  }
+  override def transformInfo(sym: Symbol, tp: Type): Type = 
+    transformMixinInfo(super.transformInfo(sym, tp))
 
   val deconstMap = new TypeMap {
     // For some reason classOf[Foo] creates ConstantType(Constant(tpe)) with an actual Type for tpe,
@@ -843,8 +649,7 @@ abstract class Erasure extends AddInterfaces
         if (!atPhase(currentRun.refchecksPhase.next)(
               root.thisType.memberType(opc.overriding) matches
               root.thisType.memberType(opc.overridden))) {
-          if (settings.debug.value)
-            log("" + opc.overriding.locationString + " " +
+          debuglog("" + opc.overriding.locationString + " " +
                      opc.overriding.infosString +
                      opc.overridden.locationString + " " +
                      opc.overridden.infosString)
@@ -863,7 +668,7 @@ abstract class Erasure extends AddInterfaces
                 atPhase(phase.next)(member.tpe =:= other.tpe) && 
                 !atPhase(refchecksPhase.next)(
                   root.thisType.memberType(member) matches root.thisType.memberType(other))) {
-              if (settings.debug.value) log("" + member.locationString + " " + member.infosString + other.locationString + " " + other.infosString);
+              debuglog("" + member.locationString + " " + member.infosString + other.locationString + " " + other.infosString);
               doubleDefError(member, other)
             }
           }
@@ -903,7 +708,7 @@ abstract class Erasure extends AddInterfaces
         val other = opc.overridden
         //Console.println("bridge? " + member + ":" + member.tpe + member.locationString + " to " + other + ":" + other.tpe + other.locationString)//DEBUG
         if (atPhase(currentRun.explicitouterPhase)(!member.isDeferred)) {
-          val otpe = erasure(other.tpe)
+          val otpe = erasure(owner, other.tpe)
           val bridgeNeeded = atPhase(phase.next) (
             !(other.tpe =:= member.tpe) &&
             !(deconstMap(other.tpe) =:= deconstMap(member.tpe)) &&
@@ -939,8 +744,7 @@ abstract class Erasure extends AddInterfaces
                           (((Select(This(owner), member): Tree) /: bridge.paramss)
                              ((fun, vparams) => Apply(fun, vparams map Ident)))
                       });
-                  if (settings.debug.value)
-                    log("generating bridge from " + other + "(" + Flags.flagsToString(bridge.flags)  + ")" + ":" + otpe + other.locationString + " to " + member + ":" + erasure(member.tpe) + member.locationString + " =\n " + bridgeDef);
+                  debuglog("generating bridge from " + other + "(" + Flags.flagsToString(bridge.flags)  + ")" + ":" + otpe + other.locationString + " to " + member + ":" + erasure(owner, member.tpe) + member.locationString + " =\n " + bridgeDef);
                   bridgeDef
                 }
               } :: bridges
@@ -991,8 +795,7 @@ abstract class Erasure extends AddInterfaces
     private val preTransformer = new TypingTransformer(unit) {
       def preErase(tree: Tree): Tree = tree match {
         case ClassDef(mods, name, tparams, impl) =>
-          if (settings.debug.value)
-            log("defs of " + tree.symbol + " = " + tree.symbol.info.decls)
+          debuglog("defs of " + tree.symbol + " = " + tree.symbol.info.decls)
           treeCopy.ClassDef(tree, mods, name, List(), impl)
         case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
           treeCopy.DefDef(tree, mods, name, List(), vparamss, tpt, rhs)
@@ -1004,16 +807,20 @@ abstract class Erasure extends AddInterfaces
           val level = unboundedGenericArrayLevel(arg.tpe)
           def isArrayTest(arg: Tree) = 
             gen.mkRuntimeCall("isArray", List(arg, Literal(Constant(level))))
+
           global.typer.typedPos(tree.pos) {
             if (level == 1) isArrayTest(qual)
-            else
-              gen.evalOnce(qual, currentOwner, unit) { qual1 =>
-                gen.mkAnd(
-                  Apply(TypeApply(Select(qual1(), fun.symbol), 
-                                  List(TypeTree(erasure(arg.tpe)))), 
-                        List()),
-                  isArrayTest(qual1()))
-              }
+            else gen.evalOnce(qual, currentOwner, unit) { qual1 =>
+              gen.mkAnd(
+                gen.mkMethodCall(
+                  qual1(),
+                  fun.symbol,
+                  List(erasure(fun.symbol, arg.tpe)),
+                  Nil
+                ),
+                isArrayTest(qual1())
+              )
+            }
           }
         case TypeApply(fun, args) if (fun.symbol.owner != AnyClass && 
                                       fun.symbol != Object_asInstanceOf &&
@@ -1030,7 +837,7 @@ abstract class Erasure extends AddInterfaces
             // need to do the cast in adaptMember
             treeCopy.Apply(
               tree,
-              SelectFromArray(qual, name, erasure(qual.tpe)).copyAttrs(fn),
+              SelectFromArray(qual, name, erasure(tree.symbol, qual.tpe)).copyAttrs(fn),
               args)
 
         case Apply(fn @ Select(qual, _), Nil) if interceptedMethods(fn.symbol) =>          
@@ -1150,7 +957,7 @@ abstract class Erasure extends AddInterfaces
 
         case Literal(ct) if ct.tag == ClassTag 
                          && ct.typeValue.typeSymbol != definitions.UnitClass =>
-          treeCopy.Literal(tree, Constant(erasure(ct.typeValue)))
+          treeCopy.Literal(tree, Constant(erasure(NoSymbol, ct.typeValue)))
 
         case _ =>
           tree
@@ -1168,10 +975,10 @@ abstract class Erasure extends AddInterfaces
           val tree1 = preErase(tree)
           tree1 match {
             case EmptyTree | TypeTree() =>
-              tree1 setType erasure(tree1.tpe)
+              tree1 setType erasure(NoSymbol, tree1.tpe)
             case DefDef(_, _, _, _, tpt, _) =>
               val result = super.transform(tree1) setType null
-              tpt.tpe = erasure(tree1.symbol.tpe).resultType
+              tpt.tpe = erasure(tree1.symbol, tree1.symbol.tpe).resultType
               result
             case _ =>
               super.transform(tree1) setType null
@@ -1187,8 +994,7 @@ abstract class Erasure extends AddInterfaces
       val tree1 = preTransformer.transform(tree)
       atPhase(phase.next) {
         val tree2 = mixinTransformer.transform(tree1)
-        if (settings.debug.value)
-          log("tree after addinterfaces: \n" + tree2)
+        debuglog("tree after addinterfaces: \n" + tree2)
 
         newTyper(rootContext(unit, tree, true)).typed(tree2)
       }

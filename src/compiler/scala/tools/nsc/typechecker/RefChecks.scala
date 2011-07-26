@@ -37,7 +37,10 @@ import scala.collection.mutable.ListBuffer
  *
  *  @todo    Check whether we always check type parameter bounds.
  */
-abstract class RefChecks extends InfoTransform {
+abstract class RefChecks extends InfoTransform with reflect.internal.transform.RefChecks {
+
+  val global: Global               // need to repeat here because otherwise last mixin defines global as
+                                   // SymbolTable. If we had DOT this would not be an issue
 
   import global._
   import definitions._
@@ -50,13 +53,12 @@ abstract class RefChecks extends InfoTransform {
   def newTransformer(unit: CompilationUnit): RefCheckTransformer =
     new RefCheckTransformer(unit)
   override def changesBaseClasses = false
-
-  def transformInfo(sym: Symbol, tp: Type): Type =
-    if (sym.isModule && !sym.isStatic) {
-      sym setFlag (lateMETHOD | STABLE)
-      NullaryMethodType(tp)
-    } else tp
-
+  
+  override def transformInfo(sym: Symbol, tp: Type): Type = {
+    if (sym.isModule && !sym.isStatic) sym setFlag (lateMETHOD | STABLE)
+    super.transformInfo(sym, tp)
+  }
+    
   val toJavaRepeatedParam = new TypeMap {
     def apply(tp: Type) = tp match {
       case TypeRef(pre, RepeatedParamClass, args) =>
@@ -468,7 +470,9 @@ abstract class RefChecks extends InfoTransform {
         def javaErasedOverridingSym(sym: Symbol): Symbol = 
           clazz.tpe.nonPrivateMemberAdmitting(sym.name, BRIDGE).filter(other =>
             !other.isDeferred && other.isJavaDefined && {
-              def uncurryAndErase(tp: Type) = erasure.erasure(uncurry.transformInfo(sym, tp)) // #3622: erasure operates on uncurried types -- note on passing sym in both cases: only sym.isType is relevant for uncurry.transformInfo
+              // #3622: erasure operates on uncurried types -- 
+              // note on passing sym in both cases: only sym.isType is relevant for uncurry.transformInfo
+              def uncurryAndErase(tp: Type) = erasure.erasure(sym, uncurry.transformInfo(sym, tp))
               val tp1 = uncurryAndErase(clazz.thisType.memberType(sym))
               val tp2 = uncurryAndErase(clazz.thisType.memberType(other))
               atPhase(currentRun.erasurePhase.next)(tp1 matches tp2)

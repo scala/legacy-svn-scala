@@ -167,7 +167,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     if (settings.debug.value)
       body
   }
-  @inline final def debuglog(msg: => String) {
+  @inline final override def debuglog(msg: => String) {
     if (settings.debug.value && (settings.log containsPhase globalPhase))
       inform("[log " + phase + "] " + msg)
   }
@@ -281,9 +281,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     def profileMem   = settings.YprofileMem.value
 
     // shortish-term property based options
-    def timings       = sys.props contains "scala.timings"
+    def timings       = (sys.props contains "scala.timings")
     def inferDebug    = (sys.props contains "scalac.debug.infer") || settings.Yinferdebug.value
     def typerDebug    = (sys.props contains "scalac.debug.typer") || settings.Ytyperdebug.value
+    def lubDebug      = (sys.props contains "scalac.debug.lub")
   }
 
   // True if -Xscript has been set, indicating a script run.

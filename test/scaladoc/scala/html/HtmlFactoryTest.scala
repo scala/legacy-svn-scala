@@ -323,4 +323,25 @@ object Test extends Properties("HtmlFactory") {
       case _ => false
     }
   }
+
+  property("SI-4589") = {
+    createTemplate("SI_4589.scala") match {
+      case node: scala.xml.Node => {
+        val html = node.toString
+        html.contains(">x0123456789: <") &&
+          html.contains(">x012345678901234567890123456789: <")
+      }
+      case _ => false
+    }
+  }
+
+  property("Should decode symbolic type alias name.") = {
+    createTemplate("SI_4715.scala") match {
+      case node: scala.xml.Node => {
+        val html = node.toString
+        html.contains(">: :+:[<")
+      }
+      case _ => false
+    }
+  }
 }

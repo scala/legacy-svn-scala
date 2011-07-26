@@ -8,7 +8,7 @@ import internal.{SomePhase, NoPhase, Phase, TreeGen}
  *  It also provides methods to go from Java members to Scala members,
  *  using the code in JavaConversions.
  */
-class Universe extends internal.SymbolTable with JavaConversions with Loaders {
+class Universe extends internal.SymbolTable with JavaToScala with ScalaToJava with Loaders {
   
   type AbstractFileType = AbstractFile
   
@@ -36,17 +36,7 @@ class Universe extends internal.SymbolTable with JavaConversions with Loaders {
     
   type Position = String // source file?
   val NoPosition = ""
-}
-
-object Universe extends Universe 
-
-/** test code; should go to tests once things settle down a bit
- */
-object Test extends Universe with App {
-  val sym = classToScala(classOf[scala.collection.Iterable[_]])
-  println(sym)
-  println("parents = "+sym.info.parents)
-  println("decls = "+(sym.info.decls.toList map (_.defString)))
-  val ms = sym.info.members.toList map (_.initialize)
-  println("members = "+(ms map (_.defString) mkString ("\n  ")))
+  
+  // establish root association to avoid cyclic dependency errors later
+  classToScala(classOf[java.lang.Object]).initialize
 }

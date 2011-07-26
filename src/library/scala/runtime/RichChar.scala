@@ -26,15 +26,15 @@ final class RichChar(val self: Char) extends IntegralProxy[Char] {
   def isUnicodeIdentifierPart: Boolean  = Character.isUnicodeIdentifierPart(self)
   def isIdentifierIgnorable: Boolean    = Character.isIdentifierIgnorable(self)
   def isMirrored: Boolean               = Character.isMirrored(self)
-  
+
   def isLower: Boolean                  = Character.isLowerCase(self)
   def isUpper: Boolean                  = Character.isUpperCase(self)
   def isTitleCase: Boolean              = Character.isTitleCase(self)
-  
+
   def toLower: Char                     = Character.toLowerCase(self)
   def toUpper: Char                     = Character.toUpperCase(self)
   def toTitleCase: Char                 = Character.toTitleCase(self)
-  
+
   def getType: Int                      = Character.getType(self)
   def getNumericValue: Int              = Character.getNumericValue(self)
   def getDirectionality: Byte           = Character.getDirectionality(self)
@@ -50,7 +50,7 @@ final class RichChar(val self: Char) extends IntegralProxy[Char] {
   def toLowerCase: Char = toLower
   @deprecated("Use ch.toUpper instead", "2.8.0")
   def toUpperCase: Char = toUpper
-  
+
   @deprecated("Use ch.isLower instead", "2.8.0")
   def isLowerCase: Boolean = isLower
   @deprecated("Use ch.isUpper instead", "2.8.0")
