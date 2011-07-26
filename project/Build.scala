@@ -5,6 +5,12 @@ object ScalaBuild extends Build {
   // lazy val projects  = Seq(root, compQuick, libQuick)
   lazy val root      = Project("scala", file(".")) aggregate(compQuick)
 
+  // --------------------------------------------------------------
+  //  Libraries used by Scalac that change infrequently
+  //  (or hopefully so).
+  // --------------------------------------------------------------
+
+
   // Jline nested project.   Compile this sucker once and be done.
   lazy val jline = Project("jline", file("src/jline"))
   // Fast Java Bytecode Generator (nested in every scala-compiler.jar)
@@ -12,6 +18,26 @@ object ScalaBuild extends Build {
                           settings = Defaults.defaultSettings ++ Seq(
                             javaSource in Compile := file("src/fjbg"),
                             javacOptions ++= Seq("-target", "1.5")))
+
+  // MSIL code generator
+  // TODO - This probably needs to compile against quick, but Sabbus
+  // had it building against locker, so we'll do worse and build
+  // build against STARR for now.
+  lazy val msil = Project("msil", file("src/msil"),
+                          settings = Defaults.defaultSettings ++ Seq(
+                            javaSource in Compile := file("src/msil"),
+                            scalaSource in Compile := file("src/msil"),
+                            defaultExcludes ~= (_ || "tests"),
+                            javacOptions ++= Seq("-target", "1.5",
+                                                 "-source", "1.4")))
+
+  // --------------------------------------------------------------
+  //  The magic kingdom.
+  //  Layered compilation of Scala.
+  //   Stable Reference -> Locker ('Lockable' dev version) -> Quick -> Strap (Binary compatibility testing)
+  // --------------------------------------------------------------
+
+  
 
 	lazy val compQuick = compiler(libQuick, "quick")
 	lazy val libQuick  = library("quick") settings (
