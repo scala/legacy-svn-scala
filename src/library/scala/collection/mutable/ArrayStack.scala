@@ -6,14 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package mutable
 
 import generic._
-
-
 
 /** Factory object for the `ArrayStack` class.
  *  
@@ -22,14 +18,15 @@ import generic._
  *  @define Coll ArrayStack
  */
 object ArrayStack extends SeqFactory[ArrayStack] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ArrayStack[A]] = new GenericCanBuildFrom[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ArrayStack[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
   def newBuilder[A]: Builder[A, ArrayStack[A]] = new ArrayStack[A]
   def empty: ArrayStack[Nothing] = new ArrayStack()
-  def apply[A: ClassManifest](elems: A*): ArrayStack[A]= {
+  def apply[A: ClassManifest](elems: A*): ArrayStack[A] = {
     val els: Array[AnyRef] = elems.reverse.map{_.asInstanceOf[AnyRef]}(breakOut)
-    new ArrayStack[A](els, els.length)
+    if (els.length == 0) new ArrayStack()
+    else new ArrayStack[A](els, els.length)
   }
-  
+
   private[mutable] def growArray(x: Array[AnyRef]) = {
     val y = new Array[AnyRef](x.length * 2)
     Array.copy(x, 0, y, 0, x.length)
@@ -84,11 +81,10 @@ extends Seq[T]
 
   /** The number of elements in the stack */
   def length = index
-  
+
   override def companion = ArrayStack
-  
-  /** Replace element at index <code>n</code> with the new element
-   *  <code>newelem</code>.
+
+  /** Replace element at index `n` with the new element `newelem`.
    *
    *  This is a constant time operation.
    *
@@ -168,12 +164,12 @@ extends Seq[T]
    *  @return   A reference to this stack.
    */
   def +=(x: T): this.type = { push(x); this }
-  
+
   def result = {
     reverseTable()
     this
   }
-  
+
   private def reverseTable() {
     var i = 0
     val until = index / 2
@@ -185,7 +181,7 @@ extends Seq[T]
       i += 1
     }
   }
-  
+
   /** Pop the top two elements off the stack, apply `f` to them and push the result
    *  back on to the stack.
    *  
@@ -194,7 +190,7 @@ extends Seq[T]
    *  @param f   The function to apply to the top two elements.
    */
   def combine(f: (T, T) => T): Unit = push(f(pop, pop))
-  
+
   /** Repeatedly combine the top elements of the stack until the stack contains only
    *  one element.
    *  

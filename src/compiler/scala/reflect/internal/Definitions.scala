@@ -7,11 +7,10 @@ package scala.reflect
 package internal
 
 import scala.collection.{ mutable, immutable }
-import scala.collection.mutable.{ HashMap }
 import Flags._
 import PartialFunction._
 
-trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
+trait Definitions extends reflect.api.StandardDefinitions {
   self: SymbolTable =>
   
   // the scala value classes
@@ -100,6 +99,7 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
     lazy val BooleanClass = valueCache(tpnme.Boolean)
       def Boolean_and = getMember(BooleanClass, nme.ZAND)
       def Boolean_or  = getMember(BooleanClass, nme.ZOR)
+      def Boolean_not = getMember(BooleanClass, nme.UNARY_!)
 
     def ScalaValueClassesNoUnit = ScalaValueClasses filterNot (_ eq UnitClass)
     def ScalaValueClasses: List[Symbol] = List(
@@ -115,7 +115,7 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
     )
   }
 
-  object definitions extends ValueClassDefinitions {
+  object definitions extends AbsDefinitions with ValueClassDefinitions {
     private var isInitialized = false
     def isDefinitionsInitialized = isInitialized
 
@@ -228,11 +228,12 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
     lazy val DynamicClass         = getClass("scala.Dynamic")
 
     // fundamental modules
+    lazy val SysPackage = getPackageObject("scala.sys")
+      def Sys_error    = getMember(SysPackage, nme.error)
     lazy val PredefModule: Symbol = getModule("scala.Predef")
     lazy val PredefModuleClass = PredefModule.tpe.typeSymbol
       def Predef_AnyRef = getMember(PredefModule, "AnyRef") // used by the specialization annotation
       def Predef_classOf = getMember(PredefModule, nme.classOf)
-      def Predef_error    = getMember(PredefModule, nme.error)
       def Predef_identity = getMember(PredefModule, nme.identity)
       def Predef_conforms = getMember(PredefModule, nme.conforms)
       def Predef_wrapRefArray = getMember(PredefModule, nme.wrapRefArray)
@@ -246,7 +247,6 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
       def arrayLengthMethod = getMember(ScalaRunTimeModule, "array_length")
       def arrayCloneMethod = getMember(ScalaRunTimeModule, "array_clone")
       def ensureAccessibleMethod = getMember(ScalaRunTimeModule, "ensureAccessible")
-      def scalaRuntimeHash = getMember(ScalaRunTimeModule, "hash")
       def scalaRuntimeSameElements = getMember(ScalaRunTimeModule, nme.sameElements)
     
     // classes with special meanings
@@ -361,6 +361,7 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
     lazy val OptionClass: Symbol = getClass("scala.Option")
     lazy val SomeClass: Symbol   = getClass("scala.Some")
     lazy val NoneModule: Symbol  = getModule("scala.None")
+    lazy val SomeModule: Symbol  = getModule("scala.Some")
 
     def isOptionType(tp: Type)  = cond(tp.normalize) { case TypeRef(_, OptionClass, List(_)) => true }
     def isSomeType(tp: Type)    = cond(tp.normalize) { case TypeRef(_,   SomeClass, List(_)) => true }
@@ -487,7 +488,7 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
 
     def ClassType(arg: Type) = 
       if (phase.erasedTypes || forMSIL) ClassClass.tpe
-      else appliedType(ClassClass.tpe, List(arg))
+      else appliedType(ClassClass.typeConstructor, List(arg))
 
     //
     // .NET backend
@@ -501,7 +502,7 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
     var Delegate_scalaCallers: List[Symbol] = List()
     // Symbol -> (Symbol, Type): scalaCaller -> (scalaMethodSym, DelegateType)
     // var Delegate_scalaCallerInfos: HashMap[Symbol, (Symbol, Type)] = _
-    lazy val Delegate_scalaCallerTargets: HashMap[Symbol, Symbol] = new HashMap()
+    lazy val Delegate_scalaCallerTargets: mutable.HashMap[Symbol, Symbol] = mutable.HashMap()
     
     def isCorrespondingDelegate(delegateType: Type, functionType: Type): Boolean = {
       isSubType(delegateType, DelegateClass.tpe) &&
@@ -525,6 +526,7 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
     var Any_equals      : Symbol = _
     var Any_hashCode    : Symbol = _
     var Any_toString    : Symbol = _
+    var Any_getClass    : Symbol = _
     var Any_isInstanceOf: Symbol = _
     var Any_asInstanceOf: Symbol = _
     var Any_##          : Symbol = _
@@ -596,6 +598,12 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
       attr.info.decls enter (attr newConstructor NoPosition setInfo MethodType(Nil, attr.tpe))
       attr
     }
+    
+    def getPackageObjectClass(fullname: Name): Symbol =
+      getPackageObject(fullname).companionClass
+    
+    def getPackageObject(fullname: Name): Symbol =
+      getModuleOrClass(fullname.toTermName).info.member(newTermName("package"))
 
     def getModule(fullname: Name): Symbol =
       getModuleOrClass(fullname.toTermName)
@@ -639,6 +647,8 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
       var j = fullname.pos('.', i)
       while (j < fullname.length) {
         sym = sym.info.member(fullname.subName(i, j))
+        // if (sym == NoSymbol)
+        //   println("no member "+fullname.subName(i, j)+" found in "+sym0+sym0.info.getClass+" "+sym0.info.typeSymbol.info.getClass)
         i = j + 1
         j = fullname.pos('.', i)
       }
@@ -646,6 +656,7 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
         if (module) sym.info.member(fullname.subName(i, j)).suchThat(_ hasFlag MODULE)
         else sym.info.member(fullname.subName(i, j).toTypeName)
       if (result == NoSymbol) {
+      //   println("no member "+fullname.subName(i, j)+" found in "+sym+" "+module)
         if (settings.debug.value)
           { log(sym.info); log(sym.info.members) }//debug
         throw new MissingRequirementError((if (module) "object " else "class ") + fullname)
@@ -725,6 +736,7 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
     /** Is symbol a value class? */
     def isValueClass(sym: Symbol) = scalaValueClassesSet(sym)
     def isNonUnitValueClass(sym: Symbol) = (sym != UnitClass) && isValueClass(sym)
+    def isScalaValueType(tp: Type) = scalaValueClassesSet(tp.typeSymbol)
       
     /** Is symbol a boxed value class, e.g. java.lang.Integer? */
     def isBoxedValueClass(sym: Symbol) = boxedValueClassesSet(sym)
@@ -808,11 +820,24 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
       // members of class scala.Any
       Any_== = newMethod(AnyClass, nme.EQ, anyparam, booltype) setFlag FINAL
       Any_!= = newMethod(AnyClass, nme.NE, anyparam, booltype) setFlag FINAL
-      Any_equals = newMethod(AnyClass, nme.equals_, anyparam, booltype)
+      Any_equals   = newMethod(AnyClass, nme.equals_, anyparam, booltype)
       Any_hashCode = newMethod(AnyClass, nme.hashCode_, Nil, inttype)
       Any_toString = newMethod(AnyClass, nme.toString_, Nil, stringtype)
-      Any_## = newMethod(AnyClass, nme.HASHHASH, Nil, inttype) setFlag FINAL
-
+      Any_##       = newMethod(AnyClass, nme.HASHHASH, Nil, inttype) setFlag FINAL
+      
+      // Any_getClass requires special handling.  The return type is determined on
+      // a per-call-site basis as if the function being called were actually:
+      //
+      //    // Assuming `target.getClass()`
+      //    def getClass[T](target: T): Class[_ <: T]
+      //
+      // Since getClass is not actually a polymorphic method, this requires compiler
+      // participation.  At the "Any" level, the return type is Class[_] as it is in 
+      // java.lang.Object.  Java also special cases the return type.
+      Any_getClass = (
+        newMethod(AnyClass, nme.getClass_, Nil, getMember(ObjectClass, nme.getClass_).tpe.resultType)
+          setFlag DEFERRED
+      )
       Any_isInstanceOf = newPolyMethod(
         AnyClass, nme.isInstanceOf_, tparam => NullaryMethodType(booltype)) setFlag FINAL
       Any_asInstanceOf = newPolyMethod(

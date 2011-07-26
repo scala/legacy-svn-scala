@@ -11,8 +11,7 @@ package scala.actors
 package scheduler
 
 import java.lang.ref.{Reference, WeakReference, ReferenceQueue}
-
-import scala.collection.mutable.HashSet
+import scala.collection.mutable
 
 /**
  * ActorGC keeps track of the number of live actors being managed by a
@@ -20,9 +19,9 @@ import scala.collection.mutable.HashSet
  * either been explicitly terminated or garbage collected.
  *
  * When an actor is started, it is registered with the ActorGC via the
- * <code>newActor</code> method, and when an actor is knowingly terminated
+ * `newActor` method, and when an actor is knowingly terminated
  * (e.g. act method finishes, exit explicitly called, an exception is thrown),
- * the ActorGC is informed via the <code>terminated</code> method.
+ * the ActorGC is informed via the `terminated` method.
  */
 trait ActorGC extends TerminationMonitor {
   self: IScheduler =>
@@ -32,10 +31,10 @@ trait ActorGC extends TerminationMonitor {
 
   /**
    * This is a set of references to all the actors registered with
-   * this ActorGC. It is maintained so that the WeakReferences will not be GC'd
-   * before the actors to which they point.
+   * this ActorGC. It is maintained so that the WeakReferences will
+   * not be GC'd before the actors to which they point.
    */
-  private val refSet = new HashSet[Reference[t] forSome { type t <: TrackedReactor }]
+  private val refSet = new mutable.HashSet[Reference[t] forSome { type t <: TrackedReactor }]
 
   /** newActor is invoked whenever a new actor is started. */
   override def newActor(a: TrackedReactor) = synchronized {

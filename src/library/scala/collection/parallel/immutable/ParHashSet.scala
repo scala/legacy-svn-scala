@@ -108,10 +108,8 @@ self =>
       i < sz
     }
     def remaining = sz - i
-  }
-  
+  }  
 }
-
 
 /** $factoryInfo
  *  @define Coll immutable.ParHashSet
@@ -125,7 +123,6 @@ object ParHashSet extends ParSetFactory[ParHashSet] {
   
   def fromTrie[T](t: HashSet[T]) = new ParHashSet(t)
 }
-
 
 private[immutable] abstract class HashSetCombiner[T]
 extends collection.parallel.BucketCombiner[T, ParHashSet[T], Any, HashSetCombiner[T]](HashSetCombiner.rootsize) {
@@ -207,10 +204,8 @@ extends collection.parallel.BucketCombiner[T, ParHashSet[T], Any, HashSetCombine
       List(new CreateTrie(bucks, root, offset, fp), new CreateTrie(bucks, root, offset + fp, howmany - fp))
     }
     def shouldSplitFurther = howmany > collection.parallel.thresholdFromSize(root.length, parallelismLevel)
-  }
-  
+  }  
 }
-
 
 object HashSetCombiner {
   def apply[T] = new HashSetCombiner[T] {} // was: with EnvironmentPassingCombiner[T, ParHashSet[T]] {}
@@ -218,45 +213,3 @@ object HashSetCombiner {
   private[immutable] val rootbits = 5
   private[immutable] val rootsize = 1 << 5
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

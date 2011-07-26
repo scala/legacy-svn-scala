@@ -12,12 +12,14 @@ import java.lang.Double.longBitsToDouble
 
 import Flags._
 import PickleFormat._
-import collection.mutable.{HashMap, ListBuffer}
+import scala.collection.{ mutable, immutable }
+import mutable.ListBuffer
 import annotation.switch
 
 /** @author Martin Odersky
  *  @version 1.0
  */
+@deprecated("scala.reflect.generic will be removed", "2.9.1")
 abstract class UnPickler { 
 
   val global: Universe
@@ -60,14 +62,14 @@ abstract class UnPickler {
     /** A map from entry numbers to symbols, types, or annotations */
     private val entries = new Array[AnyRef](index.length)
     
-    /** A map from symbols to their associated `decls' scopes */
-    private val symScopes = new HashMap[Symbol, Scope]
+    /** A map from symbols to their associated `decls` scopes */
+    private val symScopes = new mutable.HashMap[Symbol, Scope]
 
     //println("unpickled " + classRoot + ":" + classRoot.rawInfo + ", " + moduleRoot + ":" + moduleRoot.rawInfo);//debug
 
     def run() {
       // read children last, fix for #3951
-      val queue = new collection.mutable.ListBuffer[() => Unit]()
+      val queue = new ListBuffer[() => Unit]()
       def delay(i: Int, action: => Unit) {
         queue += (() => at(i, {() => action; null}))
       }
@@ -96,7 +98,7 @@ abstract class UnPickler {
                               " in "+filename)
     }
 
-    /** The `decls' scope associated with given symbol */
+    /** The `decls` scope associated with given symbol */
     protected def symScope(sym: Symbol) = symScopes.getOrElseUpdate(sym, newScope)
 
     /** Does entry represent an (internal) symbol */
@@ -145,9 +147,9 @@ abstract class UnPickler {
       result
     }
 
-    /** If entry at <code>i</code> is undefined, define it by performing
-     *  operation <code>op</code> with <code>readIndex at start of i'th
-     *  entry. Restore <code>readIndex</code> afterwards.
+    /** If entry at `i` is undefined, define it by performing operation `op`
+     *  with `readIndex` at start of `i`'th entry. Restore `readIndex`
+     *  afterwards.
      */
     protected def at[T <: AnyRef](i: Int, op: () => T): T = {
       var r = entries(i)

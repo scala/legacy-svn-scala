@@ -29,10 +29,10 @@ trait Traversable[+A] extends TraversableLike[A, Traversable[A]]
   override def seq: Traversable[A] = this
 
   @bridge 
-  def flatten[B](implicit asTraversable: A => /*<:<!!!*/ TraversableOnce[B]): Traversable[B] = super.flatten(asTraversable)
+  def flatten[B](implicit asTraversable: A => /*<:<!!!*/ GenTraversableOnce[B]): Traversable[B] = super.flatten(asTraversable)
 
   @bridge 
-  def transpose[B](implicit asTraversable: A => /*<:<!!!*/ TraversableOnce[B]): Traversable[Traversable[B]] = super.transpose(asTraversable)
+  def transpose[B](implicit asTraversable: A => /*<:<!!!*/ GenTraversableOnce[B]): Traversable[Traversable[B]] = super.transpose(asTraversable)
 
   /* The following methods are inherited from TraversableLike
    * 
@@ -103,7 +103,7 @@ object Traversable extends TraversableFactory[Traversable] { self =>
   private[collection] val breaks: Breaks = new Breaks
   
   /** $genericCanBuildFromInfo */
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Traversable[A]] = new GenericCanBuildFrom[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Traversable[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 
   def newBuilder[A]: Builder[A, Traversable[A]] = immutable.Traversable.newBuilder[A]
 }

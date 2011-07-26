@@ -38,9 +38,6 @@ abstract class GenICode extends SubComponent  {
   val phaseName = "icode"
 
   override def newPhase(prev: Phase) = new ICodePhase(prev)
-  
-  private def debugLog(msg: => String): Unit =
-    if (settings.debug.value) log(msg)
 
   class ICodePhase(prev: Phase) extends StdPhase(prev) {
 
@@ -50,8 +47,8 @@ abstract class GenICode extends SubComponent  {
 
     override def run() {
       scalaPrimitives.init
-      classes.clear
-      super.run
+      classes.clear()
+      super.run()
     }
 
     override def apply(unit: CompilationUnit): Unit = {
@@ -316,7 +313,7 @@ abstract class GenICode extends SubComponent  {
         MONITOR_ENTER() setPos tree.pos
       ))
       ctx1.enterSynchronized(monitor)
-      debugLog("synchronized block start")
+      debuglog("synchronized block start")
 
       ctx1 = ctx1.Try(
         bodyCtx => {
@@ -340,7 +337,7 @@ abstract class GenICode extends SubComponent  {
             exhCtx
           })), EmptyTree, tree)
           
-      debugLog("synchronized block end with block %s closed=%s".format(ctx1.bb, ctx1.bb.closed))
+      debuglog("synchronized block end with block %s closed=%s".format(ctx1.bb, ctx1.bb.closed))
       ctx1.exitSynchronized(monitor)
       if (hasResult)
         ctx1.bb.emit(LOAD_LOCAL(monitorResult))
@@ -368,7 +365,7 @@ abstract class GenICode extends SubComponent  {
       val resKind = if (hasUnitBranch) UNIT else ifKind
 
       if (hasUnitBranch)
-        debugLog("Will drop result from an if branch")
+        debuglog("Will drop result from an if branch")
 
       thenCtx = genLoad(thenp, thenCtx, resKind)
       elseCtx = genLoad(elsep, elseCtx, resKind)
@@ -1168,7 +1165,7 @@ abstract class GenICode extends SubComponent  {
       }
     }
 
-    /** Load the qualifier of `tree' on top of the stack. */
+    /** Load the qualifier of `tree` on top of the stack. */
     private def genLoadQualifier(tree: Tree, ctx: Context): Context =
       tree match {
         case Select(qualifier, _) =>
@@ -1799,7 +1796,7 @@ abstract class GenICode extends SubComponent  {
      *  to delay it any more: they will be used at some point.
      */
     class DuplicateLabels(boundLabels: Set[Symbol]) extends Transformer {
-      val labels: mutable.Map[Symbol, Symbol] = new mutable.HashMap
+      val labels = perRunCaches.newMap[Symbol, Symbol]()
       var method: Symbol = _
       var ctx: Context = _
       
@@ -1876,7 +1873,7 @@ abstract class GenICode extends SubComponent  {
       var bb: BasicBlock = _
 
       /** Map from label symbols to label objects. */
-      var labels = mutable.HashMap[Symbol, Label]()
+      var labels = perRunCaches.newMap[Symbol, Label]()
 
       /** Current method definition. */
       var defdef: DefDef = _
@@ -1884,7 +1881,7 @@ abstract class GenICode extends SubComponent  {
       /** current exception handlers */
       var handlers: List[ExceptionHandler] = Nil
 
-      /** The current monitors or finalizers, to be cleaned up upon `return'. */
+      /** The current monitors or finalizers, to be cleaned up upon `return`. */
       var cleanups: List[Cleanup] = Nil
 
       /** The exception handlers we are currently generating code for */
@@ -1980,7 +1977,7 @@ abstract class GenICode extends SubComponent  {
        */
       def enterMethod(m: IMethod, d: DefDef): Context = {
         val ctx1 = new Context(this) setMethod(m)
-        ctx1.labels = new mutable.HashMap()
+        ctx1.labels = mutable.HashMap()
         ctx1.method.code = new Code(m)
         ctx1.bb = ctx1.method.code.startBlock
         ctx1.defdef = d
@@ -1994,7 +1991,7 @@ abstract class GenICode extends SubComponent  {
         val block = method.code.newBlock
         handlers foreach (_ addCoveredBlock block)
         currentExceptionHandlers foreach (_ addBlock block)
-        block.varsInScope = new mutable.HashSet() ++= scope.varsInScope
+        block.varsInScope = mutable.HashSet() ++= scope.varsInScope
         new Context(this) setBasicBlock block
       }
 
@@ -2178,8 +2175,8 @@ abstract class GenICode extends SubComponent  {
        *  but with `NoSymbol` as the exception class. The covered blocks are all blocks of
        *  the `try { .. } catch { .. }`.
        *
-       *  Also, TryMsil does not enter any Finalizers into the `cleanups', because the
-       *  CLI takes care of running the finalizer when seeing a `leave' statement inside
+       *  Also, TryMsil does not enter any Finalizers into the `cleanups`, because the
+       *  CLI takes care of running the finalizer when seeing a `leave` statement inside
        *  a try / catch.
        */
       def TryMsil(body: Context => Context,
@@ -2232,7 +2229,7 @@ abstract class GenICode extends SubComponent  {
      * Represent a label in the current method code. In order
      * to support forward jumps, labels can be created without
      * having a deisgnated target block. They can later be attached 
-     * by calling `anchor'.
+     * by calling `anchor`.
      */
     class Label(val symbol: Symbol) {
       var anchored = false

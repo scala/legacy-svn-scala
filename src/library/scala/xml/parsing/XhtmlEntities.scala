@@ -6,15 +6,14 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.xml
 package parsing
 
 import scala.xml.dtd.{ IntDef, ParsedEntityDecl }
 
-/** <p>
- *    (c) David Pollak 2007 WorldWide Conferencing, LLC.
- *  </p>
+/**
+ *  @author (c) David Pollak 2007 WorldWide Conferencing, LLC.
+ *  
  */
 object XhtmlEntities {
   val entList = List(("quot",34), ("amp",38), ("lt",60), ("gt",62), ("nbsp",160), ("iexcl",161), ("cent",162), ("pound",163), ("curren",164), ("yen",165),
@@ -44,9 +43,9 @@ object XhtmlEntities {
       ("delta",948), ("epsilon",949), ("zeta",950), ("eta",951), ("theta",952), ("iota",953), ("kappa",954), ("lambda",955), ("mu",956), ("nu",957), 
       ("xi",958), ("omicron",959), ("pi",960), ("rho",961), ("sigmaf",962), ("sigma",963), ("tau",964), ("upsilon",965), ("phi",966), ("chi",967), 
       ("psi",968), ("omega",969), ("thetasym",977), ("upsih",978), ("piv",982))
-   
+
   val entMap: Map[String, Char] = Map.empty[String, Char] ++ entList.map { case (name, value) => (name, value.toChar)}
-  
+
   val entities = entList.
         map { case (name, value) => (name, new ParsedEntityDecl(name, new IntDef(value.toChar.toString)))}
 

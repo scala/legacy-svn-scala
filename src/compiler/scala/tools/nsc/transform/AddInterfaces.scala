@@ -39,13 +39,13 @@ abstract class AddInterfaces extends InfoTransform {
   /** A lazily constructed map that associates every non-interface trait with
    *  its implementation class.
    */
-  private val implClassMap = new mutable.HashMap[Symbol, Symbol]
+  private val implClassMap = perRunCaches.newMap[Symbol, Symbol]()
 
   /** A lazily constructed map that associates every concrete method in a non-interface
    *  trait that's currently compiled with its corresponding method in the trait's
    *  implementation class.
    */
-  private val implMethodMap = new mutable.HashMap[Symbol, Symbol]
+  private val implMethodMap = perRunCaches.newMap[Symbol, Symbol]()
 
   override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = {
     implClassMap.clear()
@@ -256,7 +256,7 @@ abstract class AddInterfaces extends InfoTransform {
 
   /** Add mixin constructor definition 
    *    def $init$(): Unit = ()
-   *  to `stats' unless there is already one.
+   *  to `stats` unless there is already one.
    */
   private def addMixinConstructorDef(clazz: Symbol, stats: List[Tree]): List[Tree] = 
     if (treeInfo.firstConstructor(stats) != EmptyTree) stats
@@ -296,7 +296,7 @@ abstract class AddInterfaces extends InfoTransform {
     }
     (tree: @unchecked) match {
       case Block(stats, expr) =>
-        // needs `hasSymbol' check because `supercall' could be a block (named / default args)
+        // needs `hasSymbol` check because `supercall` could be a block (named / default args)
         val (presuper, supercall :: rest) = stats span (t => t.hasSymbolWhich(_ hasFlag PRESUPER))
         //assert(supercall.symbol.isClassConstructor, supercall)
         treeCopy.Block(tree, presuper ::: (supercall :: mixinConstructorCalls ::: rest), expr)

@@ -18,8 +18,7 @@ import scala.util.DynamicVariable
 
 /** Implements functionality for
  *  printing Scala values on the terminal as well as reading specific values.
- *  Also defines
- *  constants for marking up text on ANSI terminals.
+ *  Also defines constants for marking up text on ANSI terminals.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 03/09/2003
@@ -117,7 +116,6 @@ object Console {
   /** Sets the default output stream for the duration
    *  of execution of one thunk. 
    *
-   *
    *  @param out the new output stream.
    *  @param thunk the code to execute with
    *               the new output stream active
@@ -198,7 +196,6 @@ object Console {
   def withIn[T](reader: Reader)(thunk: =>T): T =
     inVar.withValue(new BufferedReader(reader))(thunk)
 
-
   /** Sets the default input stream.
    *
    *  @param in the new input stream.     
@@ -243,13 +240,12 @@ object Console {
    */
   def println(x: Any) { out.println(x) }
 
-  /** 
-   *    Prints its arguments as a formatted string to the default output, based on a string
-   *    pattern (in a fashion similar to printf in C).
+  /** Prints its arguments as a formatted string to the default output,
+   *  based on a string pattern (in a fashion similar to printf in C).
    * 
-   *    The interpretation of the formatting patterns is described in
-   *    <a href="" target="contentFrame" class="java/util/Formatter">
-   *    <code>java.util.Formatter</code></a>.
+   *  The interpretation of the formatting patterns is described in
+   *  <a href="" target="contentFrame" class="java/util/Formatter">
+   *  `java.util.Formatter`</a>.
    *
    *  @param text the pattern for formatting the arguments.
    *  @param args the arguments used to instantiating the pattern.
@@ -257,7 +253,7 @@ object Console {
    */
   def printf(text: String, args: Any*) { out.print(text format (args : _*)) }
 
-  /** Read a full line from the default input.  Returns <code>null</code> if the end of the 
+  /** Read a full line from the default input.  Returns `null` if the end of the 
    * input stream has been reached.
    *
    * @return the string read from the terminal or null if the end of stream was reached.
@@ -265,7 +261,7 @@ object Console {
   def readLine(): String = in.readLine()
 
   /** Print formatted text to the default output and read a full line from the default input.  
-   * Returns null if the end of the input stream has been reached.
+   *  Returns `null` if the end of the input stream has been reached.
    *
    *  @param text the format of the text to print out, as in `printf`.
    *  @param args the parameters used to instantiate the format, as in `printf`.
@@ -277,7 +273,7 @@ object Console {
   }
 
   /** Reads a boolean value from an entire line of the default input. 
-   * Has a fairly liberal interpretation of the input.
+   *  Has a fairly liberal interpretation of the input.
    *
    *  @return the boolean value read, or false if it couldn't be converted to a boolean
    *  @throws java.io.EOFException if the end of the input stream has been reached.
@@ -401,14 +397,14 @@ object Console {
       s.toDouble
   }
 
-  /** Reads in some structured input (from the default input), specified by a format specifier.
-   *  See class <code>java.text.MessageFormat</code> for details of
+  /** Reads in some structured input (from the default input), specified by
+   *  a format specifier. See class `java.text.MessageFormat` for details of
    *  the format specification.
    *
    *  @param format the format of the input.
    *  @return a list of all extracted values.
-   *  @throws java.io.EOFException if the end of the
-   *  input stream has been reached.
+   *  @throws java.io.EOFException if the end of the input stream has been
+   *          reached.
    */
   def readf(format: String): List[Any] = {
     val s = readLine()
@@ -418,16 +414,18 @@ object Console {
       textComponents(new MessageFormat(format).parse(s))
   }
 
-  /** Reads in some structured input (from the default input), specified by a format specifier, returning
-   *  only the first value extracted, according to the format specification.
+  /** Reads in some structured input (from the default input), specified by
+   *  a format specifier, returning only the first value extracted, according
+   *  to the format specification.
    *
    *  @param format format string, as accepted by `readf`.
    *  @return The first value that was extracted from the input
    */
   def readf1(format: String): Any = readf(format).head
 
-  /** Reads in some structured input (from the default input), specified by a format specifier, returning
-   *  only the first two values extracted, according to the format specification.
+  /** Reads in some structured input (from the default input), specified
+   *  by a format specifier, returning only the first two values extracted,
+   *  according to the format specification.
    *
    *  @param format format string, as accepted by `readf`.
    *  @return A [[scala.Tuple2]] containing the first two values extracted
@@ -437,8 +435,9 @@ object Console {
     (res.head, res.tail.head)
   }
 
-  /** Reads in some structured input (from the default input), specified by a format specifier, returning
-   *  only the first three values extracted, according to the format specification.
+  /** Reads in some structured input (from the default input), specified
+   *  by a format specifier, returning only the first three values extracted,
+   *  according to the format specification.
    *
    *  @param format format string, as accepted by `readf`.
    *  @return A [[scala.Tuple3]] containing the first three values extracted

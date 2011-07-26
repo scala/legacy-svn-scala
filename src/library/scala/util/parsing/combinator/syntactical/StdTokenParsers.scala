@@ -13,9 +13,9 @@ package combinator
 package syntactical
 
 import token._
-import collection.mutable.HashMap
+import scala.collection.mutable
 
-/** This component provides primitive parsers for the standard tokens defined in `StdTokens'.
+/** This component provides primitive parsers for the standard tokens defined in `StdTokens`.
 *
 * @author Martin Odersky, Adriaan Moors
  */
@@ -23,12 +23,12 @@ trait StdTokenParsers extends TokenParsers {
   type Tokens <: StdTokens
   import lexical.{Keyword, NumericLit, StringLit, Identifier}
 
-  protected val keywordCache : HashMap[String, Parser[String]] = HashMap.empty
+  protected val keywordCache = mutable.HashMap[String, Parser[String]]()
 
   /** A parser which matches a single keyword token.
    *
    * @param chars    The character string making up the matched keyword. 
-   * @return a `Parser' that matches the given string
+   * @return a `Parser` that matches the given string
    */
 //  implicit def keyword(chars: String): Parser[String] = accept(Keyword(chars)) ^^ (_.chars)
     implicit def keyword(chars: String): Parser[String] = 

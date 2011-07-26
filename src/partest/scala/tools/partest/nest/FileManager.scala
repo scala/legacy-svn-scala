@@ -13,8 +13,8 @@ import java.io.{File, FilenameFilter, IOException, StringWriter,
                 FileReader, PrintWriter, FileWriter}
 import java.net.URI
 import scala.tools.nsc.io.{ Path, Directory, File => SFile }
-import scala.collection.mutable.HashMap
 import sys.process._
+import scala.collection.mutable
 
 trait FileManager {  
   /**
@@ -27,7 +27,7 @@ trait FileManager {
    */
   def compareFiles(f1: File, f2: File): String = {
     val diffWriter = new StringWriter
-    val args = Array(f1.getCanonicalPath(), f2.getCanonicalPath())
+    val args = Array(f1.getAbsolutePath(), f2.getAbsolutePath())
     
     DiffPrint.doDiff(args, diffWriter)
     val res = diffWriter.toString
@@ -56,7 +56,7 @@ trait FileManager {
   var oneTestTimeout = 60 * 60 * 1000
   
   /** Only when --debug is given. */
-  lazy val testTimings = new HashMap[String, Long]
+  lazy val testTimings = new mutable.HashMap[String, Long]
   def recordTestTiming(name: String, milliseconds: Long) =
     synchronized { testTimings(name) = milliseconds }
   def showTestTimings() {

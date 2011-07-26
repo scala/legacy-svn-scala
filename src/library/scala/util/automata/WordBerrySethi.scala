@@ -6,47 +6,43 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.util.automata
 
 import scala.collection.{ immutable, mutable }
-import mutable.{ HashSet, HashMap }
 import scala.util.regexp.WordExp
 
-/** This class turns a regexp into a NondetWordAutom using the
- *  celebrated position automata construction (also called Berry-Sethi or
- *  Glushkov)
- *
- *  @author Burak Emir
- *  @version 1.0
- */
+/** This class turns a regular expression into a [[scala.util.automata.NondetWorkAutom]]
+  * celebrated position automata construction (also called ''Berry-Sethi'' or ''Glushkov'').
+  *
+  *  @author Burak Emir
+  *  @version 1.0
+  */
 abstract class WordBerrySethi extends BaseBerrySethi {
   override val lang: WordExp
 
   import lang.{ Alt, Eps, Letter, Meta, RegExp, Sequ, Star, _labelT }
 
-  protected var labels: HashSet[_labelT]                   = _
+  protected var labels: mutable.HashSet[_labelT]                   = _
   // don't let this fool you, only labelAt is a real, surjective mapping
-  protected var labelAt: Map[Int, _labelT]                 = _ // new alphabet "gamma"
-  protected var deltaq: Array[HashMap[_labelT, List[Int]]] = _ // delta
-  protected var defaultq: Array[List[Int]]                 = _ // default transitions
-  protected var initials: Set[Int]                         = _
+  protected var labelAt: Map[Int, _labelT]                         = _ // new alphabet "gamma"
+  protected var deltaq: Array[mutable.HashMap[_labelT, List[Int]]] = _ // delta
+  protected var defaultq: Array[List[Int]]                         = _ // default transitions
+  protected var initials: Set[Int]                                 = _
 
-  /** Computes <code>first(r)</code> where the word regexp <code>r</code>.
+  /** Computes `first(r)` where the word regexp `r`.
    *
    *  @param r the regular expression
-   *  @return  the computed set <code>first(r)</code>
+   *  @return  the computed set `first(r)`
    */
   protected override def compFirst(r: RegExp): Set[Int] = r match {
     case x: Letter  => Set(x.pos)
     case _          => super.compFirst(r)
   }
 
-  /** Computes <code>last(r)</code> where the word regexp <code>r</code>.
+  /** Computes `last(r)` where the word regexp `r`.
    *
    *  @param r the regular expression
-   *  @return  the computed set <code>last(r)</code>
+   *  @return  the computed set `last(r)`
    */
   protected override def compLast(r: RegExp): Set[Int] = r match {
     case x: Letter  => Set(x.pos)
@@ -66,11 +62,11 @@ abstract class WordBerrySethi extends BaseBerrySethi {
       case _          => super.compFollow1(fol1, r)
     }
 
-  /** returns "Sethi-length" of a pattern, creating the set of position
+  /** Returns "Sethi-length" of a pattern, creating the set of position
    *  along the way
    */
 
-  /** called at the leaves of the regexp */
+  /** Called at the leaves of the regexp */
   protected def seenLabel(r: RegExp, i: Int, label: _labelT) {
     labelAt = labelAt.updated(i, label)
     this.labels += label
@@ -98,8 +94,8 @@ abstract class WordBerrySethi extends BaseBerrySethi {
 
   protected def initialize(subexpr: Seq[RegExp]): Unit = {
     this.labelAt = immutable.Map()
-    this.follow = HashMap()
-    this.labels = HashSet()
+    this.follow = mutable.HashMap()
+    this.labels = mutable.HashSet()
     this.pos = 0
 
     // determine "Sethi-length" of the regexp
@@ -110,11 +106,11 @@ abstract class WordBerrySethi extends BaseBerrySethi {
 
   protected def initializeAutom() {
     finals   = immutable.Map.empty[Int, Int]                    // final states
-    deltaq   = new Array[HashMap[_labelT, List[Int]]](pos) // delta
+    deltaq   = new Array[mutable.HashMap[_labelT, List[Int]]](pos) // delta
     defaultq = new Array[List[Int]](pos)                        // default transitions
     
     for (j <- 0 until pos) {
-      deltaq(j) = HashMap[_labelT, List[Int]]()
+      deltaq(j) = mutable.HashMap[_labelT, List[Int]]()
       defaultq(j) = Nil
     }
   }
@@ -148,7 +144,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
 
         val deltaArr: Array[mutable.Map[_labelT, immutable.BitSet]] =
           (0 until pos map { x =>
-            HashMap(delta1(x).toSeq map { case (k, v) => k -> immutable.BitSet(v: _*) } : _*)
+            mutable.HashMap(delta1(x).toSeq map { case (k, v) => k -> immutable.BitSet(v: _*) } : _*)
           }).toArray
 
         val defaultArr  = 0 until pos map (k => immutable.BitSet(defaultq(k): _*)) toArray

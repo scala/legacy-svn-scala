@@ -19,10 +19,12 @@ package scala.collection
  *  @define possiblyparinfo
  *  This trait may possibly have operations implemented in parallel.
  *  @define undefinedorder
- *  The order in which operations are performed on elements is unspecified and may be nondeterministic.
+ *  The order in which operations are performed on elements is unspecified
+ *  and may be nondeterministic.
  *  @define orderDependent
  * 
- *    Note: might return different results for different runs, unless the underlying collection type is ordered.
+ *    Note: might return different results for different runs, unless the
+ *    underlying collection type is ordered.
  *  @define orderDependentFold
  * 
  *    Note: might return different results for different runs, unless the
@@ -40,13 +42,13 @@ package scala.collection
  *  @since 2.9
  */
 trait GenTraversableOnce[+A] {
-  
+
   def foreach[U](f: A => U): Unit
-  
+
   def hasDefiniteSize: Boolean
-  
+
   def seq: TraversableOnce[A]
-  
+
   /** The size of this $coll.
    *
    *  $willNotTerminateInf
@@ -54,79 +56,67 @@ trait GenTraversableOnce[+A] {
    *  @return    the number of elements in this $coll.
    */
   def size: Int
-  
+
   /** Tests whether the $coll is empty.
    *
    *  @return    `true` if the $coll contains no elements, `false` otherwise.
    */
   def isEmpty: Boolean
-  
+
   /** Tests whether the $coll is not empty.
    * 
    *  @return    `true` if the $coll contains at least one element, `false` otherwise.
    */
   def nonEmpty: Boolean
-  
+
   /** Tests whether this $coll can be repeatedly traversed.  Always
    *  true for Traversables and false for Iterators unless overridden.
    *
    *  @return   `true` if it is repeatedly traversable, `false` otherwise.
    */
   def isTraversableAgain: Boolean
-  
-  /** Reduces the elements of this sequence using the specified associative binary operator.
+
+  /** Reduces the elements of this $coll using the specified associative binary operator.
    *  
    *  $undefinedorder
    *  
-   *  Note this method has a different signature than the `reduceLeft`
-   *  and `reduceRight` methods of the trait `Traversable`.
-   *  The result of reducing may only be a supertype of this parallel collection's
-   *  type parameter `T`.
-   *  
-   *  @tparam U      A type parameter for the binary operator, a supertype of `T`.
+   *  @tparam A1      A type parameter for the binary operator, a supertype of `A`.
    *  @param op       A binary operator that must be associative.
-   *  @return         The result of applying reduce operator `op` between all the elements if the collection is nonempty.
+   *  @return         The result of applying reduce operator `op` between all the elements if the $coll is nonempty.
    *  @throws UnsupportedOperationException
    *  if this $coll is empty.
    */
   def reduce[A1 >: A](op: (A1, A1) => A1): A1
-  
-  /** Optionally reduces the elements of this sequence using the specified associative binary operator.
+
+  /** Reduces the elements of this $coll, if any, using the specified
+   *  associative binary operator.
    *  
    *  $undefinedorder
    *  
-   *  Note this method has a different signature than the `reduceLeftOption`
-   *  and `reduceRightOption` methods of the trait `Traversable`.
-   *  The result of reducing may only be a supertype of this parallel collection's
-   *  type parameter `T`.
-   *  
-   *  @tparam U      A type parameter for the binary operator, a supertype of `T`.
+   *  @tparam A1     A type parameter for the binary operator, a supertype of `A`.
    *  @param op      A binary operator that must be associative.
    *  @return        An option value containing result of applying reduce operator `op` between all
    *                 the elements if the collection is nonempty, and `None` otherwise. 
    */
   def reduceOption[A1 >: A](op: (A1, A1) => A1): Option[A1]
-  
-  /** Folds the elements of this sequence using the specified associative binary operator.
-   *  The order in which the elements are reduced is unspecified and may be nondeterministic.
+
+  /** Folds the elements of this $coll using the specified associative
+   *  binary operator.
+   *
+   *  $undefinedorder
    *  
-   *  Note this method has a different signature than the `foldLeft`
-   *  and `foldRight` methods of the trait `Traversable`.
-   *  The result of folding may only be a supertype of this parallel collection's
-   *  type parameter `T`.
-   *  
-   *  @tparam U      a type parameter for the binary operator, a supertype of `T`.
-   *  @param z       a neutral element for the fold operation, it may be added to the result
-   *                 an arbitrary number of times, not changing the result (e.g. `Nil` for list concatenation,
-   *                 0 for addition, or 1 for multiplication)
+   *  @tparam A1     a type parameter for the binary operator, a supertype of `A`.
+   *  @param z       a neutral element for the fold operation; may be added to the result
+   *                 an arbitrary number of times, and must not change the result (e.g., `Nil` for list concatenation,
+   *                 0 for addition, or 1 for multiplication.)
    *  @param op      a binary operator that must be associative
    *  @return        the result of applying fold operator `op` between all the elements and `z`
    */
   def fold[A1 >: A](z: A1)(op: (A1, A1) => A1): A1
-  
+
   /** A syntactic sugar for out of order folding. See `fold`. */
   def /:\[A1 >: A](z: A1)(op: (A1, A1) => A1): A1 = fold(z)(op)
-  
+
   /** Applies a binary operator to a start value and all elements of this $coll,
    *  going left to right.
    *
@@ -141,12 +131,12 @@ trait GenTraversableOnce[+A] {
    *  @return  the result of inserting `op` between consecutive elements of this $coll,
    *           going left to right with the start value `z` on the left:
    *           {{{
-   *             op(...op(op(z, x,,1,,), x,,2,,), ..., x,,n,,)
+   *             op(...op(op(z, x1), x2), ..., xn)
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    */
   def /:[B](z: B)(op: (B, A) => B): B
-  
+
   /** Applies a binary operator to all elements of this $coll and a start value,
    *  going right to left.
    *
@@ -161,12 +151,12 @@ trait GenTraversableOnce[+A] {
    *  @return  the result of inserting `op` between consecutive elements of this $coll,
    *           going right to left with the start value `z` on the right:
    *           {{{
-   *             op(x,,1,,, op(x,,2,,, ... op(x,,n,,, z)...))
+   *             op(x1, op(x2, ... op(xn, z)...))
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    */
   def :\[B](z: B)(op: (A, B) => B): B
-  
+
   /** Applies a binary operator to a start value and all elements of this $coll,
    *  going left to right.
    * 
@@ -179,12 +169,12 @@ trait GenTraversableOnce[+A] {
    *  @return  the result of inserting `op` between consecutive elements of this $coll,
    *           going left to right with the start value `z` on the left:
    *           {{{
-   *             op(...op(z, x,,1,,), x,,2,,, ..., x,,n,,)
+   *             op(...op(z, x1), x2, ..., xn)
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    */
   def foldLeft[B](z: B)(op: (B, A) => B): B
-  
+
   /** Applies a binary operator to all elements of this $coll and a start value,
    *  going right to left.
    * 
@@ -196,26 +186,26 @@ trait GenTraversableOnce[+A] {
    *  @return  the result of inserting `op` between consecutive elements of this $coll,
    *           going right to left with the start value `z` on the right:
    *           {{{
-   *             op(x,,1,,, op(x,,2,,, ... op(x,,n,,, z)...))
+   *             op(x1, op(x2, ... op(xn, z)...))
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    */
   def foldRight[B](z: B)(op: (A, B) => B): B
-  
+
   /** Aggregates the results of applying an operator to subsequent elements.
    *  
-   *  This is a more general form of `fold` and `reduce`. It has similar semantics, but does
-   *  not require the result to be a supertype of the element type. It traverses the elements in
-   *  different partitions sequentially, using `seqop` to update the result, and then
-   *  applies `combop` to results from different partitions. The implementation of this
-   *  operation may operate on an arbitrary number of collection partitions, so `combop`
-   *  may be invoked arbitrary number of times.
+   *  This is a more general form of `fold` and `reduce`. It has similar
+   *  semantics, but does not require the result to be a supertype of the
+   *  element type. It traverses the elements in different partitions
+   *  sequentially, using `seqop` to update the result, and then applies
+   *  `combop` to results from different partitions. The implementation of
+   *  this operation may operate on an arbitrary number of collection
+   *  partitions, so `combop` may be invoked an arbitrary number of times.
    *  
-   *  For example, one might want to process some elements and then produce a `Set`. In this
-   *  case, `seqop` would process an element and append it to the list, while `combop`
-   *  would concatenate two lists from different partitions together. The initial value
-   *  `z` would be an empty set.
-   *  
+   *  For example, one might want to process some elements and then produce
+   *  a `Set`. In this case, `seqop` would process an element and append it
+   *  to the list, while `combop` would concatenate two lists from different
+   *  partitions together. The initial value `z` would be an empty set.
    *  {{{
    *    pc.aggregate(Set[Int]())(_ += process(_), _ ++ _)
    *  }}}
@@ -223,7 +213,7 @@ trait GenTraversableOnce[+A] {
    *  Another example is calculating geometric mean from a collection of doubles
    *  (one would typically require big doubles for this).
    *  
-   *  @tparam S        the type of accumulated results
+   *  @tparam B        the type of accumulated results
    *  @param z         the initial value for the accumulated result of the partition - this
    *                   will typically be the neutral element for the `seqop` operator (e.g.
    *                   `Nil` for list concatenation or `0` for summation)

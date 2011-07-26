@@ -66,7 +66,7 @@ trait TypeDiagnostics {
   /** A map of Positions to addendums - if an error involves a position in
    *  the map, the addendum should also be printed.
    */
-  private var addendums = mutable.Map[Position, () => String]()
+  private var addendums = perRunCaches.newMap[Position, () => String]()
 
   def setAddendum(pos: Position, msg: () => String) =
     if (pos != NoPosition)
@@ -308,19 +308,19 @@ trait TypeDiagnostics {
     def modifyName(f: String => String) =
       sym.name = newTypeName(f(sym.name.toString))
 
+    def scalaQualify() = {
+      val intersect = Set(trueOwner, aliasOwner) intersect Set(ScalaPackageClass, PredefModuleClass)
+      if (intersect.nonEmpty) preQualify()
+    }
+
     // functions to manipulate the name
     def preQualify()   = modifyName(trueOwner.fullName + "." + _)
     def postQualify()  = modifyName(_ + "(in " + trueOwner + ")")
-    def scalaQualify() = if (inPredefOrScala) preQualify()
     def typeQualify()  = if (sym.isTypeParameterOrSkolem) postQualify()
     def nameQualify()  = if (trueOwner.isPackageClass) preQualify() else postQualify()
 
     def trueOwner  = tp.typeSymbol.owner.skipPackageObject
     def aliasOwner = tp.typeSymbolDirect.owner.skipPackageObject
-    def owners     = List(trueOwner, aliasOwner)
-
-    private def scalaAndPredef = Set(ScalaPackageClass, PredefModuleClass)
-    def inPredefOrScala = owners exists scalaAndPredef
     
     def sym_==(other: TypeDiag)     = tp.typeSymbol == other.tp.typeSymbol
     def owner_==(other: TypeDiag)   = trueOwner == other.trueOwner
@@ -339,9 +339,8 @@ trait TypeDiagnostics {
       |tp.typeSymbol.owner = %s
       |tp.typeSymbolDirect = %s
       |tp.typeSymbolDirect.owner = %s
-      |inPredefOrScala = %s
       """.stripMargin.format(
-        tp, tp.typeSymbol, tp.typeSymbol.owner, tp.typeSymbolDirect, tp.typeSymbolDirect.owner, inPredefOrScala
+        tp, tp.typeSymbol, tp.typeSymbol.owner, tp.typeSymbolDirect, tp.typeSymbolDirect.owner
       )
     }
   }
@@ -421,7 +420,7 @@ trait TypeDiagnostics {
         // Error suppression will squash some of these warnings unless we circumvent it.
         // It is presumed if you are using a -Y option you would really like to hear
         // the warnings you've requested.
-        if (settings.Ywarndeadcode.value && context.unit != null && treeOK(tree) && exprOK) {
+        if (settings.warnDeadCode.value && context.unit != null && treeOK(tree) && exprOK) {
           val saved = context.reportGeneralErrors
           try {
             context.reportGeneralErrors = true

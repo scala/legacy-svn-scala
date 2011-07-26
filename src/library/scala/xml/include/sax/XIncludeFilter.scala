@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.xml
 package include.sax
 
@@ -19,74 +18,58 @@ import java.io.{ InputStream, BufferedInputStream, InputStreamReader, IOExceptio
 import java.util.Stack
 import java.net.{ URL, MalformedURLException }
 
-/**
- * <p>
- *  This is a SAX filter which resolves all XInclude include elements
- *  before passing them on to the client application. Currently this
- *  class has the following known deviation from the XInclude specification:
- * </p>
- *  <ol>
- *   <li>XPointer is not supported.</li>
- *  </ol>
+/** This is a SAX filter which resolves all XInclude include elements before
+ *  passing them on to the client application. Currently this class has the
+ *  following known deviation from the XInclude specification:
+ *  
+ *  1. XPointer is not supported.
+ *  
+ *  Furthermore, I would definitely use a new instance of this class for each
+ *  document you want to process. I doubt it can be used successfully on
+ *  multiple documents. Furthermore, I can virtually guarantee that this
+ *  class is not thread safe. You have been warned.
  *
- *  <p>
- *    Furthermore, I would definitely use a new instance of this class
- *    for each document you want to process. I doubt it can be used
- *    successfully on multiple documents. Furthermore, I can virtually
- *    guarantee that this class is not thread safe. You have been
- *    warned.
- *  </p>
+ *  Since this class is not designed to be subclassed, and since I have not
+ *  yet considered how that might affect the methods herein or what other
+ *  protected methods might be needed to support subclasses, I have declared
+ *  this class final. I may remove this restriction later, though the use-case
+ *  for subclassing is weak. This class is designed to have its functionality
+ *  extended via a horizontal chain of filters, not a vertical hierarchy of
+ *  sub and superclasses.
  *
- *  <p>
- *    Since this class is not designed to be subclassed, and since
- *    I have not yet considered how that might affect the methods 
- *    herein or what other protected methods might be needed to support 
- *    subclasses, I have declared this class final. I may remove this 
- *    restriction later, though the use-case for subclassing is weak.
- *    This class is designed to have its functionality extended via a
- *    a horizontal chain of filters, not a 
- *    vertical hierarchy of sub and superclasses.
- *  </p>
- *
- *  <p>
- *    To use this class: 
- *  </p>
- *  <ol>
- *   <li>Construct an <code>XIncludeFilter</code> object with a known base URL</li>
- *   <li>Pass the <code>XMLReader</code> object from which the raw document will 
- *       be read to the <code>setParent()</code> method of this object. </li>
- *   <li>Pass your own <code>ContentHandler</code> object to the 
- *       <code>setContentHandler()</code> method of this object. This is the 
- *       object which will receive events from the parsed and included
- *       document.
- *   </li>
- *   <li>Optional: if you wish to receive comments, set your own 
- *       <code>LexicalHandler</code> object as the value of this object's
- *       http://xml.org/sax/properties/lexical-handler property.
- *       Also make sure your <code>LexicalHandler</code> asks this object 
- *       for the status of each comment using <code>insideIncludeElement</code>
- *       before doing anything with the comment. 
- *   </li>
- *   <li>Pass the URL of the document to read to this object's 
- *       <code>parse()</code> method</li>
- *  </ol>
+ *  To use this class:
+ *  
+ *  - Construct an `XIncludeFilter` object with a known base URL
+ *  - Pass the `XMLReader` object from which the raw document will be read to
+ *    the `setParent()` method of this object.
+ *  - Pass your own `ContentHandler` object to the `setContentHandler()`
+ *    method of this object. This is the object which will receive events
+ *    from the parsed and included document.
+ *  - Optional: if you wish to receive comments, set your own `LexicalHandler`
+ *    object as the value of this object's
+ *    `http://xml.org/sax/properties/lexical-handler` property.
+ *    Also make sure your `LexicalHandler` asks this object for the status of
+ *    each comment using `insideIncludeElement` before doing anything with the
+ *    comment.
+ *  - Pass the URL of the document to read to this object's `parse()` method
  * 
- *  <p> e.g.</p>
- *  <pre><code>XIncludeFilter includer = new XIncludeFilter(base); 
- *  includer.setParent(parser);
- *  includer.setContentHandler(new SAXXIncluder(System.out));
- *  includer.parse(args[i]);</code>
- *  </pre>
- * </p>               
- * translated from Elliotte Rusty Harold's Java source
+ *  e.g.
+ *  {{{
+ *  val includer = new XIncludeFilter(base)
+ *  includer setParent parser
+ *  includer setContentHandler new SAXXIncluder(System.out)
+ *  includer parse args(i)
+ *  }}}               
+ *  translated from Elliotte Rusty Harold's Java source.
+ *
  * @author Burak Emir
  */
 class XIncludeFilter extends XMLFilterImpl {
 
-  final val  XINCLUDE_NAMESPACE = "http://www.w3.org/2001/XInclude";
-  
-  private val bases = new Stack[URL]();
-  private val locators = new Stack[Locator]();
+  final val XINCLUDE_NAMESPACE = "http://www.w3.org/2001/XInclude"
+
+  private val bases = new Stack[URL]()
+  private val locators = new Stack[Locator]()
 
 /*    private EntityResolver resolver;
     
@@ -103,7 +86,7 @@ class XIncludeFilter extends XMLFilterImpl {
     // do I need to check this in startDocument() and push something
     // there????
   override def setDocumentLocator(locator: Locator) {
-    locators.push(locator)
+    locators push locator
     val base = locator.getSystemId()
     try {
       bases.push(new URL(base))
@@ -114,20 +97,17 @@ class XIncludeFilter extends XMLFilterImpl {
     }
     super.setDocumentLocator(locator)
   }
-  
-  
+
+
   // necessary to throw away contents of non-empty XInclude elements
   private var level = 0
 
-  /**
-    * <p>
-    * This utility method returns true if and only if this reader is 
-    * currently inside a non-empty include element. (This is <strong>
-    * not</strong> the same as being inside the node set which replaces
-    * the include element.) This is primarily needed for comments
-    * inside include elements. It must be checked by the actual
-    * LexicalHandler to see whether a comment is passed or not.
-    * </p>
+  /** This utility method returns true if and only if this reader is
+    * currently inside a non-empty include element. (This is '''not''' the
+    * same as being inside the node set which replaces the include element.)
+    * This is primarily needed for comments inside include elements.
+    * It must be checked by the actual `LexicalHandler` to see whether
+    * a comment is passed or not.
     *
     * @return boolean  
     */
@@ -152,30 +132,30 @@ class XIncludeFilter extends XMLFilterImpl {
                                    + currentBase, e)
         }
       }
-      bases.push(currentBase);
-      
+      bases push currentBase
+
       if (uri.equals(XINCLUDE_NAMESPACE) && localName.equals("include")) {
         // include external document
         val href = atts.getValue("href")
         // Verify that there is an href attribute
-        if (href==null) { 
+        if (href == null) { 
           throw new SAXException("Missing href attribute")
         }
-        
-        var parse = atts.getValue("parse")
+
+        var parse = atts getValue "parse"
         if (parse == null) parse = "xml"
         
-        if (parse.equals("text")) {
-          val encoding = atts.getValue("encoding");
-          includeTextDocument(href, encoding); 
+        if (parse equals "text") {
+          val encoding = atts getValue "encoding"
+          includeTextDocument(href, encoding);
         }
-        else if (parse.equals("xml")) {
-          includeXMLDocument(href); 
+        else if (parse equals "xml") {
+          includeXMLDocument(href);
         }
         // Need to check this also in DOM and JDOM????
         else {
           throw new SAXException(
-            "Illegal value for parse attribute: " + parse);
+            "Illegal value for parse attribute: " + parse)
         }
         level += 1
       }
@@ -196,7 +176,7 @@ class XIncludeFilter extends XMLFilterImpl {
   override def endElement(uri: String, localName: String, qName: String) {
     if (uri.equals(XINCLUDE_NAMESPACE) 
         && localName.equals("include")) {
-          level -= 1;
+          level -= 1
     }
     else if (level == 0) {
       bases.pop()
@@ -205,7 +185,7 @@ class XIncludeFilter extends XMLFilterImpl {
   }
 
   private var depth = 0;
-  
+
   override def startDocument() {
     level = 0
     if (depth == 0) super.startDocument()
@@ -214,7 +194,7 @@ class XIncludeFilter extends XMLFilterImpl {
 
   override def endDocument() {
     locators.pop()
-    bases.pop(); // pop the URL for the document itself
+    bases.pop()  // pop the URL for the document itself
     depth -= 1
     if (depth == 0) super.endDocument()
   }
@@ -265,12 +245,8 @@ class XIncludeFilter extends XMLFilterImpl {
     locationString
   }
 
-  /**
-    * <p>
-    * This utility method reads a document at a specified URL
-    * and fires off calls to <code>characters()</code>.
-    * It's used to include files with <code>parse="text"</code>
-    * </p>
+  /** This utility method reads a document at a specified URL and fires off
+    * calls to `characters()`. It's used to include files with `parse="text"`.
     *
     * @param  url          URL of the document that will be read
     * @param  encoding     Encoding of the document; e.g. UTF-8, 
@@ -291,11 +267,11 @@ class XIncludeFilter extends XMLFilterImpl {
     catch { 
       case e: MalformedURLException =>
         val ex = new UnavailableResourceException("Unresolvable URL " + url
-                                                  + getLocation());
-      ex.setRootCause(e);
-      throw new SAXException("Unresolvable URL " + url + getLocation(), ex);
+                                                  + getLocation())
+      ex.setRootCause(e)
+      throw new SAXException("Unresolvable URL " + url + getLocation(), ex)
     }
-    
+
     try {
       val uc = source.openConnection()
       val in = new BufferedInputStream(uc.getInputStream())
@@ -321,29 +297,26 @@ class XIncludeFilter extends XMLFilterImpl {
       val c = new Array[Char](1024)
       var charsRead: Int = 0  // bogus init value
       do {
-        charsRead = reader.read(c, 0, 1024);
-        if (charsRead > 0) this.characters(c, 0, charsRead);
-      } while (charsRead != -1) ;
+        charsRead = reader.read(c, 0, 1024)
+        if (charsRead > 0) this.characters(c, 0, charsRead)
+      } while (charsRead != -1)
     }
     catch {
       case e: UnsupportedEncodingException =>
         throw new SAXException("Unsupported encoding: " 
-                               + encoding + getLocation(), e);
+                               + encoding + getLocation(), e)
       case e: IOException =>
         throw new SAXException("Document not found: " 
-                               + source.toExternalForm() + getLocation(), e);
+                               + source.toExternalForm() + getLocation(), e)
     }
-    
+
   }
-    
+
   private var atRoot = false
-  
-  /**
-    * <p>
-    * This utility method reads a document at a specified URL
-    * and fires off calls to various <code>ContentHandler</code> methods.
-    * It's used to include files with <code>parse="xml"</code>
-    * </p>
+
+  /** This utility method reads a document at a specified URL
+    * and fires off calls to various `ContentHandler` methods.
+    * It's used to include files with `parse="xml"`.
     *
     * @param  url          URL of the document that will be read
     * @return void  
@@ -359,7 +332,7 @@ class XIncludeFilter extends XMLFilterImpl {
           ex setRootCause e
           throw new SAXException("Unresolvable URL " + url + getLocation(), ex)
       }
-    
+
     try {
       val parser: XMLReader =
         try XMLReaderFactory.createXMLReader()
@@ -373,7 +346,7 @@ class XIncludeFilter extends XMLFilterImpl {
       val resolver = this.getEntityResolver()
       if (resolver != null)
         parser setEntityResolver resolver
-        
+
       // save old level and base
       val previousLevel = level
       this.level = 0
@@ -386,12 +359,12 @@ class XIncludeFilter extends XMLFilterImpl {
       bases push source
       atRoot = true
       parser parse source.toExternalForm()
-      
+
       // restore old level and base
       this.level = previousLevel
       bases.pop()
     }
-    catch { 
+    catch {
       case e: IOException =>
         throw new SAXException("Document not found: " + source.toExternalForm() + getLocation(), e)
     }

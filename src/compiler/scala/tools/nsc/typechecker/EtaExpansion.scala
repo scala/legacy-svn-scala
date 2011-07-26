@@ -25,7 +25,7 @@ trait EtaExpansion { self: Analyzer =>
     }
       
     def unapply(tree: Tree): Option[(List[ValDef], Tree, List[Tree])] = tree match {
-      case Function(vparams, Apply(fn, args)) if (vparams corresponds args)(isMatch) => // @PP: corresponds
+      case Function(vparams, Apply(fn, args)) if (vparams corresponds args)(isMatch) => 
         Some((vparams, fn, args))
       case _ =>
         None
@@ -80,7 +80,7 @@ trait EtaExpansion { self: Analyzer =>
         //   [...]
         //   val x$n = argn
         //   qual$1.fun(x$1, ..)..(.., x$n) }
-        // Eta-expansion has to be performed on `fun'
+        // Eta-expansion has to be performed on `fun`
         case Block(stats, fun) =>
           defs ++= stats
           liftoutPrefix(fun)

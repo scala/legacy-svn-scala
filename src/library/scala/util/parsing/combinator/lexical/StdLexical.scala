@@ -6,35 +6,34 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.util.parsing
 package combinator
 package lexical
 
 import token._
 import input.CharArrayReader.EofCh
-import collection.mutable.HashSet
+import scala.collection.mutable
 
-/** <p>
- *    This component provides a standard lexical parser for a simple, Scala-like language. 
- *    It parses keywords and identifiers, numeric literals (integers), strings, and delimiters. 
- *  </p>
- *  <p>
- *    To distinguish between identifiers and keywords, it uses a set of reserved identifiers: 
- *    every string contained in `reserved' is returned as a keyword token.
- *    (Note that "=>" is hard-coded as a keyword.) 
- *    Additionally, the kinds of delimiters can be specified by the `delimiters' set.
- *  </p>
- *  <p>
- *    Usually this component is used to break character-based input into bigger tokens,
- *    which are then passed to a token-parser {@see TokenParsers}.
- *  </p>
+/** This component provides a standard lexical parser for a simple,
+ *  [[http://scala-lang.org Scala]]-like language. It parses keywords and
+ *  identifiers, numeric literals (integers), strings, and delimiters. 
  *
- * @author Martin Odersky, Iulian Dragos, Adriaan Moors 
+ *  To distinguish between identifiers and keywords, it uses a set of
+ *  reserved identifiers:  every string contained in `reserved` is returned
+ *  as a keyword token. (Note that `=>` is hard-coded as a keyword.) 
+ *  Additionally, the kinds of delimiters can be specified by the
+ *  `delimiters` set.
+ *
+ *  Usually this component is used to break character-based input into
+ *  bigger tokens, which are then passed to a token-parser {@see
+ *  [[scala.util.parsing.combinator.syntactical.TokenParsers]]}.
+ *
+ * @author Martin Odersky
+ * @author Iulian Dragos
+ * @author Adriaan Moors 
  */
 class StdLexical extends Lexical with StdTokens {
-  // see `token' in `Scanners'
+  // see `token` in `Scanners`
   def token: Parser[Token] = 
     ( identChar ~ rep( identChar | digit )              ^^ { case first ~ rest => processIdent(first :: rest mkString "") }
     | digit ~ rep( digit )                              ^^ { case first ~ rest => NumericLit(first :: rest mkString "") }
@@ -47,10 +46,10 @@ class StdLexical extends Lexical with StdTokens {
     | failure("illegal character")
     )
   
-  // legal identifier chars other than digits
+  /** Returns the legal identifier chars, except digits. */
   def identChar = letter | elem('_')
 
-  // see `whitespace in `Scanners'
+  // see `whitespace in `Scanners`
   def whitespace: Parser[Any] = rep(
       whitespaceChar
     | '/' ~ '*' ~ comment
@@ -63,11 +62,11 @@ class StdLexical extends Lexical with StdTokens {
     | chrExcept(EofCh) ~ comment
     )
 
-  /** The set of reserved identifiers: these will be returned as `Keyword's */
-  val reserved = new HashSet[String]
+  /** The set of reserved identifiers: these will be returned as `Keyword`s. */
+  val reserved = new mutable.HashSet[String]
 
-  /** The set of delimiters (ordering does not matter) */
-  val delimiters = new HashSet[String]
+  /** The set of delimiters (ordering does not matter). */
+  val delimiters = new mutable.HashSet[String]
 
   protected def processIdent(name: String) = 
     if (reserved contains name) Keyword(name) else Identifier(name)

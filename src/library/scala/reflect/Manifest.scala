@@ -10,12 +10,12 @@ package scala.reflect
 
 import scala.collection.mutable.{ ArrayBuilder, WrappedArray }
 
-/** A Manifest[T] is an opaque descriptor for type T.  Its
- *  supported use is to give access to the erasure of the type
- *  as a Class instance, as is necessary for the creation of native
- *  Arrays if the class is not known at compile time.
+/** A `Manifest[T]` is an opaque descriptor for type T.  Its supported use
+ *  is to give access to the erasure of the type as a `Class` instance, as
+ *  is necessary for the creation of native `Arrays` if the class is not
+ *  known at compile time.
  *
- *  The type-relation operators <:< and =:= should be considered
+ *  The type-relation operators `<:<` and `=:=` should be considered
  *  approximations only, as there are numerous aspects of type conformance
  *  which are not yet adequately represented in manifests.
  *
@@ -70,7 +70,7 @@ trait AnyValManifest[T] extends Manifest[T] with Equals {
   override def hashCode = System.identityHashCode(this)
 }
 
-/** The object Manifest defines factory methods for manifests.
+/** The object `Manifest` defines factory methods for manifests.
  *  It is intended for use by the compiler and should not be used
  *  in client code.
  */
@@ -204,11 +204,11 @@ object Manifest {
     override lazy val toString = value.toString + ".type"
   }
 
-  /** Manifest for the singleton type `value.type'. */
+  /** Manifest for the singleton type `value.type`. */
   def singleType[T <: AnyRef](value: AnyRef): Manifest[T] =
     new SingletonTypeManifest[T](value)
 
-  /** Manifest for the class type `clazz[args]', where `clazz' is
+  /** Manifest for the class type `clazz[args]`, where `clazz` is
     * a top-level or static class.
     * @note This no-prefix, no-arguments case is separate because we
     *       it's called from ScalaRunTime.boxArray itself. If we
@@ -218,18 +218,18 @@ object Manifest {
   def classType[T](clazz: Predef.Class[_]): Manifest[T] =
     new ClassTypeManifest[T](None, clazz, Nil)
 
-  /** Manifest for the class type `clazz', where `clazz' is
+  /** Manifest for the class type `clazz`, where `clazz` is
     * a top-level or static class and args are its type arguments. */
   def classType[T](clazz: Predef.Class[T], arg1: Manifest[_], args: Manifest[_]*): Manifest[T] =
     new ClassTypeManifest[T](None, clazz, arg1 :: args.toList)
 
-  /** Manifest for the class type `clazz[args]', where `clazz' is
+  /** Manifest for the class type `clazz[args]`, where `clazz` is
     * a class with non-package prefix type `prefix` and type arguments `args`.
     */
   def classType[T](prefix: Manifest[_], clazz: Predef.Class[_], args: Manifest[_]*): Manifest[T] =
     new ClassTypeManifest[T](Some(prefix), clazz, args.toList)
 
-  /** Manifest for the class type `clazz[args]', where `clazz' is
+  /** Manifest for the class type `clazz[args]`, where `clazz` is
     * a top-level or static class. */
   private class ClassTypeManifest[T](prefix: Option[Manifest[_]], 
                                      val erasure: Predef.Class[_], 
@@ -243,7 +243,7 @@ object Manifest {
   def arrayType[T](arg: Manifest[_]): Manifest[Array[T]] = 
     arg.asInstanceOf[Manifest[T]].arrayManifest
 
-  /** Manifest for the abstract type `prefix # name'. `upperBound' is not
+  /** Manifest for the abstract type `prefix # name'. `upperBound` is not
     * strictly necessary as it could be obtained by reflection. It was
     * added so that erasure can be calculated without reflection. */
   def abstractType[T](prefix: Manifest[_], name: String, clazz: Predef.Class[_], args: Manifest[_]*): Manifest[T] =
@@ -253,7 +253,7 @@ object Manifest {
       override def toString = prefix.toString+"#"+name+argString
     }
 
-  /** Manifest for the unknown type `_ >: L <: U' in an existential.
+  /** Manifest for the unknown type `_ >: L <: U` in an existential.
     */
   def wildcardType[T](lowerBound: Manifest[_], upperBound: Manifest[_]): Manifest[T] =
     new Manifest[T] {

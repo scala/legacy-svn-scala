@@ -12,12 +12,12 @@ trait AnyValReps {
   self: AnyVals =>
   
   sealed abstract class AnyValNum(name: String) extends AnyValRep(name) {
-    def isCardinal: Boolean    = isIntegerType(this)
-    def unaryOps      = if (isCardinal) List("+", "-", "~") else List("+", "-")
-    def bitwiseOps    = if (isCardinal) List("|", "&", "^") else Nil
-    def shiftOps      = if (isCardinal) List("<<", ">>>", ">>") else Nil
-    def comparisonOps = List("==", "!=", "<", "<=", ">", ">=")
-    def otherOps      = List("+", "-" ,"*", "/", "%")
+    def isCardinal: Boolean = isIntegerType(this)
+    def unaryOps            = if (isCardinal) List("+", "-", "~") else List("+", "-")
+    def bitwiseOps          = if (isCardinal) List("|", "&", "^") else Nil
+    def shiftOps            = if (isCardinal) List("<<", ">>>", ">>") else Nil
+    def comparisonOps       = List("==", "!=", "<", "<=", ">", ">=")
+    def otherOps            = List("+", "-" ,"*", "/", "%")
   
     // Given two numeric value types S and T , the operation type of S and T is defined as follows:
     // If both S and T are subrange types then the operation type of S and T is Int.
@@ -49,7 +49,7 @@ trait AnyValReps {
       )
       xs1 ++ xs2
     }
-    def classLines = clumps.foldLeft(List[String]()) {
+    def classLines = (clumps :+ commonClassLines).foldLeft(List[String]()) {
       case (res, Nil)   => res
       case (res, lines) =>
         val xs = lines map {
@@ -80,6 +80,9 @@ trait AnyValReps {
   sealed abstract class AnyValRep(val name: String) {
     def classLines: List[String]
     def objectLines: List[String]
+    def commonClassLines = List(
+      "def getClass(): Class[@name@]"
+    )
 
     def lcname = name.toLowerCase
     def boxedName = this match {
@@ -231,18 +234,96 @@ class AnyVals extends AnyValReps with AnyValTemplates {
   object D extends AnyValNum("Double")
   object Z extends AnyValRep("Boolean") {
     def classLines = """
+/**
+ * Negates a Boolean expression.
+ * 
+ * - `!a` results in `false` if and only if `a` evaluates to `true` and
+ * - `!a` results in `true` if and only if `a` evaluates to `false`.
+ *
+ * @return the negated expression
+ */
 def unary_! : Boolean = sys.error("stub")
 
+/**
+  * Compares two Boolean expressions and returns `true` if they evaluate to the same value.
+  *
+  * `a == b` returns `true` if and only if
+  *  - `a` and `b` are `true` or
+  *  - `a` and `b` are `false`.
+  */
 def ==(x: Boolean): Boolean = sys.error("stub")
+
+/**
+  * Compares two Boolean expressions and returns `true` if they evaluate to a different value.
+  *
+  * `a != b` returns `true` if and only if
+  *  - `a` is `true` and `b` is `false` or
+  *  - `a` is `false` and `b` is `true`. 
+  */
 def !=(x: Boolean): Boolean = sys.error("stub")
+
+/** 
+  * Compares two Boolean expressions and returns `true` if one or both of them evaluate to true.
+  *
+  * `a || b` returns `true` if and only if
+  *  - `a` is `true` or
+  *  - `b` is `true` or
+  *  - `a` and `b` are `true`.
+  *
+  * @note This method uses 'short-circuit' evaluation and
+  *       behaves as if it was declared as `def ||(x: => Boolean): Boolean`.
+  *       If `a` evaluates to `true`, `true` is returned without evaluating `b`.
+  */
 def ||(x: Boolean): Boolean = sys.error("stub")
+
+/** 
+  * Compares two Boolean expressions and returns `true` if both of them evaluate to true.
+  *
+  * `a && b` returns `true` if and only if
+  *  - `a` and `b` are `true`.
+  *
+  * @note This method uses 'short-circuit' evaluation and
+  *       behaves as if it was declared as `def &&(x: => Boolean): Boolean`.
+  *       If `a` evaluates to `false`, `false` is returned without evaluating `b`.
+  */
 def &&(x: Boolean): Boolean = sys.error("stub")
+
 // Compiler won't build with these seemingly more accurate signatures
 // def ||(x: => Boolean): Boolean = sys.error("stub")
 // def &&(x: => Boolean): Boolean = sys.error("stub")
+
+/** 
+  * Compares two Boolean expressions and returns `true` if one or both of them evaluate to true.
+  *
+  * `a | b` returns `true` if and only if
+  *  - `a` is `true` or
+  *  - `b` is `true` or
+  *  - `a` and `b` are `true`.
+  *
+  * @note This method evaluates both `a` and `b`, even if the result is already determined after evaluating `a`.
+  */
 def |(x: Boolean): Boolean  = sys.error("stub")
+
+/** 
+  * Compares two Boolean expressions and returns `true` if both of them evaluate to true.
+  *
+  * `a & b` returns `true` if and only if
+  *  - `a` and `b` are `true`.
+  *
+  * @note This method evaluates both `a` and `b`, even if the result is already determined after evaluating `a`. 
+  */
 def &(x: Boolean): Boolean  = sys.error("stub")
+
+/** 
+  * Compares two Boolean expressions and returns `true` if they evaluate to a different value.
+  *
+  * `a ^ b` returns `true` if and only if
+  *  - `a` is `true` and `b` is `false` or
+  *  - `a` is `false` and `b` is `true`.
+  */
 def ^(x: Boolean): Boolean  = sys.error("stub")
+
+def getClass(): Class[Boolean] = sys.error("stub")
     """.trim.lines.toList
 
     def objectLines = interpolate(allCompanions).lines.toList
@@ -254,7 +335,9 @@ def ^(x: Boolean): Boolean  = sys.error("stub")
  *  only one value of type Unit: `()`.
  */
 """
-    def classLines  = Nil
+    def classLines  = List(
+      """def getClass(): Class[Unit] = sys.error("stub")"""
+    )
     def objectLines = interpolate(allCompanions).lines.toList
 
     override def boxUnboxImpls = Map(
@@ -277,4 +360,3 @@ def ^(x: Boolean): Boolean  = sys.error("stub")
 }
 
 object AnyVals extends AnyVals { }
-

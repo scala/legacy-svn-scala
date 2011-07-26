@@ -14,8 +14,8 @@ import annotation.migration
 import immutable.StringLike
 
 /** A builder for mutable sequence of characters.  This class provides an API
- *  mostly compatible with java.lang.StringBuilder, except where there are conflicts
- *  with the Scala collections API (such as the `reverse` method.)
+ *  mostly compatible with `java.lang.StringBuilder`, except where there are
+ *  conflicts with the Scala collections API (such as the `reverse` method.)
  *
  *  @author Stephane Micheloud
  *  @author Martin Odersky
@@ -29,15 +29,15 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
          with StringLike[StringBuilder]
          with Builder[Char, String]
          with Serializable {
-           
+
   override protected[this] def thisCollection: StringBuilder = this
   override protected[this] def toCollection(repr: StringBuilder): StringBuilder = repr
 
   /** Creates a string builder buffer as builder for this class */
   override protected[this] def newBuilder = new GrowingBuilder(new StringBuilder)
-  
-  /** Constructs a string builder initialized with String initValue
-   *  and with additional Char capacity initCapacity.
+
+  /** Constructs a string builder initialized with string value `initValue`
+   *  and with additional character capacity `initCapacity`.
    */
   def this(initCapacity: Int, initValue: String) =
     this(new JavaStringBuilder(initValue.length + initCapacity) append initValue)
@@ -48,7 +48,7 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
   def this() = this(16, "")
 
   /** Constructs a string builder with no characters in it and an 
-   *  initial capacity specified by the capacity argument. 
+   *  initial capacity specified by the `capacity` argument. 
    *
    *  @param  capacity  the initial capacity.
    *  @throws NegativeArraySizeException  if capacity < 0.
@@ -65,7 +65,7 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
     underlying.getChars(0, length, arr, 0)
     arr
   }
-  
+
   override def length: Int = underlying.length()
   def length_=(n: Int) { underlying.setLength(n) }
  
@@ -89,18 +89,18 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
    */
   def capacity: Int = underlying.capacity()
 
-  @deprecated("Use `ensureCapacity' instead. An assignment is misleading because\n"+
+  @deprecated("Use `ensureCapacity` instead. An assignment is misleading because\n"+
               "it can never decrease the capacity.", "2.8.0")
   def capacity_=(n: Int) { ensureCapacity(n) }
 
   /** Ensure that the capacity is at least the given argument.
    *  If the argument is greater than the current capacity, new
    *  storage will be allocated with size equal to the given
-   *  argument or to (2 * capacity + 2), whichever is larger.
+   *  argument or to `(2 * capacity + 2)`, whichever is larger.
    *
    *  @param newCapacity    the minimum desired capacity.
    */
-  def ensureCapacity(newCapacity: Int): Unit = underlying ensureCapacity newCapacity
+  def ensureCapacity(newCapacity: Int) { underlying ensureCapacity newCapacity }
       
   /** Returns the Char at the specified index, counting from 0 as in Arrays.
    *
@@ -165,7 +165,8 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
 
   /** For implementing CharSequence.
    */
-  def subSequence(start: Int, end: Int): java.lang.CharSequence = substring(start, end)
+  def subSequence(start: Int, end: Int): java.lang.CharSequence =
+    substring(start, end)
 
   /** Appends the given Char to the end of the sequence.
    */
@@ -177,6 +178,7 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
     underlying append s
     this
   }
+
   def appendAll(xs: String): StringBuilder = {
     underlying append xs
     this
@@ -187,9 +189,9 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
   def +(x: Char): this.type = { +=(x); this }
 
   /** Appends the string representation of the given argument,
-   *  which is converted to a String with String.valueOf.
+   *  which is converted to a String with `String.valueOf`.
    *
-   *  @param  x   an <code>Any</code> object.
+   *  @param  x   an `Any` object.
    *  @return     this StringBuilder.
    */
   def append(x: Any): StringBuilder = {
@@ -367,11 +369,11 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
   def insert(index: Int, x: Char): StringBuilder    = insert(index, String.valueOf(x))
   
   @deprecated("Use appendAll instead. This method is deprecated because of the\n"+
-              "possible confusion with `append(Any)'.", "2.8.0")
+              "possible confusion with `append(Any)`.", "2.8.0")
   def append(x: Seq[Char]): StringBuilder = appendAll(x)
 
   @deprecated("use appendAll instead. This method is deprecated because\n"+
-              "of the possible confusion with `append(Any)'.", "2.8.0")
+              "of the possible confusion with `append(Any)`.", "2.8.0")
   def append(x: Array[Char]): StringBuilder = appendAll(x)
 
   @deprecated("use appendAll instead. This method is deprecated because\n"+

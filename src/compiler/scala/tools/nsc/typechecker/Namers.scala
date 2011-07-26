@@ -6,10 +6,10 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.collection.mutable.{HashMap, WeakHashMap}
+import scala.collection.mutable
 import scala.ref.WeakReference
-import symtab.Flags
 import symtab.Flags._
+import scala.tools.nsc.io.AbstractFile
 
 /** This trait declares methods to create symbols and to enter them into scopes.
  *
@@ -45,13 +45,13 @@ trait Namers { self: Analyzer =>
   def newNamer(context : Context) : Namer = new NormalNamer(context)
 
   // In the typeCompleter (templateSig) of a case class (resp it's module),
-  // synthetic `copy' (reps `apply', `unapply') methods are added. To compute
+  // synthetic `copy` (reps `apply`, `unapply`) methods are added. To compute
   // their signatures, the corresponding ClassDef is needed.
   // During naming, for each case class module symbol, the corresponding ClassDef
   // is stored in this map. The map is cleared lazily, i.e. when the new symbol
   // is created with the same name, the old one (if present) is wiped out, or the
   // entry is deleted when it is used and no longer needed.
-  private val caseClassOfModuleClass = new WeakHashMap[Symbol, WeakReference[ClassDef]]
+  private val caseClassOfModuleClass = perRunCaches.newWeakMap[Symbol, WeakReference[ClassDef]]()
 
   // Default getters of constructors are added to the companion object in the
   // typeCompleter of the constructor (methodSig). To compute the signature,
@@ -59,7 +59,7 @@ trait Namers { self: Analyzer =>
   // object, we need the templateNamer of that module class.
   // This map is extended during naming of classes, the Namer is added in when
   // it's available, i.e. in the type completer (templateSig) of the module class.
-  private[typechecker] val classAndNamerOfModule = new HashMap[Symbol, (ClassDef, Namer)]
+  private[typechecker] val classAndNamerOfModule = perRunCaches.newMap[Symbol, (ClassDef, Namer)]()
 
   def resetNamer() {
     classAndNamerOfModule.clear
@@ -146,7 +146,7 @@ trait Namers { self: Analyzer =>
         nme.isSetterName(newS.name) ||
         newS.owner.isPackageClass) &&
         !((newS.owner.isTypeParameter || newS.owner.isAbstractType) && 
-          newS.name.length==1 && newS.name(0)=='_') //@M: allow repeated use of `_' for higher-order type params
+          newS.name.length==1 && newS.name(0)=='_') //@M: allow repeated use of `_` for higher-order type params
     }
 
     private def setInfo[Sym <: Symbol](sym : Sym)(tpe : LazyType) : Sym = sym.setInfo(tpe)
@@ -547,7 +547,7 @@ trait Namers { self: Analyzer =>
 // --- Lazy Type Assignment --------------------------------------------------
 
     def typeCompleter(tree: Tree) = mkTypeCompleter(tree) { sym =>
-      if (settings.debug.value) log("defining " + sym + Flags.flagsToString(sym.flags)+sym.locationString)
+      if (settings.debug.value) log("defining " + sym + flagsToString(sym.flags)+sym.locationString)
       val tp = typeSig(tree)
       tp match {
         case TypeBounds(lo, hi) =>
@@ -631,7 +631,7 @@ trait Namers { self: Analyzer =>
           false
       }
 
-      val tpe1 = tpe.deconst
+      val tpe1 = dropRepeatedParamType(tpe.deconst)
       val tpe2 = tpe1.widen
 
       // This infers Foo.type instead of "object Foo"
@@ -804,7 +804,7 @@ trait Namers { self: Analyzer =>
         log(
           "ClassInfoType(\n%s,\n%s,\n%s)".format(
             "  " + (parents map (_.typeSymbol) mkString ", "),
-            if (global.opt.debug) decls.toList map (">> " + _) mkString("\n", "\n", "") else "  <decls>",
+            if (global.opt.debug) decls map (">> " + _) mkString("\n", "\n", "") else "  <decls>",
             "  " + clazz)
         )
       }
@@ -930,7 +930,7 @@ trait Namers { self: Analyzer =>
             case _ => 
           }
           if (tpt.isEmpty) {
-            // provisionally assign `meth' a method type with inherited result type
+            // provisionally assign `meth` a method type with inherited result type
             // that way, we can leave out the result type even if method is recursive.
             meth setInfo thisMethodType(resultPt)
           }
@@ -1257,12 +1257,12 @@ trait Namers { self: Analyzer =>
                         return
                       }
                       
-                      def notMember = context.error(tree.pos, from.decode + " is not a member of " + expr)
+                      def notMember() = context.error(tree.pos, from.decode + " is not a member of " + expr)
                       // for Java code importing Scala objects
                       if (from endsWith nme.raw.DOLLAR)
-                        isValidSelector(from stripEnd "$")(notMember)
+                        isValidSelector(from stripEnd "$")(notMember())
                       else
-                        notMember
+                        notMember()
                     }
 
                     if (checkNotRedundant(tree.pos, from, to))
@@ -1277,6 +1277,9 @@ trait Namers { self: Analyzer =>
               }
               checkSelectors(selectors)
               transformed(tree) = treeCopy.Import(tree, expr1, selectors)
+              expr.symbol = expr1.symbol // copy symbol and type attributes back into old expression
+                                         // so that the structure builder will find it.
+              expr.tpe = expr1.tpe 
               ImportType(expr1)
           }
         } catch {
@@ -1309,9 +1312,9 @@ trait Namers { self: Analyzer =>
 
     /** Check that symbol's definition is well-formed. This means:
      *   - no conflicting modifiers
-     *   - `abstract' modifier only for classes
-     *   - `override' modifier never for classes
-     *   - `def' modifier never for parameters of case classes
+     *   - `abstract` modifier only for classes
+     *   - `override` modifier never for classes
+     *   - `def` modifier never for parameters of case classes
      *   - declarations only in mixins or abstract classes (when not @native)
      */
     def validate(sym: Symbol) {
@@ -1319,10 +1322,10 @@ trait Namers { self: Analyzer =>
         if (sym.hasFlag(flag1) && sym.hasFlag(flag2))
           context.error(sym.pos,
             if (flag1 == DEFERRED) 
-              "abstract member may not have " + Flags.flagsToString(flag2) + " modifier";
+              "abstract member may not have " + flagsToString(flag2) + " modifier";
             else 
               "illegal combination of modifiers: " + 
-              Flags.flagsToString(flag1) + " and " + Flags.flagsToString(flag2) +
+              flagsToString(flag1) + " and " + flagsToString(flag2) +
               " for: " + sym);
       }
 

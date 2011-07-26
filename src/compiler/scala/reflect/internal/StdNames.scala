@@ -189,6 +189,7 @@ trait StdNames extends /*reflect.generic.StdNames with*/ NameManglers { self: Sy
     // val productElementName: NameType = "productElementName"
     val TYPE_ : NameType           = "TYPE"
     val add_ : NameType            = "add"
+    val anyValClass: NameType      = "anyValClass"
     val apply: NameType            = "apply"
     val arrayValue: NameType       = "arrayValue"
     val arraycopy: NameType        = "arraycopy"
@@ -367,7 +368,7 @@ trait StdNames extends /*reflect.generic.StdNames with*/ NameManglers { self: Sy
     /** The name of bitmaps for checkinit values that have transient flag*/
     def bitmapNameForCheckinitTransient(n: Int): TermName = bitmapName(n, "inittrans$")
     
-    /** The expanded name of `name' relative to this class `base` with given `separator` 
+    /** The expanded name of `name` relative to this class `base` with given `separator`
      */
     def expandedName(name: TermName, base: Symbol, separator: String = EXPAND_SEPARATOR_STRING): TermName = 
       newTermName(base.fullName('$') + separator + name)

@@ -6,38 +6,12 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.actors
-
-/**
- * This class is used by our efficient message queue
- * implementation.
- *
- * @author Philipp Haller
- */
-@SerialVersionUID(7124278808020037465L)
-@deprecated("this class is going to be removed in a future release", "2.7.7")
-class MessageQueueElement(msg: Any, session: OutputChannel[Any], next: MessageQueueElement) extends MQueueElement[Any](msg, session, next) with Serializable {
-  def this() = this(null, null, null)
-  def this(msg: Any, session: OutputChannel[Any]) = this(msg, session, null)
-}
 
 private[actors] class MQueueElement[Msg >: Null](val msg: Msg, val session: OutputChannel[Any], var next: MQueueElement[Msg]) {
   def this() = this(null, null, null)
   def this(msg: Msg, session: OutputChannel[Any]) = this(msg, session, null)
 }
-
-/**
- * The class <code>MessageQueue</code> provides an efficient
- * implementation of a message queue specialized for this actor
- * library. Classes in this package are supposed to be the only
- * clients of this class.
- *
- * @author Philipp Haller
- */
-@SerialVersionUID(2168935872884095767L)
-@deprecated("this class is going to be removed in a future release", "2.7.7")
-class MessageQueue(label: String) extends MQueue[Any](label) with Serializable
 
 private[actors] class MQueue[Msg >: Null](protected val label: String) {
   protected var first: MQueueElement[Msg] = null
@@ -107,7 +81,7 @@ private[actors] class MQueue[Msg >: Null](protected val label: String) {
     acc
   }
 
-  /** Returns the n-th message that satisfies the predicate <code>p</code>
+  /** Returns the n-th message that satisfies the predicate `p`
    *  without removing it.
    */
   def get(n: Int)(p: Msg => Boolean): Option[Msg] = {
@@ -129,8 +103,8 @@ private[actors] class MQueue[Msg >: Null](protected val label: String) {
   def remove(n: Int)(p: (Msg, OutputChannel[Any]) => Boolean): Option[(Msg, OutputChannel[Any])] =
     removeInternal(n)(p) map (x => (x.msg, x.session))
     
-  /** Extracts the first message that satisfies the predicate <code>p</code>
-   *  or <code>null</code> if <code>p</code> fails for all of them.
+  /** Extracts the first message that satisfies the predicate `p`
+   *  or `'''null'''` if `p` fails for all of them.
    */
   def extractFirst(p: (Msg, OutputChannel[Any]) => Boolean): MQueueElement[Msg] =
     removeInternal(0)(p) orNull

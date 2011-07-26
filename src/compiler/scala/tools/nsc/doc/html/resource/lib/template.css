@@ -306,7 +306,7 @@ div.members > ol > li:last-child {
   text-decoration: none;
 }
 
-.signature .symbol {
+.signature > .symbol {
   display: block;
   padding-left: 8.7em;
 }
@@ -396,6 +396,30 @@ div.members > ol > li:last-child {
   margin: 5px 0;
   display: block;
   font-family: monospace;
+}
+
+.cmt pre span.ano {
+  color: blue;
+}
+
+.cmt pre span.cmt {
+  color: green;
+}
+
+.cmt pre span.kw {
+  font-weight: bold;
+}
+
+.cmt pre span.lit {
+  color: #c71585;
+}
+
+.cmt pre span.num {
+  color: #1e90ff; /* dodgerblue */
+}
+
+.cmt pre span.std {
+  color: #008080; /* teal */
 }
 
 .cmt ul {

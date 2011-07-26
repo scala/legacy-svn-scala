@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.util.parsing.combinator
 
 import scala.util.parsing.combinator._
@@ -14,66 +13,62 @@ import scala.util.parsing.input.{ Reader, Position }
 import scala.collection.mutable
 
 /**
- *  <p>
- *    <code>PackratParsers</code> is a component that extends the parser combinators
- *    provided by <a href="Parsers.html"><code>Parsers</code></a> with a memoization facility
- *    (``Packrat Parsing'').
- *  </p>
- *  <p>
- *    Packrat Parsing is a technique for implementing backtracking, recursive-descent parsers, with the
- *    advantage that it guarantees unlimited lookahead and a linear parse time. Using this technique,
- *    left recursive grammars can also be accepted.
- *  </p>
- *  <p>
- *    Using <code>PackratParsers</code> is very similar to using <code>Parsers</code>:
- *  <ul>
- *    <li> any class/trait that extends <code>Parsers</code> (directly or through a subclass) can
- *         mix in <code>PackratParsers</code>. Example:
- *         <code>object MyGrammar extends StandardTokenParsers with PackratParsers </code>
- *    <li> each grammar production previously declared as a <code>def</code> without formal parameters
- *         becomes a <code>lazy val</code>, and its type is changed from <code>Parser[Elem]</code>
- *         to <code>PackratParser[Elem]</code>. So, for example, <code>def production: Parser[Int] = {...}</code> 
- *         becomes <code>lazy val production: PackratParser[Int] = {...}</code>
- *    <li> Important: using <code>PackratParser</code>s is not an ``all or nothing'' decision. They
- *         can be free mixed with regular <code>Parser</code>s in a single grammar.
- *  </ul>
- *  </p>
- *  <p>
- *    Cached parse results are attached to the <i>input</i>, not the grammar.
- *    Therefore, <code>PackratsParser</code>s require a <code>PackratReader</code> as input, which
- *    adds memoization to an underlying <code>Reader</code>. Programmers can create <code>PackratReader</code>
- *    objects either manually, as in <code>production(new PackratReader(new lexical.Scanner("input")))</code>,
- *    but the common way should be to rely on the combinator <code>phrase</code> to wrap a given
- *    input with a <code>PackratReader</code> if the input is not one itself.
- *  </p>
+ *  `PackratParsers` is a component that extends the parser combinators
+ *  provided by [[scala.util.parsing.combinator.Parsers]] with a memoization
+ *  facility (''Packrat Parsing'').
+ *
+ *  Packrat Parsing is a technique for implementing backtracking,
+ *  recursive-descent parsers, with the advantage that it guarantees
+ *  unlimited lookahead and a linear parse time. Using this technique,
+ *  left recursive grammars can also be accepted.
+ *
+ *  Using `PackratParsers` is very similar to using `Parsers`:
+ *   - any class/trait that extends `Parsers` (directly or through a subclass)
+ *     can mix in `PackratParsers`.
+ *     Example: `'''object''' MyGrammar '''extends''' StandardTokenParsers '''with''' PackratParsers`
+ *   - each grammar production previously declared as a `def` without formal
+ *     parameters becomes a `lazy val`, and its type is changed from
+ *     `Parser[Elem]` to `PackratParser[Elem]`.
+ *     So, for example, `'''def''' production: Parser[Int] = {...}`
+ *     becomes `'''lazy val''' production: PackratParser[Int] = {...}`
+ *   - Important: using `PackratParser`s is not an ''all or nothing'' decision.
+ *     They can be free mixed with regular `Parser`s in a single grammar.
+ *
+ *  Cached parse results are attached to the ''input'', not the grammar.
+ *  Therefore, `PackratsParser`s require a `PackratReader` as input, which
+ *  adds memoization to an underlying `Reader`. Programmers can create
+ *  `PackratReader` objects either manually, as in
+ *  `production('''new''' PackratReader('''new''' lexical.Scanner("input")))`,
+ *  but the common way should be to rely on the combinator `phrase` to wrap
+ *  a given input with a `PackratReader` if the input is not one itself.
  *
  * @see Bryan Ford: "Packrat Parsing: Simple, Powerful, Lazy, Linear Time." ICFP'02
  * @see Alessandro Warth, James R. Douglass, Todd Millstein: "Packrat Parsers Can Support Left Recursion." PEPM'08
  *  
  * @since 2.8
- * @author Manohar Jonnalagedda, Tiark Rompf
+ * @author Manohar Jonnalagedda
+ * @author Tiark Rompf
  */
 
 trait PackratParsers extends Parsers {
-  
+
   //type Input = PackratReader[Elem]
-  
+
   /**
-   * A specialized <code>Reader</code> class that wraps an underlying <code>Reader</code>
+   * A specialized `Reader` class that wraps an underlying `Reader`
    * and provides memoization of parse results.
    */
-  class PackratReader[+T](underlying: Reader[T]) extends Reader[T]  { outer =>
-    
+  class PackratReader[+T](underlying: Reader[T]) extends Reader[T] { outer =>
+
     /*
      * caching of intermediate parse results and information about recursion
      */
-     
     private[PackratParsers] val cache = mutable.HashMap.empty[(Parser[_], Position), MemoEntry[_]]
 
     private[PackratParsers] def getFromCache[T](p: Parser[T]): Option[MemoEntry[T]] = {
       cache.get((p, pos)).asInstanceOf[Option[MemoEntry[T]]]
     }
-    
+
     private[PackratParsers] def updateCacheAndGet[T](p: Parser[T], w: MemoEntry[T]): MemoEntry[T] = {
       cache.put((p, pos),w)
       w
@@ -95,20 +90,16 @@ trait PackratParsers extends Parsers {
       override private[PackratParsers] val recursionHeads = outer.recursionHeads
       lrStack = outer.lrStack
     }
-  
+
     def pos: Position = underlying.pos
     def atEnd: Boolean = underlying.atEnd
   }
 
-  
   /**
-   *  <p>
-   *    A parser generator delimiting whole phrases (i.e. programs).
-   *  </p>
-   *  <p>
-   *    Overridden to make sure any input passed to the argument parser
-   *    is wrapped in a <code>PackratReader</code>.
-   *  </p>
+   *  A parser generator delimiting whole phrases (i.e. programs).
+   *
+   *  Overridden to make sure any input passed to the argument parser
+   *  is wrapped in a `PackratReader`.
    */
   override def phrase[T](p: Parser[T]) = {
     val q = super.phrase(p)
@@ -120,41 +111,40 @@ trait PackratParsers extends Parsers {
     }
   }
 
-
   private def getPosFromResult(r: ParseResult[_]): Position = r.next.pos
- 
+
   // auxiliary data structures
- 
+
   private case class MemoEntry[+T](var r: Either[LR,ParseResult[_]]){
     def getResult: ParseResult[T] = r match {
       case Left(LR(res,_,_)) => res.asInstanceOf[ParseResult[T]]
       case Right(res) => res.asInstanceOf[ParseResult[T]]
     }
   }
-  
+
   private case class LR(var seed: ParseResult[_], var rule: Parser[_], var head: Option[Head]){
     def getPos: Position = getPosFromResult(seed)
   }
-  
+
   private case class Head(var headParser: Parser[_], var involvedSet: List[Parser[_]], var evalSet: List[Parser[_]]){
     def getHead = headParser
   }
-  
+
   /** 
    * The root class of packrat parsers. 
    */
   abstract class PackratParser[+T] extends super.Parser[T]
-  
+
   /**
    * Implicitly convert a parser to a packrat parser.
    * The conversion is triggered by giving the appropriate target type: 
-   * val myParser: PackratParser[MyResult] = aParser
-   */
+   * {{{
+   *   val myParser: PackratParser[MyResult] = aParser
+   * }}} */
   implicit def parser2packrat[T](p: => super.Parser[T]): PackratParser[T] = {
     lazy val q = p
     memo(super.Parser {in => q(in)})
   }
-
 
   /*
    * An unspecified function that is called when a packrat reader is applied.
@@ -162,11 +152,10 @@ trait PackratParsers extends Parsers {
    * In the former case, it makes sure that rules involved in the recursion are evaluated. 
    * It also prevents non-involved rules from getting evaluated further
    */
-  
   private def recall(p: super.Parser[_], in: PackratReader[Elem]): Option[MemoEntry[_]] = {
     val cached = in.getFromCache(p)
     val head = in.recursionHeads.get(in.pos)
-    
+
     head match {
       case None => /*no heads*/ cached
       case Some(h@Head(hp, involved, evalSet)) => {
@@ -189,7 +178,7 @@ trait PackratParsers extends Parsers {
       }
     }
   }
-  
+
   /*
    * setting up the left-recursion. We have the LR for the rule head
    * we modify the involvedSets of all LRs in the stack, till we see
@@ -203,7 +192,7 @@ trait PackratParsers extends Parsers {
       recDetect.head.map(h => h.involvedSet = x.rule::h.involvedSet)
     }
   }
-  
+
   /*
    * growing, if needed the recursion
    * check whether the parser we are growing is the head of the rule.
@@ -237,7 +226,7 @@ to update each parser involved in the recursion.
 
   /** 
    * Explicitly convert a given parser to a memoizing packrat parser.
-   * In most cases, client code should avoid calling <code>memo</code> directly
+   * In most cases, client code should avoid calling `memo` directly
    * and rely on implicit conversion instead.
    */
   def memo[T](p: super.Parser[T]): PackratParser[T] = {
@@ -290,7 +279,7 @@ to update each parser involved in the recursion.
       }
     }
   } 
-  
+
   private def grow[T](p: super.Parser[T], rest: PackratReader[Elem], head: Head): ParseResult[T] = {
     //store the head into the recursionHeads
     rest.recursionHeads.put(rest.pos, head /*match {case Head(hp,involved,_) => Head(hp,involved,involved)}*/)

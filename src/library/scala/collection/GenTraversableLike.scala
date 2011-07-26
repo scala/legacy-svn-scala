@@ -26,10 +26,12 @@ import annotation.migration
  *    and the new element type `B`.
  *  @define orderDependent
  * 
- *    Note: might return different results for different runs, unless the underlying collection type is ordered.
+ *    Note: might return different results for different runs, unless the
+ *    underlying collection type is ordered.
  *  @define orderDependentFold
  * 
- *    Note: might return different results for different runs, unless the underlying collection type is ordered.
+ *    Note: might return different results for different runs, unless the
+ *    underlying collection type is ordered.
  *    or the operator is associative and commutative.
  *  @define mayNotTerminateInf
  *
@@ -50,7 +52,7 @@ import annotation.migration
  *  @author Aleksandar Prokopec
  *  @since 2.9
  */
-private[collection] trait GenTraversableLike[+A, +Repr] extends GenTraversableOnce[A] with Parallelizable[A, parallel.ParIterable[A]] {
+trait GenTraversableLike[+A, +Repr] extends GenTraversableOnce[A] with Parallelizable[A, parallel.ParIterable[A]] {
   
   def repr: Repr
   

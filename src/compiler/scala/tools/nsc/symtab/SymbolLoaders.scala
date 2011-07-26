@@ -14,6 +14,7 @@ import scala.tools.nsc.util.{ ClassPath }
 import classfile.ClassfileParser
 import reflect.internal.Flags._
 import util.Statistics._
+import scala.tools.nsc.io.AbstractFile
 
 /** This class ...
  *
@@ -83,7 +84,7 @@ abstract class SymbolLoaders {
    */
   abstract class SymbolLoader extends LazyType {
 
-    /** Load source or class file for `root', return */
+    /** Load source or class file for `root`, return */
     protected def doComplete(root: Symbol): Unit
     
     def sourcefile: Option[AbstractFile] = None
@@ -97,7 +98,7 @@ abstract class SymbolLoaders {
     private var ok = false
 
     private def setSource(sym: Symbol) {
-      sourcefile map (sf => sym match {
+      sourcefile foreach (sf => sym match {
         case cls: ClassSymbol => cls.sourceFile = sf
         case mod: ModuleSymbol => mod.moduleClass.sourceFile = sf
         case _ => ()
@@ -150,9 +151,32 @@ abstract class SymbolLoaders {
 
     def enterPackage(root: Symbol, name: String, completer: SymbolLoader) {
       val preExisting = root.info.decls.lookup(newTermName(name))
-      if (preExisting != NoSymbol)
-        throw new TypeError(
-          root+" contains object and package with same name: "+name+"\none of them needs to be removed from classpath")
+      if (preExisting != NoSymbol) {
+        // Some jars (often, obfuscated ones) include a package and
+        // object with the same name. Rather than render them unusable,
+        // offer a setting to resolve the conflict one way or the other.
+        // This was motivated by the desire to use YourKit probes, which
+        // require yjp.jar at runtime. See SI-2089.
+        if (settings.termConflict.isDefault)
+          throw new TypeError(
+            root+" contains object and package with same name: "+
+            name+"\none of them needs to be removed from classpath"
+          )
+        else if (settings.termConflict.value == "package") {
+          global.warning(
+            "Resolving package/object name conflict in favor of package " + 
+            preExisting.fullName + ".  The object will be inaccessible."
+          )
+          root.info.decls.unlink(preExisting)
+        }
+        else {
+          global.warning(
+            "Resolving package/object name conflict in favor of object " + 
+            preExisting.fullName + ".  The package will be inaccessible."
+          )
+          return
+        }
+      }
       val pkg = root.newPackage(NoPosition, newTermName(name))
       pkg.moduleClass.setInfo(completer)
       pkg.setInfo(pkg.moduleClass.tpe)
@@ -169,7 +193,7 @@ abstract class SymbolLoaders {
 
     /**
      * Tells whether a class should be loaded and entered into the package
-     * scope. On .NET, this method returns `false' for all synthetic classes
+     * scope. On .NET, this method returns `false` for all synthetic classes
      * (anonymous classes, implementation classes, module classes), their
      * symtab is encoded in the pickle of another class.
      */

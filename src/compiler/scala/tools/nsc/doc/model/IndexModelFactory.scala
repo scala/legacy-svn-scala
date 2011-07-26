@@ -10,7 +10,7 @@ package model
 import scala.collection._
 
 object IndexModelFactory {
-  
+
   def makeIndex(universe: Universe): Index = new Index {
 
     lazy val firstLetterIndex: Map[Char, SymbolMap] = {
@@ -25,7 +25,7 @@ object IndexModelFactory {
         def addMember(d: MemberEntity) = {
           val firstLetter = {
             val ch = d.name.head.toLower
-            if(ch.isLetterOrDigit) ch else '#'
+            if(ch.isLetterOrDigit) ch else '_'
           }
           val letter = this.get(firstLetter).getOrElse {
             immutable.SortedMap[String, SortedSet[MemberEntity]]()
@@ -61,5 +61,5 @@ object IndexModelFactory {
     }
 
   }
-  
+
 }

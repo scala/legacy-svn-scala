@@ -10,28 +10,30 @@
 
 package scala.util.regexp
 
-/** <p>
- *    The class <code>WordExp</code> provides regular word expressions.
- *    Users have to instantiate type member <code>_regexpT &lt;: RegExp</code>
- *    (from class <code>Base</code>) and a type member
- *    <code>_labelT &lt;: Label</code>. Here is a short example:
- *  </p><pre>
- *  <b>import</b> scala.util.regexp._
- *  <b>import</b> scala.util.automata._
- *  <b>object</b> MyLang <b>extends</b> WordExp {
- *    <b>type</b> _regexpT = RegExp
- *    <b>type</b> _labelT = MyChar
+/**
+ *  The class `WordExp` provides regular word expressions.
  *
- *    <b>case class</b> MyChar(c:Char) <b>extends</b> Label
+ *  Users have to instantiate type member `_regexpT <;: RegExp`
+ *  (from class `Base`) and a type member `_labelT <;: Label`.
+ *
+ *  Here is a short example:
+ *  {{{
+ *  import scala.util.regexp._
+ *  import scala.util.automata._
+ *  object MyLang extends WordExp {
+ *    type _regexpT = RegExp
+ *    type _labelT = MyChar
+ *
+ *    case class MyChar(c:Char) extends Label
  *  }
- *  <b>import</b> MyLang._
+ *  import MyLang._
  *  // (a* | b)*
- *  <b>val</b> rex = Star(Alt(Star(Letter(MyChar('a'))),Letter(MyChar('b'))))
- *  <b>object</b> MyBerriSethi <b>extends</b> WordBerrySethi {
- *    <b>override val</b> lang = MyLang
+ *  val rex = Star(Alt(Star(Letter(MyChar('a'))),Letter(MyChar('b'))))
+ *  object MyBerriSethi extends WordBerrySethi {
+ *    override val lang = MyLang
  *  }
- *  <b>val</b> nfa = MyBerriSethi.automatonFrom(Sequ(rex), 1)
- *  </pre>
+ *  val nfa = MyBerriSethi.automatonFrom(Sequ(rex), 1)
+ *  }}}
  *
  *  @author  Burak Emir
  *  @version 1.0
@@ -53,4 +55,3 @@ abstract class WordExp extends Base {
     var pos = -1
   }
 }
-

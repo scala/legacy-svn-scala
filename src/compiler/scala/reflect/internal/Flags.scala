@@ -6,6 +6,8 @@
 package scala.reflect
 package internal
 
+import api.Modifier
+
 // Flags at each index of a flags Long.  Those marked with /M are used in
 // Parsers/JavaParsers and therefore definitely appear on Modifiers; but the
 // absence of /M on the other flags does not imply they aren't.
@@ -166,32 +168,53 @@ class Flags extends ModifierFlags {
   final val AntiShift     = 56L
 
   // ------- late flags (set by a transformer phase) ---------------------------------
+  //
+  // Summary of how these are actually used, if at all.  You can
+  // get this output with scalac -Xshow-phases -Ydebug.  Only these
+  // flags are admitted to by the phases:
+  //
+  //     refchecks   7  [START] <latemethod>
+  // explicitouter  14  [START] <latefinal> <notprotected> <notprivate>
+  //       erasure  15  [START] <latedeferred> <lateinterface>
+  //         mixin  20  [START] <latemodule> <notabstract>
+  //
+  // lateDEFERRED set in AddInterfaces, Mixin, etc.
+  // lateFINAL set in Symbols#makeNotPrivate.
+  // lateINTERFACE set in AddInterfaces#transformMixinInfo.
+  // lateMETHOD set in RefChecks#transformInfo.
+  // lateMODULE set in Mixin#transformInfo.
+  // notABSTRACT never set.
+  // notPRIVATE set in Symbols#makeNotPrivate, IExplicitOuter#transform, Inliners.
+  // notPROTECTED set in ExplicitOuter#transform.
+  //
+  // Of the flags never mentioned in a phase's newFlags or nextFlags:
+  //
+  // lateABSTRACT only set in devirtualize.
+  // latePRIVATE never set.
+  // notDEFERRED only set in devirtualize.
+  // notFINAL only set in devirtualize.
+  // notMETHOD never set.
+  // notOVERRIDE set in mixin, not declared.
+  //
+  // Summary of redundant and/or incorrect late/antiflags:
+  //   Never used: notABSTRACT, notDEFERRED, notFINAL, notMETHOD, latePRIVATE, lateABSTRACT
+  //   Used without being declared: notOVERRIDE
 
-  final val latePRIVATE   = (PRIVATE: Long) << LateShift
   final val lateABSTRACT  = (ABSTRACT: Long) << LateShift
   final val lateDEFERRED  = (DEFERRED: Long) << LateShift
-  final val lateINTERFACE = (INTERFACE: Long) << LateShift
-  final val lateMODULE    = (MODULE: Long) << LateShift
   final val lateFINAL     = (FINAL: Long) << LateShift
+  final val lateINTERFACE = (INTERFACE: Long) << LateShift
   final val lateMETHOD    = (METHOD: Long) << LateShift
+  final val lateMODULE    = (MODULE: Long) << LateShift
+  final val latePRIVATE   = (PRIVATE: Long) << LateShift
   
-  final val notFINAL      = (FINAL: Long) << AntiShift
-  final val notPRIVATE    = (PRIVATE: Long) << AntiShift
-  final val notDEFERRED   = (DEFERRED: Long) << AntiShift
-  final val notPROTECTED  = (PROTECTED: Long) << AntiShift
   final val notABSTRACT   = (ABSTRACT: Long) << AntiShift
-  final val notOVERRIDE   = (OVERRIDE: Long) << AntiShift
+  final val notDEFERRED   = (DEFERRED: Long) << AntiShift
+  final val notFINAL      = (FINAL: Long) << AntiShift
   final val notMETHOD     = (METHOD: Long) << AntiShift
-  
-  final val notFlagMap = Map[Int, Long](
-    FINAL -> notFINAL,
-    PRIVATE -> notPRIVATE,
-    DEFERRED -> notDEFERRED,
-    PROTECTED -> notPROTECTED,
-    ABSTRACT -> notABSTRACT,
-    OVERRIDE -> notOVERRIDE,
-    METHOD -> notMETHOD
-  )
+  final val notOVERRIDE   = (OVERRIDE: Long) << AntiShift
+  final val notPRIVATE    = (PRIVATE: Long) << AntiShift
+  final val notPROTECTED  = (PROTECTED: Long) << AntiShift
 
   // ------- masks -----------------------------------------------------------------------
   
@@ -400,6 +423,35 @@ class Flags extends ModifierFlags {
     val front = rawFlags map (_.toLong)
     
     front.toList ++ (all filterNot (front contains _))
+  }
+  
+  def flagOfModifier(mod: Modifier.Value): Long = mod match {
+    case Modifier.`protected` => PROTECTED
+    case Modifier.`private` => PRIVATE
+    case Modifier.`override` => OVERRIDE
+    case Modifier.`abstract` => ABSTRACT
+    case Modifier.`final`=> FINAL
+    case Modifier.`sealed`=> SEALED
+    case Modifier.`implicit`=> IMPLICIT
+    case Modifier.`lazy`=> LAZY
+    case Modifier.`case`=> CASE
+    case Modifier.`trait`=> TRAIT
+    case Modifier.deferred => DEFERRED
+    case Modifier.interface => INTERFACE
+    case Modifier.mutable => MUTABLE
+    case Modifier.parameter => PARAM
+    case Modifier.covariant => COVARIANT
+    case Modifier.contravariant => CONTRAVARIANT
+    case Modifier.preSuper => PRESUPER
+    case Modifier.abstractOverride => ABSOVERRIDE
+    case Modifier.local => LOCAL
+    case Modifier.java => JAVA
+    case Modifier.static => STATIC
+    case Modifier.caseAccessor => CASEACCESSOR
+    case Modifier.defaultParameter => DEFAULTPARAM
+    case Modifier.defaultInit => DEFAULTINIT
+    case Modifier.paramAccessor => PARAMACCESSOR
+    case Modifier.bynameParameter => BYNAMEPARAM
   }
 }
 

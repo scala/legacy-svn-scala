@@ -10,13 +10,14 @@ package scala.actors
 
 import scheduler.DaemonScheduler
  
-/** 
+/**
  * Base trait for actors with daemon semantics.
- * Unlike a regular <code>Actor</code>, an active <code>DaemonActor</code> will 
- * not prevent an application terminating, much like a daemon thread. 
  *
- * @author Erik Engbrecht 
- */ 
-trait DaemonActor extends Actor { 
+ * Unlike a regular `Actor`, an active `DaemonActor` will not
+ * prevent an application terminating, much like a daemon thread. 
+ *
+ * @author Erik Engbrecht
+ */
+trait DaemonActor extends Actor {
   override def scheduler: IScheduler = DaemonScheduler
 }

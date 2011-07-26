@@ -24,7 +24,7 @@ abstract class TreeGen extends reflect.internal.TreeGen {
       if (tree.tpe != null || !tree.hasSymbol) tree.tpe
       else tree.symbol.tpe
 
-    if (!global.phase.erasedTypes && settings.Xchecknull.value && 
+    if (!global.phase.erasedTypes && settings.warnSelectNullable.value && 
         tpe <:< NotNullClass.tpe && !tpe.isNotNull)
       mkRuntimeCall(nme.checkInitialized, List(tree))
     else
@@ -84,10 +84,29 @@ abstract class TreeGen extends reflect.internal.TreeGen {
     DefDef(accessor setFlag lateDEFERRED, EmptyTree)
 
   def mkRuntimeCall(meth: Name, args: List[Tree]): Tree =
-    Apply(Select(mkAttributedRef(ScalaRunTimeModule), meth), args)
+    mkRuntimeCall(meth, Nil, args)
 
   def mkRuntimeCall(meth: Name, targs: List[Type], args: List[Tree]): Tree =
-    Apply(TypeApply(Select(mkAttributedRef(ScalaRunTimeModule), meth), targs map TypeTree), args)
+    mkMethodCall(ScalaRunTimeModule, meth, targs, args)
+  
+  def mkSysErrorCall(message: String): Tree =
+    mkMethodCall(Sys_error, List(Literal(message)))
+
+  /** A creator for a call to a scala.reflect.Manifest or ClassManifest factory method.
+   * 
+   *  @param    full          full or partial manifest (target will be Manifest or ClassManifest)
+   *  @param    constructor   name of the factory method (e.g. "classType")
+   *  @param    tparg         the type argument
+   *  @param    args          value arguments
+   *  @return   the tree
+   */  
+  def mkManifestFactoryCall(full: Boolean, constructor: String, tparg: Type, args: List[Tree]): Tree =
+    mkMethodCall(
+      if (full) FullManifestModule else PartialManifestModule,
+      constructor,
+      List(tparg),
+      args
+    )
 
   /** Make a synchronized block on 'monitor'. */
   def mkSynchronized(monitor: Tree, body: Tree): Tree =     
@@ -108,7 +127,7 @@ abstract class TreeGen extends reflect.internal.TreeGen {
     else arg
   }
 
-  /** Make forwarder to method `target', passing all parameters in `params' */
+  /** Make forwarder to method `target`, passing all parameters in `params` */
   def mkForwarder(target: Tree, vparamss: List[List[Symbol]]) =
     (target /: vparamss)((fn, vparams) => Apply(fn, vparams map paramToArg))
 
@@ -123,10 +142,12 @@ abstract class TreeGen extends reflect.internal.TreeGen {
       else if ((elemtp <:< AnyRefClass.tpe) && !isPhantomClass(sym)) "wrapRefArray"
       else "genericWrapArray"
 
-    if (isValueClass(sym))
-      Apply(Select(mkAttributedRef(PredefModule), meth), List(tree))
-    else
-      Apply(TypeApply(Select(mkAttributedRef(PredefModule), meth), List(TypeTree(elemtp))), List(tree))
+    mkMethodCall(
+      PredefModule,
+      meth,
+      if (isValueClass(sym)) Nil else List(elemtp),
+      List(tree)
+    )
   }
   
   /** Generate a cast for tree Tree representing Array with
@@ -152,6 +173,21 @@ abstract class TreeGen extends reflect.internal.TreeGen {
     case Some(qual1)  => SelectFromTypeTree(qual1 setPos qual.pos, origName.toTypeName)
     case _            => EmptyTree
   }
+  
+  /** Create a ValDef initialized to the given expression, setting the
+   *  symbol to its packed type, and an function for creating Idents
+   *  which refer to it.
+   */
+  private def mkPackedValDef(expr: Tree, owner: Symbol, name: Name): (ValDef, () => Ident) = {
+    val packedType = typer.packedType(expr, owner)
+    val sym = (
+      owner.newValue(expr.pos.makeTransparent, name)
+      setFlag SYNTHETIC
+      setInfo packedType
+    )
+
+    (ValDef(sym, expr), () => Ident(sym) setPos sym.pos.focus setType expr.tpe)
+  }
 
   /** Used in situations where you need to access value of an expression several times
    */
@@ -159,12 +195,12 @@ abstract class TreeGen extends reflect.internal.TreeGen {
     var used = false
     if (treeInfo.isPureExpr(expr)) {
       within(() => if (used) expr.duplicate else { used = true; expr })
-    } else {
-      val temp = owner.newValue(expr.pos.makeTransparent, unit.freshTermName("ev$"))
-        .setFlag(SYNTHETIC).setInfo(expr.tpe)
-      val containing = within(() => Ident(temp) setPos temp.pos.focus setType expr.tpe)
+    }
+    else {
+      val (valDef, identFn) = mkPackedValDef(expr, owner, unit.freshTermName("ev$"))
+      val containing = within(identFn)
       ensureNonOverlapping(containing, List(expr))
-      Block(List(ValDef(temp, expr)), containing) setPos (containing.pos union expr.pos)
+      Block(List(valDef), containing) setPos (containing.pos union expr.pos)
     }
   }
 
@@ -179,11 +215,11 @@ abstract class TreeGen extends reflect.internal.TreeGen {
           val idx = i
           () => if (used(idx)) expr.duplicate else { used(idx) = true; expr }
         }
-      } else {
-        val temp = owner.newValue(expr.pos.makeTransparent, unit.freshTermName("ev$"))
-          .setFlag(SYNTHETIC).setInfo(expr.tpe)
-        vdefs += ValDef(temp, expr)
-        exprs1 += (() => Ident(temp) setPos temp.pos.focus setType expr.tpe)
+      }
+      else {
+        val (valDef, identFn) = mkPackedValDef(expr, owner, unit.freshTermName("ev$"))
+        vdefs += valDef
+        exprs1 += identFn
       }
       i += 1
     }
@@ -194,8 +230,8 @@ abstract class TreeGen extends reflect.internal.TreeGen {
     else Block(prefix, containing) setPos (prefix.head.pos union containing.pos)
   }
 
-  /** Return a double-checked locking idiom around the syncBody tree. It guards with 'cond' and
-   *  synchronizez on 'clazz.this'. Additional statements can be included after initialization,
+  /** Return a double-checked locking idiom around the syncBody tree. It guards with `cond` and
+   *  synchronizez on `clazz.this`. Additional statements can be included after initialization,
    *  (outside the synchronized block).
    *
    *  The idiom works only if the condition is using a volatile field.

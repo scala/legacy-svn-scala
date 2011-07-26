@@ -10,24 +10,24 @@
 
 package scala.testing
 
-/** <p>
- *    Classes inheriting trait <code>Show</code> can test their member methods
- *    using the notattion <code>meth(arg<sub>1</sub>, ..., arg<sub>n</sub>)</code>,
- *    where <code>meth</code> is the name of the method and
- *    <code>arg<sub>1</sub>,...,arg<sub>n</sub></code> are the arguments.
- *    The only difference to a normal method call is the leading quote
- *    character ('). A quoted method call like the one above will produces a
- *    legible diagnostic to be printed on <a href="../Console.html"
- *    target="ContentFrame"><code>Console</code></a>. It is of the form
- *  </p><pre>
- *    meth(arg<sub>1</sub>, ..., arg<sub>n</sub>)  gives  &lt;result&gt;</pre>
- *  <p>
- *    where <code>&lt;result&gt;</code> is the result of evaluating the call.
- *  </p>
+/** Classes inheriting trait `Show` can test their member methods using the
+ *  notattion `meth(arg,,1,,, ..., arg,,n,,)`, where `meth` is the name of
+ *  the method and `arg,,1,,,...,arg,,n,,` are the arguments.
+ *
+ *  The only difference to a normal method call is the leading quote
+ *  character (`'`). A quoted method call like the one above will produces
+ *  a legible diagnostic to be printed on [[scala.Console]].
+ *
+ *  It is of the form
+ *  
+ *    `meth(arg,,1,,, ..., arg,,n,,)`  gives  `&lt;result&gt;`
+ *  
+ *  where `&lt;result&gt;` is the result of evaluating the call.
+ *  
  */
 trait Show {
 
-  /** The result class of wrapper <code>symApply</code>. 
+  /** The result class of wrapper `symApply`. 
    *  Prints out diagnostics of method applications.
    */
   class SymApply(f: Symbol) {
@@ -36,8 +36,7 @@ trait Show {
     }
   }
 
-  /** An implicit definition that adds an apply method to Symbol which forwards to `test`. 
-   */
+  /** An implicit definition that adds an apply method to Symbol which forwards to `test`. */
   implicit def symApply(sym: Symbol) = new SymApply(sym)
 
   /** Apply method with name of given symbol `f` to given arguments and return

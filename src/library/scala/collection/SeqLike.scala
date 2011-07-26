@@ -290,7 +290,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with GenSeqLike[A, Repr] 
    */
   def reverseIterator: Iterator[A] = toCollection(reverse).iterator
 
-  @deprecated("use `reverseIterator' instead", "2.8.0")
+  @deprecated("use `reverseIterator` instead", "2.8.0")
   def reversedElements = reverseIterator
 
   def startsWith[B](that: GenSeq[B], offset: Int): Boolean = {  
@@ -683,11 +683,10 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with GenSeqLike[A, Repr] 
   def equalsWith[B](that: Seq[B])(f: (A,B) => Boolean): Boolean = corresponds(that)(f)
 
  /** 
-   * returns a projection that can be used to call non-strict <code>filter</code>,
-   * <code>map</code>, and <code>flatMap</code> methods that build projections
-   * of the collection.
+   * returns a projection that can be used to call non-strict `filter`,
+   * `map`, and `flatMap` methods that build projections of the collection.
    */
-  @deprecated("use `view' instead", "2.8.0")
+  @deprecated("use `view` instead", "2.8.0")
   override def projection = view
 }
 
@@ -729,10 +728,10 @@ object SeqLike {
       }
       arr
     }
-    
+
     var m, i = 0
     def mi = m + i
-    
+
     while (mi < S.length) {
       if (W(i) == S(mi)) {
         i += 1
@@ -781,7 +780,7 @@ object SeqLike {
   }
 
   /** Finds a particular index at which one sequence occurs in another sequence.
-   *  Like indexOf, but finds the latest occurrence rather than earliest.
+   *  Like `indexOf`, but finds the latest occurrence rather than earliest.
    *  
    *  @see  SeqLike#indexOf
    */

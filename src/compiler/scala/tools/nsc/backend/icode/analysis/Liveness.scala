@@ -37,8 +37,8 @@ abstract class Liveness {
 
     var method: IMethod = _
 
-    val gen: mutable.Map[BasicBlock, Set[Local]] = new mutable.HashMap()
-    val kill: mutable.Map[BasicBlock, Set[Local]] = new mutable.HashMap()
+    val gen: mutable.Map[BasicBlock, Set[Local]] = perRunCaches.newMap()
+    val kill: mutable.Map[BasicBlock, Set[Local]] = perRunCaches.newMap()
 
     def init(m: IMethod) {
       this.method = m
@@ -88,7 +88,7 @@ abstract class Liveness {
 
     /** Abstract interpretation for one instruction. Very important:
      *  liveness is a backward DFA, so this method should be used to compute
-     *  liveness *before* the given instruction `i'.
+     *  liveness *before* the given instruction `i`.
      */
     def interpret(out: lattice.Elem, i: Instruction): lattice.Elem = {
       var in = out

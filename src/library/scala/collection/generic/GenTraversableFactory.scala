@@ -35,6 +35,14 @@ package generic
  */
 abstract class GenTraversableFactory[CC[X] <: GenTraversable[X] with GenericTraversableTemplate[X, CC]]
   extends GenericCompanion[CC] {
+  
+  // A default implementation of GenericCanBuildFrom which can be cast
+  // to whatever is desired.
+  private class ReusableCBF extends GenericCanBuildFrom[Nothing] {
+    override def apply() = newBuilder[Nothing]
+  }
+  // Working around SI-4789 by using a lazy val instead of an object.
+  lazy val ReusableCBF: GenericCanBuildFrom[Nothing] = new ReusableCBF
 
   /** A generic implementation of the `CanBuildFrom` trait, which forwards
    *  all calls to `apply(from)` to the `genericBuilder` method of

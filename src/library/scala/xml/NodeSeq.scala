@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.xml
 
 import collection.{ mutable, immutable, generic, SeqLike }
@@ -25,17 +23,17 @@ object NodeSeq {
     def theSeq = s
   }
   type Coll = NodeSeq
-  implicit def canBuildFrom: CanBuildFrom[Coll, Node, NodeSeq] = 
-    new CanBuildFrom[Coll, Node, NodeSeq] { 
-      def apply(from: Coll) = newBuilder 
+  implicit def canBuildFrom: CanBuildFrom[Coll, Node, NodeSeq] =
+    new CanBuildFrom[Coll, Node, NodeSeq] {
+      def apply(from: Coll) = newBuilder
       def apply() = newBuilder 
     }
   def newBuilder: Builder[Node, NodeSeq] = new ListBuffer[Node] mapResult fromSeq
   implicit def seqToNodeSeq(s: Seq[Node]): NodeSeq = fromSeq(s)
 }
 
-/** This class implements a wrapper around <code>Seq[Node]</code> that
- *  adds XPath and comprehension methods.
+/** This class implements a wrapper around `Seq[Node]` that adds XPath
+ *  and comprehension methods.
  *
  *  @author  Burak Emir
  *  @version 1.0
@@ -49,7 +47,7 @@ abstract class NodeSeq extends immutable.Seq[Node] with SeqLike[Node, NodeSeq] w
   def theSeq: Seq[Node]
   def length = theSeq.length
   override def iterator = theSeq.iterator
-  
+
   def apply(i: Int): Node = theSeq(i)
   def apply(f: Node => Boolean): NodeSeq = filter(f)
 
@@ -72,15 +70,16 @@ abstract class NodeSeq extends immutable.Seq[Node] with SeqLike[Node, NodeSeq] w
     case _          => false
   }
 
-  /** Projection function, which returns  elements of `this` sequence based on the string `that`. Use:
+  /** Projection function, which returns  elements of `this` sequence based
+   *  on the string `that`. Use:
    *   - `this \ "foo"` to get a list of all elements that are labelled with `"foo"`;
    *   - `\ "_"` to get a list of all elements (wildcard);
    *   - `ns \ "@foo"` to get the unprefixed attribute `"foo"`;
-   *   - `ns \ "@{uri}foo"` to get the prefixed attribute `"pre:foo"` whose prefix `"pre"` is resolved to the
-   *     namespace `"uri"`.
+   *   - `ns \ "@{uri}foo"` to get the prefixed attribute `"pre:foo"` whose
+   *     prefix `"pre"` is resolved to the namespace `"uri"`.
    *
-   *  For attribute projections, the resulting [[scala.xml.NodeSeq]] attribute values are wrapped in a
-   *  [[scala.xml.Group]].
+   *  For attribute projections, the resulting [[scala.xml.NodeSeq]] attribute
+   *  values are wrapped in a [[scala.xml.Group]].
    *
    *  There is no support for searching a prefixed attribute by its literal prefix.
    *
@@ -103,16 +102,16 @@ abstract class NodeSeq extends immutable.Seq[Node] with SeqLike[Node, NodeSeq] w
           else y.attribute(uri, key)
         }
         else y.attribute(that drop 1)
-        
+
       attr match {
         case Some(x)  => Group(x)
         case _        => NodeSeq.Empty
       }
     }
-    
+
     def makeSeq(cond: (Node) => Boolean) =
       NodeSeq fromSeq (this flatMap (_.child) filter cond)
-      
+
     that match {
       case ""                                         => fail
       case "_"                                        => makeSeq(!_.isAtom)
@@ -121,16 +120,16 @@ abstract class NodeSeq extends immutable.Seq[Node] with SeqLike[Node, NodeSeq] w
     }
   }
 
-  /** Projection function, which returns elements of `this` sequence and of all its subsequences, based on
-   *  the string `that`. Use:
+  /** Projection function, which returns elements of `this` sequence and of
+   *  all its subsequences, based on the string `that`. Use:
    *   - `this \\ 'foo` to get a list of all elements that are labelled with `"foo"`;
    *   - `\\ "_"` to get a list of all elements (wildcard);
    *   - `ns \\ "@foo"` to get the unprefixed attribute `"foo"`;
-   *   - `ns \\ "@{uri}foo"` to get each prefixed attribute `"pre:foo"` whose prefix `"pre"` is resolved to the
-   *     namespace `"uri"`.
+   *   - `ns \\ "@{uri}foo"` to get each prefixed attribute `"pre:foo"` whose
+   *     prefix `"pre"` is resolved to the namespace `"uri"`.
    *
-   *  For attribute projections, the resulting [[scala.xml.NodeSeq]] attribute values are wrapped in a
-   *  [[scala.xml.Group]].
+   *  For attribute projections, the resulting [[scala.xml.NodeSeq]] attribute
+   *  values are wrapped in a [[scala.xml.Group]].
    *
    *  There is no support for searching a prefixed attribute by its literal prefix.
    *
@@ -149,5 +148,6 @@ abstract class NodeSeq extends immutable.Seq[Node] with SeqLike[Node, NodeSeq] w
   }
 
   override def toString(): String = theSeq.mkString
-  def text: String                = this map (_.text) mkString
+
+  def text: String = this map (_.text) mkString
 }

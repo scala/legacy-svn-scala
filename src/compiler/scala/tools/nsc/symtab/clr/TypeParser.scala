@@ -2,16 +2,13 @@
  * Copyright 2004-2011 LAMP/EPFL
  */
 
-
 package scala.tools.nsc
 package symtab
 package clr
 
 import java.io.IOException
-
 import ch.epfl.lamp.compiler.msil.{Type => MSILType, Attribute => MSILAttribute, _}
-
-import scala.collection.mutable.{HashMap, HashSet}
+import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.pickling.UnPickler
 import ch.epfl.lamp.compiler.msil.Type.TMVarUsage
 
@@ -69,7 +66,7 @@ abstract class TypeParser {
     override def complete(sym: Symbol) { throw new AssertionError("cyclic type dereferencing") }
   }
 
-  /* the names `classTParams' and `newTParams' stem from the forJVM version (ClassfileParser.sigToType())
+  /* the names `classTParams` and `newTParams` stem from the forJVM version (ClassfileParser.sigToType())
   *  but there are differences that should be kept in mind.
   *  forMSIL, a nested class knows nothing about any type-params in the nesting class,
   *  therefore newTParams is redundant (other than for recording lexical order),
@@ -295,7 +292,7 @@ abstract class TypeParser {
       createMethod(constr);
 
     // initially also contains getters and setters of properties.
-    val methodsSet = new HashSet[MethodInfo]();
+    val methodsSet = new mutable.HashSet[MethodInfo]();
     methodsSet ++= typ.getMethods();
 
     for (prop <- typ.getProperties) {

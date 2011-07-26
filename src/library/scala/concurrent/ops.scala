@@ -6,14 +6,12 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.concurrent
 
 import java.lang.Thread
 import scala.util.control.Exception.allCatch
 
-/** The object <code>ops</code> ...
+/** The object `ops` ...
  *
  *  @author  Martin Odersky, Stepan Koltsov, Philipp Haller
  */
@@ -39,8 +37,8 @@ object ops
     runner execute runner.functionAsTask(() => p)
   }
 
-  /** Evaluates an expression asynchronously, and returns a closure for retrieving
-   *  the result.
+  /** Evaluates an expression asynchronously, and returns a closure for
+   *  retrieving the result.
    *  
    *  @param  p the expression to evaluate
    *  @return   a closure which returns the result once it has been computed
@@ -49,7 +47,7 @@ object ops
     runner.futureAsFunction(runner submit runner.functionAsTask(() => p))
   }
 
-  /** Evaluates two expressions in parallel. Invoking `par' blocks the current
+  /** Evaluates two expressions in parallel. Invoking `par` blocks the current
    *  thread until both expressions have been evaluated.
    *  
    *  @param  xp the first expression to evaluate
@@ -68,7 +66,7 @@ object ops
    *  @param end   ...
    *  @param p     ...
    */
-  @deprecated("use `collection.parallel.ParIterable.foreach' instead", "2.9.0")
+  @deprecated("use `collection.parallel.ParIterable.foreach` instead", "2.9.0")
   def replicate(start: Int, end: Int)(p: Int => Unit)(implicit runner: TaskRunner = defaultRunner) {
     if (start == end) 
       ()
