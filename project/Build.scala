@@ -7,6 +7,11 @@ object ScalaBuild extends Build {
 
   // Jline nested project.   Compile this sucker once and be done.
   lazy val jline = Project("jline", file("src/jline"))
+  // Fast Java Bytecode Generator (nested in every scala-compiler.jar)
+  lazy val fjbg = Project("fjbg", file("src/fjbg"),
+                          settings = Defaults.defaultSettings ++ Seq(
+                            javaSource in Compile := file("src/fjbg"),
+                            javacOptions ++= Seq("-target", "1.5")))
 
 	lazy val compQuick = compiler(libQuick, "quick")
 	lazy val libQuick  = library("quick") settings (
