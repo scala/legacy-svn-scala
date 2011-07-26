@@ -3,7 +3,11 @@ import Keys._
 
 object ScalaBuild extends Build {
   // lazy val projects  = Seq(root, compQuick, libQuick)
-	lazy val root      = Project("scala", file(".")) aggregate(compQuick)
+  lazy val root      = Project("scala", file(".")) aggregate(compQuick)
+
+  // Jline nested project.   Compile this sucker once and be done.
+  lazy val jline = Project("jline", file("src/jline"))
+
 	lazy val compQuick = compiler(libQuick, "quick")
 	lazy val libQuick  = library("quick") settings (
 	  classpathOptions := ClasspathOptions.boot
