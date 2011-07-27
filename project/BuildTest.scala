@@ -55,18 +55,37 @@ object LayeredBuild {
 object ScalaBuild extends Build {
   import LayeredBuild._
 
-  lazy val testProj = Project("quick-library", file("."), settings = layeredProjectSettings("quick") ++
+  lazy val lockerLib = Project("locker-library", file("."), settings = layeredProjectSettings("quick") ++
     Seq(name := "scala-library",
         layerProjectName := "library",
         version := "quick",
         dependencyClasspath := Seq(),
         scalaInstance <<= appConfiguration map { app =>
 		      val launcher = app.provider.scalaProvider.launcher
+          // TODO - This is STARR, reference STARR using dependency resolution
+          // TODO - Explicitly version STARR
           ScalaInstance(
             file("lib/scala-library.jar"),
             file("lib/scala-compiler.jar"),
-            launcher)
+            launcher,
+            file("lib/fjbg.jar"))
         }
     )
   )
+  lazy val lockerComp = Project("locker-compiler", file("."), settings = layeredProjectSettings("quick") ++
+    Seq(name := "scala-compiler",
+        layerProjectName := "compiler",
+        version := "locker",
+        dependencyClasspath := Seq(),
+        scalaInstance <<= (appConfiguration, classDirectory in lockerLib) map { (app, lib) =>
+		      val launcher = app.provider.scalaProvider.launcher
+          // TODO - Figure out dependency resoltuion to look up STARR and only use compiler *not* library...
+          ScalaInstance(
+            lib,
+            file("lib/scala-compiler.jar"),
+            launcher,
+            file("lib/fjbg.jar"))
+        }
+    )
+  ) dependsOn(lockerLib)
 }
