@@ -2,11 +2,22 @@
 #
 # by jsuereth and paulp
 
+# always good to fail fast
+set -e
+
 gitignore="$(dirname $0)/.gitignore"
 bootdir="$(dirname $0)/.boot"
 sbtjar="${bootdir}/sbt-launch.jar"
+launchversionfile="${bootdir}/.launchversion"
 sbtversion=0.10.1
 sbturl="http://typesafe.artifactoryonline.com/typesafe/ivy-releases/org.scala-tools.sbt/sbt-launch/$sbtversion/sbt-launch.jar"
+
+# Check the current stored launch version.
+if [[ -f "$launchversionfile" ]]; then
+  storedversion="$(cat $launchversionfile)"
+else
+  storedversion=""
+fi
 
 if [[ ! -d "$bootdir" ]]; then
   echo "Creating .boot directory for xsbt"
@@ -16,37 +27,40 @@ if [[ ! -d "$bootdir" ]]; then
 fi
 
 if [[ ! -f "$gitignore" ]]; then
-  echo "Creating .gitignore containing:"
-  # TODO - if file exists, just add .boot to ignore if it's not there.
-  cat > "$gitignore" <<EOM
-.gitignore
-.boot
-EOM
-  cat "$gitignore"
-  echo ""
-elif ! grep -Fq ".boot" "$gitignore"; then
-  echo "Appending .boot to .gitignore."
-  echo ".boot" >> "$gitignore"
+  echo "Creating .gitignore"
+  echo ".gitignore" > "$gitignore"
 fi
 
+for ign in .boot
+do
+  if ! grep -Fq "$ign" "$gitignore"; then
+    echo "Adding $ign to $gitignore."
+    echo "$ign" >> "$gitignore"
+  fi
+done
+
 # TODO - Check version of SBT launch jar in some kind of tag file so we can pull new versions when needed.
-if [[ ! -f "$sbtjar" ]]; then
+if [[ ! -f "$sbtjar" ]] || [[ "$storedversion" != "$sbtversion" ]]; then
   echo "Downloading sbt version $sbtversion to $sbtjar ..."
   echo ""
-  if [[ ! `which curl` -eq 0 ]]; then
+  echo "$sbtversion" >$launchversionfile
+  if [[ $(which curl) ]]; then
     curl --silent "$sbturl" > "$sbtjar"
-  elif [[ ! `which wget` -eq 0 ]]; then
+  elif [[ $(which wget) ]]; then
     pushd $bootdir
     wget $sbturl 
     popd
   else
-   echo "No means of downloading sbt-launch.jar found.   Either:"
-   echo " * install curl"
-   echo " * install wget"
-   echo " * manually download $sbturl and place at $sbtjar"
-   echo ""
+    cat <<EOM
+No means of downloading sbt-launch.jar found.   Either:
+ * install curl
+ * install wget
+ * manually download: $sbturl
+        and place at: $sbtjar
+EOM
   fi
 fi
+
 java $JAVA_OPTS \
   -XX:+CMSClassUnloadingEnabled \
   -XX:MaxPermSize=256m \
