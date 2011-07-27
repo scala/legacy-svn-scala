@@ -19,6 +19,12 @@ object ScalaBuild extends Build {
                             javaSource in Compile := file("src/fjbg"),
                             javacOptions ++= Seq("-target", "1.5")))
 
+  // Forkjoin backport
+  lazy val forkjoin = Project("forkjoin", file("src/forkjoin"),
+                          settings = Defaults.defaultSettings ++ Seq(
+                            javaSource in Compile := file("src/forkjoin"),
+                            javacOptions ++= Seq("-target", "1.5")))
+
   // MSIL code generator
   // TODO - This probably needs to compile against quick, but Sabbus
   // had it building against locker, so we'll do worse and build
@@ -43,7 +49,7 @@ object ScalaBuild extends Build {
     Seq(name := "scala-library",
         layerProjectName := "library",
         version := "quick",
-        dependencyClasspath := Seq(),
+        dependencyClasspath <<= (classDirectory in forkjoin in Compile) map { fj => Seq(Attributed.blank(fj)) },
         scalaInstance <<= appConfiguration map { app =>
 		      val launcher = app.provider.scalaProvider.launcher
           // TODO - This is STARR, reference STARR using dependency resolution
@@ -55,7 +61,7 @@ object ScalaBuild extends Build {
             file("lib/fjbg.jar"))
         }
     )
-  )
+  ) dependsOn(forkjoin)
   lazy val lockerComp = Project("locker-compiler", file("."), settings = layeredProjectSettings("quick") ++
     Seq(name := "scala-compiler",
         layerProjectName := "compiler",
@@ -71,5 +77,5 @@ object ScalaBuild extends Build {
             file("lib/fjbg.jar"))
         }
     )
-  ) dependsOn(lockerLib)
+  ) dependsOn(lockerLib, forkjoin)
 }
