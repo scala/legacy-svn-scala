@@ -6,19 +6,19 @@ object LayeredBuild {
   import Build._
 
   def compileInputsTask =
-		(dependencyClasspath, sources, compilers, classDirectory, compileIncSetup, streams) map {
-		(cp, srcs, cs, classes, incSetup, s) =>
+    (dependencyClasspath, sources, compilers, classDirectory, compileIncSetup, streams) map {
+    (cp, srcs, cs, classes, incSetup, s) =>
 			val classpath = classes +: data(cp)
       // TODO - Ask mark to use default parameters so named arguments work here..
-			Compiler.inputs(classpath,                               // Classpath
+      Compiler.inputs(classpath,                               // Classpath
                       srcs,                                    // Sources
                       classes,                                 // Output Directory
-                      Seq[String]("-optimise"),                // Scalac Options
-                      Seq[String](),                           // Javac Options
+                      Seq[String](),                           // Scalac Options
+                      Seq[String]("-target", "1.5"),           // Javac Options
                       100,                                     // Max Errors
-                      CompileOrder.Mixed)(                     // Compilation Order
+                      CompileOrder.JavaThenScala)(                     // Compilation Order
                       cs, incSetup, s.log)
-		}
+  }
   // TODO - Figure out WTF to do here...
   def compileIncSetupTask =
 		(dependencyClasspath, cacheDirectory, skip in compile, definesClass) map { (cp, cacheDir, skip, definesC) =>

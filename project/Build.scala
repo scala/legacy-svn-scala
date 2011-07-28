@@ -49,7 +49,8 @@ object ScalaBuild extends Build {
     Seq(name := "scala-library",
         layerProjectName := "library",
         version := "quick",
-        dependencyClasspath <<= (classDirectory in forkjoin in Compile) map { fj => Seq(Attributed.blank(fj)) },
+        dependencyClasspath <<= (classDirectory in forkjoin in Compile, classDirectory in Compile, scalaInstance) map { 
+          (fj, cur, scala) => Seq(fj, cur, scala.libraryJar, scala.compilerJar) map Attributed.blank },
         scalaInstance <<= appConfiguration map { app =>
 		      val launcher = app.provider.scalaProvider.launcher
           // TODO - This is STARR, reference STARR using dependency resolution
@@ -77,5 +78,5 @@ object ScalaBuild extends Build {
             file("lib/fjbg.jar"))
         }
     )
-  ) dependsOn(lockerLib, forkjoin)
+  ) dependsOn(lockerLib, fjbg) aggregate(fjbg)
 }
