@@ -72,7 +72,8 @@ trait LayeredBuild extends Build {
   )
 
   // Creates a 'layer' of a Scala build using a different instance of Scala.
-  def makeLayer(layer: String, scalaLibraryPath : File, scalaCompilerPath : File) : (Project, Project) = {
+  def makeLayer(layer: String, referenceScala: Setting[Task[ScalaInstance]]) : (Project, Project) = {
+    // TODO - Make version number for library...
     val library = Project(layer + "-library", file("."), settings = layeredProjectSettings(layer) ++
       Seq(name := "scala-library",
           layerProjectName := "library",
@@ -80,16 +81,7 @@ trait LayeredBuild extends Build {
           // TODO - use depends on.
           dependencyClasspath <<= (classDirectory in forkjoin in Compile) map { 
             (fj) => Seq(fj) map Attributed.blank },
-          scalaInstance <<= appConfiguration map { app =>
-            val launcher = app.provider.scalaProvider.launcher
-            // TODO - Pass in FJBG
-            // TODO - Explicitly version?
-            ScalaInstance(
-              scalaLibraryPath,
-              scalaCompilerPath,
-              launcher,
-              file("lib/fjbg.jar"))
-          }
+          referenceScala
       )
     ) aggregate(forkjoin)
 
@@ -107,19 +99,26 @@ trait LayeredBuild extends Build {
           (fj, lib, fjbg, jline, msil) =>
             Seq(fj, lib, fjbg, jline, msil, file("lib/ant/ant.jar")) map Attributed.blank
         },
-        scalaInstance <<= (appConfiguration, classDirectory in library) map { (app, lib) =>
-		      val launcher = app.provider.scalaProvider.launcher
-          // TODO - explicitly pull FJBG from somewhere...
-          ScalaInstance(
-            scalaLibraryPath,
-            scalaCompilerPath,
-            launcher,
-            file("lib/fjbg.jar"))
-        }
+        referenceScala
       )
     ) aggregate(fjbg, jline, library, msil)
 
     // Return the generated projects.
     (library, compiler)
+  }
+
+  // TODO - Explicit versioning?
+  def makeScalaReference(library: Project, compiler: Project, fjbg: Project) =
+     scalaInstance <<= (appConfiguration,
+                        (classDirectory in library in Compile),
+                        (classDirectory in compiler in Compile),
+                        (classDirectory in fjbg in Compile)) map {
+    (app, lib, comp, fjbg) =>
+    val launcher = app.provider.scalaProvider.launcher
+    ScalaInstance(
+      lib,
+      comp,
+      launcher,
+      fjbg)
   }
 }

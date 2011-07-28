@@ -50,7 +50,22 @@ object ScalaBuild extends LayeredBuild {
   //   Stable Reference -> Locker ('Lockable' dev version) -> Quick -> Strap (Binary compatibility testing)
   // --------------------------------------------------------------
 
-  lazy val (lockerLib, lockerComp) = makeLayer("locker", file("build/locker/classes/library"), file("build/locker/classes/compiler"))
+  // Need a report on this...
+  // TODO - Resolve STARR from a repo..
+  def STARR = scalaInstance <<= appConfiguration map { app =>
+    val launcher = app.provider.scalaProvider.launcher
+    ScalaInstance(
+      file("build/locker/classes/library"),
+      file("build/locker/classes/compiler"),
+      launcher,
+      file("lib/fjbg.jar"))
+  }
 
-  // TODO - Create a task that can generate ScalaInstance from all the projects defined in a Layer...
+  // Locker is a lockable Scala compiler that can be built of 'current' source to perform rapid development.
+  lazy val (lockerLib, lockerComp) = makeLayer("locker", STARR)
+  lazy val locker = Project("locker", file(".")) aggregate(lockerLib, lockerComp)
+
+  // Quick is the general purpose project layer for the Scala compiler.
+  lazy val (quickLib, quickComp) = makeLayer("quick", makeScalaReference(lockerLib, lockerComp, fjbg))
+  lazy val quick = Project("quick", file(".")) aggregate(quickLib, quickComp)
 }
