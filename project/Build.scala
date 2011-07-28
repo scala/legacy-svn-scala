@@ -52,49 +52,5 @@ object ScalaBuild extends LayeredBuild {
 
   lazy val (lockerLib, lockerComp) = makeLayer("locker", file("build/locker/classes/library"), file("build/locker/classes/compiler"))
 
-/*
-    lazy val lockerLib = Project("locker-library", file("."), settings = layeredProjectSettings("locker") ++
-    Seq(name := "scala-library",
-        layerProjectName := "library",
-        version := "locker",
-        // TODO - use depends on.
-        dependencyClasspath <<= (classDirectory in forkjoin in Compile) map { 
-          (fj) => Seq(fj) map Attributed.blank },
-        scalaInstance <<= appConfiguration map { app =>
-          val launcher = app.provider.scalaProvider.launcher
-          // TODO - This is STARR, reference STARR using dependency resolution
-          // TODO - Explicitly version STARR
-          ScalaInstance(
-            file("build/locker/classes/library"),
-            file("build/locker/classes/compiler"),
-            launcher,
-            file("lib/fjbg.jar"))
-        }
-    )
-  ) aggregate(forkjoin)
-  lazy val lockerComp = Project("locker-compiler", file("."), settings = layeredProjectSettings("locker") ++
-    Seq(name := "scala-compiler",
-        layerProjectName := "compiler",
-        version := "locker",
-        // TODO - Use depends on *and* SBT's magic dependency mechanisms...
-        dependencyClasspath <<= (classDirectory in forkjoin in Compile,
-                                 classDirectory in lockerLib in Compile,
-                                 classDirectory in fjbg in Compile,
-                                 classDirectory in jline in Compile,
-                                 classDirectory in msil in Compile) map {
-          (fj, lib, fjbg, jline, msil) =>
-            Seq(fj, lib, fjbg, jline, msil, file("lib/ant/ant.jar")) map Attributed.blank
-        },
-        scalaInstance <<= (appConfiguration, classDirectory in lockerLib) map { (app, lib) =>
-		      val launcher = app.provider.scalaProvider.launcher
-          // TODO - Figure out dependency resoltuion to look up STARR and only use compiler *not* library...
-          ScalaInstance(
-            file("build/locker/classes/library"),
-            file("build/locker/classes/compiler"),
-            launcher,
-            file("lib/fjbg.jar"))
-        }
-    )
-  ) aggregate(fjbg, jline, lockerLib)
-  */
+  // TODO - Create a task that can generate ScalaInstance from all the projects defined in a Layer...
 }
