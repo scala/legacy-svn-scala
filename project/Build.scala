@@ -5,12 +5,8 @@ object ScalaBuild extends Build {
   // lazy val projects  = Seq(root, compQuick, libQuick)
   lazy val root      = Project("scala", file(".")) // TODO - aggregate on, say... quick
 
-  // --------------------------------------------------------------
-  //  Libraries used by Scalac that change infrequently
-  //  (or hopefully so).
-  // --------------------------------------------------------------
 
-
+  // These are setting overrides for most artifacts in the Scala build file.
   def settingOverrides: Seq[Setting[_]] = Seq(
                              publishArtifact in packageBin := false,
                              publishArtifact in packageSrc := false,
@@ -22,6 +18,13 @@ object ScalaBuild extends Build {
                              autoScalaLibrary := false,
                              unmanagedJars := Seq()
                             )
+  // TODO - Figure out a way to uniquely determine a version to assign to Scala builds...
+  def currentUniqueRevision = "0.1"
+
+  // --------------------------------------------------------------
+  //  Libraries used by Scalac that change infrequently
+  //  (or hopefully so).
+  // --------------------------------------------------------------
 
   // Jline nested project.   Compile this sucker once and be done.
   lazy val jline = Project("jline", file("src/jline"))
@@ -64,13 +67,13 @@ object ScalaBuild extends Build {
   lazy val locker = Project("locker", file(".")) aggregate(lockerLib, lockerComp)
 
   // Quick is the general purpose project layer for the Scala compiler.
-  lazy val (quickLib, quickComp) = makeLayer("quick", makeScalaReference(lockerLib, lockerComp, fjbg))
+  lazy val (quickLib, quickComp) = makeLayer("quick", makeScalaReference("locker", lockerLib, lockerComp, fjbg))
   lazy val quick = Project("quick", file(".")) aggregate(quickLib, quickComp)
 
 
 
 
-  def makeScalaReference(library: Project, compiler: Project, fjbg: Project) =
+  def makeScalaReference(layer : String, library: Project, compiler: Project, fjbg: Project) =
      scalaInstance <<= (appConfiguration,
                         (exportedProducts in library in Compile),
                         (exportedProducts in compiler in Compile),
@@ -82,6 +85,7 @@ object ScalaBuild extends Build {
       error("Cannot build a ScalaReference with more than one classpath element")
     }
     ScalaInstance(
+      layer + "-" + currentUniqueRevision,
       lib.head.data,
       comp.head.data,
       launcher,
@@ -93,7 +97,7 @@ object ScalaBuild extends Build {
     val library = Project(layer + "-library", file("."))  settings( (settingOverrides ++
       Seq(version := layer,
           // TODO - use depends on.
-          dependencyClasspath in Compile <<= (exportedProducts in forkjoin in Compile) map identity,
+          unmanagedClasspath in Compile <<= (exportedProducts in forkjoin in Compile).identity,
           scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "library"),
           referenceScala
       )) :_*)
@@ -101,9 +105,10 @@ object ScalaBuild extends Build {
     // Define the compiler
     val compiler = Project(layer + "-compiler", file(".")) settings((settingOverrides ++
     Seq(version := layer,
-        scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "library"),
+        scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "compiler"),
         // TODO - Use depends on *and* SBT's magic dependency mechanisms...
-        dependencyClasspath in Compile <<= (exportedProducts in forkjoin in Compile,
+        unmanagedClasspath in Compile <<= (
+                                 exportedProducts in forkjoin in Compile,
                                  exportedProducts in library in Compile,
                                  exportedProducts in fjbg in Compile,
                                  exportedProducts in jline in Compile,
