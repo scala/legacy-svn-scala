@@ -2,13 +2,12 @@ import sbt._
 import Keys._
 
 object ScalaBuild extends Build {
-  // lazy val projects  = Seq(root, compQuick, libQuick)
-  lazy val root      = Project("scala", file(".")) // TODO - aggregate on, say... quick
+  lazy val root = Project("scala", file(".")) // TODO - aggregate on, say... quick
 
 
   // These are setting overrides for most artifacts in the Scala build file.
   def settingOverrides: Seq[Setting[_]] = Seq(
-                             publishArtifact in packageBin := false,
+                             publishArtifact in packageDoc := false,
                              publishArtifact in packageSrc := false,
                              javaSource in Compile <<= (baseDirectory, name) apply (_ / "src" / _),
                              target <<= (baseDirectory, name) apply (_ / "target" / _),
@@ -35,14 +34,14 @@ object ScalaBuild extends Build {
   lazy val forkjoin = Project("forkjoin", file(".")) settings(settingOverrides : _*)
 
   // MSIL code generator
-  // TODO - This probably needs to compile against quick, but Sabbus
+  // TODO - This probably needs to compile in the layers, but Sabbus
   // had it building against locker, so we'll do worse and build
   // build against STARR for now.
-  lazy val msil = Project("msil", file(".")) settings((settingOverrides ++ Seq(
+  lazy val msilSettings = settingOverrides ++ Seq(
                             defaultExcludes ~= (_ || "tests"),
-                            javacOptions ++= Seq("-source", "1.4"),
-                            target := file("target/msil")                          
-                          )): _*)
+                            javacOptions ++= Seq("-source", "1.4")                          
+                          )
+  lazy val msil = Project("msil", file(".")) settings(msilSettings: _*)
 
 
   // --------------------------------------------------------------
@@ -70,9 +69,15 @@ object ScalaBuild extends Build {
   lazy val (quickLib, quickComp) = makeLayer("quick", makeScalaReference("locker", lockerLib, lockerComp, fjbg))
   lazy val quick = Project("quick", file(".")) aggregate(quickLib, quickComp)
 
+  // Reference to quick scala instance.
+  def quickScalaInstance = makeScalaReference("quick", quickLib, quickComp, fjbg)
+  def quickScalaLibraryDependency = unmanagedClasspath in Compile <++= (exportedProducts in quickLib in Compile).identity
+  def quickScalaCompilerDependency = unmanagedClasspath in Compile <++= (exportedProducts in quickComp in Compile).identity
 
 
-
+  // --------------------------------------------------------------
+  //  Helper methods for layered compilation.
+  // --------------------------------------------------------------
   def makeScalaReference(layer : String, library: Project, compiler: Project, fjbg: Project) =
      scalaInstance <<= (appConfiguration,
                         (exportedProducts in library in Compile),
@@ -89,9 +94,12 @@ object ScalaBuild extends Build {
       lib.head.data,
       comp.head.data,
       launcher,
-      (fjbg.map(_.data):_*))
+      (fjbg.files:_*))
   }
-
+  
+  // Creates a "layer" of Scala compilation.  That is, this will build the next version of Scala from a previous version.
+  // Returns the library project and compiler project from the next layer.
+  // Note:  The library and compiler are not *complete* in the sense that they are missing things like "actors" and "fjbg".
   def makeLayer(layer: String, referenceScala: Setting[Task[ScalaInstance]]) : (Project, Project) = {
     // TODO - Make version number for library...
     val library = Project(layer + "-library", file("."))  settings( (settingOverrides ++
@@ -109,14 +117,7 @@ object ScalaBuild extends Build {
     Seq(version := layer,
         scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "compiler"),
         // TODO - Use depends on *and* SBT's magic dependency mechanisms...
-        unmanagedClasspath in Compile <<= (
-                                 exportedProducts in forkjoin in Compile,
-                                 exportedProducts in library in Compile,
-                                 exportedProducts in fjbg in Compile,
-                                 exportedProducts in jline in Compile,
-                                 exportedProducts in msil in Compile) map {
-          (fj, lib, fjbg, jline, msil) => fj ++ lib ++ fjbg ++ jline ++ msil
-        },
+        unmanagedClasspath in Compile <<= Seq(forkjoin, library, fjbg, jline, msil).map(exportedProducts in Compile in _).join.map(_.map(_.flatten)),
         libraryDependencies += "org.apache.ant" % "ant" % "1.8.2",
         referenceScala
       )
@@ -125,4 +126,34 @@ object ScalaBuild extends Build {
     // Return the generated projects.
     (library, compiler)
   }
+
+  // --------------------------------------------------------------
+  //  Projects dependent on layered compilation (quick)
+  // --------------------------------------------------------------
+  // TODO - in sabbus, these all use locker to build...
+  lazy val dependentProjectSettings = settingOverrides ++ Seq(quickScalaInstance, quickScalaLibraryDependency)
+  lazy val actors = Project("actors", file(".")) settings(dependentProjectSettings:_*)
+  lazy val dbc = Project("dbc", file(".")) settings(dependentProjectSettings:_*)
+  lazy val swing = Project("swing", file(".")) settings(dependentProjectSettings:_*)
+  lazy val scalacheck = Project("scalacheck", file(".")) settings(dependentProjectSettings:_*)
+  // Things that compile against the compiler.
+  lazy val compilerDependentProjectSettings = dependentProjectSettings ++ Seq(quickScalaCompilerDependency)
+  lazy val scalap = Project("scalap", file(".")) settings(compilerDependentProjectSettings:_*)
+  lazy val partest = Project("partest", file(".")) settings(compilerDependentProjectSettings:_*)  
+  // TODO - generate scala properties file...
+
+  // --------------------------------------------------------------
+  //  Continuations plugin + library
+  // --------------------------------------------------------------
+  lazy val continuationsPluginSettings = compilerDependentProjectSettings ++ Seq(
+    scalaSource in Compile <<= baseDirectory(_ / "src/continuations/plugin/"),
+    resourceDirectory in Compile <<= baseDirectory(_ / "src/continuations/plugin/")
+  )
+  lazy val continuationsPlugin = Project("continuations-plugin", file(".")) settings(continuationsPluginSettings:_*)
+  lazy val continuationsLibrarySettings = dependentProjectSettings ++ Seq(
+    scalacOptions in Compile <++= (exportedProducts in Compile in continuationsPlugin) map { 
+     case Seq(cpDir) => Seq("-Xplugin-require:continuations", "-P:continuations:enable", "-Xplugin:"+cpDir.data.getAbsolutePath)
+    }
+  )
+  lazy val continuationsLibrary = Project("continuations-library", file(".")) settings(continuationsLibrarySettings:_*)
 }
