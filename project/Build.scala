@@ -15,7 +15,8 @@ object ScalaBuild extends Build {
                              javacOptions ++= Seq("-target", "1.5"),
                              scalaSource in Compile <<= (baseDirectory, name) apply (_ / "src" / _),
                              autoScalaLibrary := false,
-                             unmanagedJars := Seq()
+                             unmanagedJars := Seq(),
+                             unmanagedBase <<= baseDirectory(_ / "useless" / "directory" / "name")
                             )
   // TODO - Figure out a way to uniquely determine a version to assign to Scala builds...
   def currentUniqueRevision = "0.1"
@@ -147,10 +148,12 @@ object ScalaBuild extends Build {
   // --------------------------------------------------------------
   lazy val continuationsPluginSettings = compilerDependentProjectSettings ++ Seq(
     scalaSource in Compile <<= baseDirectory(_ / "src/continuations/plugin/"),
-    resourceDirectory in Compile <<= baseDirectory(_ / "src/continuations/plugin/")
+    resourceDirectory in Compile <<= baseDirectory(_ / "src/continuations/plugin/"),
+    exportJars := true
   )
   lazy val continuationsPlugin = Project("continuations-plugin", file(".")) settings(continuationsPluginSettings:_*)
   lazy val continuationsLibrarySettings = dependentProjectSettings ++ Seq(
+    scalaSource in Compile <<= baseDirectory(_ / "src/continuations/library/"),
     scalacOptions in Compile <++= (exportedProducts in Compile in continuationsPlugin) map { 
      case Seq(cpDir) => Seq("-Xplugin-require:continuations", "-P:continuations:enable", "-Xplugin:"+cpDir.data.getAbsolutePath)
     }
