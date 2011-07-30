@@ -40,7 +40,8 @@ object ScalaBuild extends Build {
   // build against STARR for now.
   lazy val msilSettings = settingOverrides ++ Seq(
                             defaultExcludes ~= (_ || "tests"),
-                            javacOptions ++= Seq("-source", "1.4")                          
+                            javacOptions ++= Seq("-source", "1.4"),
+                            STARR                         
                           )
   lazy val msil = Project("msil", file(".")) settings(msilSettings: _*)
 
@@ -133,14 +134,15 @@ object ScalaBuild extends Build {
   // --------------------------------------------------------------
   // TODO - in sabbus, these all use locker to build...
   lazy val dependentProjectSettings = settingOverrides ++ Seq(quickScalaInstance, quickScalaLibraryDependency)
-  lazy val actors = Project("actors", file(".")) settings(dependentProjectSettings:_*)
+  lazy val actors = Project("actors", file(".")) settings(dependentProjectSettings:_*) dependsOn(forkjoin)
   lazy val dbc = Project("dbc", file(".")) settings(dependentProjectSettings:_*)
   lazy val swing = Project("swing", file(".")) settings(dependentProjectSettings:_*)
   lazy val scalacheck = Project("scalacheck", file(".")) settings(dependentProjectSettings:_*)
   // Things that compile against the compiler.
   lazy val compilerDependentProjectSettings = dependentProjectSettings ++ Seq(quickScalaCompilerDependency)
   lazy val scalap = Project("scalap", file(".")) settings(compilerDependentProjectSettings:_*)
-  lazy val partest = Project("partest", file(".")) settings(compilerDependentProjectSettings:_*)  
+  lazy val partestSettings = compilerDependentProjectSettings ++ Seq(libraryDependencies += "org.apache.ant" % "ant" % "1.8.2")
+  lazy val partest = Project("partest", file(".")) settings(partestSettings:_*)  dependsOn(actors,forkjoin,scalap)
   // TODO - generate scala properties file...
 
   // --------------------------------------------------------------
