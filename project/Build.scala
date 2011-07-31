@@ -59,8 +59,8 @@ object ScalaBuild extends Build {
   def STARR = scalaInstance <<= appConfiguration map { app =>
     val launcher = app.provider.scalaProvider.launcher
     ScalaInstance(
-      file("build/locker/classes/library"),
-      file("build/locker/classes/compiler"),
+      file("lib/scala-library.jar"),
+      file("lib/scala-compiler.jar"),
       launcher,
       file("lib/fjbg.jar"))
   }
@@ -140,6 +140,10 @@ object ScalaBuild extends Build {
   lazy val dbc = Project("dbc", file(".")) settings(dependentProjectSettings:_*)
   lazy val swing = Project("swing", file(".")) settings(dependentProjectSettings:_*)
   lazy val scalacheck = Project("scalacheck", file(".")) settings(dependentProjectSettings:_*)
+
+  // This project will generate man pages for scala.
+  lazy val manmaker = Project("manual", file(".")) settings(dependentProjectSettings:_*)
+
   // Things that compile against the compiler.
   lazy val compilerDependentProjectSettings = dependentProjectSettings ++ Seq(quickScalaCompilerDependency)
   lazy val scalap = Project("scalap", file(".")) settings(compilerDependentProjectSettings:_*)
