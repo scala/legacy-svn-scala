@@ -120,10 +120,6 @@ abstract class Component extends UIElement {
     })
   }*/
   
-  
-
-  @deprecated("Use mouse instead", "2.8.0") lazy val Mouse = mouse
-  
   /**
    * Contains publishers for various mouse events. They are separated for 
    * efficiency reasons.
