@@ -32,6 +32,13 @@ class Mirror extends Universe with api.Mirror {
     }
     methodToJava(meth).invoke(receiver, args.asInstanceOf[Seq[AnyRef]]: _*)
   }
+  
+  def freeValue(x: Any): Tree = FreeValue(x)
+    
+  // to do: replace with generalized 
+  // case class Literal(x: Any), 
+  // once calls to the deprecated factory Literal(x: Any) has been eliminated from all code.
+  case class FreeValue(any: Any) extends Tree
 
 }
 

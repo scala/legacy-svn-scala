@@ -1639,9 +1639,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  term symbol rename it by expanding its name to avoid name clashes
      */
     final def makeNotPrivate(base: Symbol) {
-      if (this hasFlag PRIVATE) {
+      if (this.isPrivate) {
         setFlag(notPRIVATE)
-        if (isMethod && !isDeferred) setFlag(lateFINAL)
+        // Marking these methods final causes problems for proxies
+        // which use subclassing.  If people write their code with no
+        // usage of final, we probably shouldn't introduce it ourselves
+        // unless we know it is safe.
+        //
+        // if (isMethod && !isDeferred)
+        //   setFlag(lateFINAL)
         if (!isStaticModule && !isClassConstructor) {
           expandName(base)
           if (isModule) moduleClass.makeNotPrivate(base)
@@ -1798,6 +1804,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       case s    => " in " + s
     }
     def fullLocationString = toString + locationString
+    def signatureString = if (hasRawInfo) infoString(rawInfo) else "<_>"
 
     /** String representation of symbol's definition following its name */
     final def infoString(tp: Type): String = {
@@ -1860,9 +1867,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def defString = compose(
       defaultFlagString,
       keyString,
-      varianceString + nameString + (
-        if (hasRawInfo) infoString(rawInfo) else "<_>"
-      )
+      varianceString + nameString + signatureString
     )
 
     /** Concatenate strings separated by spaces */

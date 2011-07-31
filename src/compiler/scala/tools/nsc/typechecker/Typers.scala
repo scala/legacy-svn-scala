@@ -27,7 +27,7 @@ import scala.tools.util.StringOps.{ countAsString, countElementsAsString }
  *  @author  Martin Odersky
  *  @version 1.0
  */
-trait Typers extends Modes {
+trait Typers extends Modes with Adaptations {
   self: Analyzer =>
 
   import global._
@@ -77,7 +77,7 @@ trait Typers extends Modes {
   // that are turned private by typedBlock
   private final val SYNTHETIC_PRIVATE = TRANS_FLAG
 
-  abstract class Typer(context0: Context) extends TyperDiagnostics {
+  abstract class Typer(context0: Context) extends TyperDiagnostics with Adaptation {
     import context0.unit
     import typeDebug.{ ptTree, ptBlock, ptLine }
 
@@ -882,7 +882,10 @@ trait Typers extends Modes {
           typed(atPos(tree.pos)(Select(qual, nme.apply)), mode, pt)
         } else if (!context.undetparams.isEmpty && !inPolyMode(mode)) { // (9)
           assert(!inHKMode(mode)) //@M
-          instantiate(tree, mode, pt)
+          if (inExprModeButNot(mode, FUNmode) && pt.typeSymbol == UnitClass)
+            instantiateExpectingUnit(tree, mode)
+          else
+            instantiate(tree, mode, pt)
         } else if (tree.tpe <:< pt) {
           tree
         } else {
@@ -895,7 +898,7 @@ trait Typers extends Modes {
           val tree1 = constfold(tree, pt) // (10) (11)
           if (tree1.tpe <:< pt) adapt(tree1, mode, pt, original)
           else {
-            if ((mode & (EXPRmode | FUNmode)) == EXPRmode) {
+            if (inExprModeButNot(mode, FUNmode)) {
               pt.normalize match {
                 case TypeRef(_, sym, _) =>
                   // note: was if (pt.typeSymbol == UnitClass) but this leads to a potentially
@@ -903,7 +906,7 @@ trait Typers extends Modes {
                   if (sym == UnitClass && tree.tpe <:< AnyClass.tpe) { // (12) 
                     if (settings.warnValueDiscard.value)
                       context.unit.warning(tree.pos, "discarded non-Unit value")
-                    return typed(atPos(tree.pos)(Block(List(tree), Literal(()))), mode, pt)
+                    return typed(atPos(tree.pos)(Block(List(tree), Literal(Constant()))), mode, pt)
                   }
                   else if (isNumericValueClass(sym) && isNumericSubType(tree.tpe, pt)) {
                     if (settings.warnNumericWiden.value)
@@ -969,15 +972,23 @@ trait Typers extends Modes {
         }
     }
 
-    /**
-     *  @param tree ...
-     *  @param mode ...
-     *  @param pt   ...
-     *  @return     ...
-     */
     def instantiate(tree: Tree, mode: Int, pt: Type): Tree = {
       inferExprInstance(tree, context.extractUndetparams(), pt)
       adapt(tree, mode, pt)
+    }
+    /** If the expected type is Unit: try instantiating type arguments
+     *  with expected type Unit, but if that fails, try again with pt = WildcardType
+     *  and discard the expression.
+     */
+    def instantiateExpectingUnit(tree: Tree, mode: Int): Tree = {
+      val savedUndetparams = context.undetparams
+      silent(_.instantiate(tree, mode, UnitClass.tpe)) match {
+        case t: Tree => t
+        case _ => 
+          context.undetparams = savedUndetparams
+          val valueDiscard = atPos(tree.pos)(Block(List(instantiate(tree, mode, WildcardType)), Literal(Constant())))
+          typed(valueDiscard, mode, UnitClass.tpe)
+      }
     }
 
     def adaptToMember(qual: Tree, searchTemplate: Type): Tree = {
@@ -1523,7 +1534,7 @@ trait Typers extends Modes {
      *  into the symbol's ``annotations'' in the type completer / namer)
      */
     def removeAnnotations(mods: Modifiers): Modifiers =
-      mods.copy(annotations = Nil)
+      mods.copy(annotations = Nil) setPositions mods.positions
 
     /**
      *  @param vdef ...
@@ -2107,6 +2118,8 @@ trait Typers extends Modes {
               } else {
                 val localTyper = if (inBlock || (stat.isDef && !stat.isInstanceOf[LabelDef])) this
                                  else newTyper(context.make(stat, exprOwner))
+                // XXX this creates a spurious dead code warning if an exception is thrown
+                // in a constructor, even if it is the only thing in the constructor.
                 val result = checkDead(localTyper.typed(stat, EXPRmode | BYVALmode, WildcardType))
                 if (treeInfo.isSelfOrSuperConstrCall(result)) {
                   context.inConstructorSuffix = true
@@ -2191,7 +2204,7 @@ trait Typers extends Modes {
           }) ::: newStats.toList
         }
       }
-      val result = stats mapConserve (typedStat)
+      val result = stats mapConserve typedStat
       if (phase.erasedTypes) result
       else checkNoDoubleDefsAndAddSynthetics(result)
     }
@@ -2334,9 +2347,14 @@ trait Typers extends Modes {
               // the inner "doTypedApply" does "extractUndetparams" => restore when it fails
               val savedUndetparams = context.undetparams
               silent(_.doTypedApply(tree, fun, tupleArgs, mode, pt)) match {
-                case t: Tree => 
-//                  println("tuple conversion to "+t+" for "+mt)//DEBUG
-                  Some(t)
+                case t: Tree =>
+                  // Depending on user options, may warn or error here if
+                  // a Unit or tuple was inserted.
+                  Some(t) filter (tupledTree =>
+                       !inExprModeButNot(mode, FUNmode)
+                    || tupledTree.symbol == null
+                    || checkValidAdaptation(tupledTree, args)
+                  )
                 case ex =>
                   context.undetparams = savedUndetparams
                   None

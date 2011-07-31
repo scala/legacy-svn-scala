@@ -218,14 +218,14 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val BridgeClass                = getClass("scala.annotation.bridge") 
 
     // fundamental reference classes
-    lazy val ScalaObjectClass     = getClass("scala.ScalaObject")
-    lazy val PartialFunctionClass = getClass("scala.PartialFunction")
-    lazy val SymbolClass          = getClass("scala.Symbol")
-    lazy val StringClass          = getClass(sn.String)
-    lazy val StringModule         = StringClass.linkedClassOfClass
-    lazy val ClassClass           = getClass(sn.Class)
-      def Class_getMethod = getMember(ClassClass, nme.getMethod_)
-    lazy val DynamicClass         = getClass("scala.Dynamic")
+    lazy val ScalaObjectClass           = getClass("scala.ScalaObject")
+    lazy val PartialFunctionClass       = getClass("scala.PartialFunction")
+    lazy val SymbolClass                = getClass("scala.Symbol")
+    lazy val StringClass                = getClass(sn.String)
+    lazy val StringModule               = StringClass.linkedClassOfClass
+    lazy val ClassClass                 = getClass(sn.Class)
+      def Class_getMethod               = getMember(ClassClass, nme.getMethod_)
+    lazy val DynamicClass               = getClass("scala.Dynamic")
 
     // fundamental modules
     lazy val SysPackage = getPackageObject("scala.sys")
@@ -248,16 +248,24 @@ trait Definitions extends reflect.api.StandardDefinitions {
       def arrayCloneMethod = getMember(ScalaRunTimeModule, "array_clone")
       def ensureAccessibleMethod = getMember(ScalaRunTimeModule, "ensureAccessible")
       def scalaRuntimeSameElements = getMember(ScalaRunTimeModule, nme.sameElements)
+    lazy val ReflectRuntimeMirror = getModule("scala.reflect.runtime.Mirror")
+      def freeValueMethod = getMember(ReflectRuntimeMirror, "freeValue")
+    lazy val ReflectPackage = getPackageObject("scala.reflect")
+      def Reflect_mirror = getMember(ReflectPackage, "mirror")
     
     // classes with special meanings
+    lazy val StringAddClass   = getClass("scala.runtime.StringAdd")
+    lazy val ArrowAssocClass  = getClass("scala.Predef.ArrowAssoc")
+    lazy val StringAdd_+      = getMember(StringAddClass, nme.PLUS)
     lazy val NotNullClass     = getClass("scala.NotNull")
     lazy val DelayedInitClass = getClass("scala.DelayedInit")
       def delayedInitMethod = getMember(DelayedInitClass, nme.delayedInit)
       // a dummy value that communicates that a delayedInit call is compiler-generated
       // from phase UnCurry to phase Constructors
-      def delayedInitArgVal = EmptyPackageClass.newValue(NoPosition, nme.delayedInitArg)
-        .setInfo(UnitClass.tpe)
-    
+      // !!! This is not used anywhere (it was checked in that way.)
+      // def delayedInitArgVal = EmptyPackageClass.newValue(NoPosition, nme.delayedInitArg)
+      //   .setInfo(UnitClass.tpe)
+
     lazy val TypeConstraintClass   = getClass("scala.annotation.TypeConstraint")
     lazy val SingletonClass        = newClass(ScalaPackageClass, tpnme.Singleton, anyparam) setFlag (ABSTRACT | TRAIT | FINAL)
     lazy val SerializableClass     = getClass("scala.Serializable")
@@ -363,6 +371,10 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val NoneModule: Symbol  = getModule("scala.None")
     lazy val SomeModule: Symbol  = getModule("scala.Some")
 
+    // The given symbol represents either String.+ or StringAdd.+
+    def isStringAddition(sym: Symbol) = sym == String_+ || sym == StringAdd_+
+    def isArrowAssoc(sym: Symbol) = ArrowAssocClass.tpe.decls.toList contains sym
+
     def isOptionType(tp: Type)  = cond(tp.normalize) { case TypeRef(_, OptionClass, List(_)) => true }
     def isSomeType(tp: Type)    = cond(tp.normalize) { case TypeRef(_,   SomeClass, List(_)) => true }
     def isNoneType(tp: Type)    = cond(tp.normalize) { case TypeRef(_,   NoneModule, List(_)) => true }
@@ -441,7 +453,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
         }
       }
 
-    /** if tpe <: ProductN[T1,...,TN], returns Some(T1,...,TN) else None */
+    /** if tpe <: ProductN[T1,...,TN], returns Some((T1,...,TN)) else None */
     def getProductArgs(tpe: Type): Option[List[Type]] = 
       tpe.baseClasses collectFirst { case x if isExactProductType(x.tpe) => tpe.baseType(x).typeArgs }
 
