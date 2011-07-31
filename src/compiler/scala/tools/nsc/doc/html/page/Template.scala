@@ -312,7 +312,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       if ((inDefTpls.tail.isEmpty && (inDefTpls.head == mbr.inTemplate)) || isReduced) NodeSeq.Empty 
       else {
         <dt>Definition Classes</dt>
-        <dd>{ templatesToHtml(inDefTpls, xml.Text(" â†’ ")) }</dd>
+        <dd>{ templatesToHtml(inDefTpls, xml.Text(" → ")) }</dd>
       }
     } 
 
