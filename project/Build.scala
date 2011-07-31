@@ -4,9 +4,12 @@ import Keys._
 object ScalaBuild extends Build {
   lazy val root = Project("scala", file(".")) // TODO - aggregate on, say... quick
 
+  // External dependencies used for various projects
+  lazy val ant = libraryDependencies += "org.apache.ant" % "ant" % "1.8.2"
 
   // These are setting overrides for most artifacts in the Scala build file.
   def settingOverrides: Seq[Setting[_]] = Seq(
+                             crossPaths := false,
                              publishArtifact in packageDoc := false,
                              publishArtifact in packageSrc := false,
                              javaSource in Compile <<= (baseDirectory, name) apply (_ / "src" / _),
@@ -15,8 +18,7 @@ object ScalaBuild extends Build {
                              javacOptions ++= Seq("-target", "1.5"),
                              scalaSource in Compile <<= (baseDirectory, name) apply (_ / "src" / _),
                              autoScalaLibrary := false,
-                             unmanagedJars := Seq(),
-                             unmanagedBase <<= baseDirectory(_ / "useless" / "directory" / "name")
+                             unmanagedJars in Compile := Seq()
                             )
   // TODO - Figure out a way to uniquely determine a version to assign to Scala builds...
   def currentUniqueRevision = "0.1"
@@ -110,7 +112,7 @@ object ScalaBuild extends Build {
           unmanagedClasspath in Compile <<= (exportedProducts in forkjoin in Compile).identity,
           scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "library"),
           // TODO - Allow other scalac option settings.
-          scalacOptions in Compile <<= (scalaSource in Compile) map (src => Seq("-sourcepath", src.getAbsolutePath)),
+          scalacOptions in Compile <++= (scalaSource in Compile) map (src => Seq("-sourcepath", src.getAbsolutePath)),
           referenceScala
       )) :_*)
 
@@ -120,7 +122,7 @@ object ScalaBuild extends Build {
         scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "compiler"),
         // TODO - Use depends on *and* SBT's magic dependency mechanisms...
         unmanagedClasspath in Compile <<= Seq(forkjoin, library, fjbg, jline, msil).map(exportedProducts in Compile in _).join.map(_.map(_.flatten)),
-        libraryDependencies += "org.apache.ant" % "ant" % "1.8.2",
+        ant,
         referenceScala
       )
     ):_*)
@@ -141,7 +143,7 @@ object ScalaBuild extends Build {
   // Things that compile against the compiler.
   lazy val compilerDependentProjectSettings = dependentProjectSettings ++ Seq(quickScalaCompilerDependency)
   lazy val scalap = Project("scalap", file(".")) settings(compilerDependentProjectSettings:_*)
-  lazy val partestSettings = compilerDependentProjectSettings ++ Seq(libraryDependencies += "org.apache.ant" % "ant" % "1.8.2")
+  lazy val partestSettings = compilerDependentProjectSettings :+ ant
   lazy val partest = Project("partest", file(".")) settings(partestSettings:_*)  dependsOn(actors,forkjoin,scalap)
   // TODO - generate scala properties file...
 
