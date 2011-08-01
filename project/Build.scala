@@ -2,6 +2,7 @@ import sbt._
 import Keys._
 
 object ScalaBuild extends Build {
+
   lazy val root = Project("scala", file(".")) // TODO - aggregate on, say... quick
 
   // External dependencies used for various projects
@@ -18,7 +19,9 @@ object ScalaBuild extends Build {
                              javacOptions ++= Seq("-target", "1.5"),
                              scalaSource in Compile <<= (baseDirectory, name) apply (_ / "src" / _),
                              autoScalaLibrary := false,
-                             unmanagedJars in Compile := Seq()
+                             unmanagedJars in Compile := Seq(),
+                             // Most libs in the compiler use this order to build.
+                             compileOrder in Compile :== CompileOrder.Mixed
                             )
   // TODO - Figure out a way to uniquely determine a version to assign to Scala builds...
   def currentUniqueRevision = "0.1"
@@ -59,10 +62,18 @@ object ScalaBuild extends Build {
   def STARR = scalaInstance <<= appConfiguration map { app =>
     val launcher = app.provider.scalaProvider.launcher
     ScalaInstance(
-      file("lib/scala-library.jar"),
-      file("lib/scala-compiler.jar"),
+      // There's some strange: java.lang.AssertionError: assertion failed: scala.runtime.ObjectRef
+      // Preventing us from using STARR directly...
+      // at scala.Predef$.assert(Predef.scala:102)
+      // at scala.reflect.internal.Types$PolyType.<init>(Types.scala:2180)
+      //file("lib/scala-library.jar"),
+      //file("lib/scala-compiler.jar"),
+      file("build/locker/classes/library"),
+      file("build/locker/classes/compiler"),
       launcher,
-      file("lib/fjbg.jar"))
+      file("lib/fjbg.jar"),
+      file("lib/forkjoin.jar"),
+      file("lib/jline.jar"))
   }
 
   // Locker is a lockable Scala compiler that can be built of 'current' source to perform rapid development.
@@ -110,9 +121,11 @@ object ScalaBuild extends Build {
       Seq(version := layer,
           // TODO - use depends on.
           unmanagedClasspath in Compile <<= (exportedProducts in forkjoin in Compile).identity,
+          managedClasspath in Compile := Seq(),
           scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "library"),
           // TODO - Allow other scalac option settings.
           scalacOptions in Compile <++= (scalaSource in Compile) map (src => Seq("-sourcepath", src.getAbsolutePath)),
+          classpathOptions := new ClasspathOptions(false, false, false, false, false),
           referenceScala
       )) :_*)
 
@@ -122,6 +135,7 @@ object ScalaBuild extends Build {
         scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "compiler"),
         // TODO - Use depends on *and* SBT's magic dependency mechanisms...
         unmanagedClasspath in Compile <<= Seq(forkjoin, library, fjbg, jline, msil).map(exportedProducts in Compile in _).join.map(_.map(_.flatten)),
+        classpathOptions := new ClasspathOptions(false, false, false, false, false),
         ant,
         referenceScala
       )
@@ -157,7 +171,8 @@ object ScalaBuild extends Build {
   lazy val continuationsPluginSettings = compilerDependentProjectSettings ++ Seq(
     scalaSource in Compile <<= baseDirectory(_ / "src/continuations/plugin/"),
     resourceDirectory in Compile <<= baseDirectory(_ / "src/continuations/plugin/"),
-    exportJars := true
+    exportJars := true,
+    name := "continuations"  // Note: This artifact is directly exported.
   )
   lazy val continuationsPlugin = Project("continuations-plugin", file(".")) settings(continuationsPluginSettings:_*)
   lazy val continuationsLibrarySettings = dependentProjectSettings ++ Seq(
@@ -167,4 +182,15 @@ object ScalaBuild extends Build {
     }
   )
   lazy val continuationsLibrary = Project("continuations-library", file(".")) settings(continuationsLibrarySettings:_*)
+
+  // --------------------------------------------------------------
+  //  Real Library Artifact
+  // --------------------------------------------------------------
+  val allSubpathsCopy = (dir: File) => (dir.*** --- dir) x (relativeTo(dir)|flat)
+  def productTaskToMapping(products : Task[Seq[File]]) = products map { ps => ps flatMap { p => allSubpathsCopy(p) } }
+  lazy val packageScalaLibBinTask = Seq(quickLib, continuationsLibrary, dbc, actors, swing).map(p => products in p in Compile).join.map(_.map(_.flatten)).map(productTaskToMapping)
+  lazy val scalaLibArtifactSettings : Seq[Setting[_]] = Defaults.packageTasks(packageBin, packageScalaLibBinTask) ++ Seq(
+    name := "scala-library"
+  )
+  //lazy val scalalibrary = Project("scala-library", file(".")) settings(scalaLibArtifactSettings:_*)
 }
