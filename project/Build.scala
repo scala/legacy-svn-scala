@@ -192,5 +192,5 @@ object ScalaBuild extends Build {
   lazy val scalaLibArtifactSettings : Seq[Setting[_]] = Defaults.packageTasks(packageBin, packageScalaLibBinTask) ++ Seq(
     name := "scala-library"
   )
-  //lazy val scalalibrary = Project("scala-library", file(".")) settings(scalaLibArtifactSettings:_*)
+  lazy val scalalibrary = Project("scala-library", file(".")) settings(scalaLibArtifactSettings:_*)
 }
