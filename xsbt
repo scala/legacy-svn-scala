@@ -9,8 +9,9 @@ gitignore="$(dirname $0)/.gitignore"
 bootdir="$(dirname $0)/.boot"
 sbtjar="${bootdir}/sbt-launch.jar"
 launchversionfile="${bootdir}/.launchversion"
-sbtversion=0.10.1
-sbturl="http://typesafe.artifactoryonline.com/typesafe/ivy-releases/org.scala-tools.sbt/sbt-launch/$sbtversion/sbt-launch.jar"
+sbtversion=0.10.2-SNAPSHOT
+sbturl="http://repo.typesafe.com/typesafe/ivy-snapshots/org.scala-tools.sbt/sbt-launch/0.10.2-20110731-052112/sbt-launch.jar"
+# For later.. sbturl="http://typesafe.artifactoryonline.com/typesafe/ivy-releases/org.scala-tools.sbt/sbt-launch/$sbtversion/sbt-launch.jar"
 
 # Check the current stored launch version.
 if [[ -f "$launchversionfile" ]]; then
@@ -41,8 +42,13 @@ done
 
 # TODO - Check version of SBT launch jar in some kind of tag file so we can pull new versions when needed.
 if [[ ! -f "$sbtjar" ]] || [[ "$storedversion" != "$sbtversion" ]]; then
+  if [[ -f "$sbtjar" ]]; then
+    echo "SBT launch is out-of-date.  Removing old version."
+    rm $sbtjar
+  fi
   echo "Downloading sbt version $sbtversion to $sbtjar ..."
   echo ""
+  # TODO - Do this after downloading the new JAR file...
   echo "$sbtversion" >$launchversionfile
   if [[ $(which curl) ]]; then
     curl --silent "$sbturl" > "$sbtjar"
