@@ -21,7 +21,7 @@ object ScalaBuild extends Build {
                              autoScalaLibrary := false,
                              unmanagedJars in Compile := Seq(),
                              // Most libs in the compiler use this order to build.
-                             compileOrder in Compile :== CompileOrder.Mixed
+                             compileOrder in Compile :== CompileOrder.JavaThenScala
                             )
   // TODO - Figure out a way to uniquely determine a version to assign to Scala builds...
   def currentUniqueRevision = "0.1"
@@ -66,10 +66,10 @@ object ScalaBuild extends Build {
       // Preventing us from using STARR directly...
       // at scala.Predef$.assert(Predef.scala:102)
       // at scala.reflect.internal.Types$PolyType.<init>(Types.scala:2180)
-      //file("lib/scala-library.jar"),
-      //file("lib/scala-compiler.jar"),
-      file("build/locker/classes/library"),
-      file("build/locker/classes/compiler"),
+      file("lib/scala-library.jar"),
+      file("lib/scala-compiler.jar"),
+      //file("build/locker/classes/library"),
+      //file("build/locker/classes/compiler"),
       launcher,
       file("lib/fjbg.jar"),
       file("lib/forkjoin.jar"),
