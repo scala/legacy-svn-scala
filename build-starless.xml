@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="sabbus-starless"
+         default="build"
+         xmlns:artifact="urn:maven-artifact-ant">
+  <description>
+SuperSabbus for Scala core, builds the scala library and compiler. It can also package it as a simple distribution, tests it for stable bootstrapping and against the Scala test suite.
+  </description>
+
+
+  <!-- ===========================================================================
+  Initialization
+  ============================================================================ -->
+
+  <target name="init.properties">
+    <!-- Pull in properties from build -->
+    <property file="starr.properties" />
+    <property name="starr.group" value="org.scala-lang.bootstrap" />
+    <property name="starr.current.file" value="build/current.starr.version" />
+    <property name="remote.repository"
+              value="http://typesafe.artifactoryonline.com/typesafe/starr-releases" />
+    <property name="local.repository" value="${user.home}/.m2/repository" />
+    <property name="repository.credentials.id"
+              value="starr.repo.typesafe.com" />
+    <property name="settings.file" value="${user.home}/.m2/settings.xml" />
+
+    <echo>Using server[${repository.credentials.id}] for maven repository credentials.
+       Please make sure that your ~/.m2/settings.xml has the needed username/password for this server id
+     </echo>
+  </target>
+
+  <target name="init.maven" depends="init.properties">
+
+    <!-- Add our maven ant tasks -->
+    <path id="maven-ant-tasks.classpath"
+          path="lib/ant/maven-ant-tasks-2.1.1.jar" />
+    <typedef resource="org/apache/maven/artifact/ant/antlib.xml"
+             uri="urn:maven-artifact-ant"
+             classpathref="maven-ant-tasks.classpath" />
+  </target>
+
+  <target name="check.current.starr" depends="init.maven">
+    <condition property="resolve.starr.now">
+      <not>
+        <resourcecontains resource="${starr.current.file}"
+                          substring="${starr.version}" />
+      </not>
+    </condition>
+  </target>
+
+  <target name="resolve.current.starr"
+          depends="check.current.starr"
+          if="resolve.starr.now">
+    <artifact:dependencies filesetId="starr.fileset"
+                           useScope="runtime"
+                           versionsId="dependency.versions">
+      <dependency groupId="${starr.group}"
+                  artifactId="scala-library"
+                  version="${starr.version}"
+                  scope="compile" />
+      <dependency groupId="${starr.group}"
+                  artifactId="scala-compiler"
+                  version="${starr.version}"
+                  scope="compile" />
+      <dependency groupId="${starr.group}"
+                  artifactId="fjbg"
+                  version="${starr.version}"
+                  scope="compile" />
+      <dependency groupId="${starr.group}"
+                  artifactId="jline"
+                  version="${starr.version}"
+                  scope="compile" />
+      <dependency groupId="${starr.group}"
+                  artifactId="forkjoin"
+                  version="${starr.version}"
+                  scope="compile" />
+      <dependency groupId="${starr.group}"
+                  artifactId="msil"
+                  version="${starr.version}"
+                  scope="compile" />
+    </artifact:dependencies>
+    <copy todir="lib" overwrite="true">
+      <fileset refid="starr.fileset" />
+      <!-- This mapper strips off all leading directory information -->
+      <mapper classpathref="maven-ant-tasks.classpath"
+              classname="org.apache.maven.artifact.ant.VersionMapper"
+              from="${dependency.versions}"
+              to="flatten" />
+    </copy>
+    <!-- TODO - Resolve ant junk -->
+    <!-- Write current version to file -->
+    <mkdir dir="build" />
+    <echo file="${starr.current.file}">${starr.version}</echo>
+  </target>
+
+  <!-- ===========================================================================
+    END-USER TARGETS
+    ============================================================================ -->
+
+  <!-- Note: It would be ideal if ANT let us just farm all of these to the other
+    build generically or define a macro.   It does not. -->
+  <target name="build" depends="resolve.current.starr">
+    <ant antfile="build.xml" target="build" />
+  </target>
+  <target name="build-opt" depends="resolve.current.starr">
+    <ant antfile="build.xml" target="build-opt" />
+  </target>
+  <target name="clean" depends="resolve.current.starr">
+    <ant antfile="build.xml" target="clean" />
+    <!-- TODO - Clean starr -->
+  </target>
+  <target name="test" depends="resolve.current.starr">
+    <ant antfile="build.xml" target="test" />
+  </target>
+  <target name="test-opt" depends="resolve.current.starr">
+    <ant antfile="build.xml" target="test-opt" />
+  </target>
+  <target name="dist" depends="resolve.current.starr">
+    <ant antfile="build.xml" target="dist" />
+  </target>
+  <target name="dist-opt" depends="resolve.current.starr">
+    <ant antfile="build.xml" target="dist-opt" />
+  </target>
+  <target name="fastdist" depends="resolve.current.starr">
+    <ant antfile="build.xml" target="fastdist" />
+  </target>
+  <target name="distclean" depends="resolve.current.starr">
+    <ant antfile="build.xml" target="distclean" />
+  </target>
+  <target name="replacestarr" depends="resolve.current.starr">
+    <ant antfile="build.xml" target="replacestarr" />
+    <!-- TODO - Bump version number and push new starr? -->
+  </target>
+  <target name="replacelocker" depends="resolve.current.starr">
+    <ant antfile="build.xml" target="replacelocker" />
+  </target>
+  <target name="replacelocker-opt" depends="resolve.current.starr">
+    <ant antfile="build.xml" target="replacelocker-opt" />
+  </target>
+  <target name="unlocklocker" depends="resolve.current.starr">
+    <ant antfile="build.xml" target="unlocklocker" />
+  </target>
+  <target name="newlibs" depends="resolve.current.starr">
+    <ant antfile="build.xml" target="newlibs" />
+  </target>
+  <target name="newforkjoin" depends="resolve.current.starr">
+    <ant antfile="build.xml" target="newforkjoin" />
+  </target>
+
+  <!-- ===========================================================================
+    FORWARDED TARGETS FOR NIGHTLY BUILDS
+    ============================================================================ -->
+  <target name="nightly" depends="resolve.current.starr">
+    <ant antfile="build.xml" target="nightly" />
+  </target>
+  <target name="nightly-nopt" depends="resolve.current.starr">
+    <ant antfile="build.xml" target="nightly-nopt" />
+  </target>
+  <target name="nightly.checkinit" depends="resolve.current.starr">
+    <ant antfile="build.xml" target="nightly.checkinit" />
+  </target>
+  <target name="nightly.checkall" depends="resolve.current.starr">
+    <ant antfile="build.xml" target="nightly.checkall" />
+  </target>
+
+  <!-- ===========================================================================
+  MISCELLANEOUS
+  ============================================================================ -->
+  <target name="yourkit.run" depends="resolve.current.starr">
+    <ant antfile="build.xml" target="yourkit.run" />
+  </target>
+
+  <target name="graph.all" depends="resolve.current.starr">
+    <ant antfile="build.xml" target="graph.all" />
+  </target>
+
+
+
+
+  <!-- ===========================================================================
+  Push latest STARR targets
+  ============================================================================ -->
+  <target name="make.poms" depends="init.maven">
+    <artifact:pom id="pom.forkjoin"
+                  groupId="${starr.group}"
+                  artifactId="forkjoin"
+                  version="${starr.version}">
+      <license name="BSD-Like"
+               url="http://www.scala-lang.org/downloads/license.html" />
+    </artifact:pom>
+    <artifact:pom id="pom.jline"
+                  groupId="${starr.group}"
+                  artifactId="jline"
+                  version="${starr.version}">
+      <license name="BSD-Like"
+               url="http://www.scala-lang.org/downloads/license.html" />
+    </artifact:pom>
+    <artifact:pom id="pom.fjbg"
+                  groupId="${starr.group}"
+                  artifactId="fjbg"
+                  version="${starr.version}">
+      <license name="BSD-Like"
+               url="http://www.scala-lang.org/downloads/license.html" />
+    </artifact:pom>
+    <artifact:pom id="pom.library"
+                  groupId="${starr.group}"
+                  artifactId="scala-library"
+                  version="${starr.version}">
+      <dependency groupId="${starr.group}"
+                  artifactId="forkjoin"
+                  version="${starr.version}" />
+      <license name="BSD-Like"
+               url="http://www.scala-lang.org/downloads/license.html" />
+    </artifact:pom>
+    <artifact:pom id="pom.msil"
+                  groupId="${starr.group}"
+                  artifactId="msil"
+                  version="${starr.version}">
+      <dependency groupId="${starr.group}"
+                  artifactId="scala-library"
+                  version="${starr.version}" />
+      <license name="BSD-Like"
+               url="http://www.scala-lang.org/downloads/license.html" />
+    </artifact:pom>
+    <artifact:pom id="pom.compiler"
+                  groupId="${starr.group}"
+                  artifactId="scala-compiler"
+                  version="${starr.version}">
+      <dependency groupId="${starr.group}"
+                  artifactId="scala-library"
+                  version="${starr.version}" />
+      <dependency groupId="${starr.group}"
+                  artifactId="msil"
+                  version="${starr.version}" />
+      <dependency groupId="${starr.group}"
+                  artifactId="fjbg"
+                  version="${starr.version}" />
+      <dependency groupId="${starr.group}"
+                  artifactId="jline"
+                  version="${starr.version}" />
+      <license name="BSD-Like"
+               url="http://www.scala-lang.org/downloads/license.html" />
+    </artifact:pom>
+  </target>
+
+  <!-- Pushes the current starr locally for testing -->
+  <target name="push-current-starr.local" depends="make.poms">
+    <mkdir dir="build/poms" />
+    <artifact:writepom pomRefId="pom.fjbg" file="build/poms/fjbg-pom.xml" />
+    <artifact:install file="lib/fjbg.jar">
+      <pom file="build/poms/fjbg-pom.xml" />
+    </artifact:install>
+    <artifact:writepom pomRefId="pom.forkjoin"
+                       file="build/poms/forkjoin-pom.xml" />
+    <artifact:install file="lib/forkjoin.jar">
+      <pom file="build/poms/forkjoin-pom.xml" />
+    </artifact:install>
+    <artifact:writepom pomRefId="pom.msil" file="build/poms/msil-pom.xml" />
+    <artifact:install file="lib/msil.jar">
+      <pom file="build/poms/msil-pom.xml" />
+    </artifact:install>
+    <artifact:writepom pomRefId="pom.jline" file="build/poms/jline-pom.xml" />
+    <artifact:install file="lib/jline.jar">
+      <pom file="build/poms/jline-pom.xml" />
+    </artifact:install>
+    <artifact:writepom pomRefId="pom.library"
+                       file="build/poms/scala-library-pom.xml" />
+    <artifact:install file="lib/scala-library.jar">
+      <pom file="build/poms/scala-library-pom.xml" />
+    </artifact:install>
+    <artifact:writepom pomRefId="pom.compiler"
+                       file="build/poms/scala-compiler-pom.xml" />
+    <artifact:install file="lib/scala-compiler.jar">
+      <pom file="build/poms/scala-compiler-pom.xml" />
+    </artifact:install>
+  </target>
+
+  <!-- Pushes the current starr externally, Note: starr.properties needs to be
+       up-to-date!  -->
+  <target name="push-current-starr.remote" depends="make.poms">
+    <mkdir dir="build/poms" />
+    <artifact:writepom pomRefId="pom.fjbg" file="build/poms/fjbg-pom.xml" />
+    <artifact:deploy file="lib/fjbg.jar">
+      <pom file="build/poms/fjbg-pom.xml" />
+      <artifact:remoteRepository url="${remote.repository}"
+                                 id="${repository.credentials.id}" />
+    </artifact:deploy>
+    <artifact:writepom pomRefId="pom.forkjoin"
+                       file="build/poms/forkjoin-pom.xml" />
+    <artifact:deploy file="lib/forkjoin.jar">
+      <pom file="build/poms/forkjoin-pom.xml" />
+      <artifact:remoteRepository url="${remote.repository}"
+                                 id="${repository.credentials.id}" />
+    </artifact:deploy>
+    <artifact:writepom pomRefId="pom.msil" file="build/poms/msil-pom.xml" />
+    <artifact:deploy file="lib/msil.jar">
+      <pom file="build/poms/msil-pom.xml" />
+      <artifact:remoteRepository url="${remote.repository}"
+                                 id="${repository.credentials.id}" />
+    </artifact:deploy>
+    <artifact:writepom pomRefId="pom.jline" file="build/poms/jline-pom.xml" />
+    <artifact:deploy file="lib/jline.jar">
+      <pom file="build/poms/jline-pom.xml" />
+      <artifact:remoteRepository url="${remote.repository}"
+                                 id="${repository.credentials.id}" />
+    </artifact:deploy>
+    <artifact:writepom pomRefId="pom.library"
+                       file="build/poms/scala-library-pom.xml" />
+    <artifact:deploy file="lib/scala-library.jar">
+      <artifact:remoteRepository url="${remote.repository}"
+                                 id="${repository.credentials.id}" />
+      <pom file="build/poms/scala-library-pom.xml" />
+    </artifact:deploy>
+    <artifact:writepom pomRefId="pom.compiler"
+                       file="build/poms/scala-compiler-pom.xml" />
+    <artifact:deploy file="lib/scala-compiler.jar">
+      <artifact:remoteRepository url="${remote.repository}"
+                                 id="${repository.credentials.id}" />
+      <pom file="build/poms/scala-compiler-pom.xml" />
+    </artifact:deploy>
+  </target>
+
+</project>
