@@ -152,7 +152,7 @@ object ScalaBuild extends Build {
   lazy val dependentProjectSettings = settingOverrides ++ Seq(quickScalaInstance, quickScalaLibraryDependency)
   lazy val actors = Project("actors", file(".")) settings(dependentProjectSettings:_*) dependsOn(forkjoin)
   lazy val dbc = Project("dbc", file(".")) settings(dependentProjectSettings:_*)
-  lazy val swing = Project("swing", file(".")) settings(dependentProjectSettings:_*)
+  lazy val swing = Project("swing", file(".")) settings(dependentProjectSettings:_*) dependsOn(actors)
   lazy val scalacheck = Project("scalacheck", file(".")) settings(dependentProjectSettings:_*)
 
   // This project will generate man pages for scala.
@@ -190,7 +190,18 @@ object ScalaBuild extends Build {
   def productTaskToMapping(products : Task[Seq[File]]) = products map { ps => ps flatMap { p => allSubpathsCopy(p) } }
   lazy val packageScalaLibBinTask = Seq(quickLib, continuationsLibrary, dbc, actors, swing).map(p => products in p in Compile).join.map(_.map(_.flatten)).map(productTaskToMapping)
   lazy val scalaLibArtifactSettings : Seq[Setting[_]] = Defaults.packageTasks(packageBin, packageScalaLibBinTask) ++ Seq(
-    name := "scala-library"
+    name := "scala-library",
+    crossPaths := false
   )
   lazy val scalalibrary = Project("scala-library", file(".")) settings(scalaLibArtifactSettings:_*)
+
+  // --------------------------------------------------------------
+  //  Real Compiler Artifact
+  // --------------------------------------------------------------
+  lazy val packageScalaBinTask = Seq(quickComp, fjbg, msil).map(p => products in p in Compile).join.map(_.map(_.flatten)).map(productTaskToMapping)
+  lazy val scalaBinArtifactSettings : Seq[Setting[_]] = Defaults.packageTasks(packageBin, packageScalaBinTask) ++ Seq(
+    name := "scala-compiler",
+    crossPaths := false
+  )
+  lazy val scalaCompiler = Project("scala-compiler", file(".")) settings(scalaBinArtifactSettings:_*)
 }
