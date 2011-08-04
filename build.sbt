@@ -7,4 +7,4 @@ scalaVersion := "2.9.0-1"
 
 organization := "org.scala-lang"
 
-ivyScala ~= { (is: Option[IvyScala]) => is.map(_.copy(ignoreScalaVersions = true)) }
+ivyScala ~= { (is: Option[IvyScala]) => is.map(_.copy(checkExplicit = false) ) }
