@@ -125,7 +125,7 @@ object ScalaBuild extends Build {
           scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "library"),
           // TODO - Allow other scalac option settings.
           scalacOptions in Compile <++= (scalaSource in Compile) map (src => Seq("-sourcepath", src.getAbsolutePath)),
-          classpathOptions := new ClasspathOptions(false, false, false, false, false),
+          classpathOptions := ClasspathOptions.manual,
           referenceScala
       )) :_*)
 
@@ -135,7 +135,7 @@ object ScalaBuild extends Build {
         scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "compiler"),
         // TODO - Use depends on *and* SBT's magic dependency mechanisms...
         unmanagedClasspath in Compile <<= Seq(forkjoin, library, fjbg, jline, msil).map(exportedProducts in Compile in _).join.map(_.map(_.flatten)),
-        classpathOptions := new ClasspathOptions(false, false, false, false, false),
+        classpathOptions := ClasspathOptions.manual,
         ant,
         referenceScala
       )
