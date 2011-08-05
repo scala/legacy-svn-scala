@@ -190,9 +190,11 @@ object ScalaBuild extends Build {
   lazy val scalaLibArtifactSettings : Seq[Setting[_]] = Defaults.packageTasks(packageBin, packageScalaLibBinTask) ++ Seq(
     name := "scala-library",
     crossPaths := false,
-    exportJars := true
+    exportJars := true,
+    autoScalaLibrary := false,
+    unmanagedJars in Compile := Seq()
   )
-  lazy val scalalibrary = Project("scala-library", file(".")) settings(scalaLibArtifactSettings:_*)
+  lazy val scalaLibrary = Project("scala-library", file(".")) settings(scalaLibArtifactSettings:_*)
 
   // --------------------------------------------------------------
   //  Real Compiler Artifact
@@ -201,9 +203,38 @@ object ScalaBuild extends Build {
   lazy val scalaBinArtifactSettings : Seq[Setting[_]] = Defaults.packageTasks(packageBin, packageScalaBinTask) ++ Seq(
     name := "scala-compiler",
     crossPaths := false,
-    exportJars := true
+    exportJars := true,
+    autoScalaLibrary := false,
+    unmanagedJars in Compile := Seq()
   )
-  lazy val scalaCompiler = Project("scala-compiler", file(".")) settings(scalaBinArtifactSettings:_*)
+  lazy val scalaCompiler = Project("scala-compiler", file(".")) settings(scalaBinArtifactSettings:_*) dependsOn(scalaLibrary)
+
+
+  // --------------------------------------------------------------
+  //  Testing
+  // --------------------------------------------------------------
+  lazy val runPartest = TaskKey[Unit]("run-partest", "Runs the partest test suite against the current trunk")
+  // <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
+  def partestResources(base: File): PathFinder = base ** ("*" -- "*.log")
+  // TODO - Split partest task into Configurations and build a Task for each Configuration.
+  // *then* mix all of them together for run-testsuite or something clever like this.
+  def runPartestTask(classpath: ScopedTask[Classpath], scalaRun: ScopedTask[ScalaRun], baseDirectory: ScopedSetting[File]): Project.Initialize[Task[Unit]] =
+    (classpath, scalaRun, baseDirectory, streams) map {     
+      (cp, runner, dir, s) =>
+        val testDir = dir / "test"
+        val runTests = testDir / "files" / "run"
+        val jvmTests = testDir / "files" / "jvm"
+        val rawCp = Build.data(cp)
+        toError(runner.run("scala.tools.partest.nest.SBTRunner", rawCp, Seq(
+          "-cp", rawCp.mkString(java.io.File.pathSeparator),
+          "-run", partestResources(runTests).get.mkString(",")
+        ), s.log))
+    }
+  lazy val testsuiteSetttings: Seq[Setting[_]] = compilerDependentProjectSettings ++ Seq(
+    unmanagedBase <<= baseDirectory / "test/files/lib",
+    runPartest <<= runPartestTask(fullClasspath in Runtime, runner in run, baseDirectory)
+  )
+  val testsuite = Project("testsuite", file(".")) settings(testsuiteSetttings:_*) dependsOn(partest,swing,scalaLibrary,scalaCompiler)
 
   // --------------------------------------------------------------
   //  Generating Documentation.
@@ -211,7 +242,7 @@ object ScalaBuild extends Build {
 
 
 
-// This project will generate man pages for scala.
+  // This project will generate man pages (in man1 and html) for scala.
   val runManmakerMan = TaskKey[Unit]("make-man", "Runs the man maker project to generate man pages")
   val runManmakerHtml = TaskKey[Unit]("make-html", "Runs the man maker project to generate html pages")
   def runManmakerTask(classpath: ScopedTask[Classpath], scalaRun: ScopedTask[ScalaRun], mainClass: String, dir: String, ext: String): Project.Initialize[Task[Unit]] =
