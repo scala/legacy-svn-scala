@@ -33,23 +33,9 @@ object SBTRunner extends DirectRunner {
                                 runFiles: Option[Array[File]] = None,
                                 jvmFiles: Option[Array[File]] = None,
                                 posFiles: Option[Array[File]] = None,
-                                negFiles: Option[Array[File]] = None) 
-  
-  def reportResults(results: java.util.HashMap[String,Int]):Unit = {
-    import collection.JavaConversions._
-    val failed: Iterable[String] = results collect {
-          case (path, 1)    => path + " [FAILED]"
-          case (path, 2)    => path + " [TIMOUT]"
-        }
-    // TODO - better reporting
-    failed foreach System.err.println
-  }
-  def runAndReportResults(testType: String)(files: Array[File]): Unit = {
-    reportResults(reflectiveRunTestsForFiles(files, testType))
-  }
+                                negFiles: Option[Array[File]] = None)
 
   def main(args: Array[String]): Unit = {
-    Console.println("This would run partest, but not right now...")
     def parseArgs(args: Seq[String], data: CommandLineOptions): CommandLineOptions = args match {
       case Seq("-cp", cp, rest @ _*) => parseArgs(rest, data.copy(classpath=Some(cp)))
       case Seq("-run", runFiles, rest @ _*) => parseArgs(rest, data.copy(runFiles=Some(runFiles.split(",").map(new File(_)))))
@@ -61,17 +47,27 @@ object SBTRunner extends DirectRunner {
         sys.error("Unknown command line options: " + x)
     }
     val config = parseArgs(args, CommandLineOptions())
-    println("Found config: " + config)
     fileManager.CLASSPATH = config.classpath getOrElse error("No classpath set")
     // Find scala library jar file...
     val lib: Option[String] = (fileManager.CLASSPATH split File.pathSeparator filter (_ matches ".*scala-library.*\\.jar")).headOption
     fileManager.LATEST_LIB = lib getOrElse error("No scala-library found!")
-    println("Found lib := " + fileManager.LATEST_LIB)
     // Now run and report...
-    config.runFiles foreach runAndReportResults("run")
-    config.jvmFiles foreach runAndReportResults("jvm")
-    config.posFiles foreach runAndReportResults("pos")
-    config.negFiles foreach runAndReportResults("neg")
+    val runs = Map("run" -> config.runFiles,
+                   "jvm" -> config.jvmFiles,
+                   "pos" -> config.posFiles,
+                   "neg" -> config.posFiles).filter(_._2.isDefined).mapValues(_.get)
+    // This next bit uses java maps...
+    import collection.JavaConversions._
+    val failures = for { 
+     (testType, files) <- runs
+     (path, result) <- reflectiveRunTestsForFiles(files,testType)
+     if result == 1 || result == 2
+     val resultName = (if(result == 1) " [FAILED]" else " [TIMEOUT]")
+    } yield path + resultName
+    
+    // Re-list all failures so we can go figure out what went wrong.
+    failures foreach System.err.println
+    if(!failures.isEmpty) sys.exit(1)
   }
 }
 
