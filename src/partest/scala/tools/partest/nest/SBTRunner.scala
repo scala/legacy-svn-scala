@@ -31,7 +31,9 @@ object SBTRunner extends DirectRunner {
 
   case class CommandLineOptions(classpath: Option[String] = None,
                                 runFiles: Option[Array[File]] = None,
-                                jvmFiles:Option[Array[File]] = None) 
+                                jvmFiles: Option[Array[File]] = None,
+                                posFiles: Option[Array[File]] = None,
+                                negFiles: Option[Array[File]] = None) 
   
   def reportResults(results: java.util.HashMap[String,Int]):Unit = {
     import collection.JavaConversions._
@@ -51,6 +53,9 @@ object SBTRunner extends DirectRunner {
     def parseArgs(args: Seq[String], data: CommandLineOptions): CommandLineOptions = args match {
       case Seq("-cp", cp, rest @ _*) => parseArgs(rest, data.copy(classpath=Some(cp)))
       case Seq("-run", runFiles, rest @ _*) => parseArgs(rest, data.copy(runFiles=Some(runFiles.split(",").map(new File(_)))))
+      case Seq("-jvm", runFiles, rest @ _*) => parseArgs(rest, data.copy(jvmFiles=Some(runFiles.split(",").map(new File(_)))))
+      case Seq("-pos", runFiles, rest @ _*) => parseArgs(rest, data.copy(posFiles=Some(runFiles.split(",").map(new File(_)))))
+      case Seq("-neg", runFiles, rest @ _*) => parseArgs(rest, data.copy(negFiles=Some(runFiles.split(",").map(new File(_)))))
       case Seq() => data
       case x =>        
         sys.error("Unknown command line options: " + x)
@@ -65,6 +70,8 @@ object SBTRunner extends DirectRunner {
     // Now run and report...
     config.runFiles foreach runAndReportResults("run")
     config.jvmFiles foreach runAndReportResults("jvm")
+    config.posFiles foreach runAndReportResults("pos")
+    config.negFiles foreach runAndReportResults("neg")
   }
 }
 

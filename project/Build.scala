@@ -131,15 +131,15 @@ object ScalaBuild extends Build {
 
     // Define the compiler
     val compiler = Project(layer + "-compiler", file(".")) settings((settingOverrides ++
-    Seq(version := layer,
+      Seq(version := layer,
         scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "compiler"),
         // TODO - Use depends on *and* SBT's magic dependency mechanisms...
         unmanagedClasspath in Compile <<= Seq(forkjoin, library, fjbg, jline, msil).map(exportedProducts in Compile in _).join.map(_.map(_.flatten)),
         classpathOptions := ClasspathOptions.manual,
         ant,
         referenceScala
-      )
-    ):_*)
+        )
+      ):_*)
 
     // Return the generated projects.
     (library, compiler)
@@ -222,13 +222,14 @@ object ScalaBuild extends Build {
     (classpath, scalaRun, baseDirectory, streams) map {     
       (cp, runner, dir, s) =>
         val testDir = dir / "test"
+        val testArgs = Seq("run", "jvm", "pos", "neg") flatMap { testType =>
+          Seq("-"+testType, partestResources(testDir / "files" / testType).get.mkString(","))
+        }
         val runTests = testDir / "files" / "run"
         val jvmTests = testDir / "files" / "jvm"
         val rawCp = Build.data(cp)
         toError(runner.run("scala.tools.partest.nest.SBTRunner", rawCp, Seq(
-          "-cp", rawCp.mkString(java.io.File.pathSeparator),
-          "-run", partestResources(runTests).get.mkString(",")
-        ), s.log))
+          "-cp", rawCp.mkString(java.io.File.pathSeparator)) ++ testArgs, s.log))
     }
   lazy val testsuiteSetttings: Seq[Setting[_]] = compilerDependentProjectSettings ++ Seq(
     unmanagedBase <<= baseDirectory / "test/files/lib",
