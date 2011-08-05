@@ -155,13 +155,6 @@ object ScalaBuild extends Build {
   lazy val swing = Project("swing", file(".")) settings(dependentProjectSettings:_*) dependsOn(actors)
   lazy val scalacheck = Project("scalacheck", file(".")) settings(dependentProjectSettings:_*)
 
-  lazy val manmakerSettings: Seq[Setting[_]] = dependentProjectSettings ++ Seq(
-    runManmakerMan <<= runManmakerTask(fullClasspath in Runtime, runner in run, "scala.tools.docutil.EmitManPage", "man1", ".1"),
-    runManmakerHtml <<= runManmakerTask(fullClasspath in Runtime, runner in run, "scala.tools.docutil.EmitHtml", "html", ".html"),
-    ant
-  )
-  lazy val manmaker = Project("manual", file(".")) settings(manmakerSettings:_*)
-
   // Things that compile against the compiler.
   lazy val compilerDependentProjectSettings = dependentProjectSettings ++ Seq(quickScalaCompilerDependency)
   lazy val scalap = Project("scalap", file(".")) settings(compilerDependentProjectSettings:_*)
@@ -232,6 +225,12 @@ object ScalaBuild extends Build {
         
       }
     }
+  lazy val manmakerSettings: Seq[Setting[_]] = dependentProjectSettings ++ Seq(
+    runManmakerMan <<= runManmakerTask(fullClasspath in Runtime, runner in run, "scala.tools.docutil.EmitManPage", "man1", ".1"),
+    runManmakerHtml <<= runManmakerTask(fullClasspath in Runtime, runner in run, "scala.tools.docutil.EmitHtml", "html", ".html"),
+    ant
+  )
+  lazy val manmaker = Project("manual", file(".")) settings(manmakerSettings:_*)
 
   // --------------------------------------------------------------
   //  Packaging a distro
