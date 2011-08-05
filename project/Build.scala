@@ -13,11 +13,11 @@ object ScalaBuild extends Build {
                              crossPaths := false,
                              publishArtifact in packageDoc := false,
                              publishArtifact in packageSrc := false,
-                             javaSource in Compile <<= (baseDirectory, name) apply (_ / "src" / _),
                              target <<= (baseDirectory, name) apply (_ / "target" / _),
                              (classDirectory in Compile) <<= target(_ / "classes"),
                              javacOptions ++= Seq("-target", "1.5"),
                              scalaSource in Compile <<= (baseDirectory, name) apply (_ / "src" / _),
+                             javaSource in Compile <<= (baseDirectory, name) apply (_ / "src" / _),
                              autoScalaLibrary := false,
                              unmanagedJars in Compile := Seq(),
                              // Most libs in the compiler use this order to build.
@@ -62,14 +62,8 @@ object ScalaBuild extends Build {
   def STARR = scalaInstance <<= appConfiguration map { app =>
     val launcher = app.provider.scalaProvider.launcher
     ScalaInstance(
-      // There's some strange: java.lang.AssertionError: assertion failed: scala.runtime.ObjectRef
-      // Preventing us from using STARR directly...
-      // at scala.Predef$.assert(Predef.scala:102)
-      // at scala.reflect.internal.Types$PolyType.<init>(Types.scala:2180)
       file("lib/scala-library.jar"),
       file("lib/scala-compiler.jar"),
-      //file("build/locker/classes/library"),
-      //file("build/locker/classes/compiler"),
       launcher,
       file("lib/fjbg.jar"),
       file("lib/forkjoin.jar"),
@@ -187,7 +181,7 @@ object ScalaBuild extends Build {
   def productTaskToMapping(products : Task[Seq[File]]) = products map { ps => ps flatMap { p => allSubpathsCopy(p) } }
   // TODO - Create a task to write the version properties file and add the mapping to this task...
   lazy val packageScalaLibBinTask = Seq(quickLib, continuationsLibrary, dbc, actors, swing).map(p => products in p in Compile).join.map(_.map(_.flatten)).map(productTaskToMapping)
-  lazy val scalaLibArtifactSettings : Seq[Setting[_]] = Defaults.packageTasks(packageBin, packageScalaLibBinTask) ++ Seq(
+  lazy val scalaLibArtifactSettings : Seq[Setting[_]] = inConfig(Compile)(Defaults.packageTasks(packageBin, packageScalaLibBinTask)) ++ Seq(
     name := "scala-library",
     crossPaths := false,
     exportJars := true,
@@ -200,7 +194,7 @@ object ScalaBuild extends Build {
   //  Real Compiler Artifact
   // --------------------------------------------------------------
   lazy val packageScalaBinTask = Seq(quickComp, fjbg, msil).map(p => products in p in Compile).join.map(_.map(_.flatten)).map(productTaskToMapping)
-  lazy val scalaBinArtifactSettings : Seq[Setting[_]] = Defaults.packageTasks(packageBin, packageScalaBinTask) ++ Seq(
+  lazy val scalaBinArtifactSettings : Seq[Setting[_]] = inConfig(Compile)(Defaults.packageTasks(packageBin, packageScalaBinTask)) ++ Seq(
     name := "scala-compiler",
     crossPaths := false,
     exportJars := true,
@@ -215,7 +209,7 @@ object ScalaBuild extends Build {
   // --------------------------------------------------------------
   lazy val runPartest = TaskKey[Unit]("run-partest", "Runs the partest test suite against the current trunk")
   // <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
-  def partestResources(base: File): PathFinder = base ** ("*" -- "*.log")
+  def partestResources(base: File): PathFinder = base ** "*.scala"
   // TODO - Split partest task into Configurations and build a Task for each Configuration.
   // *then* mix all of them together for run-testsuite or something clever like this.
   def runPartestTask(classpath: ScopedTask[Classpath], scalaRun: ScopedTask[ScalaRun], baseDirectory: ScopedSetting[File]): Project.Initialize[Task[Unit]] =
@@ -233,9 +227,10 @@ object ScalaBuild extends Build {
     }
   lazy val testsuiteSetttings: Seq[Setting[_]] = compilerDependentProjectSettings ++ Seq(
     unmanagedBase <<= baseDirectory / "test/files/lib",
-    runPartest <<= runPartestTask(fullClasspath in Runtime, runner in run, baseDirectory)
+    runPartest <<= runPartestTask(fullClasspath in Runtime, runner in run, baseDirectory),
+    autoScalaLibrary := false
   )
-  val testsuite = Project("testsuite", file(".")) settings(testsuiteSetttings:_*) dependsOn(partest,swing,scalaLibrary,scalaCompiler)
+  val testsuite = Project("testsuite", file(".")) settings(testsuiteSetttings:_*) dependsOn(partest,swing,scalaLibrary,scalaCompiler,fjbg)
 
   // --------------------------------------------------------------
   //  Generating Documentation.
