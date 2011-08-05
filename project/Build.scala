@@ -155,8 +155,12 @@ object ScalaBuild extends Build {
   lazy val swing = Project("swing", file(".")) settings(dependentProjectSettings:_*) dependsOn(actors)
   lazy val scalacheck = Project("scalacheck", file(".")) settings(dependentProjectSettings:_*)
 
-  // This project will generate man pages for scala.
-  lazy val manmaker = Project("manual", file(".")) settings(dependentProjectSettings:_*)
+  lazy val manmakerSettings: Seq[Setting[_]] = dependentProjectSettings ++ Seq(
+    runManmakerMan <<= runManmakerTask(fullClasspath in Runtime, runner in run, "scala.tools.docutil.EmitManPage", "man1", ".1"),
+    runManmakerHtml <<= runManmakerTask(fullClasspath in Runtime, runner in run, "scala.tools.docutil.EmitHtml", "html", ".html"),
+    ant
+  )
+  lazy val manmaker = Project("manual", file(".")) settings(manmakerSettings:_*)
 
   // Things that compile against the compiler.
   lazy val compilerDependentProjectSettings = dependentProjectSettings ++ Seq(quickScalaCompilerDependency)
@@ -188,10 +192,12 @@ object ScalaBuild extends Build {
   // --------------------------------------------------------------
   val allSubpathsCopy = (dir: File) => (dir.*** --- dir) x (relativeTo(dir)|flat)
   def productTaskToMapping(products : Task[Seq[File]]) = products map { ps => ps flatMap { p => allSubpathsCopy(p) } }
+  // TODO - Create a task to write the version properties file and add the mapping to this task...
   lazy val packageScalaLibBinTask = Seq(quickLib, continuationsLibrary, dbc, actors, swing).map(p => products in p in Compile).join.map(_.map(_.flatten)).map(productTaskToMapping)
   lazy val scalaLibArtifactSettings : Seq[Setting[_]] = Defaults.packageTasks(packageBin, packageScalaLibBinTask) ++ Seq(
     name := "scala-library",
-    crossPaths := false
+    crossPaths := false,
+    exportJars := true
   )
   lazy val scalalibrary = Project("scala-library", file(".")) settings(scalaLibArtifactSettings:_*)
 
@@ -201,7 +207,42 @@ object ScalaBuild extends Build {
   lazy val packageScalaBinTask = Seq(quickComp, fjbg, msil).map(p => products in p in Compile).join.map(_.map(_.flatten)).map(productTaskToMapping)
   lazy val scalaBinArtifactSettings : Seq[Setting[_]] = Defaults.packageTasks(packageBin, packageScalaBinTask) ++ Seq(
     name := "scala-compiler",
-    crossPaths := false
+    crossPaths := false,
+    exportJars := true
   )
   lazy val scalaCompiler = Project("scala-compiler", file(".")) settings(scalaBinArtifactSettings:_*)
+
+  // --------------------------------------------------------------
+  //  Generating Documentation.
+  // --------------------------------------------------------------
+
+
+
+// This project will generate man pages for scala.
+  val runManmakerMan = TaskKey[Unit]("make-man", "Runs the man maker project to generate man pages")
+  val runManmakerHtml = TaskKey[Unit]("make-html", "Runs the man maker project to generate html pages")
+  def runManmakerTask(classpath: ScopedTask[Classpath], scalaRun: ScopedTask[ScalaRun], mainClass: String, dir: String, ext: String): Project.Initialize[Task[Unit]] =
+    (classpath, runner, streams, target) map { (cp, runner, s, target) =>
+      val binaries = Seq("fsc", "sbaz", "scala", "scalac", "scaladoc", "scalap")
+      binaries foreach { bin =>
+        val file = target / dir / (bin + ext)
+        val classname = "scala.man1." + bin
+        IO.createDirectory(file.getParentFile)
+        toError(runner.run(mainClass, Build.data(cp), Seq(classname, file.getAbsolutePath), s.log))
+        
+      }
+    }
+
+  // --------------------------------------------------------------
+  //  Packaging a distro
+  // --------------------------------------------------------------
+  
+  lazy val scalaDistSettings: Seq[Setting[_]] = Seq(
+    crossPaths := false,
+    target <<= (baseDirectory, name) apply (_ / "target" / _),
+    scalaSource in Compile <<= (baseDirectory, name) apply (_ / "src" / _),
+    autoScalaLibrary := false,
+    unmanagedJars in Compile := Seq()
+  )
+  lazy val scaladist = Project("dist", file(".")) settings(scalaDistSettings:_*)
 }
