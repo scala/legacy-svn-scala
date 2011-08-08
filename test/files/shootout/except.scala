@@ -11,7 +11,7 @@ object except {
    def main(args: Array[String]) = {
       val n = toPositiveInt(args);
 
-      for (val i <- Iterator.range(0,n)) 
+      for (i <- Iterator.range(0,n)) 
          someFunction(i);
 
       Console print("Exceptions: HI=" + Hi);

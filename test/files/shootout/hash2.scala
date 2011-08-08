@@ -20,12 +20,12 @@ object hash2 {
       val table1 = new HashMap[String,Cell[Int]]();
       val table2 = new HashMap[String,Cell[Int]]();
 
-      for (val i <- Iterator.range(0,nKeys)) 
+      for (i <- Iterator.range(0,nKeys)) 
          table1 += (("foo_" + i) -> new Cell(i));
 
 
       while (n>0) {
-         for (val each <- table1.iterator){
+         for (each <- table1.iterator){
             val key = each._1;
             val c1 = each._2;
 
