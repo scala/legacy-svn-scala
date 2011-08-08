@@ -32,7 +32,7 @@ object SBTRunner extends DirectRunner {
   case class CommandLineOptions(classpath: Option[String] = None,
                                 tests: Map[String, Array[File]] = Map())
 
-  def main(args: Array[String]): Unit = {
+  def mainReflect(args: Array[String]): java.util.Map[String,Int] = {
     val Argument = new scala.util.matching.Regex("-(.*)")
     def parseArgs(args: Seq[String], data: CommandLineOptions): CommandLineOptions = args match {
       case Seq("-cp", cp, rest @ _*) => parseArgs(rest, data.copy(classpath=Some(cp)))
@@ -45,18 +45,24 @@ object SBTRunner extends DirectRunner {
     fileManager.CLASSPATH = config.classpath getOrElse error("No classpath set")
     // Find scala library jar file...
     val lib: Option[String] = (fileManager.CLASSPATH split File.pathSeparator filter (_ matches ".*scala-library.*\\.jar")).headOption
-    fileManager.LATEST_LIB = lib getOrElse error("No scala-library found!")
+    fileManager.LATEST_LIB = lib getOrElse error("No scala-library found! Classpath = " + fileManager.CLASSPATH)
     // Now run and report...
     val runs = config.tests.filterNot(_._2.isEmpty)
     // This next bit uses java maps...
-    import collection.JavaConversions._
-    val failures = for { 
+    import collection.JavaConverters._
+    (for { 
      (testType, files) <- runs
-     (path, result) <- reflectiveRunTestsForFiles(files,testType)
+     (path, result) <- reflectiveRunTestsForFiles(files,testType).asScala
+    } yield (path, result)) asJava
+  }
+
+  def main(args: Array[String]): Unit = {
+    import collection.JavaConverters._
+    val failures = for {
+      (path, result) <- mainReflect(args).asScala
      if result == 1 || result == 2
      val resultName = (if(result == 1) " [FAILED]" else " [TIMEOUT]")
     } yield path + resultName
-    
     // Re-list all failures so we can go figure out what went wrong.
     failures foreach System.err.println
     if(!failures.isEmpty) sys.exit(1)

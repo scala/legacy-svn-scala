@@ -1,5 +1,6 @@
 import sbt._
 import Keys._
+import partest._
 
 object ScalaBuild extends Build {
 
@@ -207,32 +208,10 @@ object ScalaBuild extends Build {
   // --------------------------------------------------------------
   //  Testing
   // --------------------------------------------------------------
-  lazy val runPartest = TaskKey[Unit]("run-partest", "Runs the partest test suite against the current trunk")
-  // <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
-  def partestResources(base: File, testType: String): PathFinder = testType match {
-    case "res" => base ** "*.res"
-    case "buildmanager" => base ** "*"
-    case _ => base ** "*.scala"
-  }
-  // TODO - Split partest task into Configurations and build a Task for each Configuration.
-  // *then* mix all of them together for run-testsuite or something clever like this.
-  def runPartestTask(classpath: ScopedTask[Classpath], scalaRun: ScopedTask[ScalaRun], baseDirectory: ScopedSetting[File]): Project.Initialize[Task[Unit]] =
-    (classpath, scalaRun, baseDirectory, streams) map {     
-      (cp, runner, dir, s) =>
-        val testDir = dir / "test"
-        val testArgs = Seq("run", "jvm", "pos", "neg", "buildmanager", "res", 
-                           "shootout", "scalap", "specialized", "presentation") flatMap { testType =>
-          Seq("-"+testType, partestResources(testDir / "files" / testType, testType).get.mkString(","))
-        }
-        val runTests = testDir / "files" / "run"
-        val jvmTests = testDir / "files" / "jvm"
-        val rawCp = Build.data(cp)
-        toError(runner.run("scala.tools.partest.nest.SBTRunner", rawCp, Seq(
-          "-cp", rawCp.mkString(java.io.File.pathSeparator)) ++ testArgs, s.log))
-    }
   lazy val testsuiteSetttings: Seq[Setting[_]] = compilerDependentProjectSettings ++ Seq(
     unmanagedBase <<= baseDirectory / "test/files/lib",
-    runPartest <<= runPartestTask(fullClasspath in Runtime, runner in run, baseDirectory),
+    partestRunner <<= partestRunnerTask(fullClasspath in Runtime),
+    runPartest <<= runPartestTask(partestRunner, baseDirectory),
     autoScalaLibrary := false
   )
   val testsuite = Project("testsuite", file(".")) settings(testsuiteSetttings:_*) dependsOn(partest,swing,scalaLibrary,scalaCompiler,fjbg)
