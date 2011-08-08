@@ -246,13 +246,43 @@ object ScalaBuild extends Build {
   // --------------------------------------------------------------
   //  Packaging a distro
   // --------------------------------------------------------------
-  
+
+  class ScalaToolRunner(classpath: Classpath) {
+    lazy val classLoader = new java.net.URLClassLoader(classpath.map(_.data.toURI.toURL).toArray, null)
+    lazy val mainClass = classLoader.loadClass("scala.tools.ant.ScalaTool")
+    lazy val executeMethod = mainClass.getMethod("execute")
+    lazy val setFileMethod = mainClass.getMethod("setFile", classOf[java.io.File])
+    lazy val setClassMethod = mainClass.getMethod("setClass", classOf[String])
+    lazy val instance = mainClass.newInstance()
+    def setClass(cls: String): Unit = setClassMethod.invoke(instance, cls)
+    def setFile(file: File): Unit = setFileMethod.invoke(instance, file)
+    def execute(): Unit = executeMethod.invoke(instance)
+  }
+
+  def genBinTask(classpath: ScopedTask[Classpath], outputDir: ScopedSetting[File]) = (classpath, outputDir) map {
+    (cp, outDir) =>
+       IO.createDirectory(outDir / "bin")
+       for( (cls, dest) <- Map(
+             "scala.tools.nsc.MainGenericRunner" -> (outDir / "bin" / "scala"),
+             "scala.tools.nsc.Main" -> (outDir / "bin" / "scalac"),
+             "scala.tools.nsc.ScalaDoc" -> (outDir / "bin" / "scaladoc"),
+             "scala.tools.nsc.CompileClient" -> (outDir / "bin" / "fsc"),
+             "scala.tools.scalap.Main" -> (outDir / "bin" / "scalap")
+           )) {
+         val runner = new ScalaToolRunner(cp)
+         runner.setClass(cls)
+         runner.setFile(dest)
+         runner.execute()
+       }       
+  }  
+  lazy val genBin = TaskKey[Unit]("gen-bin", "Creates script files for Scala distribution")
   lazy val scalaDistSettings: Seq[Setting[_]] = Seq(
     crossPaths := false,
     target <<= (baseDirectory, name) apply (_ / "target" / _),
     scalaSource in Compile <<= (baseDirectory, name) apply (_ / "src" / _),
     autoScalaLibrary := false,
-    unmanagedJars in Compile := Seq()
+    unmanagedJars in Compile := Seq(),
+    genBin <<= genBinTask(fullClasspath in quickComp in Runtime, target)
   )
   lazy val scaladist = Project("dist", file(".")) settings(scalaDistSettings:_*)
 }
