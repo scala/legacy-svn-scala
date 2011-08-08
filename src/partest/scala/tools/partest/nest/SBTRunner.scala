@@ -30,18 +30,13 @@ object SBTRunner extends DirectRunner {
   }
 
   case class CommandLineOptions(classpath: Option[String] = None,
-                                runFiles: Option[Array[File]] = None,
-                                jvmFiles: Option[Array[File]] = None,
-                                posFiles: Option[Array[File]] = None,
-                                negFiles: Option[Array[File]] = None)
+                                tests: Map[String, Array[File]] = Map())
 
   def main(args: Array[String]): Unit = {
+    val Argument = new scala.util.matching.Regex("-(.*)")
     def parseArgs(args: Seq[String], data: CommandLineOptions): CommandLineOptions = args match {
       case Seq("-cp", cp, rest @ _*) => parseArgs(rest, data.copy(classpath=Some(cp)))
-      case Seq("-run", runFiles, rest @ _*) => parseArgs(rest, data.copy(runFiles=Some(runFiles.split(",").map(new File(_)))))
-      case Seq("-jvm", runFiles, rest @ _*) => parseArgs(rest, data.copy(jvmFiles=Some(runFiles.split(",").map(new File(_)))))
-      case Seq("-pos", runFiles, rest @ _*) => parseArgs(rest, data.copy(posFiles=Some(runFiles.split(",").map(new File(_)))))
-      case Seq("-neg", runFiles, rest @ _*) => parseArgs(rest, data.copy(negFiles=Some(runFiles.split(",").map(new File(_)))))
+      case Seq(Argument(name), runFiles, rest @ _*) => parseArgs(rest, data.copy(tests=data.tests + (name -> runFiles.split(",").map(new File(_)))))
       case Seq() => data
       case x =>        
         sys.error("Unknown command line options: " + x)
@@ -52,10 +47,7 @@ object SBTRunner extends DirectRunner {
     val lib: Option[String] = (fileManager.CLASSPATH split File.pathSeparator filter (_ matches ".*scala-library.*\\.jar")).headOption
     fileManager.LATEST_LIB = lib getOrElse error("No scala-library found!")
     // Now run and report...
-    val runs = Map("run" -> config.runFiles,
-                   "jvm" -> config.jvmFiles,
-                   "pos" -> config.posFiles,
-                   "neg" -> config.posFiles).filter(_._2.isDefined).mapValues(_.get)
+    val runs = config.tests.filterNot(_._2.isEmpty)
     // This next bit uses java maps...
     import collection.JavaConversions._
     val failures = for { 

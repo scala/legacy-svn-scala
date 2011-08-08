@@ -209,15 +209,20 @@ object ScalaBuild extends Build {
   // --------------------------------------------------------------
   lazy val runPartest = TaskKey[Unit]("run-partest", "Runs the partest test suite against the current trunk")
   // <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
-  def partestResources(base: File): PathFinder = base ** "*.scala"
+  def partestResources(base: File, testType: String): PathFinder = testType match {
+    case "res" => base ** "*.res"
+    case "buildmanager" => base ** "*"
+    case _ => base ** "*.scala"
+  }
   // TODO - Split partest task into Configurations and build a Task for each Configuration.
   // *then* mix all of them together for run-testsuite or something clever like this.
   def runPartestTask(classpath: ScopedTask[Classpath], scalaRun: ScopedTask[ScalaRun], baseDirectory: ScopedSetting[File]): Project.Initialize[Task[Unit]] =
     (classpath, scalaRun, baseDirectory, streams) map {     
       (cp, runner, dir, s) =>
         val testDir = dir / "test"
-        val testArgs = Seq("run", "jvm", "pos", "neg") flatMap { testType =>
-          Seq("-"+testType, partestResources(testDir / "files" / testType).get.mkString(","))
+        val testArgs = Seq("run", "jvm", "pos", "neg", "buildmanager", "res", 
+                           "shootout", "scalap", "specialized", "presentation") flatMap { testType =>
+          Seq("-"+testType, partestResources(testDir / "files" / testType, testType).get.mkString(","))
         }
         val runTests = testDir / "files" / "run"
         val jvmTests = testDir / "files" / "jvm"
