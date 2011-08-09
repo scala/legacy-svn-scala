@@ -234,17 +234,20 @@ object ScalaBuild extends Build {
   // Scaladocs
   def distScalaInstance = makeScalaReference("dist", scalaLibrary, scalaCompiler, fjbg)
   lazy val documentationSettings: Seq[Setting[_]] = dependentProjectSettings ++ Seq(
-    distScalaInstance,
     defaultExcludes in Compile :== (".*"  - ".") || HiddenFileFilter,
     sourceFilter in Compile :== ("*.scala"),
     unmanagedSourceDirectories in Compile <<= baseDirectory apply { dir =>
       Seq(dir / "src" / "library" / "scala", dir / "src" / "actors", dir / "src" / "swing", dir / "src" / "continuations" / "library")
     },
     compile := inc.Analysis.Empty,
-    scaladocOptions in Compile <++= (scalaSource in Compile) map (src => Seq("-sourcepath", src.getAbsolutePath)),
+    scaladocOptions in Compile <++= (baseDirectory) map (bd => 
+      Seq("-sourcepath", (bd / "src" / "library").getAbsolutePath,
+          "-doc-no-compile", (bd / "src" / "library-aux").getAbsolutePath,
+          "-doc-source-url", "https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/€{FILE_PATH}.scala#L1"
+      )),
     classpathOptions in Compile := ClasspathOptions.manual
   )
-  lazy val documentation = Project("documentation", file(".")) settings(documentationSettings: _*) dependsOn(scalaLibrary, scalaCompiler)
+  lazy val documentation = Project("documentation", file(".")) settings(documentationSettings: _*) dependsOn(quickLib, quickComp, actors, fjbg, forkjoin, swing, continuationsLibrary)
 
   // This project will generate man pages (in man1 and html) for scala.
   val runManmakerMan = TaskKey[Unit]("make-man", "Runs the man maker project to generate man pages")
@@ -297,9 +300,17 @@ object ScalaBuild extends Build {
          runner.setClass(cls)
          runner.setFile(dest)
          runner.execute()
-       }       
+       }  
+     // Ouptut a mapping...
+     Map(
+        outDir / "bin" / "scala" -> "bin/scala",
+        outDir / "bin" / "scalac" -> "bin/scalac",
+        outDir / "bin" / "scaladoc" -> "bin/scaladoc",
+        outDir / "bin" / "scalap" -> "bin/scalap",
+        outDir / "bin" / "fsc" -> "bin/fsc"
+     )     
   }  
-  lazy val genBin = TaskKey[Unit]("gen-bin", "Creates script files for Scala distribution")
+  lazy val genBin = TaskKey[Map[File,String]]("gen-bin", "Creates script files for Scala distribution")
   lazy val scalaDistSettings: Seq[Setting[_]] = Seq(
     crossPaths := false,
     target <<= (baseDirectory, name) apply (_ / "target" / _),
