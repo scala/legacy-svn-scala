@@ -118,6 +118,8 @@ object ScalaBuild extends Build {
           unmanagedClasspath in Compile <<= (exportedProducts in forkjoin in Compile).identity,
           managedClasspath in Compile := Seq(),
           scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "library"),
+          resourceDirectory in Compile <<= baseDirectory apply (_ / "src" / "library"),   
+          defaultExcludes in unmanagedResources := ("*.scala" | "*.java"),
           // TODO - Allow other scalac option settings.
           scalacOptions in Compile <++= (scalaSource in Compile) map (src => Seq("-sourcepath", src.getAbsolutePath)),
           classpathOptions := ClasspathOptions.manual,
@@ -128,6 +130,15 @@ object ScalaBuild extends Build {
     val compiler = Project(layer + "-compiler", file(".")) settings((settingOverrides ++
       Seq(version := layer,
         scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "compiler"),
+        resourceDirectory in Compile <<= baseDirectory apply (_ / "src" / "compiler"),    
+        defaultExcludes in unmanagedResources := "*.scala",
+        // Note, we might be able to use the default task, but for some reason ant was filtering files out.  Not sure what's up, but we'll
+        // stick with that for now.
+        unmanagedResources in Compile <<= (baseDirectory) map {
+          (bd) =>
+            val dirs = Seq(bd / "src" / "compiler")
+		dirs.descendentsExcept( ("*.html" | "*.gif" | "*.png" | "*.js" | "*.css" | "*.tmpl" | "*.swf" | "*.properties"),"*.scala").get
+        },
         // TODO - Use depends on *and* SBT's magic dependency mechanisms...
         unmanagedClasspath in Compile <<= Seq(forkjoin, library, fjbg, jline, msil).map(exportedProducts in Compile in _).join.map(_.map(_.flatten)),
         classpathOptions := ClasspathOptions.manual,
@@ -181,7 +192,7 @@ object ScalaBuild extends Build {
   val allSubpathsCopy = (dir: File) => (dir.*** --- dir) x (relativeTo(dir)|flat)
   def productTaskToMapping(products : Task[Seq[File]]) = products map { ps => ps flatMap { p => allSubpathsCopy(p) } }
   // TODO - Create a task to write the version properties file and add the mapping to this task...
-  lazy val packageScalaLibBinTask = Seq(quickLib, continuationsLibrary, dbc, actors, swing).map(p => products in p in Compile).join.map(_.map(_.flatten)).map(productTaskToMapping)
+  lazy val packageScalaLibBinTask = Seq(quickLib, continuationsLibrary, dbc, actors, swing, forkjoin).map(p => products in p in Compile).join.map(_.map(_.flatten)).map(productTaskToMapping)
   lazy val scalaLibArtifactSettings : Seq[Setting[_]] = inConfig(Compile)(Defaults.packageTasks(packageBin, packageScalaLibBinTask)) ++ Seq(
     name := "scala-library",
     crossPaths := false,
@@ -221,7 +232,9 @@ object ScalaBuild extends Build {
   // --------------------------------------------------------------
 
   // Scaladocs
+  def distScalaInstance = makeScalaReference("dist", scalaLibrary, scalaCompiler, fjbg)
   lazy val documentationSettings: Seq[Setting[_]] = dependentProjectSettings ++ Seq(
+    distScalaInstance,
     defaultExcludes in Compile :== (".*"  - ".") || HiddenFileFilter,
     sourceFilter in Compile :== ("*.scala"),
     unmanagedSourceDirectories in Compile <<= baseDirectory apply { dir =>
@@ -231,7 +244,7 @@ object ScalaBuild extends Build {
     scaladocOptions in Compile <++= (scalaSource in Compile) map (src => Seq("-sourcepath", src.getAbsolutePath)),
     classpathOptions in Compile := ClasspathOptions.manual
   )
-  lazy val documentation = Project("documentation", file(".")) settings(documentationSettings: _*) dependsOn(forkjoin, actors, swing, dbc, quickLib)
+  lazy val documentation = Project("documentation", file(".")) settings(documentationSettings: _*) dependsOn(scalaLibrary, scalaCompiler)
 
   // This project will generate man pages (in man1 and html) for scala.
   val runManmakerMan = TaskKey[Unit]("make-man", "Runs the man maker project to generate man pages")
