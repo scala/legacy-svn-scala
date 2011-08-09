@@ -220,7 +220,18 @@ object ScalaBuild extends Build {
   //  Generating Documentation.
   // --------------------------------------------------------------
 
-
+  // Scaladocs
+  lazy val documentationSettings: Seq[Setting[_]] = dependentProjectSettings ++ Seq(
+    defaultExcludes in Compile :== (".*"  - ".") || HiddenFileFilter,
+    sourceFilter in Compile :== ("*.scala"),
+    unmanagedSourceDirectories in Compile <<= baseDirectory apply { dir =>
+      Seq(dir / "src" / "library" / "scala", dir / "src" / "actors", dir / "src" / "swing", dir / "src" / "continuations" / "library")
+    },
+    compile := inc.Analysis.Empty,
+    scaladocOptions in Compile <++= (scalaSource in Compile) map (src => Seq("-sourcepath", src.getAbsolutePath)),
+    classpathOptions in Compile := ClasspathOptions.manual
+  )
+  lazy val documentation = Project("documentation", file(".")) settings(documentationSettings: _*) dependsOn(forkjoin, actors, swing, dbc, quickLib)
 
   // This project will generate man pages (in man1 and html) for scala.
   val runManmakerMan = TaskKey[Unit]("make-man", "Runs the man maker project to generate man pages")
