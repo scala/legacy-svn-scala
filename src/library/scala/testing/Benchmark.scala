@@ -20,7 +20,7 @@ import compat.Platform
  *  The `run` method has to be defined by the user, who will perform the
  *  timed operation there. Run the benchmark as follows:
  *  {{{
- *  > scala sort1 5 
+ *  > scala sort1 5 2
  *  }}}
  *  This will run the benchmark 5 times, forcing a garbage collection 
  *  between runs, and printing the execution times to stdout. 
@@ -37,7 +37,8 @@ trait Benchmark {
 
   /** this method should be implemented by the concrete benchmark.
    *  This method is called by the benchmarking code for a number of times.
-   *  The GC is called before each call to 'run'.
+   *  The GC is called between "multiplier" calls to run, right after tear
+   *  down.
    *
    *  @see setUp
    *  @see tearDown
