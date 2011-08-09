@@ -437,13 +437,17 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def hasBridgeAnnotation = hasAnnotation(BridgeClass)
     def deprecationMessage  = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 0)
     def deprecationVersion  = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 1)
+    def deprecatedParamName = getAnnotation(DeprecatedNameAttr) flatMap (_ symbolArg 0)
+
     // !!! when annotation arguments are not literal strings, but any sort of 
     // assembly of strings, there is a fair chance they will turn up here not as
     // Literal(const) but some arbitrary AST.  However nothing in the compiler
     // prevents someone from writing a @migration annotation with a calculated
     // string.  So this needs attention.  For now the fact that migration is
     // private[scala] ought to provide enough protection.
+    def hasMigrationAnnotation = hasAnnotation(MigrationAnnotationClass)
     def migrationMessage    = getAnnotation(MigrationAnnotationClass) flatMap { _.stringArg(2) }
+    def migrationVersion    = getAnnotation(MigrationAnnotationClass) map { version => version.intArg(0).get + "." + version.intArg(1).get }
     def elisionLevel        = getAnnotation(ElidableMethodClass) flatMap { _.intArg(0) }
     def implicitNotFoundMsg = getAnnotation(ImplicitNotFoundClass) flatMap { _.stringArg(0) }
 
@@ -1644,13 +1648,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def makeNotPrivate(base: Symbol) {
       if (this.isPrivate) {
         setFlag(notPRIVATE)
-        // Marking these methods final causes problems for proxies
-        // which use subclassing.  If people write their code with no
-        // usage of final, we probably shouldn't introduce it ourselves
-        // unless we know it is safe.
-        //
-        // if (isMethod && !isDeferred)
-        //   setFlag(lateFINAL)
+        // Marking these methods final causes problems for proxies which use subclassing. If people
+        // write their code with no usage of final, we probably shouldn't introduce it ourselves
+        // unless we know it is safe. ... Unfortunately if they aren't marked final the inliner
+        // thinks it can't inline them. So once again marking lateFINAL, and in genjvm we no longer
+        // generate ACC_FINAL on "final" methods which are actually lateFINAL.
+        if (isMethod && !isDeferred)
+          setFlag(lateFINAL)
         if (!isStaticModule && !isClassConstructor) {
           expandName(base)
           if (isModule) moduleClass.makeNotPrivate(base)

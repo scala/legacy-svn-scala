@@ -8,17 +8,17 @@ object objinst {
       var n = toPositiveInt(args);
 
       var toggle = new Toggle(true);
-      for (val i <- Iterator.range(0,5)) 
+      for (i <- Iterator.range(0,5)) 
          Console println( toggle.activate.value );
-      for (val i <- Iterator.range(0,n)) 
+      for (i <- Iterator.range(0,n)) 
          toggle = new Toggle(true);
 
       Console print("\n");
 
       var ntoggle = new NToggle(true,3);
-      for (val i <- Iterator.range(0,8)) 
+      for (i <- Iterator.range(0,8)) 
          Console println( ntoggle.activate.value );   
-      for (val i <- Iterator.range(0,n)) 
+      for (i <- Iterator.range(0,n)) 
          ntoggle = new NToggle(true,3);  
    }
 

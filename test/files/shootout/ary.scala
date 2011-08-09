@@ -9,11 +9,11 @@ object ary3 {
       var j = 0;
 
       val x = new Array[Int](n);
-      for (val i <- Iterator.range(0,n)) x(i)=i+1;
+      for (i <- Iterator.range(0,n)) x(i)=i+1;
 
       val y = new Array[Int](n);
-      for (val j <- Iterator.range(0,1000);
-           val i <- Iterator.range(0,n))
+      for (j <- Iterator.range(0,1000);
+           i <- Iterator.range(0,n))
          y(i)=y(i)+x(i);
 
       Console.println(y(0) + " " +  y(n-1)); 

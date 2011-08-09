@@ -6,6 +6,7 @@
 package scala.tools.nsc
 package transform
 
+import scala.tools.reflect.SigParser
 import scala.reflect.internal.ClassfileConstants._
 import scala.collection.{ mutable, immutable }
 import symtab._
@@ -72,7 +73,6 @@ abstract class Erasure extends AddInterfaces
     atPos(tree.pos)(Apply(Select(tree, conversion), Nil))
   }
 
-
   private object NeedsSigCollector extends TypeCollector(false) {
     def traverse(tp: Type) { 
       if (!result) { 
@@ -99,6 +99,16 @@ abstract class Erasure extends AddInterfaces
     }
   }
 
+  // for debugging signatures: traces logic given system property
+  // performance: get the value here
+  val traceSignatures = (sys.BooleanProp keyExists "scalac.sigs.trace").value
+  private object traceSig extends util.Tracer(() => traceSignatures) {
+    override def stringify(x: Any) = x match {
+      case tp: Type   => super.stringify(dropAllRefinements(tp))
+      case _          => super.stringify(x)
+    }
+  }
+
   override protected def verifyJavaErasure = settings.Xverify.value || settings.debug.value
   private def needsJavaSig(tp: Type) = !settings.Ynogenericsig.value && NeedsSigCollector.collect(tp)
 
@@ -110,9 +120,7 @@ abstract class Erasure extends AddInterfaces
     !sym.isHigherOrderTypeParameter &&
     sym.isTypeParameterOrSkolem && (
       (initialSymbol.enclClassChain.exists(sym isNestedIn _)) ||
-      traceSig("isMethod", (initialSymbol, initialSymbol.typeParams)) {
-        (initialSymbol.isMethod && initialSymbol.typeParams.contains(sym))
-      }
+      (initialSymbol.isMethod && initialSymbol.typeParams.contains(sym))
     )
   )
 
@@ -129,9 +137,6 @@ abstract class Erasure extends AddInterfaces
       case ch                 => last = ch ; ch
     }
   }
-  // for debugging signatures: traces logic given system property
-  private val traceProp = (sys.BooleanProp keyExists "scalac.sigs.trace").value // performance: get the value here
-  private val traceSig  = util.Tracer(traceProp)
   
   /** This object is only used for sanity testing when -check:genjvm is set.
    *  In that case we make sure that the erasure of the `normalized` type
@@ -201,23 +206,67 @@ abstract class Erasure extends AddInterfaces
     }
   }
 
+  /** Run the signature parser to catch bogus signatures.
+   */
+  def isValidSignature(sym: Symbol, sig: String) = (
+    /** Since we're using a sun internal class for signature validation,
+     *  we have to allow for it not existing or otherwise malfunctioning:
+     *  in which case we treat every signature as valid.  Medium term we
+     *  should certainly write independent signature validation.
+     */
+    SigParser.isParserAvailable && (
+      if (sym.isMethod) SigParser verifyMethod sig
+      else if (sym.isTerm) SigParser verifyType sig
+      else SigParser verifyClass sig
+    )
+  )
+
+  private def hiBounds(bounds: TypeBounds): List[Type] = bounds.hi.normalize match {
+    case RefinedType(parents, _) => parents map (_.normalize)
+    case tp                      => tp :: Nil
+  }
+
   /** The Java signature of type 'info', for symbol sym. The symbol is used to give the right return
    *  type for constructors.
    */
   def javaSig(sym0: Symbol, info: Type): Option[String] = atPhase(currentRun.erasurePhase) {
-    def boxedSig(tp: Type) = jsig(tp, primitiveOK = false)
+    val isTraitSignature = sym0.enclClass.isTrait
 
-    def hiBounds(bounds: TypeBounds): List[Type] = bounds.hi.normalize match {
-      case RefinedType(parents, _) => parents map normalize
-      case tp                      => tp :: Nil
+    def superSig(parents: List[Type]) = traceSig("superSig", parents) {
+      val ps = (
+        if (isTraitSignature) {
+          // java is unthrilled about seeing interfaces inherit from classes
+          val ok = parents filter (p => p.typeSymbol.isTrait || p.typeSymbol.isInterface)
+          // traits should always list Object.
+          if (ok.isEmpty || ok.head.typeSymbol != ObjectClass) ObjectClass.tpe :: ok
+          else ok
+        }
+        else parents
+      )
+      ps map boxedSig mkString
     }
+    def boxedSig(tp: Type) = jsig(tp, primitiveOK = false)
+    def boundsSig(bounds: List[Type]) = traceSig("boundsSig", bounds) {
+      val (isTrait, isClass) = bounds partition (_.typeSymbol.isTrait)
+      val classPart = isClass match {
+        case Nil    => ":" // + boxedSig(ObjectClass.tpe)
+        case x :: _ => ":" + boxedSig(x)
+      }
+      classPart :: (isTrait map boxedSig) mkString ":"
+    }
+    def paramSig(tsym: Symbol) = tsym.name + boundsSig(hiBounds(tsym.info.bounds))
+    def polyParamSig(tparams: List[Symbol]) = traceSig("polyParamSig", tparams) (
+      if (tparams.isEmpty) ""
+      else tparams map paramSig mkString ("<", "", ">")
+    )
+
     // Anything which could conceivably be a module (i.e. isn't known to be
     // a type parameter or similar) must go through here or the signature is
     // likely to end up with Foo<T>.Empty where it needs Foo<T>.Empty$.
     def fullNameInSig(sym: Symbol) = "L" + atPhase(currentRun.icodePhase)(sym.javaBinaryName)
 
     def jsig(tp0: Type, existentiallyBound: List[Symbol] = Nil, toplevel: Boolean = false, primitiveOK: Boolean = true): String = {
-      val tp = tp0.dealias 
+      val tp = tp0.dealias
       tp match {
         case st: SubType =>
           jsig(st.supertype, existentiallyBound, toplevel, primitiveOK)
@@ -234,7 +283,7 @@ abstract class Erasure extends AddInterfaces
               boxedSig(tp)
             }
 
-          // If args isEmpty, Array is being used as a higher-kinded type
+          // If args isEmpty, Array is being used as a type constructor
           if (sym == ArrayClass && args.nonEmpty) {
             if (unboundedGenericArrayLevel(tp) == 1) jsig(ObjectClass.tpe)
             else ARRAY_TAG.toString+(args map (jsig(_))).mkString
@@ -258,47 +307,36 @@ abstract class Erasure extends AddInterfaces
           }
           else if (sym.isClass) {
             val preRebound = pre.baseType(sym.owner) // #2585
-            traceSig("sym.isClass", (sym.ownerChain, preRebound, sym0.enclClassChain)) {
-              dotCleanup(
-                (
-                  if (needsJavaSig(preRebound)) {
-                    val s = jsig(preRebound, existentiallyBound)
-                    if (s.charAt(0) == 'L') s.substring(0, s.length - 1) + "." + sym.javaSimpleName
-                    else fullNameInSig(sym)
-                  }
+            dotCleanup(
+              (
+                if (needsJavaSig(preRebound)) {
+                  val s = jsig(preRebound, existentiallyBound)
+                  if (s.charAt(0) == 'L') s.substring(0, s.length - 1) + "." + sym.javaSimpleName
                   else fullNameInSig(sym)
-                ) + (
-                  if (args.isEmpty) "" else
-                  "<"+(args map argSig).mkString+">"
-                ) + (
-                  ";"
-                )
+                }
+                else fullNameInSig(sym)
+              ) + (
+                if (args.isEmpty) "" else
+                "<"+(args map argSig).mkString+">"
+              ) + (
+                ";"
               )
-            }
+            )
           }
           else jsig(erasure(sym0, tp), existentiallyBound, toplevel, primitiveOK)
         case PolyType(tparams, restpe) =>
           assert(tparams.nonEmpty)
-          def boundSig(bounds: List[Type]) = {
-            val (isTrait, isClass) = bounds partition (_.typeSymbol.isTrait)
-            
-            ":" + (
-              if (isClass.isEmpty) "" else boxedSig(isClass.head)
-            ) + (
-              isTrait map (x => ":" + boxedSig(x)) mkString
-            )
-          }
-          def paramSig(tsym: Symbol) = tsym.name + boundSig(hiBounds(tsym.info.bounds))
-          
-          val paramString = if (toplevel) tparams map paramSig mkString ("<", "", ">") else ""
-          traceSig("PolyType", (tparams, restpe))(paramString + jsig(restpe))
+          val poly = if (toplevel) polyParamSig(tparams) else ""
+          poly + jsig(restpe)
+
         case MethodType(params, restpe) =>
           "("+(params map (_.tpe) map (jsig(_))).mkString+")"+
           (if (restpe.typeSymbol == UnitClass || sym0.isConstructor) VOID_TAG.toString else jsig(restpe))
+
         case RefinedType(parent :: _, decls) =>
           boxedSig(parent)
         case ClassInfoType(parents, _, _) =>
-          (parents map (boxedSig(_))).mkString
+          superSig(parents)
         case AnnotatedType(_, atp, _) =>
           jsig(atp, existentiallyBound, toplevel, primitiveOK)
         case BoundedWildcardType(bounds) =>
@@ -310,13 +348,22 @@ abstract class Erasure extends AddInterfaces
           else jsig(etp)
       }
     }
-    traceSig("javaSig", (sym0, info)) {
+    val result = traceSig("javaSig", (sym0, info)) {
       if (needsJavaSig(info)) {
         try Some(jsig(info, toplevel = true))
         catch { case ex: UnknownSig => None }
       }
       else None
     }
+    // Debugging: immediately verify signatures when tracing.
+    if (traceSignatures) {
+      result foreach { sig =>
+        if (!isValidSignature(sym0, sig))
+          println("**** invalid signature for " + sym0 + ": " + sig)
+      }
+    }
+
+    result
   }
 
   class UnknownSig extends Exception

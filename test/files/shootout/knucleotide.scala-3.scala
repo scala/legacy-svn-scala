@@ -63,7 +63,7 @@ object knucleotide {
          while (i < n){ bag += sequence.substring(i,i+j); i = i+j }
       }
 
-      for (val o <- Iterator.range(0,length)) kFrequency(o,length)
+      for (o <- Iterator.range(0,length)) kFrequency(o,length)
       bag
    }
 
@@ -74,7 +74,7 @@ object knucleotide {
          (a,b) => if (a.value == b.value) a.key > b.key
                   else a.value > b.value )
 
-      for (val a <- sortedValues)
+      for (a <- sortedValues)
          Console.printf("%s %.3f\n", a.key, a.value / n * 100.0)
 
       Console.println
