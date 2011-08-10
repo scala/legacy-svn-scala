@@ -1,0 +1,64 @@
+#!/bin/bash
+# Runs the ant build while first resolving artifacts.
+
+base_directory="$(dirname $0)"
+starr_version_file="$(dirname $0)/lib/starr.version"
+desired_starr_version_file="$(dirname $0)/starr.version"
+
+# Check the current stored launch version.
+if [[ -f "$starr_version_file" ]]; then
+  current_starr_version="$(cat $starr_version_file)"
+else
+  current_starr_version=""
+fi
+
+# Load desired STARR version.
+if [[ -f "$desired_starr_version_file" ]]; then
+  desired_starr_version="$(cat $desired_starr_version_file)"
+else
+  echo "Could not find a STARR version file ($desired_starr_version_file).  Please specify one"
+  exit 1
+fi
+
+# This will load a scala-starr jar into the desired location.
+# Arg 1: Artifact name
+# Arg 2: Artifact version
+# Note: organization and repository are all assumed to be the same.
+function loadStarrJar() {
+  url="http://typesafe.artifactoryonline.com/typesafe/starr-releases/org/scala-lang/bootstrap/$1/$2/$1-$2.jar"
+  loc="$base_directory/lib/$1.jar"
+  if [[ $(which curl) ]]; then
+    echo "downloading [$1]..."
+    curl --silent "$url" > "$loc"
+    return $?
+  else
+    cat <<EOM
+No means of downloading $1.jar found.   Either:
+ * install curl
+ * install wget
+ * manually download: $url
+        and place at: $loc
+EOM
+    return 0
+  fi
+}
+
+# This will load a version of star and update the starr_version_file with the new version.
+function loadStarr() {
+  loadStarrJar "scala-library" $1
+  loadStarrJar "scala-compiler" $1
+  loadStarrJar "forkjoin" $1
+  loadStarrJar "fjbg" $1
+  loadStarrJar "msil" $1
+  loadStarrJar "jline" $1
+  echo $1 >$starr_version_file
+}
+
+# Check to see if we should load starr.
+if [[ "$current_starr_version" != "$desired_starr_version" ]]; then
+  loadStarr $desired_starr_version
+fi
+
+# Now, delegate to ANT.
+# TODO - make sure ANT_OPTS are exported or whatever needs to happen here...
+ant $@
