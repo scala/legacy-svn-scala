@@ -1,3 +1,3 @@
 object Test extends Application {
-  for(val n <- List(3000,5000,7000,9000)) ary3.main(Array(n.toString)) 
+  for(n <- List(3000,5000,7000,9000)) ary3.main(Array(n.toString)) 
 } 

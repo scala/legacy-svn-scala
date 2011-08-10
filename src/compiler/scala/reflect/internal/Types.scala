@@ -87,7 +87,7 @@ trait Types extends api.Types { self: SymbolTable =>
   /** Decrement depth unless it is a don't care. */
   private final def decr(depth: Int) = if (depth == AnyDepth) AnyDepth else depth - 1
 
-  private final val printLubs = sys.props contains "scala.debug.lub"
+  private final val printLubs = sys.props contains "scalac.debug.lub"
   /** In case anyone wants to turn off lub verification without reverting anything. */
   private final val verifyLubs = true
 
@@ -116,7 +116,7 @@ trait Types extends api.Types { self: SymbolTable =>
     }
 
     private[Types] def record(tv: TypeVar) = {
-      log ::= (tv, tv.constr.cloneInternal)
+      log ::= ((tv, tv.constr.cloneInternal))
     }
     private[scala] def clear() {
       if (settings.debug.value)
@@ -826,7 +826,8 @@ trait Types extends api.Types { self: SymbolTable =>
     /** The string representation of this type, with singletypes explained. */
     def toLongString = {
       val str = toString
-      if (str endsWith ".type") str + " (with underlying type " + widen + ")"
+      if (str == "type") widen.toString
+      else if (str endsWith ".type") str + " (with underlying type " + widen + ")"
       else str
     }
 
@@ -2403,6 +2404,7 @@ A type's typeSymbol should never be inspected directly.
     override val typeArgs: List[Type],
     override val params: List[Symbol]
   ) extends Type {
+    private val numArgs = typeArgs.length
     // params are needed to keep track of variance (see mapOverArgs in SubstMap)
     assert(typeArgs.isEmpty || sameLength(typeArgs, params))
     // var tid = { tidCount += 1; tidCount } //DEBUG
@@ -2472,22 +2474,21 @@ A type's typeSymbol should never be inspected directly.
      */
     def registerBound(tp: Type, isLowerBound: Boolean, isNumericBound: Boolean = false): Boolean = {
       // println("regBound: "+(safeToString, debugString(tp), isLowerBound)) //@MDEBUG
-      if (isLowerBound) assert(tp != this)
+      if (isLowerBound)
+        assert(tp != this)
 
-      def checkSubtypeLower(tp1: Type, tp2: Type) =
-        if (isNumericBound) tp1 weak_<:< tp2
-        else tp1 <:< tp2
-      
-      // swaps the arguments if it's an upper bound
-      def checkSubtype(tp1: Type, tp2: Type) =
-        if (isLowerBound) checkSubtypeLower(tp1, tp2)
-        else checkSubtypeLower(tp2, tp1)
-
-      def addBound(tp: Type) = { 
+      // side effect: adds the type to upper or lower bounds
+      def addBound(tp: Type) {
         if (isLowerBound) addLoBound(tp, isNumericBound)
         else addHiBound(tp, isNumericBound)
-        // println("addedBound: "+(this, tp)) // @MDEBUG
-        true
+      }
+      // swaps the arguments if it's an upper bound
+      def checkSubtype(tp1: Type, tp2: Type) = {
+        val lhs = if (isLowerBound) tp1 else tp2
+        val rhs = if (isLowerBound) tp2 else tp1
+        
+        if (isNumericBound) lhs weak_<:< rhs
+        else lhs <:< rhs
       }
       
       /** Simple case: type arguments can be ignored, because either this typevar has
@@ -2503,8 +2504,12 @@ A type's typeSymbol should never be inspected directly.
        *    ?TC[?T] <: Any
        *  }}}
        */
-      def unifySimple = (params.isEmpty || tp.typeSymbol == NothingClass || tp.typeSymbol == AnyClass) && 
-        addBound(tp)
+      def unifySimple = (
+        (params.isEmpty || tp.typeSymbol == NothingClass || tp.typeSymbol == AnyClass) && {
+          addBound(tp)
+          true
+        }
+      )
 
       /** Full case: involving a check of the form
        *  {{{
@@ -2516,35 +2521,64 @@ A type's typeSymbol should never be inspected directly.
       def unifyFull(tpe: Type) = {
         // Since the alias/widen variations are often no-ops, this
         // keenly collects them in a Set to avoid redundant tests.
-        Set(tpe, tpe.widen, tpe.dealias, tpe.widen.dealias) exists { tp =>
-          sameLength(typeArgs, tp.typeArgs) && {
+        val tpes = (
+          if (isLowerBound) Set(tpe, tpe.widen, tpe.dealias, tpe.widen.dealias)
+          else Set(tpe)
+        )
+        tpes exists { tp =>
+          val lhs = if (isLowerBound) tp.typeArgs else typeArgs
+          val rhs = if (isLowerBound) typeArgs else tp.typeArgs
+
+          sameLength(lhs, rhs) && {
             // this is a higher-kinded type var with same arity as tp.
             // side effect: adds the type constructor itself as a bound
             addBound(tp.typeConstructor)
-            if (isLowerBound) isSubArgs(tp.typeArgs, typeArgs, params)
-            else isSubArgs(typeArgs, tp.typeArgs, params)
+            isSubArgs(lhs, rhs, params)
           }
         }
       }
-      
-      // There's a <:< test taking place right now, where tp is a concrete type and this is
-      // a typevar attempting to satisfy that test.  If we determine that the subtype test is
-      // infeasible, we'll return false. Otherwise will retain all the constraints implied by
-      // this test, which will eventually be lub/glbed to instantiate the typevar. We must
-      // be able to find a type with the same number of typeargs among the base types of tp,
-      // or tp after dealiasing/widening.
 
-      /** TODO: need positive/negative test cases demonstrating this is correct. */
-      def unifyBaseTypes =
-        if (isLowerBound) tp.baseTypeSeq exists unifyFull
-        else tp.baseTypeSeq.toList forall unifyFull
+      // There's a <: test taking place right now, where tp is a concrete type and this is a typevar
+      // attempting to satisfy that test. Either the test will be unsatisfiable, in which case
+      // registerBound will return false; or the upper or lower bounds of this type var will be
+      // supplemented with the type being tested against.
+      //
+      // Eventually the types which have accumulated in the upper and lower bounds will be lubbed
+      // (resp. glbbed) to instantiate the typevar.
+      //
+      // The only types which are eligible for unification are those with the same number of
+      // typeArgs as this typevar, or Any/Nothing, which are kind-polymorphic. For the upper bound,
+      // any parent or base type of `tp` may be tested here (leading to a corresponding relaxation
+      // in the upper bound.) The universe of possible glbs, being somewhat more infinite, is not
+      // addressed here: all lower bounds are retained and their intersection calculated when the
+      // bounds are solved.
+      //
+      // In a side-effect free universe, checking tp and tp.parents beofre checking tp.baseTypeSeq
+      // would be pointless. In this case, each check we perform causes us to lose specificity: in
+      // the end the best we'll do is the least specific type we tested against, since the typevar
+      // does not see these checks as "probes" but as requirements to fulfill.
+      //
+      // So the strategy used here is to test first the type, then the direct parents, and finally
+      // to fall back on the individual base types. This warrants eventual re-examination.
 
-      if (suspended)
+      if (suspended)              // constraint accumulation is disabled
         checkSubtype(tp, origin)
       else if (constr.instValid)  // type var is already set
         checkSubtype(tp, constr.inst)
-      else  // relax precision seeking a type whose shape matches the typevar
-        isRelatable(tp) && (unifySimple || unifyFull(tp) || unifyBaseTypes)
+      else
+        // isRelatable checks for type skolems which cannot be understood at this level
+        isRelatable(tp) && (
+          unifySimple || unifyFull(tp) || (
+            // only look harder if our gaze is oriented toward Any
+            isLowerBound && (
+              (tp.parents exists unifyFull) || (
+                // @PP: Is it going to be faster to filter out the parents we just checked?
+                // That's what's done here but I'm not sure it matters.
+                tp.baseTypeSeq.toList.tail filterNot (tp.parents contains _) exists unifyFull
+              )
+            )
+          )
+        )
     }
 
     def registerTypeEquality(tp: Type, typeVarLHS: Boolean): Boolean = {
@@ -3036,6 +3070,18 @@ A type's typeSymbol should never be inspected directly.
     }
   }
   
+  /** Substitutes the empty scope for any non-empty decls in the type. */
+  object dropAllRefinements extends TypeMap {
+    def apply(tp: Type): Type = tp match {
+      case rt @ RefinedType(parents, decls) if !decls.isEmpty =>
+        mapOver(copyRefinedType(rt, parents, EmptyScope))
+      case ClassInfoType(parents, decls, clazz) if !decls.isEmpty =>
+        mapOver(ClassInfoType(parents, EmptyScope, clazz))
+      case _ =>
+        mapOver(tp)
+    }
+  }
+
   // Set to true for A* => Seq[A]
   //   (And it will only rewrite A* in method result types.)
   //   This is the pre-existing behavior.
@@ -3438,6 +3484,7 @@ A type's typeSymbol should never be inspected directly.
    */
   object rawToExistential extends TypeMap {
     private var expanded = immutable.Set[Symbol]()
+    private var generated = immutable.Set[Type]()
     def apply(tp: Type): Type = tp match {
       case TypeRef(pre, sym, List()) if isRawIfWithoutArgs(sym) =>
         if (expanded contains sym) AnyRefClass.tpe
@@ -3448,8 +3495,10 @@ A type's typeSymbol should never be inspected directly.
         } finally {
           expanded -= sym
         }
-      case ExistentialType(_, _) => // stop to avoid infinite expansions
-        tp
+      case ExistentialType(_, _) if !(generated contains tp) => // to avoid infinite expansions. todo: not sure whether this is needed
+        val result = mapOver(tp)
+        generated += result
+        result
       case _ =>
         mapOver(tp)
     }
@@ -4001,14 +4050,13 @@ A type's typeSymbol should never be inspected directly.
         def corresponds(sym1: Symbol, sym2: Symbol): Boolean =
           sym1.name == sym2.name && (sym1.isPackageClass || corresponds(sym1.owner, sym2.owner))
         if (!corresponds(sym.owner, rebind0.owner)) {
-          if (settings.debug.value)
-            log("ADAPT1 pre = "+pre+", sym = "+sym+sym.locationString+", rebind = "+rebind0+rebind0.locationString)
+          debuglog("ADAPT1 pre = "+pre+", sym = "+sym+sym.locationString+", rebind = "+rebind0+rebind0.locationString)
           val bcs = pre.baseClasses.dropWhile(bc => !corresponds(bc, sym.owner));
           if (bcs.isEmpty)
             assert(pre.typeSymbol.isRefinementClass, pre) // if pre is a refinementclass it might be a structural type => OK to leave it in.
           else 
             rebind0 = pre.baseType(bcs.head).member(sym.name)
-          if (settings.debug.value) log(
+          debuglog(
             "ADAPT2 pre = " + pre +
             ", bcs.head = " + bcs.head +
             ", sym = " + sym+sym.locationString +
@@ -4020,7 +4068,7 @@ A type's typeSymbol should never be inspected directly.
         }
         val rebind = rebind0.suchThat(sym => sym.isType || sym.isStable)
         if (rebind == NoSymbol) {
-          if (settings.debug.value) log("" + phase + " " +phase.flatClasses+sym.owner+sym.name+" "+sym.isType)
+          debuglog("" + phase + " " +phase.flatClasses+sym.owner+sym.name+" "+sym.isType)
           throw new MalformedType(pre, sym.nameString)
         }
         rebind
@@ -5609,7 +5657,7 @@ A type's typeSymbol should never be inspected directly.
               try {
                 globalGlbDepth += 1
                 val dss = ts flatMap refinedToDecls
-                for (ds <- dss; val sym <- ds.iterator) 
+                for (ds <- dss; sym <- ds.iterator)
                   if (globalGlbDepth < globalGlbLimit && !(glbThisType specializes sym))
                     try {
                       addMember(glbThisType, glbRefined, glbsym(sym))
@@ -5651,7 +5699,7 @@ A type's typeSymbol should never be inspected directly.
    *  of types.
    */
   private def commonOwner(tps: List[Type]): Symbol = {
-    // if (settings.debug.value) log("computing common owner of types " + tps)//DEBUG
+    // debuglog("computing common owner of types " + tps)//DEBUG
     commonOwnerMap.init
     tps foreach { tp => commonOwnerMap.apply(tp); () }
     commonOwnerMap.result
@@ -5715,7 +5763,7 @@ A type's typeSymbol should never be inspected directly.
         case ex: MalformedType => None
         case ex: IndexOutOfBoundsException =>  // transpose freaked out because of irregular argss
         // catching just in case (shouldn't happen, but also doesn't cost us)
-        if (settings.debug.value) log("transposed irregular matrix!?"+ (tps, argss))
+        debuglog("transposed irregular matrix!?"+ (tps, argss))
         None
       }
     case SingleType(_, sym) :: rest =>
@@ -5737,7 +5785,7 @@ A type's typeSymbol should never be inspected directly.
    */
   def addMember(thistp: Type, tp: Type, sym: Symbol) {
     assert(sym != NoSymbol)
-    // if (settings.debug.value) log("add member " + sym+":"+sym.info+" to "+thistp) //DEBUG
+    // debuglog("add member " + sym+":"+sym.info+" to "+thistp) //DEBUG
     if (!(thistp specializes sym)) {
       if (sym.isTerm)
         for (alt <- tp.nonPrivateDecl(sym.name).alternatives)
@@ -5876,7 +5924,7 @@ A type's typeSymbol should never be inspected directly.
             if (!(declaredBoundsInst <:< argumentBounds))
               stricterBound(hkarg, hkparam)
 
-            if (settings.debug.value) log(
+            debuglog(
               "checkKindBoundsHK base case: " + hkparam +
               " declared bounds: " + declaredBounds +
               " after instantiating earlier hkparams: " + declaredBoundsInst + "\n" +
@@ -5885,8 +5933,7 @@ A type's typeSymbol should never be inspected directly.
             )
           }
           else {
-            if (settings.debug.value)
-              log("checkKindBoundsHK recursing to compare params of "+ hkparam +" with "+ hkarg)
+            debuglog("checkKindBoundsHK recursing to compare params of "+ hkparam +" with "+ hkarg)
             val (am, vm, sb) = checkKindBoundsHK(
               hkarg.typeParams,
               hkarg,
@@ -5907,7 +5954,7 @@ A type's typeSymbol should never be inspected directly.
     }
 
     val errors = new ListBuffer[(Type, Symbol, List[(Symbol, Symbol)], List[(Symbol, Symbol)], List[(Symbol, Symbol)])]
-    if (tparams.nonEmpty || targs.nonEmpty)
+    if (settings.debug.value &&(tparams.nonEmpty || targs.nonEmpty))
       log("checkKindBounds0(" + tparams + ", " + targs + ", " + pre + ", " + owner + ", " + explainErrors + ")")
 
     for {

@@ -22,15 +22,23 @@ import compat.Platform
  *  {{{
  *  > scala sort1 5 
  *  }}}
- *  This will run the benchmark 10 times, and print the execution times to stdout.
+ *  This will run the benchmark 5 times, forcing a garbage collection 
+ *  between runs, and printing the execution times to stdout. 
  *
+ *  It is also possible to add a multiplier, so
+ *  {{{
+ *  > scala sort1 5 10
+ *  }}}
+ *  will run the entire benchmark 10 times, each time for 5 runs.
+ * 
  *  @author Iulian Dragos, Burak Emir
  */
 trait Benchmark {
 
   /** this method should be implemented by the concrete benchmark.
    *  This method is called by the benchmarking code for a number of times.
-   *  The GC is called before each call to 'run'.
+   *  The GC is called between "multiplier" calls to run, right after tear
+   *  down.
    *
    *  @see setUp
    *  @see tearDown

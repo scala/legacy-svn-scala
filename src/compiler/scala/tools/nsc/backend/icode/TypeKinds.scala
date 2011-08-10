@@ -26,7 +26,6 @@ package icode
 trait TypeKinds { self: ICodes =>
   import global._
   import definitions.{ ArrayClass, AnyRefClass, ObjectClass, NullClass, NothingClass, arrayType }
-  import icodes.{ checkerDebug, NothingReference, NullReference }
   
   /** A map from scala primitive Types to ICode TypeKinds */
   lazy val primitiveTypeMap: Map[Symbol, TypeKind] = {
@@ -380,12 +379,16 @@ trait TypeKinds { self: ICodes =>
     case TypeRef(_, sym, args)           => primitiveOrClassType(sym, args)
     case ClassInfoType(_, _, ArrayClass) => abort("ClassInfoType to ArrayClass!")
     case ClassInfoType(_, _, sym)        => primitiveOrRefType(sym)
+    
+    // !!! Iulian says types which make no sense after erasure should not reach here,
+    // which includes the ExistentialType, AnnotatedType, RefinedType.  I don't know
+    // if the first two cases exist because they do or as a defensive measure, but
+    // at the time I added it, RefinedTypes were indeed reaching here.    
     case ExistentialType(_, t)           => toTypeKind(t)
     case AnnotatedType(_, t, _)          => toTypeKind(t)
-    // PP to ID: I added RefinedType here, is this OK or should they never be
-    // allowed to reach here?
     case RefinedType(parents, _)         => parents map toTypeKind reduceLeft lub
-    // bq: useful hack when wildcard types come here
+    // For sure WildcardTypes shouldn't reach here either, but when
+    // debugging such situations this may come in handy.
     // case WildcardType                    => REFERENCE(ObjectClass)
     case norm => abort(
       "Unknown type: %s, %s [%s, %s] TypeRef? %s".format(

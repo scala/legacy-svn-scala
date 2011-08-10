@@ -35,11 +35,11 @@ object binarytrees {
 
     val longLived = make(0, maxDepth)
 
-    for (val depth <- Iterator.range(minDepth, maxDepth+1, 2)) {
+    for (depth <- Iterator.range(minDepth, maxDepth+1, 2)) {
       val iterations = 1 << (maxDepth - depth + minDepth)
 
       var sum = 0
-      for (val i <- Iterator.range(1, iterations+1))
+      for (i <- Iterator.range(1, iterations+1))
         sum = sum + check(make(i, depth)) + check(make(-i, depth))
 
       print(iterations*2 + "\t trees", depth, sum)

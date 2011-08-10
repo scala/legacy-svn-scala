@@ -1,3 +1,3 @@
 object Test extends Application {
-  for(val n <- List(10000,100000,1000000)) chameneos.main(Array(n.toString)) 
+  for(n <- List(10000,100000,1000000)) chameneos.main(Array(n.toString)) 
 }

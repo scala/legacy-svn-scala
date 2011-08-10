@@ -97,8 +97,7 @@ abstract class LambdaLift extends InfoTransform {
      *  }
      */
     private def markFree(sym: Symbol, enclosure: Symbol): Boolean = {
-      if (settings.debug.value)
-        log("mark free: " + sym + " of " + sym.owner + " marked free in " + enclosure)
+      debuglog("mark free: " + sym + " of " + sym.owner + " marked free in " + enclosure)
       if (enclosure == sym.owner.logicallyEnclosingMember) true
       else if (enclosure.isPackageClass || !markFree(sym, enclosure.skipConstructor.owner.logicallyEnclosingMember)) false
       else {
@@ -116,8 +115,12 @@ abstract class LambdaLift extends InfoTransform {
               sym.owner.setInfo(sym.owner.info.cloneInfo(sym.owner))
           }
           changedFreeVars = true
-          if (settings.debug.value) log("" + sym + " is free in " + enclosure);
-          if ((sym.isVariable || (sym.isValue && sym.isLazy)) && !sym.hasFlag(CAPTURED)) {
+          debuglog("" + sym + " is free in " + enclosure);
+          if (sym.isVariable && !sym.hasFlag(CAPTURED)) { 
+            // todo: We should merge this with the lifting done in liftCode.
+            // We do have to lift twice: in liftCode, because Code[T] needs to see the lifted version
+            // and here again because lazy bitmaps are introduced later and get lifted here.
+            // But we should factor out the code and run it twice.
             sym setFlag CAPTURED
             val symClass = sym.tpe.typeSymbol
             atPhase(phase.next) {
@@ -135,8 +138,7 @@ abstract class LambdaLift extends InfoTransform {
     }
 
     private def markCalled(sym: Symbol, owner: Symbol) {
-      if (settings.debug.value)
-        log("mark called: " + sym + " of " + sym.owner + " is called by " + owner)
+      debuglog("mark called: " + sym + " of " + sym.owner + " is called by " + owner)
       symSet(called, owner) addEntry sym
     }
 
@@ -195,23 +197,21 @@ abstract class LambdaLift extends InfoTransform {
 
       for (sym <- renamable) {
         val originalName = sym.name
-        val base = sym.name + "$" + (
+        val base = sym.name + nme.NAME_JOIN_STRING + (
           if (sym.isAnonymousFunction && sym.owner.isMethod)
-            sym.owner.name + "$"
+            sym.owner.name + nme.NAME_JOIN_STRING
           else ""
         )
         sym.name = 
           if (sym.name.isTypeName) unit.freshTypeName(base)
           else unit.freshTermName(base)
 
-        if (settings.debug.value)
-          log("renaming in %s: %s => %s".format(sym.owner.fullLocationString, originalName, sym.name))
+        debuglog("renaming in %s: %s => %s".format(sym.owner.fullLocationString, originalName, sym.name))
       }
 
       atPhase(phase.next) {
         for ((owner, freeValues) <- free.toList) {
-          if (settings.debug.value)
-            log("free var proxy: %s, %s".format(owner.fullLocationString, freeValues.toList.mkString(", ")))
+          debuglog("free var proxy: %s, %s".format(owner.fullLocationString, freeValues.toList.mkString(", ")))
 
             proxies(owner) =
               for (fv <- freeValues.toList) yield {
@@ -228,15 +228,13 @@ abstract class LambdaLift extends InfoTransform {
 
     private def proxy(sym: Symbol) = {
       def searchIn(enclosure: Symbol): Symbol = {
-        if (settings.debug.value)
-          log("searching for " + sym + "(" + sym.owner + ") in " + enclosure + " " + enclosure.logicallyEnclosingMember)
+        debuglog("searching for " + sym + "(" + sym.owner + ") in " + enclosure + " " + enclosure.logicallyEnclosingMember)
               
         val ps = (proxies get enclosure.logicallyEnclosingMember).toList.flatten filter (_.name == sym.name)
         if (ps.isEmpty) searchIn(enclosure.skipConstructor.owner)
         else ps.head
       }
-      if (settings.debug.value)
-        log("proxy " + sym + " in " + sym.owner + " from " + currentOwner.ownerChain.mkString(" -> ") +
+      debuglog("proxy " + sym + " in " + sym.owner + " from " + currentOwner.ownerChain.mkString(" -> ") +
           " " + sym.owner.logicallyEnclosingMember)
 
       if (isSameOwnerEnclosure(sym)) sym
@@ -337,7 +335,7 @@ abstract class LambdaLift extends InfoTransform {
       if (sym.isMethod) sym setFlag LIFTED
       liftedDefs(sym.owner) ::= tree
       sym.owner.info.decls enterUnique sym
-      if (settings.debug.value) log("lifted: " + sym + " from " + oldOwner + " to " + sym.owner)
+      debuglog("lifted: " + sym + " from " + oldOwner + " to " + sym.owner)
       EmptyTree
     }
 

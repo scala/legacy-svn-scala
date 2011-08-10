@@ -37,15 +37,9 @@ trait TypeDiagnostics {
 
   import global._
   import definitions._
-  import global.typer.infer
+  import global.typer.{ infer, context }
   
   private def currentUnit = currentRun.currentUnit
-  
-  /** It can be quite difficult to know which of the many functions called "error"
-   *  is being called at any given point in the compiler.  To alleviate this I am
-   *  renaming such functions inside this trait based on where it originated.
-   */
-  def inferError(pos: Position, msg: String) = infer.error(pos, msg)
   
   /** The common situation of making sure nothing is erroneous could be
    *  nicer if Symbols, Types, and Trees all implemented some common interface
@@ -85,9 +79,10 @@ trait TypeDiagnostics {
   
   /** Does the positioned line assigned to t1 precede that of t2?
    */
-  def linePrecedes(t1: Tree, t2: Tree) = t1.pos.isDefined && t1.pos.isDefined && t1.pos.line < t2.pos.line
+  def posPrecedes(p1: Position, p2: Position) = p1.isDefined && p2.isDefined && p1.line < p2.line
+  def linePrecedes(t1: Tree, t2: Tree) = posPrecedes(t1.pos, t2.pos)
   
-  def notAMember(sel: Tree, qual: Tree, name: Name) = {
+  def notAMemberMessage(pos: Position, qual: Tree, name: Name) = {
     val owner            = qual.tpe.typeSymbol
     val target           = qual.tpe.widen
     def targetKindString = if (owner.isTypeParameterOrSkolem) "type parameter " else ""
@@ -104,7 +99,7 @@ trait TypeDiagnostics {
         else ""
       }
       val semicolon = (
-        if (linePrecedes(qual, sel))
+        if (posPrecedes(qual.pos, pos))
           "\npossible cause: maybe a semicolon is missing before `"+nameString+"'?"
         else
           ""
@@ -112,14 +107,13 @@ trait TypeDiagnostics {
       companion + semicolon
     }
 
-    inferError(
-      sel.pos,
-      withAddendum(qual.pos)(
-        if (name == nme.CONSTRUCTOR) target + " does not have a constructor"
-        else nameString + " is not a member of " + targetKindString + target + addendum
-      )
+    withAddendum(qual.pos)(
+      if (name == nme.CONSTRUCTOR) target + " does not have a constructor"
+      else nameString + " is not a member of " + targetKindString + target + addendum
     )
   }
+  def notAMemberError(pos: Position, qual: Tree, name: Name) =
+    context.error(pos, notAMemberMessage(pos, qual, name))
   
   /** Only prints the parameter names if they're not synthetic,
    *  since "x$1: Int" does not offer any more information than "Int".
@@ -217,6 +211,13 @@ trait TypeDiagnostics {
     if (sym.variance == 1) "covariant"
     else if (sym.variance == -1) "contravariant"
     else "invariant"
+
+  // I think this should definitely be on by default, but I need to
+  // play with it a bit longer.  For now it's behind -Xlint.
+  def explainAlias(tp: Type) = (
+    if (!settings.lint.value || (tp eq tp.normalize)) ""
+    else "    (which expands to)\n             " + tp.normalize
+  )
   
   /** Look through the base types of the found type for any which
    *  might have been valid subtypes if given conformant type arguments.
@@ -292,12 +293,12 @@ trait TypeDiagnostics {
     ""    // no elaborable variance situation found
   }
   
-  def foundReqMsg(found: Type, req: Type): String = {
-    (withDisambiguation(List(), found, req) {
-      ";\n found   : " + found.toLongString + existentialContext(found) +
-       "\n required: " + req + existentialContext(req)
-    }) + explainVariance(found, req)
-  }
+  def foundReqMsg(found: Type, req: Type): String = (
+    withDisambiguation(Nil, found, req)(
+      ";\n found   : " + found.toLongString + existentialContext(found) + explainAlias(found) +
+       "\n required: " + req + existentialContext(req) + explainAlias(req)
+    ) + explainVariance(found, req)
+  )
   
   case class TypeDiag(tp: Type, sym: Symbol) extends Ordered[TypeDiag] {
     // save the name because it will be mutated until it has been
@@ -420,7 +421,7 @@ trait TypeDiagnostics {
         // Error suppression will squash some of these warnings unless we circumvent it.
         // It is presumed if you are using a -Y option you would really like to hear
         // the warnings you've requested.
-        if (settings.warnDeadCode.value && context.unit != null && treeOK(tree) && exprOK) {
+        if (settings.warnDeadCode.value && context.unit.exists && treeOK(tree) && exprOK) {
           val saved = context.reportGeneralErrors
           try {
             context.reportGeneralErrors = true

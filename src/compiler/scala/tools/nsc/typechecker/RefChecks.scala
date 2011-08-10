@@ -37,7 +37,10 @@ import scala.collection.mutable.ListBuffer
  *
  *  @todo    Check whether we always check type parameter bounds.
  */
-abstract class RefChecks extends InfoTransform {
+abstract class RefChecks extends InfoTransform with reflect.internal.transform.RefChecks {
+
+  val global: Global               // need to repeat here because otherwise last mixin defines global as
+                                   // SymbolTable. If we had DOT this would not be an issue
 
   import global._
   import definitions._
@@ -50,13 +53,12 @@ abstract class RefChecks extends InfoTransform {
   def newTransformer(unit: CompilationUnit): RefCheckTransformer =
     new RefCheckTransformer(unit)
   override def changesBaseClasses = false
-
-  def transformInfo(sym: Symbol, tp: Type): Type =
-    if (sym.isModule && !sym.isStatic) {
-      sym setFlag (lateMETHOD | STABLE)
-      NullaryMethodType(tp)
-    } else tp
-
+  
+  override def transformInfo(sym: Symbol, tp: Type): Type = {
+    if (sym.isModule && !sym.isStatic) sym setFlag (lateMETHOD | STABLE)
+    super.transformInfo(sym, tp)
+  }
+    
   val toJavaRepeatedParam = new TypeMap {
     def apply(tp: Type) = tp match {
       case TypeRef(pre, RepeatedParamClass, args) =>
@@ -468,7 +470,9 @@ abstract class RefChecks extends InfoTransform {
         def javaErasedOverridingSym(sym: Symbol): Symbol = 
           clazz.tpe.nonPrivateMemberAdmitting(sym.name, BRIDGE).filter(other =>
             !other.isDeferred && other.isJavaDefined && {
-              def uncurryAndErase(tp: Type) = erasure.erasure(uncurry.transformInfo(sym, tp)) // #3622: erasure operates on uncurried types -- note on passing sym in both cases: only sym.isType is relevant for uncurry.transformInfo
+              // #3622: erasure operates on uncurried types -- 
+              // note on passing sym in both cases: only sym.isType is relevant for uncurry.transformInfo
+              def uncurryAndErase(tp: Type) = erasure.erasure(sym, uncurry.transformInfo(sym, tp))
               val tp1 = uncurryAndErase(clazz.thisType.memberType(sym))
               val tp2 = uncurryAndErase(clazz.thisType.memberType(other))
               atPhase(currentRun.erasurePhase.next)(tp1 matches tp2)
@@ -1217,22 +1221,27 @@ abstract class RefChecks extends InfoTransform {
           otherSym.decodedName, cannot, memberSym.decodedName)
       )
     }
+    
     /** Warn about situations where a method signature will include a type which
      *  has more restrictive access than the method itself.
      */
     private def checkAccessibilityOfReferencedTypes(tree: Tree) {
       val member = tree.symbol
+
+      def checkAccessibilityOfType(tpe: Type) {
+        val inaccessible = lessAccessibleSymsInType(tpe, member)
+        // if the unnormalized type is accessible, that's good enough
+        if (inaccessible.isEmpty) ()
+        // or if the normalized type is, that's good too
+        else if ((tpe ne tpe.normalize) && lessAccessibleSymsInType(tpe.normalize, member).isEmpty) ()
+        // otherwise warn about the inaccessible syms in the unnormalized type
+        else inaccessible foreach (sym => warnLessAccessible(sym, member))
+      }
       
       // types of the value parameters
-      member.paramss.flatten foreach { p =>
-        val normalized = p.tpe.normalize 
-        if ((normalized ne p.tpe) && lessAccessibleSymsInType(normalized, member).isEmpty) ()
-        else lessAccessibleSymsInType(p.tpe, member) foreach (sym => warnLessAccessible(sym, member))
-      }
+      member.paramss.flatten foreach (p => checkAccessibilityOfType(p.tpe))
       // upper bounds of type parameters
-      member.typeParams.map(_.info.bounds.hi.widen) foreach { tp =>
-        lessAccessibleSymsInType(tp, member) foreach (sym => warnLessAccessible(sym, member))
-      }
+      member.typeParams.map(_.info.bounds.hi.widen) foreach checkAccessibilityOfType
     }
     
     /** Check that a deprecated val or def does not override a
@@ -1388,7 +1397,7 @@ abstract class RefChecks extends InfoTransform {
     private def transformIf(tree: If): Tree = {
       val If(cond, thenpart, elsepart) = tree
       def unitIfEmpty(t: Tree): Tree =
-        if (t == EmptyTree) Literal(()).setPos(tree.pos).setType(UnitClass.tpe) else t
+        if (t == EmptyTree) Literal(Constant()).setPos(tree.pos).setType(UnitClass.tpe) else t
       
       cond.tpe match {
         case ConstantType(value) =>

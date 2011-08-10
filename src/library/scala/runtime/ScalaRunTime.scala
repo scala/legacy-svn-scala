@@ -198,6 +198,20 @@ object ScalaRunTime {
       finalizeHash(h)
     }
   }
+  
+  /** A helper for case classes. */
+  def typedProductIterator[T](x: Product): Iterator[T] = {
+    new Iterator[T] {
+      private var c: Int = 0
+      private val cmax = x.productArity
+      def hasNext = c < cmax
+      def next() = { 
+        val result = x.productElement(c)
+        c += 1
+        result.asInstanceOf[T]
+      }
+    }
+  }
 
   /** Fast path equality method for inlining; used when -optimise is set.
    */

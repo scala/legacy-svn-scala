@@ -233,12 +233,7 @@ abstract class CopyPropagation {
     /** Abstract interpretation for one instruction. */
     def interpret(in: copyLattice.Elem, i: Instruction): copyLattice.Elem = {
       var out = in.dup
-
-      if (settings.debug.value) {
-        log("- " + i)
-        log("in: " + in)
-        log("\n")
-      }
+      debuglog("- " + i + "\nin: " + in + "\n")
 
       i match {
         case THIS(_) =>
@@ -421,8 +416,7 @@ abstract class CopyPropagation {
           out.stack = Unknown :: Nil
 
         case _ =>
-          dump
-          abort("Unknown instruction: " + i)
+          dumpClassesAndAbort("Unknown instruction: " + i)
       }
       out
     } /* def interpret */
@@ -529,7 +523,7 @@ abstract class CopyPropagation {
       var values = in.stack.take(1 + ctor.info.paramTypes.length).reverse.drop(1);
       val bindings = mutable.HashMap[Symbol, Value]()
 
-      if (settings.debug.value) log("getBindings for: " + ctor + " acc: " + paramAccessors)
+      debuglog("getBindings for: " + ctor + " acc: " + paramAccessors)
       
       var paramTypes = ctor.tpe.paramTypes 
       val diff = paramTypes.length - paramAccessors.length
@@ -556,7 +550,7 @@ abstract class CopyPropagation {
         values = values.tail;
       }
 
-      if (settings.debug.value) log("\t" + bindings)
+      debuglog("\t" + bindings)
       bindings
     }
 

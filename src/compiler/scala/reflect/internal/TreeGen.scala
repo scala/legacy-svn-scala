@@ -150,7 +150,7 @@ abstract class TreeGen {
 
   /** Cast `tree` to type `pt` */
   def mkCast(tree: Tree, pt: Type): Tree = {
-    if (settings.debug.value) log("casting " + tree + ":" + tree.tpe + " to " + pt)
+    debuglog("casting " + tree + ":" + tree.tpe + " to " + pt)
     assert(!tree.tpe.isInstanceOf[MethodType], tree)
     assert(!pt.typeSymbol.isPackageClass)
     assert(!pt.typeSymbol.isPackageObjectClass)
@@ -189,21 +189,18 @@ abstract class TreeGen {
     }
   }
   
-  private def mkTypeApply(value: Tree, tpe: Type, what: Symbol) =
-    Apply(
-      TypeApply(
-        mkAttributedSelect(value, what),
-        List(TypeTree(tpe.normalize))
-      ),
-      Nil
-    )
+  private def mkTypeApply(value: Tree, tpe: Type, what: Symbol, wrapInApply: Boolean) = {
+    val tapp = TypeApply(mkAttributedSelect(value, what), List(TypeTree(tpe.normalize)))
+    if (wrapInApply) Apply(tapp, List()) else tapp
+  }
+
   /** Builds an instance test with given value and type. */
-  def mkIsInstanceOf(value: Tree, tpe: Type, any: Boolean = true): Tree =
-    mkTypeApply(value, tpe, (if (any) Any_isInstanceOf else Object_isInstanceOf))
+  def mkIsInstanceOf(value: Tree, tpe: Type, any: Boolean = true, wrapInApply: Boolean = true): Tree =
+    mkTypeApply(value, tpe, (if (any) Any_isInstanceOf else Object_isInstanceOf), wrapInApply)
 
   /** Builds a cast with given value and type. */
-  def mkAsInstanceOf(value: Tree, tpe: Type, any: Boolean = true): Tree =
-    mkTypeApply(value, tpe, (if (any) Any_asInstanceOf else Object_asInstanceOf))
+  def mkAsInstanceOf(value: Tree, tpe: Type, any: Boolean = true, wrapInApply: Boolean = true): Tree =
+    mkTypeApply(value, tpe, (if (any) Any_asInstanceOf else Object_asInstanceOf), wrapInApply)
 
   /** Cast `tree` to `pt`, unless tpe is a subtype of pt, or pt is Unit.  */
   def maybeMkAsInstanceOf(tree: Tree, pt: Type, tpe: Type, beforeRefChecks: Boolean = false): Tree =
@@ -246,25 +243,23 @@ abstract class TreeGen {
    */
   def mkZero(tp: Type): Tree = {
     val tree = tp.typeSymbol match {
-      case UnitClass    => Literal(())
-      case BooleanClass => Literal(false)
-      case FloatClass   => Literal(0.0f)
-      case DoubleClass  => Literal(0.0d)
-      case ByteClass    => Literal(0.toByte)
-      case ShortClass   => Literal(0.toShort)
-      case IntClass     => Literal(0)
-      case LongClass    => Literal(0L)
-      case CharClass    => Literal(0.toChar)
-      case _            => 
-        if (NullClass.tpe <:< tp) Literal(null: Any)
-        else abort("Cannot determine zero for " + tp)
-    }    
+      case UnitClass    => Literal(Constant())
+      case BooleanClass => Literal(Constant(false))
+      case FloatClass   => Literal(Constant(0.0f))
+      case DoubleClass  => Literal(Constant(0.0d))
+      case ByteClass    => Literal(Constant(0.toByte))
+      case ShortClass   => Literal(Constant(0.toShort))
+      case IntClass     => Literal(Constant(0))
+      case LongClass    => Literal(Constant(0L))
+      case CharClass    => Literal(Constant(0.toChar))
+      case _            => Literal(Constant(null))
+    }
     tree setType tp
   }
 
   /** Builds a tuple */
   def mkTuple(elems: List[Tree]): Tree =
-    if (elems.isEmpty) Literal(())
+    if (elems.isEmpty) Literal(Constant())
     else Apply(
       Select(mkAttributedRef(TupleClass(elems.length).caseModule), nme.apply),
       elems)
