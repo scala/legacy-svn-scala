@@ -1,201 +1,201 @@
 ackermann object Test extends Application {
- for(val n <- List(9,10,11)) ackermann.main(Array(n.toString)) 
+ for(n <- List(9,10,11)) ackermann.main(Array(n.toString)) 
 }  
 ary object Test extends Application {
-  for(val n <- List(3000,5000,7000,9000)) ary.main(Array(n.toString)) 
+  for(n <- List(3000,5000,7000,9000)) ary.main(Array(n.toString)) 
 } 
 binarytrees object Test extends Application {
-  for(val n <- List(12,14,16)) binarytrees.main(Array(n.toString)) 
+  for(n <- List(12,14,16)) binarytrees.main(Array(n.toString)) 
 } 
 chameneos object Test extends Application {
-  for(val n <- List(10000,100000,1000000)) chameneos.main(Array(n.toString)) 
+  for(n <- List(10000,100000,1000000)) chameneos.main(Array(n.toString)) 
 }  
 dispatch object Test extends Application {
-  for(val n <- List(200000,600000,1000000)) dispatch.main(Array(n.toString)) 
+  for(n <- List(200000,600000,1000000)) dispatch.main(Array(n.toString)) 
 } 
 echo object Test extends Application {
-  for(val n <- List(40000,70000,100000,150000)) echo.main(Array(n.toString)) 
+  for(n <- List(40000,70000,100000,150000)) echo.main(Array(n.toString)) 
 } 
 except object Test extends Application {
-  for(val n <- List(100000,150000,200000,250000)) except.main(Array(n.toString)) 
+  for(n <- List(100000,150000,200000,250000)) except.main(Array(n.toString)) 
 }  
 fannkuch object Test extends Application {
-  for(val n <- List(8,9,10)) fannkuch.main(Array(n.toString)) 
+  for(n <- List(8,9,10)) fannkuch.main(Array(n.toString)) 
 }  
 fasta object Test extends Application {
-  for(val n <- List(25000,250000,2500000)) fasta.main(Array(n.toString)) 
+  for(n <- List(25000,250000,2500000)) fasta.main(Array(n.toString)) 
 }  
 fibo object Test extends Application {
-  for(val n <- List(12,24,32)) fibo.main(Array(n.toString)) 
+  for(n <- List(12,24,32)) fibo.main(Array(n.toString)) 
 }  
 harmonic object Test extends Application {
-  for(val n <- List(6000000,8000000,10000000)) harmonic.main(Array(n.toString)) 
+  for(n <- List(6000000,8000000,10000000)) harmonic.main(Array(n.toString)) 
 } 
 hash object Test extends Application {
-  for(val n <- List(40000,60000,80000,100000)) hash.main(Array(n.toString)) 
+  for(n <- List(40000,60000,80000,100000)) hash.main(Array(n.toString)) 
 } 
 hash2 object Test extends Application {
-  for(val n <- List(50,100,150,200)) hash2.main(Array(n.toString)) 
+  for(n <- List(50,100,150,200)) hash2.main(Array(n.toString)) 
 }  
 health object Test extends Application {
-  for(val n <- List(200,600,1000)) health.main(Array(n.toString)) 
+  for(n <- List(200,600,1000)) health.main(Array(n.toString)) 
 } 
 heapsort object Test extends Application {
-  for(val n <- List(20000,40000,60000,80000,100000)) heapsort.main(Array(n.toString)) 
+  for(n <- List(20000,40000,60000,80000,100000)) heapsort.main(Array(n.toString)) 
 } 
 hello object Test extends Application {
-  for(val n <- List(1,50,100,150,200)) hello.main(Array(n.toString)) 
+  for(n <- List(1,50,100,150,200)) hello.main(Array(n.toString)) 
 }  
 implicitode object Test extends Application {
-  for(val n <- List(5,10,20,50)) implicitode.main(Array(n.toString)) 
+  for(n <- List(5,10,20,50)) implicitode.main(Array(n.toString)) 
 } 
 knucleotide object Test extends Application {
-  for(val n <- List(2500,25000,250000)) knucleotide.main(Array(n.toString)) 
+  for(n <- List(2500,25000,250000)) knucleotide.main(Array(n.toString)) 
 } 
 knucleotide inputfile=../../website/desc/knucleotide-input.txt
 lists object Test extends Application {
-  for(val n <- List(4,8,12,16,18)) lists.main(Array(n.toString)) 
+  for(n <- List(4,8,12,16,18)) lists.main(Array(n.toString)) 
 } 
 magicsquares object Test extends Application {
-  for(val n <- List(3,4,5)) magicsquares.main(Array(n.toString)) 
+  for(n <- List(3,4,5)) magicsquares.main(Array(n.toString)) 
 }  
 mandelbrot object Test extends Application {
-  for(val n <- List(200,400,600)) mandelbrot.main(Array(n.toString)) 
+  for(n <- List(200,400,600)) mandelbrot.main(Array(n.toString)) 
 } 
 matrix object Test extends Application {
-  for(val n <- List(10,200,400,600)) matrix.main(Array(n.toString)) 
+  for(n <- List(10,200,400,600)) matrix.main(Array(n.toString)) 
 } 
 message object Test extends Application {
-  for(val n <- List(1000,2000,3000)) message.main(Array(n.toString)) 
+  for(n <- List(1000,2000,3000)) message.main(Array(n.toString)) 
 }  
 meteor object Test extends Application {
-  for(val n <- List(0)) meteor.main(Array(n.toString)) 
+  for(n <- List(0)) meteor.main(Array(n.toString)) 
 } 
 methcall object Test extends Application {
-  for(val n <- List(100000,400000,700000,1000000)) methcall.main(Array(n.toString)) 
+  for(n <- List(100000,400000,700000,1000000)) methcall.main(Array(n.toString)) 
 }  
 moments object Test extends Application {
-  for(val n <- List(25,75,125,200)) {
+  for(n <- List(25,75,125,200)) {
     System.setIn(new java.io.FileInputStream(System.getProperty("partest.cwd")+"/moments-input"+n+".txt"))
     moments.main(Array(n.toString)) 
   }
 } 
 
 nbody object Test extends Application {
-  for(val n <- List(200000,2000000,20000000)) nbody.main(Array(n.toString)) 
+  for(n <- List(200000,2000000,20000000)) nbody.main(Array(n.toString)) 
 } 
 nestedloop object Test extends Application {
-  for(val n <- List(8,12,16,18)) nestedloop.main(Array(n.toString)) 
+  for(n <- List(8,12,16,18)) nestedloop.main(Array(n.toString)) 
 } 
 nsieve object Test extends Application {
-  for(val n <- List(7,8,9)) nsieve.main(Array(n.toString)) 
+  for(n <- List(7,8,9)) nsieve.main(Array(n.toString)) 
 } 
 nsievebits object Test extends Application {
-  for(val n <- List(7,8,9)) nsievebits.main(Array(n.toString)) 
+  for(n <- List(7,8,9)) nsievebits.main(Array(n.toString)) 
 } 
 objinst object Test extends Application {
-  for(val n <- List(400000,700000,1000000,1500000)) objinst.main(Array(n.toString)) 
+  for(n <- List(400000,700000,1000000,1500000)) objinst.main(Array(n.toString)) 
 } 
 partialsums object Test extends Application {
-  for(val n <- List(25000,250000,2500000)) partialsums.main(Array(n.toString)) 
+  for(n <- List(25000,250000,2500000)) partialsums.main(Array(n.toString)) 
 }  
 pidigits object Test extends Application {
-  for(val n <- List(600,800,1000)) pidigits.main(Array(n.toString)) 
+  for(n <- List(600,800,1000)) pidigits.main(Array(n.toString)) 
 } 
 process object Test extends Application {
-  for(val n <- List(1000,2000,3000)) process.main(Array(n.toString)) 
+  for(n <- List(1000,2000,3000)) process.main(Array(n.toString)) 
 } 
 prodcons object Test extends Application {
-  for(val n <- List(30000,70000,100000,150000)) prodcons.main(Array(n.toString)) 
+  for(n <- List(30000,70000,100000,150000)) prodcons.main(Array(n.toString)) 
 } 
 random object Test extends Application {
-  for(val n <- List(9000,300000,600000,900000)) random.main(Array(n.toString)) 
+  for(n <- List(9000,300000,600000,900000)) random.main(Array(n.toString)) 
 }  
 raytracer object Test extends Application {
-  for(val n <- List(20,40,80,160)) raytracer.main(Array(n.toString)) 
+  for(n <- List(20,40,80,160)) raytracer.main(Array(n.toString)) 
 } 
 recursive object Test extends Application {
-  for(val n <- List(3,7,11)) recursive.main(Array(n.toString)) 
+  for(n <- List(3,7,11)) recursive.main(Array(n.toString)) 
 } 
 regexdna object Test extends Application {
-  for(val n <- List(100000,300000,500000)) {
+  for(n <- List(100000,300000,500000)) {
     System.setIn(new java.io.FileInputStream(System.getProperty("partest.cwd")+"/regexdna-input"+n+".txt"))
     regexdna.main(Array(n.toString)) 
   }
 } 
 regexmatch object Test extends Application {
-  for(val n <- List(100,6000,9000,12000)) {
+  for(n <- List(100,6000,9000,12000)) {
     System.setIn(new java.io.FileInputStream(System.getProperty("partest.cwd")+"/regexmatch-input"+n+".txt"))
     regexmatch.main(Array(n.toString)) 
   }
 } 
 
 revcomp object Test extends Application {
-  for(val n <- List(25000,250000,2500000)) {
+  for(n <- List(25000,250000,2500000)) {
     System.setIn(new java.io.FileInputStream(System.getProperty("partest.cwd")+"/revcomp-input"+n+".txt"))
     revcomp.main(Array(n.toString)) 
   }
 } 
 
 reversefile object Test extends Application {
-  for(val n <- List(10,15,20,25)) reversefile.main(Array(n.toString)) 
+  for(n <- List(10,15,20,25)) reversefile.main(Array(n.toString)) 
 } 
 reversefile inputfile=../../website/desc/reversefile-input.txt
 
 sieve object Test extends Application {
-  for(val n <- List(300,600,900,1200)) sieve.main(Array(n.toString)) 
+  for(n <- List(300,600,900,1200)) sieve.main(Array(n.toString)) 
 }  
 spectralnorm object Test extends Application {
-  for(val n <- List(500,1500,2500)) spectralnorm.main(Array(n.toString)) 
+  for(n <- List(500,1500,2500)) spectralnorm.main(Array(n.toString)) 
 }  
 spellcheck object Test extends Application {
-  for(val n <- List(4,7,10,15)) spellcheck.main(Array(n.toString)) 
+  for(n <- List(4,7,10,15)) spellcheck.main(Array(n.toString)) 
 } 
 spellcheck inputfile=../../website/desc/spellcheck-input.txt
 
 object Test extends Application {
-  for(val n <- List(2500,25000,250000)) {
+  for(n <- List(2500,25000,250000)) {
     System.setIn(new java.io.FileInputStream(System.getProperty("partest.cwd")+"/knucleotide-input"+n+".txt"))
     knucleotide.main(Array(n.toString)) 
   }
 } 
 
 strcat object Test extends Application {
-  for(val n <- List(10000,20000,30000,40000)) strcat.main(Array(n.toString)) 
+  for(n <- List(10000,20000,30000,40000)) strcat.main(Array(n.toString)) 
 } 
 sumcol object Test extends Application {
-  for(val n <- List(400,700,1000,8000)) {
+  for(n <- List(400,700,1000,8000)) {
     System.setIn(new java.io.FileInputStream(System.getProperty("partest.cwd")+"/sumcol-input"+n+".txt"))
     sumcol.main(Array(n.toString)) 
   }
 } 
 takfp object Test extends Application {
-  for(val n <- List(8,9,10)) takfp.main(Array(n.toString)) 
+  for(n <- List(8,9,10)) takfp.main(Array(n.toString)) 
 } 
 tcpecho object Test extends Application {
-  for(val n <- List(6,8,10)) tcpecho.main(Array(n.toString)) 
+  for(n <- List(6,8,10)) tcpecho.main(Array(n.toString)) 
 } 
 tcprequest object Test extends Application {
-  for(val n <- List(120,160,200)) tcprequest.main(Array(n.toString)) 
+  for(n <- List(120,160,200)) tcprequest.main(Array(n.toString)) 
 } 
 tcpsocket object Test extends Application {
-  for(val n <- List(1000,5000,9000)) tcpsocket.main(Array(n.toString)) 
+  for(n <- List(1000,5000,9000)) tcpsocket.main(Array(n.toString)) 
 } 
 tcpstream object Test extends Application {
-  for(val n <- List(30,40,50)) tcpstream.main(Array(n.toString)) 
+  for(n <- List(30,40,50)) tcpstream.main(Array(n.toString)) 
 } 
 wc object Test extends Application {
-  for(val n <- List(1000,1500,2000,2500)) wc.main(Array(n.toString)) 
+  for(n <- List(1000,1500,2000,2500)) wc.main(Array(n.toString)) 
 } 
 wc inputfile=Input
 
 wordfreq object Test extends Application {
-  for(val n <- List(5,10,15,20,25)) wordfreq.main(Array(n.toString)) 
+  for(n <- List(5,10,15,20,25)) wordfreq.main(Array(n.toString)) 
 } 
 wordfreq inputfile=../../website/desc/wordfreq-input.txt
 
 object Test extends Application {
-  for(val n <- List(2500,25000,250000)) {
+  for(n <- List(2500,25000,250000)) {
     System.setIn(new java.io.FileInputStream(System.getProperty("partest.cwd")+"/knucleotide-input"+n+".txt"))
     knucleotide.main(Array(n.toString)) 
   }
