@@ -21,6 +21,7 @@ trait Contexts { self: Analyzer =>
   val NoContext = new Context {
     override def implicitss: List[List[ImplicitInfo]] = List()
     outer = this
+    override def toString = "NoContext"
   }
   NoContext.enclClass = NoContext
   NoContext.enclMethod = NoContext
@@ -89,7 +90,7 @@ trait Contexts { self: Analyzer =>
   }
 
   class Context private[typechecker] {
-    var unit: CompilationUnit = _
+    var unit: CompilationUnit = NoCompilationUnit
     var tree: Tree = _                      // Tree associated with this context
     var owner: Symbol = NoSymbol            // The current owner
     var scope: Scope = _                    // The current scope
@@ -164,12 +165,11 @@ trait Contexts { self: Analyzer =>
      */
     def make(unit: CompilationUnit, tree: Tree, owner: Symbol,
              scope: Scope, imports: List[ImportInfo]): Context = {
-      val c = new Context
-      c.unit = unit
-      c.tree = tree
+      val c   = new Context
+      c.unit  = unit
+      c.tree  = tree
       c.owner = owner
       c.scope = scope
-      
       c.outer = this
       
       tree match {
@@ -203,6 +203,7 @@ trait Contexts { self: Analyzer =>
       c.retyping = this.retyping
       c.openImplicits = this.openImplicits
       registerContext(c.asInstanceOf[analyzer.Context])
+      debuglog("Created context: " + this + " ==> " + c)
       c
     }
 
@@ -364,11 +365,9 @@ trait Contexts { self: Analyzer =>
     def nextEnclosing(p: Context => Boolean): Context =
       if (this == NoContext || p(this)) this else outer.nextEnclosing(p)
 
-    override def toString = (
-      if (this == NoContext) "NoContext"
-      else "Context(%s@%s scope=%s)".format(owner.fullName, tree.getClass.getName split "[.$]" last, scope.##)
+    override def toString = "Context(%s@%s unit=%s scope=%s)".format(
+      owner.fullName, tree.shortClass, unit, scope.##
     )
-
     /** Is `sub` a subclass of `base` or a companion object of such a subclass?
      */
     def isSubClassOrCompanion(sub: Symbol, base: Symbol) = 
@@ -504,7 +503,7 @@ trait Contexts { self: Analyzer =>
     def restoreTypeBounds(tp: Type): Type = {
       var current = tp
       for ((sym, info) <- savedTypeBounds) {
-        if (settings.debug.value) log("resetting " + sym + " to " + info);
+        debuglog("resetting " + sym + " to " + info);
         sym.info match {
           case TypeBounds(lo, hi) if (hi <:< lo && lo <:< hi) =>
             current = current.instantiateTypeParams(List(sym), List(lo))
@@ -558,7 +557,7 @@ trait Contexts { self: Analyzer =>
           }
           impls
       }
-      //if (settings.debug.value) log("collect implicit imports " + imp + "=" + collect(imp.tree.selectors))//DEBUG
+      //debuglog("collect implicit imports " + imp + "=" + collect(imp.tree.selectors))//DEBUG
       collect(imp.tree.selectors)
     }
 
@@ -570,14 +569,14 @@ trait Contexts { self: Analyzer =>
         val newImplicits: List[ImplicitInfo] =
           if (owner != nextOuter.owner && owner.isClass && !owner.isPackageClass && !inSelfSuperCall) {
             if (!owner.isInitialized) return nextOuter.implicitss
-            // if (settings.debug.value) log("collect member implicits " + owner + ", implicit members = " + owner.thisType.implicitMembers)//DEBUG
+            // debuglog("collect member implicits " + owner + ", implicit members = " + owner.thisType.implicitMembers)//DEBUG
             val savedEnclClass = enclClass
             this.enclClass = this
             val res = collectImplicits(owner.thisType.implicitMembers, owner.thisType)
             this.enclClass = savedEnclClass
             res
           } else if (scope != nextOuter.scope && !owner.isPackageClass) {
-            if (settings.debug.value) log("collect local implicits " + scope.toList)//DEBUG
+            debuglog("collect local implicits " + scope.toList)//DEBUG
             collectImplicits(scope.toList, NoPrefix)
           } else if (imports != nextOuter.imports) {
             assert(imports.tail == nextOuter.imports)

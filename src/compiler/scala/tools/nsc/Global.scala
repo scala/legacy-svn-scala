@@ -167,7 +167,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     if (settings.debug.value)
       body
   }
-  @inline final def debuglog(msg: => String) {
+  @inline final override def debuglog(msg: => String) {
     if (settings.debug.value && (settings.log containsPhase globalPhase))
       inform("[log " + phase + "] " + msg)
   }
@@ -179,6 +179,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   def inform[T](msg: String, value: T): T  = returning(value)(x => inform(msg + x))
   def informTime(msg: String, start: Long) = informProgress(elapsedMessage(msg, start))
 
+  def logResult[T](msg: String)(result: T): T = {
+    log(msg + ": " + result)
+    result
+  }
   def logError(msg: String, t: Throwable): Unit = ()
   // Over 200 closure objects are eliminated by inlining this.
   @inline final def log(msg: => AnyRef): Unit =
@@ -768,8 +772,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     var currentUnit: CompilationUnit = _
  
     /** Counts for certain classes of warnings during this run. */
-    var deprecationWarnings: Int = 0
-    var uncheckedWarnings: Int = 0
+    var deprecationWarnings: List[(Position, String)] = Nil
+    var uncheckedWarnings: List[(Position, String)] = Nil
     
     /** Progress tracking.  Measured in "progress units" which are 1 per
      *  compilation unit per phase completed.
@@ -950,8 +954,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
           if (option.isDefault && count > 0)
             warning("there were %d %s warnings; re-run with %s for details".format(count, what, option.name))
         )
-        warn(deprecationWarnings, "deprecation", settings.deprecation)
-        warn(uncheckedWarnings, "unchecked", settings.unchecked)
+        warn(deprecationWarnings.size, "deprecation", settings.deprecation)
+        warn(uncheckedWarnings.size, "unchecked", settings.unchecked)
         // todo: migrationWarnings
       }
     }

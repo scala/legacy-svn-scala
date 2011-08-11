@@ -1,3 +1,3 @@
 object Test extends Application {
-  for(val n <- List(200000,2000000,20000000)) nbody.main(Array(n.toString)) 
+  for(n <- List(200000,2000000,20000000)) nbody.main(Array(n.toString)) 
 }

@@ -42,31 +42,33 @@ trait ParsersCommon extends ScannersCommon {
      *  will be called, so a parse error will still result.  If the grouping is
      *  optional, in.token should be tested before calling these methods.
      */
-    def inParens[T](body: => T): T = {
+    @inline final def inParens[T](body: => T): T = {
       accept(LPAREN)
       val ret = body
       accept(RPAREN)
       ret
     }
-    def inParensOrError[T](body: => T, alt: T): T = 
+    @inline final def inParensOrError[T](body: => T, alt: T): T =
       if (in.token == LPAREN) inParens(body)
       else { accept(LPAREN) ; alt }
-    def inParensOrUnit[T](body: => Tree): Tree = inParensOrError(body, Literal(()))
-    def inParensOrNil[T](body: => List[T]): List[T] = inParensOrError(body, Nil)
 
-    def inBraces[T](body: => T): T = {
+    @inline final def inParensOrUnit[T](body: => Tree): Tree = inParensOrError(body, Literal(Constant()))
+    @inline final def inParensOrNil[T](body: => List[T]): List[T] = inParensOrError(body, Nil)
+
+    @inline final def inBraces[T](body: => T): T = {
       accept(LBRACE)
       val ret = body
       accept(RBRACE)
       ret
     }
-    def inBracesOrError[T](body: => T, alt: T): T =
+    @inline final def inBracesOrError[T](body: => T, alt: T): T =
       if (in.token == LBRACE) inBraces(body)
       else { accept(LBRACE) ; alt }
-    def inBracesOrNil[T](body: => List[T]): List[T] = inBracesOrError(body, Nil)
-    def inBracesOrUnit[T](body: => Tree): Tree = inBracesOrError(body, Literal(()))
+
+    @inline final def inBracesOrNil[T](body: => List[T]): List[T] = inBracesOrError(body, Nil)
+    @inline final def inBracesOrUnit[T](body: => Tree): Tree = inBracesOrError(body, Literal(Constant()))
     
-    def inBrackets[T](body: => T): T = {
+    @inline final def inBrackets[T](body: => T): T = {
       accept(LBRACKET)
       val ret = body
       accept(RBRACKET)
@@ -75,7 +77,7 @@ trait ParsersCommon extends ScannersCommon {
     
     /** Creates an actual Parens node (only used during parsing.)
      */
-    def makeParens(body: => List[Tree]): Parens =
+    @inline final def makeParens(body: => List[Tree]): Parens =
       Parens(inParens(if (in.token == RPAREN) Nil else body))
   }
 }
@@ -185,7 +187,7 @@ self =>
     
     override def blockExpr(): Tree = skipBraces(EmptyTree)
 
-    override def templateBody(isPre: Boolean) = skipBraces(emptyValDef, List(EmptyTree))
+    override def templateBody(isPre: Boolean) = skipBraces((emptyValDef, List(EmptyTree)))
   }
 
   class UnitParser(val unit: global.CompilationUnit, patches: List[BracePatch]) extends SourceFileParser(unit.source) {
@@ -206,13 +208,11 @@ self =>
     }
 
     private var smartParsing = false
-    private def withSmartParsing[T](body: => T): T = {
+    @inline private def withSmartParsing[T](body: => T): T = {
       val saved = smartParsing
-      try {
-        smartParsing = true
-        body
-      }
-      finally smartParsing = saved  // false
+      smartParsing = true
+      try body
+      finally smartParsing = saved
     }
 
     val syntaxErrors = new ListBuffer[(Int, String)]
@@ -275,7 +275,7 @@ self =>
     /** The types of the context bounds of type parameters of the surrounding class
      */
     private var classContextBounds: List[Tree] = Nil
-    private def savingClassContextBounds[T](op: => T): T = {
+    @inline private def savingClassContextBounds[T](op: => T): T = {
       val saved = classContextBounds
       try op
       finally classContextBounds = saved
@@ -462,12 +462,10 @@ self =>
     var assumedClosingParens = collection.mutable.Map(RPAREN -> 0, RBRACKET -> 0, RBRACE -> 0)
 
     private var inFunReturnType = false
-    private def fromWithinReturnType[T](body: => T): T = {
+    @inline private def fromWithinReturnType[T](body: => T): T = {
       val saved = inFunReturnType
-      try {
-        inFunReturnType = true
-        body
-      }
+      inFunReturnType = true
+      try body
       finally inFunReturnType = saved
     }
 
@@ -719,7 +717,7 @@ self =>
     }
 
     /** {{{ part { `sep` part } }}},or if sepFirst is true, {{{ { `sep` part } }}}. */
-    def tokenSeparated[T](separator: Int, sepFirst: Boolean, part: => T): List[T] = {
+    final def tokenSeparated[T](separator: Int, sepFirst: Boolean, part: => T): List[T] = {
       val ts = new ListBuffer[T]
       if (!sepFirst)
         ts += part
@@ -730,9 +728,9 @@ self =>
       }
       ts.toList
     }
-    def commaSeparated[T](part: => T): List[T] = tokenSeparated(COMMA, false, part)
-    def caseSeparated[T](part: => T): List[T] = tokenSeparated(CASE, true, part)
-    def readAnnots[T](part: => T): List[T] = tokenSeparated(AT, true, part)
+    @inline final def commaSeparated[T](part: => T): List[T] = tokenSeparated(COMMA, false, part)
+    @inline final def caseSeparated[T](part: => T): List[T] = tokenSeparated(CASE, true, part)
+    @inline final def readAnnots[T](part: => T): List[T] = tokenSeparated(AT, true, part)
 
 /* --------- OPERAND/OPERATOR STACK --------------------------------------- */
 
@@ -1197,7 +1195,7 @@ self =>
         r
       } else {
         accept(LPAREN)
-        Literal(true)
+        Literal(Constant(true))
       }
     }
 
@@ -1250,7 +1248,7 @@ self =>
           newLinesOpt()
           val thenp = expr()
           val elsep = if (in.token == ELSE) { in.nextToken(); expr() }
-                      else Literal(())
+                      else Literal(Constant())
           If(cond, thenp, elsep)
         }
       case TRY =>
@@ -1311,7 +1309,7 @@ self =>
         }
       case RETURN =>
         atPos(in.skipToken()) {
-          Return(if (isExprIntro) expr() else Literal(()))
+          Return(if (isExprIntro) expr() else Literal(Constant()))
         }
       case THROW =>
         atPos(in.skipToken()) { 
@@ -1633,15 +1631,24 @@ self =>
      *  }}}
      */
     def generator(enums: ListBuffer[Enumerator], eqOK: Boolean) {
-      val start = in.offset
-      if (in.token == VAL) in.nextToken()
-      val pat = noSeq.pattern1()
+      val start  = in.offset
+      val hasVal = in.token == VAL
+      if (hasVal)
+        in.nextToken()
+
+      val pat   = noSeq.pattern1()
       val point = in.offset
-      val tok = in.token
-      if (tok == EQUALS && eqOK) in.nextToken()
+      val hasEq = in.token == EQUALS
+
+      if (hasVal) {
+        if (hasEq) deprecationWarning(in.offset, "val keyword in for comprehension is deprecated")
+        else syntaxError(in.offset, "val in for comprehension must be followed by assignment")
+      }
+
+      if (hasEq && eqOK) in.nextToken()
       else accept(LARROW)
       val rhs = expr()
-      enums += makeGenerator(r2p(start, point, in.lastOffset max start), pat, tok == EQUALS, rhs)
+      enums += makeGenerator(r2p(start, point, in.lastOffset max start), pat, hasEq, rhs)
       // why max above? IDE stress tests have shown that lastOffset could be less than start,
       // I guess this happens if instead if a for-expression we sit on a closing paren.
       while (in.token == IF) enums += makeFilter(in.offset, guard())
@@ -2039,8 +2046,6 @@ self =>
           return Nil
         
         if (in.token == IMPLICIT) {
-          if (contextBounds.nonEmpty)
-            syntaxError("cannot have both implicit parameters and context bounds `: ...' or view bounds `<% ...' on type parameters", false)
           in.nextToken()
           implicitmod = Flags.IMPLICIT
         }
@@ -2433,7 +2438,7 @@ self =>
      */
     def constrExpr(vparamss: List[List[ValDef]]): Tree =
       if (in.token == LBRACE) constrBlock(vparamss)
-      else Block(List(selfInvocation(vparamss)), Literal(()))
+      else Block(List(selfInvocation(vparamss)), Literal(Constant()))
 
     /** {{{
      *  SelfInvocation  ::= this ArgumentExprs {ArgumentExprs}
@@ -2463,7 +2468,7 @@ self =>
           else Nil
         }
         accept(RBRACE)
-        Block(stats, Literal(()))
+        Block(stats, Literal(Constant()))
       }
 
     /** {{{
@@ -2591,9 +2596,12 @@ self =>
      */
     def templateParents(isTrait: Boolean): (List[Tree], List[List[Tree]]) = {
       val parents = new ListBuffer[Tree] += startAnnotType()
-      val argss =
+      val argss = (
+        // TODO: the insertion of List(Nil) here is where "new Foo" becomes
+        // indistinguishable from "new Foo()".
         if (in.token == LPAREN && !isTrait) multipleArgumentExprs()
         else List(Nil)
+      )
 
       while (in.token == WITH) {
         in.nextToken()
@@ -2649,6 +2657,20 @@ self =>
      *  }}}
      */
     def templateOpt(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]], tstart: Int): Template = {
+      /** A synthetic ProductN parent for case classes. */
+      def extraCaseParents = (
+        if (settings.Xexperimental.value && mods.isCase) {
+          val arity = if (vparamss.isEmpty || vparamss.head.isEmpty) 0 else vparamss.head.size
+          if (arity == 0) Nil
+          else List(
+            AppliedTypeTree(
+              productConstrN(arity),
+              vparamss.head map (vd => vd.tpt)
+            )
+          )
+        }
+        else Nil
+      )
       val (parents0, argss, self, body) = (
         if (in.token == EXTENDS || in.token == SUBTYPE && mods.hasTraitFlag) { 
           in.nextToken()
@@ -2673,7 +2695,7 @@ self =>
             else if (parents0.isEmpty) List(scalaAnyRefConstr)
             else parents0
           ) ++ (
-            if (mods.isCase) List(productConstr, serializableConstr)
+            if (mods.isCase) List(productConstr, serializableConstr) ++ extraCaseParents
             else Nil
           )
 
@@ -2887,7 +2909,7 @@ self =>
         else List(tmplDef(pos, mods))
       
       in.token match {
-        case RBRACE | CASE  => defs :+ (Literal(()) setPos o2p(in.offset))
+        case RBRACE | CASE  => defs :+ (Literal(Constant()) setPos o2p(in.offset))
         case _              => defs
       }
     }

@@ -437,13 +437,17 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def hasBridgeAnnotation = hasAnnotation(BridgeClass)
     def deprecationMessage  = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 0)
     def deprecationVersion  = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 1)
+    def deprecatedParamName = getAnnotation(DeprecatedNameAttr) flatMap (_ symbolArg 0)
+
     // !!! when annotation arguments are not literal strings, but any sort of 
     // assembly of strings, there is a fair chance they will turn up here not as
     // Literal(const) but some arbitrary AST.  However nothing in the compiler
     // prevents someone from writing a @migration annotation with a calculated
     // string.  So this needs attention.  For now the fact that migration is
     // private[scala] ought to provide enough protection.
+    def hasMigrationAnnotation = hasAnnotation(MigrationAnnotationClass)
     def migrationMessage    = getAnnotation(MigrationAnnotationClass) flatMap { _.stringArg(2) }
+    def migrationVersion    = getAnnotation(MigrationAnnotationClass) map { version => version.intArg(0).get + "." + version.intArg(1).get }
     def elisionLevel        = getAnnotation(ElidableMethodClass) flatMap { _.intArg(0) }
     def implicitNotFoundMsg = getAnnotation(ImplicitNotFoundClass) flatMap { _.stringArg(0) }
 
@@ -611,15 +615,19 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       rawowner = owner
     }
     private[Symbols] def flattenName(): Name = {
-      // TODO: this assertion causes me a lot of trouble in the interpeter in situations
+      // This assertion caused me no end of trouble in the interpeter in situations
       // where everything proceeds smoothly if there's no assert.  I don't think calling "name"
       // on a symbol is the right place to throw fatal exceptions if things don't look right.
-      // It really hampers exploration.
-      assert(rawowner.isClass, "fatal: %s has non-class owner %s after flatten.".format(rawname + idString, rawowner))
+      // It really hampers exploration.  Finally I gave up and disabled it, and tickets like
+      // SI-4874 instantly start working.
+      // assert(rawowner.isClass, "fatal: %s has non-class owner %s after flatten.".format(rawname + idString, rawowner))
+
       nme.flattenedName(rawowner.name, rawname)
     }
 
     def ownerChain: List[Symbol] = this :: owner.ownerChain
+    def originalOwnerChain: List[Symbol] = this :: originalOwner.getOrElse(this, rawowner).originalOwnerChain
+
     def enclClassChain: List[Symbol] = {
       if (this eq NoSymbol) Nil
       else if (isClass && !isPackageClass) this :: owner.enclClassChain
@@ -665,13 +673,24 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def originalName = nme.originalName(name)
     
-        /** The name of the symbol before decoding, e.g. `\$eq\$eq` instead of `==`.
+    /** The name of the symbol before decoding, e.g. `\$eq\$eq` instead of `==`.
      */
     def encodedName: String = name.toString
 
     /** The decoded name of the symbol, e.g. `==` instead of `\$eq\$eq`.
      */
     def decodedName: String = stripLocalSuffix(NameTransformer.decode(encodedName))
+    
+    def moduleSuffix: String = (
+      if (hasModuleFlag && !isMethod && !isImplClass && !isJavaDefined) nme.MODULE_SUFFIX_STRING
+      else ""
+    )
+
+    /** These should be moved somewhere like JavaPlatform.
+     */
+    def javaSimpleName = stripLocalSuffix("" + simpleName) + moduleSuffix
+    def javaBinaryName = fullName('/') + moduleSuffix
+    def javaClassName  = fullName('.') + moduleSuffix
 
     /** The encoded full path name of this symbol, where outer names and inner names
      *  are separated by `separator` characters.
@@ -807,9 +826,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         //   one: sourceCompleter to LazyType, two: LazyType to completed type
         if (cnt == 3) abort("no progress in completing " + this + ":" + tp)
       }
-      val result = rawInfo
-      result
-    } catch {
+      rawInfo
+    }
+    catch {
       case ex: CyclicReference =>
         if (settings.debug.value) println("... trying to complete "+this)
         throw ex
@@ -891,12 +910,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         val prev1 = adaptInfos(infos.prev)
         if (prev1 ne infos.prev) prev1
         else {
-          def adaptToNewRun(info: Type): Type = 
-            if (isPackageClass) info else adaptToNewRunMap(info)
           val pid = phaseId(infos.validFrom)
+
           validTo = period(currentRunId, pid)
-          phase = phaseWithId(pid)
-          val info1 = adaptToNewRun(infos.info)
+          phase   = phaseWithId(pid)
+
+          val info1 = (
+            if (isPackageClass) infos.info
+            else adaptToNewRunMap(infos.info)
+          )
           if (info1 eq infos.info) {
             infos.validFrom = validTo
             infos
@@ -1426,7 +1448,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      * (5) companionSymbol
      */  
 
-    /** For a module or case factory: the class with the same name in the same package.
+    /** For a module: the class with the same name in the same package.
      *  For all others: NoSymbol
      *  Note: does not work for classes owned by methods, see Namers.companionClassOf
      *
@@ -1626,9 +1648,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  term symbol rename it by expanding its name to avoid name clashes
      */
     final def makeNotPrivate(base: Symbol) {
-      if (this hasFlag PRIVATE) {
+      if (this.isPrivate) {
         setFlag(notPRIVATE)
-        if (isMethod && !isDeferred) setFlag(lateFINAL)
+        // Marking these methods final causes problems for proxies which use subclassing. If people
+        // write their code with no usage of final, we probably shouldn't introduce it ourselves
+        // unless we know it is safe. ... Unfortunately if they aren't marked final the inliner
+        // thinks it can't inline them. So once again marking lateFINAL, and in genjvm we no longer
+        // generate ACC_FINAL on "final" methods which are actually lateFINAL.
+        if (isMethod && !isDeferred)
+          setFlag(lateFINAL)
         if (!isStaticModule && !isClassConstructor) {
           expandName(base)
           if (isModule) moduleClass.makeNotPrivate(base)
@@ -1785,6 +1813,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       case s    => " in " + s
     }
     def fullLocationString = toString + locationString
+    def signatureString = if (hasRawInfo) infoString(rawInfo) else "<_>"
 
     /** String representation of symbol's definition following its name */
     final def infoString(tp: Type): String = {
@@ -1847,9 +1876,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def defString = compose(
       defaultFlagString,
       keyString,
-      varianceString + nameString + (
-        if (hasRawInfo) infoString(rawInfo) else "<_>"
-      )
+      varianceString + nameString + signatureString
     )
 
     /** Concatenate strings separated by spaces */

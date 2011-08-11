@@ -219,7 +219,7 @@ trait Implicits {
   object Function1 {
     val Sym = FunctionClass(1)
     def unapply(tp: Type) = tp match {
-      case TypeRef(_, Sym, arg1 :: arg2 :: _) => Some(arg1, arg2)
+      case TypeRef(_, Sym, arg1 :: arg2 :: _) => Some((arg1, arg2))
       case _                                  => None
     }
   }
@@ -935,7 +935,9 @@ trait Implicits {
       
       val infoMap = new InfoMap
       getParts(tp)(infoMap, new mutable.HashSet(), Set())
-      printInference("[companionImplicitMap] "+tp+" = "+infoMap)
+      printInference(
+        ptBlock("companionImplicitMap " + tp, infoMap.toSeq.map({ case (k, v) => ("" + k, v.mkString(", ")) }): _*)
+      )
       infoMap
     }
 

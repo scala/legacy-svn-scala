@@ -5,11 +5,19 @@
 
 package scala.tools.nsc
 
-import util.{ FreshNameCreator,Position,NoPosition,SourceFile }
+import util.{ FreshNameCreator, Position, NoPosition, SourceFile, NoSourceFile }
 import scala.collection.mutable
 import scala.collection.mutable.{ LinkedHashSet, ListBuffer }
 
 trait CompilationUnits { self: Global =>
+
+  /** An object representing a missing compilation unit.
+   */
+  object NoCompilationUnit extends CompilationUnit(NoSourceFile) {
+    override lazy val isJava = false
+    override def exists = false
+    override def toString() = "NoCompilationUnit"
+  }
 
   /** One unit of compilation that has been submitted to the compiler.
     * It typically corresponds to a single file of source code.  It includes
@@ -24,6 +32,8 @@ trait CompilationUnits { self: Global =>
 
     /** the content of the compilation unit in tree form */
     var body: Tree = EmptyTree
+    
+    def exists = source != NoSourceFile && source != null
 
 //    def parseSettings() = {
 //      val argsmarker = "SCALAC_ARGS"
@@ -73,11 +83,11 @@ trait CompilationUnits { self: Global =>
 
     def deprecationWarning(pos: Position, msg: String) = 
       if (opt.deprecation) warning(pos, msg)
-      else currentRun.deprecationWarnings += 1
+      else currentRun.deprecationWarnings ::= ((pos, msg))
 
     def uncheckedWarning(pos: Position, msg: String) = 
       if (opt.unchecked) warning(pos, msg)
-      else currentRun.uncheckedWarnings += 1
+      else currentRun.uncheckedWarnings ::= ((pos, msg))
 
     def incompleteInputError(pos: Position, msg:String) =
       reporter.incompleteInputError(pos, msg) 
@@ -87,7 +97,7 @@ trait CompilationUnits { self: Global =>
       
     /** Is this about a .java source file? */
     lazy val isJava = source.file.name.endsWith(".java")
-    
+
     override def toString() = source.toString()
 
     def clear() {

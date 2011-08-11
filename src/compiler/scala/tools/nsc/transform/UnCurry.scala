@@ -263,17 +263,8 @@ abstract class UnCurry extends InfoTransform
 
         fun.vparams foreach (_.symbol.owner = applyMethod)
         new ChangeOwnerTraverser(fun.symbol, applyMethod) traverse fun.body
-
-        def mkUnchecked(tree: Tree) = {
-          def newUnchecked(expr: Tree) = Annotated(New(gen.scalaDot(UncheckedClass.name), List(Nil)), expr)
-          tree match {
-            case Match(selector, cases) => atPos(tree.pos) { Match(newUnchecked(selector), cases) }
-            case _                      => tree
-          }
-        }
-        
         def applyMethodDef() = {
-          val body = if (isPartial) mkUnchecked(fun.body) else fun.body
+          val body = if (isPartial) gen.mkUncheckedMatch(fun.body) else fun.body
           DefDef(Modifiers(FINAL), nme.apply, Nil, List(fun.vparams), TypeTree(restpe), body) setSymbol applyMethod
         }
         def isDefinedAtMethodDef() = {
@@ -288,11 +279,11 @@ abstract class UnCurry extends InfoTransform
           def substTree[T <: Tree](t: T): T = substParam(resetLocalAttrs(t))
           
           def transformCase(cdef: CaseDef): CaseDef =
-            substTree(CaseDef(cdef.pat.duplicate, cdef.guard.duplicate, Literal(true)))
-          def defaultCase = CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(false))
+            substTree(CaseDef(cdef.pat.duplicate, cdef.guard.duplicate, Literal(Constant(true))))
+          def defaultCase = CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(Constant(false)))
           
-          DefDef(m, mkUnchecked(
-            if (cases exists treeInfo.isDefaultCase) Literal(true)
+          DefDef(m, gen.mkUncheckedMatch(
+            if (cases exists treeInfo.isDefaultCase) Literal(Constant(true))
             else Match(substTree(selector.duplicate), (cases map transformCase) :+ defaultCase)
           ))
         }
@@ -401,7 +392,7 @@ abstract class UnCurry extends InfoTransform
     
     /** For removing calls to specially designated methods.
      */  
-    def elideIntoUnit(tree: Tree): Tree = Literal(()) setPos tree.pos setType UnitClass.tpe
+    def elideIntoUnit(tree: Tree): Tree = Literal(Constant()) setPos tree.pos setType UnitClass.tpe
     def isElidable(tree: Tree) = {
       val sym = treeInfo.methPart(tree).symbol
       // XXX settings.noassertions.value temporarily retained to avoid
@@ -432,8 +423,7 @@ abstract class UnCurry extends InfoTransform
       /** Transform tree `t` to { def f = t; f } where `f` is a fresh name
        */
       def liftTree(tree: Tree) = {
-        if (settings.debug.value)
-          log("lifting tree at: " + (tree.pos))
+        debuglog("lifting tree at: " + (tree.pos))
         val sym = currentOwner.newMethod(tree.pos, unit.freshTermName("liftedTree"))
         sym.setInfo(MethodType(List(), tree.tpe))
         new ChangeOwnerTraverser(currentOwner, sym).traverse(tree)
@@ -620,7 +610,7 @@ abstract class UnCurry extends InfoTransform
                   EmptyTree,
                   Match(Ident(exname), cases))
               }
-            if (settings.debug.value) log("rewrote try: " + catches + " ==> " + catchall);
+            debuglog("rewrote try: " + catches + " ==> " + catchall);
             val catches1 = localTyper.typedCases(
               tree, List(catchall), ThrowableClass.tpe, WildcardType)
             treeCopy.Try(tree, body, catches1, finalizer)
@@ -633,7 +623,7 @@ abstract class UnCurry extends InfoTransform
         case Select(_, _) | TypeApply(_, _) =>
           applyUnary()
         case Return(expr) if (tree.symbol != currentOwner.enclMethod || currentOwner.isLazy) =>
-          if (settings.debug.value) log("non local return in "+tree.symbol+" from "+currentOwner.enclMethod)
+          debuglog("non local return in "+tree.symbol+" from "+currentOwner.enclMethod)
           atPos(tree.pos)(nonLocalReturnThrow(expr, tree.symbol))
         case TypeTree() =>
           tree
@@ -771,8 +761,8 @@ abstract class UnCurry extends InfoTransform
       case DefDef(_, _, _, _, _, _) =>
         val lastMethod = currentMethod
         currentMethod = tree.symbol
-        super.traverse(tree)
-        currentMethod = lastMethod
+        try super.traverse(tree)
+        finally currentMethod = lastMethod
       /** A method call with a by-name parameter represents escape. */
       case Apply(fn, args) if fn.symbol.paramss.nonEmpty =>
         traverse(fn)
@@ -793,7 +783,7 @@ abstract class UnCurry extends InfoTransform
       case Ident(_) =>
         val sym = tree.symbol
         if (sym.isVariable && sym.owner.isMethod && (maybeEscaping || sym.owner != currentMethod))
-          freeMutableVars += sym
+          assert(false, "Failure to lift "+sym+sym.locationString); freeMutableVars += sym
       case _ =>
         super.traverse(tree)
     }

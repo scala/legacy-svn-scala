@@ -70,7 +70,7 @@ object chameneos {
   
   def apply(n: Int) {
       val mp = new MeetingPlace(n)
-      val creatures = for(x <- colours) yield {
+      val creatures = for (x <- colours) yield {
         val cr = new Creature(mp, x);
         cr.start();
         cr

@@ -62,7 +62,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       // The constructor parameter with given name. This means the parameter
       // has given name, or starts with given name, and continues with a `$` afterwards.
       def parameterNamed(name: Name): Symbol = {
-        def matchesName(param: Symbol) = param.name == name || param.name.startsWith(name + "$")
+        def matchesName(param: Symbol) = param.name == name || param.name.startsWith(name + nme.NAME_JOIN_STRING)
         
         (constrParams filter matchesName) match {
           case Nil    => assert(false, name + " not in " + constrParams) ; null
@@ -230,7 +230,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
             case DefDef(_, _, _, _, _, body) 
             if (tree.symbol.isOuterAccessor && tree.symbol.owner == clazz && clazz.isFinal) =>
               log("outerAccessors += " + tree.symbol.fullName)
-              outerAccessors ::= (tree.symbol, body)
+              outerAccessors ::= ((tree.symbol, body))
             case Select(_, _) =>
               if (!mustbeKept(tree.symbol)) {
                 log("accessedSyms += " + tree.symbol.fullName)
@@ -310,7 +310,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         }
 
         log("merging: " + originalStats.mkString("\n") + "\nwith\n" + specializedStats.mkString("\n"))
-        val res = for (s <- originalStats; val stat = s.duplicate) yield {
+        val res = for (s <- originalStats; stat = s.duplicate) yield {
           log("merge: looking at " + stat)
           val stat1 = stat match {
             case Assign(sel @ Select(This(_), field), _) =>
@@ -329,7 +329,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
             val stat2 = rewriteArrayUpdate(stat1)
             // statements coming from the original class need retyping in the current context
-            if (settings.debug.value) log("retyping " + stat2)
+            debuglog("retyping " + stat2)
             
             val d = new specializeTypes.Duplicator
             d.retyped(localTyper.context1.asInstanceOf[d.Context],
@@ -374,7 +374,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
                   Apply(gen.mkAttributedRef(specializedFlag), List()),
                   definitions.getMember(definitions.BooleanClass, nme.UNARY_!)),
                 List()),
-              Block(stats, Literal(())),
+              Block(stats, Literal(Constant())),
               EmptyTree)
 
           List(localTyper.typed(tree))

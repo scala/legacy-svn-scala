@@ -116,7 +116,7 @@ trait Types extends api.Types { self: SymbolTable =>
     }
 
     private[Types] def record(tv: TypeVar) = {
-      log ::= (tv, tv.constr.cloneInternal)
+      log ::= ((tv, tv.constr.cloneInternal))
     }
     private[scala] def clear() {
       if (settings.debug.value)
@@ -826,7 +826,8 @@ trait Types extends api.Types { self: SymbolTable =>
     /** The string representation of this type, with singletypes explained. */
     def toLongString = {
       val str = toString
-      if (str endsWith ".type") str + " (with underlying type " + widen + ")"
+      if (str == "type") widen.toString
+      else if (str endsWith ".type") str + " (with underlying type " + widen + ")"
       else str
     }
 
@@ -3069,6 +3070,18 @@ A type's typeSymbol should never be inspected directly.
     }
   }
   
+  /** Substitutes the empty scope for any non-empty decls in the type. */
+  object dropAllRefinements extends TypeMap {
+    def apply(tp: Type): Type = tp match {
+      case rt @ RefinedType(parents, decls) if !decls.isEmpty =>
+        mapOver(copyRefinedType(rt, parents, EmptyScope))
+      case ClassInfoType(parents, decls, clazz) if !decls.isEmpty =>
+        mapOver(ClassInfoType(parents, EmptyScope, clazz))
+      case _ =>
+        mapOver(tp)
+    }
+  }
+
   // Set to true for A* => Seq[A]
   //   (And it will only rewrite A* in method result types.)
   //   This is the pre-existing behavior.
@@ -3471,6 +3484,7 @@ A type's typeSymbol should never be inspected directly.
    */
   object rawToExistential extends TypeMap {
     private var expanded = immutable.Set[Symbol]()
+    private var generated = immutable.Set[Type]()
     def apply(tp: Type): Type = tp match {
       case TypeRef(pre, sym, List()) if isRawIfWithoutArgs(sym) =>
         if (expanded contains sym) AnyRefClass.tpe
@@ -3481,8 +3495,10 @@ A type's typeSymbol should never be inspected directly.
         } finally {
           expanded -= sym
         }
-      case ExistentialType(_, _) => // stop to avoid infinite expansions
-        tp
+      case ExistentialType(_, _) if !(generated contains tp) => // to avoid infinite expansions. todo: not sure whether this is needed
+        val result = mapOver(tp)
+        generated += result
+        result
       case _ =>
         mapOver(tp)
     }
@@ -4034,14 +4050,13 @@ A type's typeSymbol should never be inspected directly.
         def corresponds(sym1: Symbol, sym2: Symbol): Boolean =
           sym1.name == sym2.name && (sym1.isPackageClass || corresponds(sym1.owner, sym2.owner))
         if (!corresponds(sym.owner, rebind0.owner)) {
-          if (settings.debug.value)
-            log("ADAPT1 pre = "+pre+", sym = "+sym+sym.locationString+", rebind = "+rebind0+rebind0.locationString)
+          debuglog("ADAPT1 pre = "+pre+", sym = "+sym+sym.locationString+", rebind = "+rebind0+rebind0.locationString)
           val bcs = pre.baseClasses.dropWhile(bc => !corresponds(bc, sym.owner));
           if (bcs.isEmpty)
             assert(pre.typeSymbol.isRefinementClass, pre) // if pre is a refinementclass it might be a structural type => OK to leave it in.
           else 
             rebind0 = pre.baseType(bcs.head).member(sym.name)
-          if (settings.debug.value) log(
+          debuglog(
             "ADAPT2 pre = " + pre +
             ", bcs.head = " + bcs.head +
             ", sym = " + sym+sym.locationString +
@@ -4053,7 +4068,7 @@ A type's typeSymbol should never be inspected directly.
         }
         val rebind = rebind0.suchThat(sym => sym.isType || sym.isStable)
         if (rebind == NoSymbol) {
-          if (settings.debug.value) log("" + phase + " " +phase.flatClasses+sym.owner+sym.name+" "+sym.isType)
+          debuglog("" + phase + " " +phase.flatClasses+sym.owner+sym.name+" "+sym.isType)
           throw new MalformedType(pre, sym.nameString)
         }
         rebind
@@ -5642,7 +5657,7 @@ A type's typeSymbol should never be inspected directly.
               try {
                 globalGlbDepth += 1
                 val dss = ts flatMap refinedToDecls
-                for (ds <- dss; val sym <- ds.iterator) 
+                for (ds <- dss; sym <- ds.iterator)
                   if (globalGlbDepth < globalGlbLimit && !(glbThisType specializes sym))
                     try {
                       addMember(glbThisType, glbRefined, glbsym(sym))
@@ -5684,7 +5699,7 @@ A type's typeSymbol should never be inspected directly.
    *  of types.
    */
   private def commonOwner(tps: List[Type]): Symbol = {
-    // if (settings.debug.value) log("computing common owner of types " + tps)//DEBUG
+    // debuglog("computing common owner of types " + tps)//DEBUG
     commonOwnerMap.init
     tps foreach { tp => commonOwnerMap.apply(tp); () }
     commonOwnerMap.result
@@ -5748,7 +5763,7 @@ A type's typeSymbol should never be inspected directly.
         case ex: MalformedType => None
         case ex: IndexOutOfBoundsException =>  // transpose freaked out because of irregular argss
         // catching just in case (shouldn't happen, but also doesn't cost us)
-        if (settings.debug.value) log("transposed irregular matrix!?"+ (tps, argss))
+        debuglog("transposed irregular matrix!?"+ (tps, argss))
         None
       }
     case SingleType(_, sym) :: rest =>
@@ -5770,7 +5785,7 @@ A type's typeSymbol should never be inspected directly.
    */
   def addMember(thistp: Type, tp: Type, sym: Symbol) {
     assert(sym != NoSymbol)
-    // if (settings.debug.value) log("add member " + sym+":"+sym.info+" to "+thistp) //DEBUG
+    // debuglog("add member " + sym+":"+sym.info+" to "+thistp) //DEBUG
     if (!(thistp specializes sym)) {
       if (sym.isTerm)
         for (alt <- tp.nonPrivateDecl(sym.name).alternatives)
@@ -5909,7 +5924,7 @@ A type's typeSymbol should never be inspected directly.
             if (!(declaredBoundsInst <:< argumentBounds))
               stricterBound(hkarg, hkparam)
 
-            if (settings.debug.value) log(
+            debuglog(
               "checkKindBoundsHK base case: " + hkparam +
               " declared bounds: " + declaredBounds +
               " after instantiating earlier hkparams: " + declaredBoundsInst + "\n" +
@@ -5918,8 +5933,7 @@ A type's typeSymbol should never be inspected directly.
             )
           }
           else {
-            if (settings.debug.value)
-              log("checkKindBoundsHK recursing to compare params of "+ hkparam +" with "+ hkarg)
+            debuglog("checkKindBoundsHK recursing to compare params of "+ hkparam +" with "+ hkarg)
             val (am, vm, sb) = checkKindBoundsHK(
               hkarg.typeParams,
               hkarg,
