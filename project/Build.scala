@@ -4,13 +4,13 @@ import partest._
 
 object ScalaBuild extends Build {
   def projectSettings: Seq[Setting[_]] = Seq(
-    doc <<= (doc in documentation in Compile).identity,
-    packageBin <<= Seq(scalaLibrary, scalaCompiler, continuationsPlugin, jline).map(p => packageBin in p in Compile).join.map(_.map(_.head)),
+    doc in Compile <<= (doc in documentation in Compile).identity,
+    packageBin in Compile <<= Seq(scalaLibrary, scalaCompiler, continuationsPlugin, jline).map(p => packageBin in p in Compile).join.map(_.map(_.head)),
     // TODO - Make sure scalaLibrary has packageDoc + packageSrc from documentation attached...
     publish <<= Seq(scalaLibrary, scalaCompiler, continuationsPlugin, jline).map(p => publish in p).join.map(_.map(_.head)),
     publishLocal <<= Seq(scalaLibrary, scalaCompiler, continuationsPlugin, jline).map(p => publishLocal in p).join.map(_.map(_.head)),
-    packageDoc <<= (packageDoc in documentation in Compile).identity,
-    packageSrc <<= (packageSrc in documentation in Compile).identity,
+    packageDoc in Compile <<= (packageDoc in documentation in Compile).identity,
+    packageSrc in Compile <<= (packageSrc in documentation in Compile).identity,
     test <<= (runPartest in testsuite).identity
   )
   // Note: Root project is determined by lowest-alphabetical project that has baseDirectory as file(".").  we use aaa_ to 'win'.
