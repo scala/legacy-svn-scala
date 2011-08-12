@@ -7,13 +7,14 @@ object ScalaBuild extends Build {
     doc <<= (doc in documentation in Compile).identity,
     packageBin <<= Seq(scalaLibrary, scalaCompiler, continuationsPlugin, jline).map(p => packageBin in p in Compile).join.map(_.map(_.head)),
     // TODO - Make sure scalaLibrary has packageDoc + packageSrc from documentation attached...
-    publish <<== Seq(scalaLibrary, scalaCompiler, continuationsPlugin, jline).map(p => publish in p).join.map(_.map(_.head)),
-    publishLocal <<== Seq(scalaLibrary, scalaCompiler, continuationsPlugin, jline).map(p => publishLocal in p).join.map(_.map(_.head)),
+    publish <<= Seq(scalaLibrary, scalaCompiler, continuationsPlugin, jline).map(p => publish in p).join.map(_.map(_.head)),
+    publishLocal <<= Seq(scalaLibrary, scalaCompiler, continuationsPlugin, jline).map(p => publishLocal in p).join.map(_.map(_.head)),
     packageDoc <<= (packageDoc in documentation in Compile).identity,
     packageSrc <<= (packageSrc in documentation in Compile).identity,
-    test <<= (runPartest in testsuite).identity,
+    test <<= (runPartest in testsuite).identity
   )
-  lazy val root = Project("scala", file(".")) settings(projectSettings:_*) // TODO - aggregate on, say... quick
+  // Note: Root project is determined by lowest-alphabetical project that has baseDirectory as file(".").  we use aaa_ to 'win'.
+  lazy val aaa_root = Project("scala", file(".")) settings(projectSettings:_*) // TODO - aggregate on, say... quick
 
   // External dependencies used for various projects
   lazy val ant = libraryDependencies += "org.apache.ant" % "ant" % "1.8.2"
