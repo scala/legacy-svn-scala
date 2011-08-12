@@ -3,8 +3,17 @@ import Keys._
 import partest._
 
 object ScalaBuild extends Build {
-
-  lazy val root = Project("scala", file(".")) // TODO - aggregate on, say... quick
+  def projectSettings: Seq[Setting[_]] = Seq(
+    doc <<= (doc in documentation in Compile).identity,
+    packageBin <<= Seq(scalaLibrary, scalaCompiler, continuationsPlugin, jline).map(p => packageBin in p in Compile).join.map(_.map(_.head)),
+    // TODO - Make sure scalaLibrary has packageDoc + packageSrc from documentation attached...
+    publish <<== Seq(scalaLibrary, scalaCompiler, continuationsPlugin, jline).map(p => publish in p).join.map(_.map(_.head)),
+    publishLocal <<== Seq(scalaLibrary, scalaCompiler, continuationsPlugin, jline).map(p => publishLocal in p).join.map(_.map(_.head)),
+    packageDoc <<= (packageDoc in documentation in Compile).identity,
+    packageSrc <<= (packageSrc in documentation in Compile).identity,
+    test <<= (runPartest in testsuite).identity,
+  )
+  lazy val root = Project("scala", file(".")) settings(projectSettings:_*) // TODO - aggregate on, say... quick
 
   // External dependencies used for various projects
   lazy val ant = libraryDependencies += "org.apache.ant" % "ant" % "1.8.2"
@@ -16,7 +25,7 @@ object ScalaBuild extends Build {
                              publishArtifact in packageSrc := false,
                              target <<= (baseDirectory, name) apply (_ / "target" / _),
                              (classDirectory in Compile) <<= target(_ / "classes"),
-                             javacOptions ++= Seq("-target", "1.5"),
+                             javacOptions ++= Seq("-target", "1.5", "-source", "1.5"),
                              scalaSource in Compile <<= (baseDirectory, name) apply (_ / "src" / _),
                              javaSource in Compile <<= (baseDirectory, name) apply (_ / "src" / _),
                              autoScalaLibrary := false,
