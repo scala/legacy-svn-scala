@@ -3,15 +3,32 @@ import Keys._
 import partest._
 
 object ScalaBuild extends Build {
+  lazy val lockerLock: TaskKey[Unit] = TaskKey("locker-lock", "Locks the locker layer of the compiler build such that it won't rebuild on changed source files.")
+  lazy val lockerUnlock: TaskKey[Unit] = TaskKey("locker-unlock", "Unlocks the locker layer of the compiler so that it will be recompiled on changed source files.")
+  lazy val lockFile: SettingKey[File] = SettingKey("lock-file", "Location of the lock file compiling this project")
+  // Collections of projects to run 'compile' on.
+  lazy val compiledProjects = Seq(quickLib, quickComp, continuationsLibrary, actors, swing, dbc, forkjoin, fjbg, msil)
+  // Collection of projects to 'package' and 'publish' together.
+  lazy val packagedBinaryProjects = Seq(scalaLibrary, scalaCompiler, continuationsPlugin, jline)
+  // Settings for root project.  These are aggregate tasks against the rest of the build.
   def projectSettings: Seq[Setting[_]] = Seq(
     doc in Compile <<= (doc in documentation in Compile).identity,
-    packageBin in Compile <<= Seq(scalaLibrary, scalaCompiler, continuationsPlugin, jline).map(p => packageBin in p in Compile).join.map(_.map(_.head)),
+    // These next two aggregate commands on several projects and return results that are to be ignored by remaining tasks.
+    compile in Compile <<= compiledProjects.map(p => compile in p in Compile).join.map(_.map(_.head)),
+    clean <<= compiledProjects.map(p => clean in p).dependOn,
+    packageBin in Compile <<= packagedBinaryProjects.map(p => packageBin in p in Compile).join.map(_.map(_.head)),
     // TODO - Make sure scalaLibrary has packageDoc + packageSrc from documentation attached...
-    publish <<= Seq(scalaLibrary, scalaCompiler, continuationsPlugin, jline).map(p => publish in p).join.map(_.map(_.head)),
-    publishLocal <<= Seq(scalaLibrary, scalaCompiler, continuationsPlugin, jline).map(p => publishLocal in p).join.map(_.map(_.head)),
+    publish <<= packagedBinaryProjects.map(p => publish in p).join.map(_.map(_.head)),
+    publishLocal <<= packagedBinaryProjects.map(p => publishLocal in p).join.map(_.map(_.head)),
     packageDoc in Compile <<= (packageDoc in documentation in Compile).identity,
     packageSrc in Compile <<= (packageSrc in documentation in Compile).identity,
-    test <<= (runPartest in testsuite).identity
+    test <<= (runPartest in testsuite).identity,
+    lockerLock <<= (lockFile in lockerLib, lockFile in lockerComp) map { (lib, comp) =>
+      Seq(lib,comp).foreach(f => IO.touch(f))
+    },
+    lockerUnlock <<= (lockFile in lockerLib, lockFile in lockerComp) map { (lib, comp) =>
+      Seq(lib,comp).foreach(IO.delete)
+    }
   )
   // Note: Root project is determined by lowest-alphabetical project that has baseDirectory as file(".").  we use aaa_ to 'win'.
   lazy val aaa_root = Project("scala", file(".")) settings(projectSettings:_*) // TODO - aggregate on, say... quick
@@ -133,14 +150,18 @@ object ScalaBuild extends Build {
           // TODO - Allow other scalac option settings.
           scalacOptions in Compile <++= (scalaSource in Compile) map (src => Seq("-sourcepath", src.getAbsolutePath)),
           classpathOptions := ClasspathOptions.manual,
-          referenceScala
+          referenceScala,
+          lockFile <<= target(_ / "compile.lock"),
+          skip in Compile <<= lockFile.map(_  exists)
       )) :_*)
 
     // Define the compiler
     val compiler = Project(layer + "-compiler", file(".")) settings((settingOverrides ++
       Seq(version := layer,
         scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "compiler"),
-        resourceDirectory in Compile <<= baseDirectory apply (_ / "src" / "compiler"),    
+        resourceDirectory in Compile <<= baseDirectory apply (_ / "src" / "compiler"),
+        lockFile <<= target(_ / "compile.lock"),
+        skip in Compile <<= lockFile.map(_  exists),
         defaultExcludes in unmanagedResources := "*.scala",
         // Note, we might be able to use the default task, but for some reason ant was filtering files out.  Not sure what's up, but we'll
         // stick with that for now.
