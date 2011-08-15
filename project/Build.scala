@@ -3,9 +3,12 @@ import Keys._
 import partest._
 
 object ScalaBuild extends Build {
+  // New tasks/settings specific to the scala build.
   lazy val lockerLock: TaskKey[Unit] = TaskKey("locker-lock", "Locks the locker layer of the compiler build such that it won't rebuild on changed source files.")
   lazy val lockerUnlock: TaskKey[Unit] = TaskKey("locker-unlock", "Unlocks the locker layer of the compiler so that it will be recompiled on changed source files.")
   lazy val lockFile: SettingKey[File] = SettingKey("lock-file", "Location of the lock file compiling this project")
+
+
   // Collections of projects to run 'compile' on.
   lazy val compiledProjects = Seq(quickLib, quickComp, continuationsLibrary, actors, swing, dbc, forkjoin, fjbg, msil)
   // Collection of projects to 'package' and 'publish' together.
@@ -49,7 +52,9 @@ object ScalaBuild extends Build {
                              autoScalaLibrary := false,
                              unmanagedJars in Compile := Seq(),
                              // Most libs in the compiler use this order to build.
-                             compileOrder in Compile :== CompileOrder.JavaThenScala
+                             compileOrder in Compile :== CompileOrder.JavaThenScala,
+                             lockFile <<= target(_ / "compile.lock"),
+                             skip in Compile <<= lockFile.map(_  exists)
                             )
   // TODO - Figure out a way to uniquely determine a version to assign to Scala builds...
   def currentUniqueRevision = "0.1"
@@ -150,9 +155,7 @@ object ScalaBuild extends Build {
           // TODO - Allow other scalac option settings.
           scalacOptions in Compile <++= (scalaSource in Compile) map (src => Seq("-sourcepath", src.getAbsolutePath)),
           classpathOptions := ClasspathOptions.manual,
-          referenceScala,
-          lockFile <<= target(_ / "compile.lock"),
-          skip in Compile <<= lockFile.map(_  exists)
+          referenceScala
       )) :_*)
 
     // Define the compiler
@@ -160,8 +163,6 @@ object ScalaBuild extends Build {
       Seq(version := layer,
         scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "compiler"),
         resourceDirectory in Compile <<= baseDirectory apply (_ / "src" / "compiler"),
-        lockFile <<= target(_ / "compile.lock"),
-        skip in Compile <<= lockFile.map(_  exists),
         defaultExcludes in unmanagedResources := "*.scala",
         // Note, we might be able to use the default task, but for some reason ant was filtering files out.  Not sure what's up, but we'll
         // stick with that for now.
@@ -190,7 +191,6 @@ object ScalaBuild extends Build {
   lazy val actors = Project("actors", file(".")) settings(dependentProjectSettings:_*) dependsOn(forkjoin)
   lazy val dbc = Project("dbc", file(".")) settings(dependentProjectSettings:_*)
   lazy val swing = Project("swing", file(".")) settings(dependentProjectSettings:_*) dependsOn(actors)
-  lazy val scalacheck = Project("scalacheck", file(".")) settings(dependentProjectSettings:_*)
 
   // Things that compile against the compiler.
   lazy val compilerDependentProjectSettings = dependentProjectSettings ++ Seq(quickScalaCompilerDependency)
@@ -245,11 +245,15 @@ object ScalaBuild extends Build {
     unmanagedJars in Compile := Seq()
   )
   lazy val scalaCompiler = Project("scala-compiler", file(".")) settings(scalaBinArtifactSettings:_*) dependsOn(scalaLibrary)
+  lazy val fullQuickScalaReference = makeScalaReference("pack", scalaLibrary, scalaCompiler, fjbg)
 
 
   // --------------------------------------------------------------
   //  Testing
   // --------------------------------------------------------------
+  /* lazy val scalacheckSettings: Seq[Setting[_]] = Seq(fullQuickScalaReference, crossPaths := false)
+  lazy val scalacheck = ProjectRef(uri("https://github.com/rickynils/scalacheck.git"), "scalacheck") */
+
   lazy val testsuiteSetttings: Seq[Setting[_]] = compilerDependentProjectSettings ++ Seq(
     unmanagedBase <<= baseDirectory / "test/files/lib",
     partestRunner <<= partestRunnerTask(fullClasspath in Runtime),

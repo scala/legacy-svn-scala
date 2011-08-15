@@ -3,6 +3,7 @@ package nest
 
 import java.io.File
 import scala.tools.nsc.io.{ Directory }
+import scala.util.Properties.setProp
 
 
 object SBTRunner extends DirectRunner {
@@ -33,6 +34,8 @@ object SBTRunner extends DirectRunner {
                                 tests: Map[String, Array[File]] = Map())
 
   def mainReflect(args: Array[String]): java.util.Map[String,Int] = {
+    setProp("partest.debug", "true")
+    
     val Argument = new scala.util.matching.Regex("-(.*)")
     def parseArgs(args: Seq[String], data: CommandLineOptions): CommandLineOptions = args match {
       case Seq("-cp", cp, rest @ _*) => parseArgs(rest, data.copy(classpath=Some(cp)))
@@ -46,6 +49,10 @@ object SBTRunner extends DirectRunner {
     // Find scala library jar file...
     val lib: Option[String] = (fileManager.CLASSPATH split File.pathSeparator filter (_ matches ".*scala-library.*\\.jar")).headOption
     fileManager.LATEST_LIB = lib getOrElse error("No scala-library found! Classpath = " + fileManager.CLASSPATH)
+    // TODO - Do something useful here!!!
+    fileManager.JAVAC_CMD = "javac"
+    // TODO - Make this a flag?
+    //fileManager.updateCheck = true
     // Now run and report...
     val runs = config.tests.filterNot(_._2.isEmpty)
     // This next bit uses java maps...

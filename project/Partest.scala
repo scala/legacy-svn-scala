@@ -10,11 +10,12 @@ object partest {
   lazy val runPartest = TaskKey[Unit]("run-partest", "Runs the partest test suite against the current trunk")
   lazy val partestRunner = TaskKey[PartestRunner]("partest-runner", "Creates a runner that can run partest suites")
 
-  // <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
+  // What's fun here is that we want "*.scala" files *and* directories in the base directory...
   def partestResources(base: File, testType: String): PathFinder = testType match {
     case "res" => base ** "*.res"
-    case "buildmanager" => base ** "*"
-    case _ => base ** "*.scala"
+    case "buildmanager" => base * "*"
+    // TODO - Only allow directories that have "*.scala" children...
+    case _ => base * "*" filter { f => f.isDirectory || f.getName.endsWith(".scala") }
   }
   // TODO - Split partest task into Configurations and build a Task for each Configuration.
   // *then* mix all of them together for run-testsuite or something clever like this.
@@ -27,23 +28,26 @@ object partest {
                            "shootout", "scalap", "specialized", "presentation") flatMap { testType =>
           Seq("-"+testType, partestResources(testDir / "files" / testType, testType).get.mkString(","))
         }
-        val results = runner.run(testArgs.toArray)
-        // TODO - save results
         import collection.JavaConverters._
+        val results: collection.mutable.Map[String,Int] = runner.run(testArgs.toArray).asScala
+        // TODO - save results
         val failures = for {
-          (path, result) <- results.asScala
+          (path, result) <- results
           if result == 1 || result == 2
           val resultName = (if(result == 1) " [FAILED]" else " [TIMEOUT]")
         } yield path + resultName
         if (!failures.isEmpty) {
           failures.foreach(m => s.log.error(m))
-          error("Test Failures!")
+          error("Test Failures! ("+failures.size+" of "+results.size+")")
         }
     }
   
   
   def partestRunnerTask(classpath: ScopedTask[Classpath]): Project.Initialize[Task[PartestRunner]] =
-     classpath map { cp => new PartestRunner(Build.data(cp)) }
+     (classpath) map { (cp) => 
+       println("Found helper jars: " + cp.mkString("\n"))
+       new PartestRunner(Build.data(cp)) 
+     }
 }
 
 class PartestRunner(classpath: Seq[File]) {
