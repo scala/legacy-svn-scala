@@ -32,21 +32,27 @@ object SBTRunner extends DirectRunner {
 
   case class CommandLineOptions(classpath: Option[String] = None,
                                 tests: Map[String, Array[File]] = Map(),
-                                scalacOptions: Seq[String] = Nil)
+                                scalacOptions: Seq[String] = Seq())
 
   def mainReflect(args: Array[String]): java.util.Map[String,Int] = {
     setProp("partest.debug", "true")
     
     val Argument = new scala.util.matching.Regex("-(.*)")
     def parseArgs(args: Seq[String], data: CommandLineOptions): CommandLineOptions = args match {
-      case Seq("-cp", cp, rest @ _*) => parseArgs(rest, data.copy(classpath=Some(cp)))
-      case Seq(Argument(name), runFiles, rest @ _*) => parseArgs(rest, data.copy(tests=data.tests + (name -> runFiles.split(",").map(new File(_)))))
+      case Seq("-cp", cp, rest @ _*) =>
+        parseArgs(rest, data.copy(classpath=Some(cp)))
+      // TODO - This is ugly, maybe we just add another parameter list to avoid ugliness and parsing.
+      // I'll stop being lame after things work though...
+      case Seq("-scalacoption", opt, rest @ _*) => 
+        parseArgs(rest, data.copy(scalacOptions= data.scalacOptions :+ opt))
+      case Seq(Argument(name), runFiles, rest @ _*) => 
+        parseArgs(rest, data.copy(tests=data.tests + (name -> runFiles.split(",").map(new File(_)))))
       case Seq() => data
-      case Seq("-scalacoption", opt, rest @ _*) => parseArgs(rest, data.copy(scalacOptions= data.scalacOptions :+ opt))
       case x =>        
         sys.error("Unknown command line options: " + x)
     }
     val config = parseArgs(args, CommandLineOptions())
+    fileManager.SCALAC_OPTS = config.scalacOptions.mkString(" ")
     fileManager.CLASSPATH = config.classpath getOrElse error("No classpath set")
     // Find scala library jar file...
     val lib: Option[String] = (fileManager.CLASSPATH split File.pathSeparator filter (_ matches ".*scala-library.*\\.jar")).headOption

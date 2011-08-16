@@ -40,7 +40,7 @@ object partest {
         val testArgs = runs withFilter (!_._2.isEmpty) flatMap { case (testType, files) =>
           Seq("-"+testType, files.mkString(","))
         }
-        val extraArgs = scalaOpts flatMap (opt => Seq("-scalacoption:", opt))
+        val extraArgs = scalaOpts flatMap (opt => Seq("-scalacoption", opt))
         import collection.JavaConverters._
         val results: collection.mutable.Map[String,Int] = runner.run((testArgs ++ extraArgs).toArray).asScala
         // TODO - save results

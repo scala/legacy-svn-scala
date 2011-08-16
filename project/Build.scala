@@ -12,6 +12,7 @@ object ScalaBuild extends Build {
   lazy val compiledProjects = Seq(quickLib, quickComp, continuationsLibrary, actors, swing, dbc, forkjoin, fjbg, msil)
   // Collection of projects to 'package' and 'publish' together.
   lazy val packagedBinaryProjects = Seq(scalaLibrary, scalaCompiler, continuationsPlugin, jline)
+  lazy val partestRunProjects = Seq(testsuite, continuationsTestsuite)
   // Settings for root project.  These are aggregate tasks against the rest of the build.
   def projectSettings: Seq[Setting[_]] = Seq(
     doc in Compile <<= (doc in documentation in Compile).identity,
@@ -24,7 +25,7 @@ object ScalaBuild extends Build {
     publishLocal <<= packagedBinaryProjects.map(p => publishLocal in p).join.map(_.map(_.head)),
     packageDoc in Compile <<= (packageDoc in documentation in Compile).identity,
     packageSrc in Compile <<= (packageSrc in documentation in Compile).identity,
-    test <<= (runPartest in testsuite).identity,
+    test <<= partestRunProjects.map(p => runPartest in p).dependOn,
     lockerLock <<= (lockFile in lockerLib, lockFile in lockerComp) map { (lib, comp) =>
       Seq(lib,comp).foreach(f => IO.touch(f))
     },
@@ -262,6 +263,20 @@ object ScalaBuild extends Build {
     autoScalaLibrary := false
   )
   val testsuite = Project("testsuite", file(".")) settings(testsuiteSetttings:_*) dependsOn(partest,swing,scalaLibrary,scalaCompiler,fjbg)
+
+  lazy val continuationsTestsuiteSetttings: Seq[Setting[_]] = testsuiteSetttings ++ Seq[Setting[_]](
+    scalacOptions in Test <++= (exportedProducts in Compile in continuationsPlugin) map { 
+     case Seq(cpDir) => Seq("-Xplugin-require:continuations", "-P:continuations:enable", "-Xplugin:"+cpDir.data.getAbsolutePath)
+    },
+    partestTestRuns <<= (baseDirectory) map { dir =>
+       Seq("continuations-neg", "continuations-run") map {
+         testType => 
+           val testDir = dir / "test"
+           testType.drop("continuations-".length).toString -> partestResources(testDir / "files" / testType, testType).get
+       } toMap   
+    } 
+  )
+  val continuationsTestsuite = Project("continuations-testsuite", file(".")) settings(continuationsTestsuiteSetttings:_*) dependsOn(partest,swing,scalaLibrary,scalaCompiler,fjbg)
 
   // --------------------------------------------------------------
   //  Generating Documentation.
