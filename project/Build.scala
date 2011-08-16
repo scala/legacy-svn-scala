@@ -29,6 +29,7 @@ object ScalaBuild extends Build {
     lockerLock <<= (lockFile in lockerLib, lockFile in lockerComp) map { (lib, comp) =>
       Seq(lib,comp).foreach(f => IO.touch(f))
     },
+    lockerLock <<= lockerLock.dependsOn(Seq(lockerLib, lockerComp).map(p => compile in Compile in p):_*),
     lockerUnlock <<= (lockFile in lockerLib, lockFile in lockerComp) map { (lib, comp) =>
       Seq(lib,comp).foreach(IO.delete)
     }
