@@ -31,7 +31,8 @@ object SBTRunner extends DirectRunner {
   }
 
   case class CommandLineOptions(classpath: Option[String] = None,
-                                tests: Map[String, Array[File]] = Map())
+                                tests: Map[String, Array[File]] = Map(),
+                                scalacOptions: Seq[String] = Nil)
 
   def mainReflect(args: Array[String]): java.util.Map[String,Int] = {
     setProp("partest.debug", "true")
@@ -41,6 +42,7 @@ object SBTRunner extends DirectRunner {
       case Seq("-cp", cp, rest @ _*) => parseArgs(rest, data.copy(classpath=Some(cp)))
       case Seq(Argument(name), runFiles, rest @ _*) => parseArgs(rest, data.copy(tests=data.tests + (name -> runFiles.split(",").map(new File(_)))))
       case Seq() => data
+      case Seq("-scalacoption", opt, rest @ _*) => parseArgs(rest, data.copy(scalacOptions= data.scalacOptions :+ opt))
       case x =>        
         sys.error("Unknown command line options: " + x)
     }

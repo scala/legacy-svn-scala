@@ -6,8 +6,7 @@ object ScalaBuild extends Build {
   // New tasks/settings specific to the scala build.
   lazy val lockerLock: TaskKey[Unit] = TaskKey("locker-lock", "Locks the locker layer of the compiler build such that it won't rebuild on changed source files.")
   lazy val lockerUnlock: TaskKey[Unit] = TaskKey("locker-unlock", "Unlocks the locker layer of the compiler so that it will be recompiled on changed source files.")
-  lazy val lockFile: SettingKey[File] = SettingKey("lock-file", "Location of the lock file compiling this project")
-
+  lazy val lockFile: SettingKey[File] = SettingKey("lock-file", "Location of the lock file compiling this project.")
 
   // Collections of projects to run 'compile' on.
   lazy val compiledProjects = Seq(quickLib, quickComp, continuationsLibrary, actors, swing, dbc, forkjoin, fjbg, msil)
@@ -58,7 +57,7 @@ object ScalaBuild extends Build {
                              skip in Compile <<= lockFile.map(_  exists)
                             )
   // TODO - Figure out a way to uniquely determine a version to assign to Scala builds...
-  def currentUniqueRevision = "0.1"
+  def createUniqueBuildVersion(baseDirectory: File): String = "0.2"
 
   // --------------------------------------------------------------
   //  Libraries used by Scalac that change infrequently
@@ -122,18 +121,21 @@ object ScalaBuild extends Build {
   //  Helper methods for layered compilation.
   // --------------------------------------------------------------
   def makeScalaReference(layer : String, library: Project, compiler: Project, fjbg: Project) =
-     scalaInstance <<= (appConfiguration,
+     scalaInstance <<= (appConfiguration, version,
+                        baseDirectory,
                         (exportedProducts in library in Compile),
                         (exportedProducts in compiler in Compile),
                         (exportedProducts in fjbg in Compile)) map {
-    (app, lib: Classpath, comp: Classpath, fjbg : Classpath) =>
+    (app, version: String, bd: File, lib: Classpath, comp: Classpath, fjbg : Classpath) =>
     val launcher = app.provider.scalaProvider.launcher
+    val currentUniqueRevision = createUniqueBuildVersion(bd)
     // TODO - Figure out a better way here, or bug Mark.
     if (lib.length != 1 || comp.length != 1) {
       error("Cannot build a ScalaReference with more than one classpath element")
     }
     ScalaInstance(
-      layer + "-" + currentUniqueRevision,
+      version + "-" + layer + "-" + currentUniqueRevision,
+      Some(version + "-" + layer + "-" + currentUniqueRevision),
       lib.head.data,
       comp.head.data,
       launcher,
@@ -255,10 +257,8 @@ object ScalaBuild extends Build {
   /* lazy val scalacheckSettings: Seq[Setting[_]] = Seq(fullQuickScalaReference, crossPaths := false)
   lazy val scalacheck = ProjectRef(uri("https://github.com/rickynils/scalacheck.git"), "scalacheck") */
 
-  lazy val testsuiteSetttings: Seq[Setting[_]] = compilerDependentProjectSettings ++ Seq(
+  lazy val testsuiteSetttings: Seq[Setting[_]] = compilerDependentProjectSettings ++ partestTaskSettings ++ Seq(
     unmanagedBase <<= baseDirectory / "test/files/lib",
-    partestRunner <<= partestRunnerTask(fullClasspath in Runtime),
-    runPartest <<= runPartestTask(partestRunner, baseDirectory),
     autoScalaLibrary := false
   )
   val testsuite = Project("testsuite", file(".")) settings(testsuiteSetttings:_*) dependsOn(partest,swing,scalaLibrary,scalaCompiler,fjbg)
