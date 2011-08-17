@@ -130,21 +130,23 @@ object ScalaBuild extends Build {
                         baseDirectory,
                         (exportedProducts in library in Compile),
                         (exportedProducts in compiler in Compile),
-                        (exportedProducts in fjbg in Compile)) map {
-    (app, version: String, bd: File, lib: Classpath, comp: Classpath, fjbg : Classpath) =>
+                        (exportedProducts in fjbg in Compile),
+                        (exportedProducts in jline in Compile)) map {
+    (app, version: String, bd: File, lib: Classpath, comp: Classpath, fjbg: Classpath, jline: Classpath) =>
     val launcher = app.provider.scalaProvider.launcher
     val currentUniqueRevision = createUniqueBuildVersion(bd)
     // TODO - Figure out a better way here, or bug Mark.
     if (lib.length != 1 || comp.length != 1) {
       error("Cannot build a ScalaReference with more than one classpath element")
     }
+    // TODO - Figure out where to get jansi so we don't bomb.
     ScalaInstance(
       version + "-" + layer + "-" + currentUniqueRevision,
       Some(version + "-" + layer + "-" + currentUniqueRevision),
       lib.head.data,
       comp.head.data,
       launcher,
-      (fjbg.files:_*))
+      ((fjbg.files++jline.files):_*))
   }
   
   // Creates a "layer" of Scala compilation.  That is, this will build the next version of Scala from a previous version.
