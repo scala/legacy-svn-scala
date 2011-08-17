@@ -17,19 +17,19 @@ object ScalaBuild extends Build {
   def projectSettings: Seq[Setting[_]] = Seq(
     doc in Compile <<= (doc in documentation in Compile).identity,
     // These next two aggregate commands on several projects and return results that are to be ignored by remaining tasks.
-    compile in Compile <<= compiledProjects.map(p => compile in p in Compile).join.map(_.map(_.head)),
+    compile in Compile <<= compiledProjects.map(p => compile in p in Compile).join.map(_.head),
     clean <<= compiledProjects.map(p => clean in p).dependOn,
-    packageBin in Compile <<= packagedBinaryProjects.map(p => packageBin in p in Compile).join.map(_.map(_.head)),
+    packageBin in Compile <<= packagedBinaryProjects.map(p => packageBin in p in Compile).join.map(_.head),
     // TODO - Make sure scalaLibrary has packageDoc + packageSrc from documentation attached...
-    publish <<= packagedBinaryProjects.map(p => publish in p).join.map(_.map(_.head)),
-    publishLocal <<= packagedBinaryProjects.map(p => publishLocal in p).join.map(_.map(_.head)),
+    publish <<= packagedBinaryProjects.map(p => publish in p).join.map(_.head),
+    publishLocal <<= packagedBinaryProjects.map(p => publishLocal in p).join.map(_.head),
     packageDoc in Compile <<= (packageDoc in documentation in Compile).identity,
     packageSrc in Compile <<= (packageSrc in documentation in Compile).identity,
     test <<= partestRunProjects.map(p => runPartest in p).dependOn,
-    lockerLock <<= (lockFile in lockerLib, lockFile in lockerComp) map { (lib, comp) =>
+    lockerLock <<= (lockFile in lockerLib, lockFile in lockerComp, compile in Compile in lockerLib, compile in Compile in lockerComp) map { (lib, comp, ignore, ignore2) =>
       Seq(lib,comp).foreach(f => IO.touch(f))
     },
-    lockerLock <<= lockerLock.dependsOn(Seq(lockerLib, lockerComp).map(p => compile in Compile in p):_*),
+    //lockerLock <<= lockerLock.dependsOn(Seq(lockerLib, lockerComp).map(p => compile in Compile in p).join),
     lockerUnlock <<= (lockFile in lockerLib, lockFile in lockerComp) map { (lib, comp) =>
       Seq(lib,comp).foreach(IO.delete)
     }
@@ -53,7 +53,7 @@ object ScalaBuild extends Build {
                              autoScalaLibrary := false,
                              unmanagedJars in Compile := Seq(),
                              // Most libs in the compiler use this order to build.
-                             compileOrder in Compile :== CompileOrder.JavaThenScala,
+                             compileOrder in Compile := CompileOrder.JavaThenScala,
                              lockFile <<= target(_ / "compile.lock"),
                              skip in Compile <<= lockFile.map(_  exists)
                             )
@@ -176,7 +176,7 @@ object ScalaBuild extends Build {
 		dirs.descendentsExcept( ("*.html" | "*.gif" | "*.png" | "*.js" | "*.css" | "*.tmpl" | "*.swf" | "*.properties"),"*.scala").get
         },
         // TODO - Use depends on *and* SBT's magic dependency mechanisms...
-        unmanagedClasspath in Compile <<= Seq(forkjoin, library, fjbg, jline, msil).map(exportedProducts in Compile in _).join.map(_.map(_.flatten)),
+        unmanagedClasspath in Compile <<= Seq(forkjoin, library, fjbg, jline, msil).map(exportedProducts in Compile in _).join.map(_.flatten),
         classpathOptions := ClasspathOptions.manual,
         ant,
         referenceScala
@@ -225,9 +225,9 @@ object ScalaBuild extends Build {
   //  Real Library Artifact
   // --------------------------------------------------------------
   val allSubpathsCopy = (dir: File) => (dir.*** --- dir) x (relativeTo(dir)|flat)
-  def productTaskToMapping(products : Task[Seq[File]]) = products map { ps => ps flatMap { p => allSubpathsCopy(p) } }
+  def productTaskToMapping(products : Seq[File]) = products flatMap { p => allSubpathsCopy(p) }
   // TODO - Create a task to write the version properties file and add the mapping to this task...
-  lazy val packageScalaLibBinTask = Seq(quickLib, continuationsLibrary, dbc, actors, swing, forkjoin).map(p => products in p in Compile).join.map(_.map(_.flatten)).map(productTaskToMapping)
+  lazy val packageScalaLibBinTask = Seq(quickLib, continuationsLibrary, dbc, actors, swing, forkjoin).map(p => products in p in Compile).join.map(_.flatten).map(productTaskToMapping)
   lazy val scalaLibArtifactSettings : Seq[Setting[_]] = inConfig(Compile)(Defaults.packageTasks(packageBin, packageScalaLibBinTask)) ++ Seq(
     name := "scala-library",
     crossPaths := false,
@@ -240,7 +240,7 @@ object ScalaBuild extends Build {
   // --------------------------------------------------------------
   //  Real Compiler Artifact
   // --------------------------------------------------------------
-  lazy val packageScalaBinTask = Seq(quickComp, fjbg, msil).map(p => products in p in Compile).join.map(_.map(_.flatten)).map(productTaskToMapping)
+  lazy val packageScalaBinTask = Seq(quickComp, fjbg, msil).map(p => products in p in Compile).join.map(_.flatten).map(productTaskToMapping)
   lazy val scalaBinArtifactSettings : Seq[Setting[_]] = inConfig(Compile)(Defaults.packageTasks(packageBin, packageScalaBinTask)) ++ Seq(
     name := "scala-compiler",
     crossPaths := false,
@@ -285,8 +285,8 @@ object ScalaBuild extends Build {
   // Scaladocs
   def distScalaInstance = makeScalaReference("dist", scalaLibrary, scalaCompiler, fjbg)
   lazy val documentationSettings: Seq[Setting[_]] = dependentProjectSettings ++ Seq(
-    defaultExcludes in Compile :== (".*"  - ".") || HiddenFileFilter,
-    sourceFilter in Compile :== ("*.scala"),
+    defaultExcludes in Compile := (".*"  - ".") || HiddenFileFilter,
+    sourceFilter in Compile := ("*.scala"),
     unmanagedSourceDirectories in Compile <<= baseDirectory apply { dir =>
       Seq(dir / "src" / "library" / "scala", dir / "src" / "actors", dir / "src" / "swing", dir / "src" / "continuations" / "library")
     },
