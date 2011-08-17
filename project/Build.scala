@@ -1,6 +1,7 @@
 import sbt._
 import Keys._
 import partest._
+import SameTest._
 
 object ScalaBuild extends Build {
   // New tasks/settings specific to the scala build.
@@ -25,11 +26,10 @@ object ScalaBuild extends Build {
     publishLocal <<= packagedBinaryProjects.map(p => publishLocal in p).join.map(_.head),
     packageDoc in Compile <<= (packageDoc in documentation in Compile).identity,
     packageSrc in Compile <<= (packageSrc in documentation in Compile).identity,
-    test <<= partestRunProjects.map(p => runPartest in p).dependOn,
+    test <<= (runPartest in testsuite, runPartest in continuationsTestsuite, checkSame in testsuite) map { (a,b,c) => () },
     lockerLock <<= (lockFile in lockerLib, lockFile in lockerComp, compile in Compile in lockerLib, compile in Compile in lockerComp) map { (lib, comp, ignore, ignore2) =>
       Seq(lib,comp).foreach(f => IO.touch(f))
     },
-    //lockerLock <<= lockerLock.dependsOn(Seq(lockerLib, lockerComp).map(p => compile in Compile in p).join),
     lockerUnlock <<= (lockFile in lockerLib, lockFile in lockerComp) map { (lib, comp) =>
       Seq(lib,comp).foreach(IO.delete)
     }
@@ -113,9 +113,13 @@ object ScalaBuild extends Build {
   lazy val quick = Project("quick", file(".")) aggregate(quickLib, quickComp)
 
   // Reference to quick scala instance.
-  def quickScalaInstance = makeScalaReference("quick", quickLib, quickComp, fjbg)
+  lazy val quickScalaInstance = makeScalaReference("quick", quickLib, quickComp, fjbg)
   def quickScalaLibraryDependency = unmanagedClasspath in Compile <++= (exportedProducts in quickLib in Compile).identity
   def quickScalaCompilerDependency = unmanagedClasspath in Compile <++= (exportedProducts in quickComp in Compile).identity
+
+  // Strapp is used to test binary 'sameness' between things built with locker and things built with quick.
+  lazy val (strappLib, strappComp) = makeLayer("strapp", quickScalaInstance)
+
 
 
   // --------------------------------------------------------------
@@ -228,12 +232,14 @@ object ScalaBuild extends Build {
   def productTaskToMapping(products : Seq[File]) = products flatMap { p => allSubpathsCopy(p) }
   // TODO - Create a task to write the version properties file and add the mapping to this task...
   lazy val packageScalaLibBinTask = Seq(quickLib, continuationsLibrary, dbc, actors, swing, forkjoin).map(p => products in p in Compile).join.map(_.flatten).map(productTaskToMapping)
-  lazy val scalaLibArtifactSettings : Seq[Setting[_]] = inConfig(Compile)(Defaults.packageTasks(packageBin, packageScalaLibBinTask)) ++ Seq(
+  lazy val scalaLibArtifactSettings: Seq[Setting[_]] = inConfig(Compile)(Defaults.packageTasks(packageBin, packageScalaLibBinTask)) ++ Seq(
     name := "scala-library",
     crossPaths := false,
     exportJars := true,
     autoScalaLibrary := false,
-    unmanagedJars in Compile := Seq()
+    unmanagedJars in Compile := Seq(),
+    packageDoc in Compile <<= (packageDoc in documentation in Compile).identity,
+    packageSrc in Compile <<= (packageSrc in documentation in Compile).identity
   )
   lazy val scalaLibrary = Project("scala-library", file(".")) settings(scalaLibArtifactSettings:_*)
 
@@ -260,7 +266,10 @@ object ScalaBuild extends Build {
 
   lazy val testsuiteSetttings: Seq[Setting[_]] = compilerDependentProjectSettings ++ partestTaskSettings ++ Seq(
     unmanagedBase <<= baseDirectory / "test/files/lib",
-    autoScalaLibrary := false
+    autoScalaLibrary := false,
+    checkSameLibrary <<= checkSameBinaryProjects(quickLib, strappLib),
+    checkSameCompiler <<= checkSameBinaryProjects(quickComp, strappComp),
+    checkSame <<= (checkSameLibrary, checkSameCompiler) map ((a,b) => ())
   )
   val testsuite = Project("testsuite", file(".")) settings(testsuiteSetttings:_*) dependsOn(partest,swing,scalaLibrary,scalaCompiler,fjbg)
 
