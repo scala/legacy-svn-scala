@@ -418,7 +418,7 @@ object ScalaBuild extends Build {
           lib -> "lib/scala-library.jar",
           comp -> "lib/scala-compiler.jar",
           jline -> "lib/jline.jar",
-          continuations -> "/misc/scala-devel/plugins/continuations.jar",
+          continuations -> "misc/scala-devel/plugins/continuations.jar",
           scalap -> "lib/scalap.jar"
         ) toMap
     },
