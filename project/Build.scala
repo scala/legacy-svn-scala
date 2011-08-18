@@ -131,7 +131,7 @@ object ScalaBuild extends Build {
                         (exportedProducts in library in Compile),
                         (exportedProducts in compiler in Compile),
                         (exportedProducts in fjbg in Compile),
-                        (exportedProducts in jline in Compile)) map {
+                        (fullClasspath in jline in Runtime)) map {
     (app, version: String, bd: File, lib: Classpath, comp: Classpath, fjbg: Classpath, jline: Classpath) =>
     val launcher = app.provider.scalaProvider.launcher
     val currentUniqueRevision = createUniqueBuildVersion(bd)
