@@ -8,6 +8,8 @@ object ScalaBuild extends Build {
   lazy val lockerLock: TaskKey[Unit] = TaskKey("locker-lock", "Locks the locker layer of the compiler build such that it won't rebuild on changed source files.")
   lazy val lockerUnlock: TaskKey[Unit] = TaskKey("locker-unlock", "Unlocks the locker layer of the compiler so that it will be recompiled on changed source files.")
   lazy val lockFile: SettingKey[File] = SettingKey("lock-file", "Location of the lock file compiling this project.")
+  lazy val makeDist: TaskKey[File] = TaskKey("make-dist", "Creates a mini-distribution (scala home directory) for this build.")
+  lazy val makeDistMappings: TaskKey[Map[File, String]] = TaskKey("make-dist-mappings", "Creates a mini-distribution (scala home directory) for this build.")
 
   // Collections of projects to run 'compile' on.
   lazy val compiledProjects = Seq(quickLib, quickComp, continuationsLibrary, actors, swing, dbc, forkjoin, fjbg, msil)
@@ -32,7 +34,8 @@ object ScalaBuild extends Build {
     },
     lockerUnlock <<= (lockFile in lockerLib, lockFile in lockerComp) map { (lib, comp) =>
       Seq(lib,comp).foreach(IO.delete)
-    }
+    },
+    makeDist <<= (makeDist in scaladist).identity
   )
   // Note: Root project is determined by lowest-alphabetical project that has baseDirectory as file(".").  we use aaa_ to 'win'.
   lazy val aaa_root = Project("scala", file(".")) settings(projectSettings:_*) // TODO - aggregate on, say... quick
@@ -316,22 +319,22 @@ object ScalaBuild extends Build {
   lazy val documentation = Project("documentation", file(".")) settings(documentationSettings: _*) dependsOn(quickLib, quickComp, actors, fjbg, forkjoin, swing, continuationsLibrary)
 
   // This project will generate man pages (in man1 and html) for scala.
-  val runManmakerMan = TaskKey[Unit]("make-man", "Runs the man maker project to generate man pages")
-  val runManmakerHtml = TaskKey[Unit]("make-html", "Runs the man maker project to generate html pages")
-  def runManmakerTask(classpath: ScopedTask[Classpath], scalaRun: ScopedTask[ScalaRun], mainClass: String, dir: String, ext: String): Project.Initialize[Task[Unit]] =
+  val runManmakerMan = TaskKey[Map[File,String]]("make-man", "Runs the man maker project to generate man pages")
+  val runManmakerHtml = TaskKey[Map[File,String]]("make-html", "Runs the man maker project to generate html pages")
+  def runManmakerTask(classpath: ScopedTask[Classpath], scalaRun: ScopedTask[ScalaRun], mainClass: String, dir: String, ext: String): Project.Initialize[Task[Map[File,String]]] =
     (classpath, runner, streams, target) map { (cp, runner, s, target) =>
       val binaries = Seq("fsc", "sbaz", "scala", "scalac", "scaladoc", "scalap")
-      binaries foreach { bin =>
+      binaries map { bin =>
         val file = target / dir / (bin + ext)
         val classname = "scala.man1." + bin
         IO.createDirectory(file.getParentFile)
-        toError(runner.run(mainClass, Build.data(cp), Seq(classname, file.getAbsolutePath), s.log))
-        
-      }
-    }
+        toError(runner.run(mainClass, Build.data(cp), Seq(classname, file.getAbsolutePath), s.log))   
+        file -> ("man/" + dir + "/" + bin + ext)
+      } toMap
+    }    
   lazy val manmakerSettings: Seq[Setting[_]] = dependentProjectSettings ++ Seq(
     runManmakerMan <<= runManmakerTask(fullClasspath in Runtime, runner in run, "scala.tools.docutil.EmitManPage", "man1", ".1"),
-    runManmakerHtml <<= runManmakerTask(fullClasspath in Runtime, runner in run, "scala.tools.docutil.EmitHtml", "html", ".html"),
+    runManmakerHtml <<= runManmakerTask(fullClasspath in Runtime, runner in run, "scala.tools.docutil.EmitHtml", "doc", ".html"),
     ant
   )
   lazy val manmaker = Project("manual", file(".")) settings(manmakerSettings:_*)
@@ -383,7 +386,29 @@ object ScalaBuild extends Build {
     scalaSource in Compile <<= (baseDirectory, name) apply (_ / "src" / _),
     autoScalaLibrary := false,
     unmanagedJars in Compile := Seq(),
-    genBin <<= genBinTask(fullClasspath in quickComp in Runtime, target)
+    genBin <<= genBinTask(fullClasspath in quickComp in Runtime, target),
+    makeDistMappings <<= (genBin, 
+                          runManmakerMan in manmaker,
+                          runManmakerHtml in manmaker,
+                          packageBin in scalaLibrary in Compile, 
+                          packageBin in scalaCompiler in Compile,
+                          packageBin in jline in Compile,
+                          packageBin in continuationsPlugin in Compile) map {
+      (binaries, man, html, lib, comp, jline, continuations) =>
+        binaries ++ man ++ html ++ Seq(
+          lib -> "lib/scala-library.jar",
+          comp -> "lib/scala-compiler.jar",
+          jline -> "lib/jline.jar",
+          continuations -> "/misc/scala-devel/plugins/continuations.jar"
+        ) toMap
+    },
+    makeDist <<= (makeDistMappings, baseDirectory, streams) map { (maps, dir, s) => 
+      s.log.debug("Map = " + maps.mkString("\n")) 
+      val file = dir / "target" / "scala-dist.zip"
+      IO.zip(maps, file)
+      s.log.info("Created " + file.getAbsolutePath)
+      file
+    }
   )
   lazy val scaladist = Project("dist", file(".")) settings(scalaDistSettings:_*)
 }
