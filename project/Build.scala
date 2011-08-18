@@ -36,6 +36,7 @@ object ScalaBuild extends Build {
       Seq(lib,comp).foreach(IO.delete)
     },
     makeDist <<= (makeDist in scaladist).identity
+    // TODO - Make exported products == makeDist so we can use this when creating a *real* distribution.
   )
   // Note: Root project is determined by lowest-alphabetical project that has baseDirectory as file(".").  we use aaa_ to 'win'.
   lazy val aaa_root = Project("scala", file(".")) settings(projectSettings:_*)
@@ -232,7 +233,15 @@ object ScalaBuild extends Build {
   // --------------------------------------------------------------
   val allSubpathsCopy = (dir: File) => (dir.*** --- dir) x (relativeTo(dir)|flat)
   def productTaskToMapping(products : Seq[File]) = products flatMap { p => allSubpathsCopy(p) }
-  // TODO - Create a task to write the version properties file and add the mapping to this task...
+  // This creates the *.properties file used to determine the current version of scala at runtime.  TODO - move these somewhere utility like.
+  def makePropertiesFile(f: File, version: String): Unit =
+    IO.write(f, "version.number = "+version+"\ncopyright.string = Copyright 2002-2011, LAMP/EPFL")
+  def addPropertiesFile(name: String) =
+    mappings in packageBin in Compile <<= (mappings in packageBin in Compile, target, version) map { (m, dir, v) =>
+      val f = dir / name
+      makePropertiesFile(f, v)
+      m :+ (f, name)
+    }
   lazy val packageScalaLibBinTask = Seq(quickLib, continuationsLibrary, dbc, actors, swing, forkjoin).map(p => products in p in Compile).join.map(_.flatten).map(productTaskToMapping)
   lazy val scalaLibArtifactSettings: Seq[Setting[_]] = inConfig(Compile)(Defaults.packageTasks(packageBin, packageScalaLibBinTask)) ++ Seq(
     name := "scala-library",
@@ -243,6 +252,7 @@ object ScalaBuild extends Build {
     packageDoc in Compile <<= (packageDoc in documentation in Compile).identity,
     packageSrc in Compile <<= (packageSrc in documentation in Compile).identity,
     fullClasspath in Runtime <<= (exportedProducts in Compile).identity,
+    addPropertiesFile("library.properties"),
     quickScalaInstance
   )
   lazy val scalaLibrary = Project("scala-library", file(".")) settings(scalaLibArtifactSettings:_*)
@@ -258,6 +268,7 @@ object ScalaBuild extends Build {
     autoScalaLibrary := false,
     unmanagedJars in Compile := Seq(),
     fullClasspath in Runtime <<= (exportedProducts in Compile).identity,
+    addPropertiesFile("compiler.properties"),
     quickScalaInstance
   )
   lazy val scalaCompiler = Project("scala-compiler", file(".")) settings(scalaBinArtifactSettings:_*) dependsOn(scalaLibrary)
@@ -369,6 +380,7 @@ object ScalaBuild extends Build {
          runner.setClass(cls)
          runner.setFile(dest)
          runner.execute()
+         // TODO - Mark generated files as executable (755 or a+x)
        }
        def makeBinMappings(cls: String, binName: String) = {
          val file = binDir / binName
@@ -387,6 +399,7 @@ object ScalaBuild extends Build {
     autoScalaLibrary := false,
     unmanagedJars in Compile := Seq(),
     genBin <<= genBinTask(fullClasspath in quickComp in Runtime, target),
+    // TODO - Add JANSI in here for jline...
     makeDistMappings <<= (genBin, 
                           runManmakerMan in manmaker,
                           runManmakerHtml in manmaker,
