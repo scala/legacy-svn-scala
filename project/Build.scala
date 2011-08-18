@@ -402,7 +402,9 @@ object ScalaBuild extends Build {
     autoScalaLibrary := false,
     unmanagedJars in Compile := Seq(),
     genBin <<= genBinTask(fullClasspath in quickComp in Runtime, target),
-    // TODO - Add JANSI in here for jline...
+    // TODO - We could *really* clean this up in many ways.   Let's look into making a a Seq of "direct jars"
+    // a seq of "plugin jars" and "binaries" and "documentation" mappings that this can aggregate.
+    // really need to figure out a better way to pull jline + jansi.
     makeDistMappings <<= (genBin, 
                           runManmakerMan in manmaker,
                           runManmakerHtml in manmaker,
