@@ -241,7 +241,9 @@ object ScalaBuild extends Build {
     autoScalaLibrary := false,
     unmanagedJars in Compile := Seq(),
     packageDoc in Compile <<= (packageDoc in documentation in Compile).identity,
-    packageSrc in Compile <<= (packageSrc in documentation in Compile).identity
+    packageSrc in Compile <<= (packageSrc in documentation in Compile).identity,
+    fullClasspath in Runtime <<= (exportedProducts in Compile).identity,
+    quickScalaInstance
   )
   lazy val scalaLibrary = Project("scala-library", file(".")) settings(scalaLibArtifactSettings:_*)
 
@@ -254,7 +256,9 @@ object ScalaBuild extends Build {
     crossPaths := false,
     exportJars := true,
     autoScalaLibrary := false,
-    unmanagedJars in Compile := Seq()
+    unmanagedJars in Compile := Seq(),
+    fullClasspath in Runtime <<= (exportedProducts in Compile).identity,
+    quickScalaInstance
   )
   lazy val scalaCompiler = Project("scala-compiler", file(".")) settings(scalaBinArtifactSettings:_*) dependsOn(scalaLibrary)
   lazy val fullQuickScalaReference = makeScalaReference("pack", scalaLibrary, scalaCompiler, fjbg)
