@@ -24,6 +24,7 @@ object partest {
     // TODO - Only allow directories that have "*.scala" children...
     case _ => base * "*" filter { f => !f.getName.endsWith(".obj") && (f.isDirectory || f.getName.endsWith(".scala")) }
   }
+  // TODO - Figure out how to specify only a subset of resources...
   def partestTestRunTaskDefault(baseDirectory: ScopedSetting[File]): Project.Initialize[Task[Map[String, Seq[File]]]] =
      (baseDirectory) map { dir =>
        Seq("run", "jvm", "pos", "neg", "buildmanager", "res", "shootout", "scalap", "specialized", "presentation") map {

@@ -9,7 +9,7 @@ object ScalaBuild extends Build {
   lazy val lockerUnlock: TaskKey[Unit] = TaskKey("locker-unlock", "Unlocks the locker layer of the compiler so that it will be recompiled on changed source files.")
   lazy val lockFile: SettingKey[File] = SettingKey("lock-file", "Location of the lock file compiling this project.")
   lazy val makeDist: TaskKey[File] = TaskKey("make-dist", "Creates a mini-distribution (scala home directory) for this build.")
-  lazy val makeDistMappings: TaskKey[Map[File, String]] = TaskKey("make-dist-mappings", "Creates a mini-distribution (scala home directory) for this build.")
+  lazy val makeDistMappings: TaskKey[Map[File, String]] = TaskKey("make-dist-mappings", "Creates distribution mappings for creating zips,jars,directorys,etc.")
 
   // Collections of projects to run 'compile' on.
   lazy val compiledProjects = Seq(quickLib, quickComp, continuationsLibrary, actors, swing, dbc, forkjoin, fjbg, msil)
@@ -38,7 +38,7 @@ object ScalaBuild extends Build {
     makeDist <<= (makeDist in scaladist).identity
   )
   // Note: Root project is determined by lowest-alphabetical project that has baseDirectory as file(".").  we use aaa_ to 'win'.
-  lazy val aaa_root = Project("scala", file(".")) settings(projectSettings:_*) // TODO - aggregate on, say... quick
+  lazy val aaa_root = Project("scala", file(".")) settings(projectSettings:_*)
 
   // External dependencies used for various projects
   lazy val ant = libraryDependencies += "org.apache.ant" % "ant" % "1.8.2"
@@ -136,27 +136,25 @@ object ScalaBuild extends Build {
                         (exportedProducts in fjbg in Compile),
                         (fullClasspath in jline in Runtime)) map {
     (app, version: String, bd: File, lib: Classpath, comp: Classpath, fjbg: Classpath, jline: Classpath) =>
-    val launcher = app.provider.scalaProvider.launcher
-    val currentUniqueRevision = createUniqueBuildVersion(bd)
-    // TODO - Figure out a better way here, or bug Mark.
-    if (lib.length != 1 || comp.length != 1) {
-      error("Cannot build a ScalaReference with more than one classpath element")
-    }
-    // TODO - Figure out where to get jansi so we don't bomb.
-    ScalaInstance(
-      version + "-" + layer + "-" + currentUniqueRevision,
-      Some(version + "-" + layer + "-" + currentUniqueRevision),
-      lib.head.data,
-      comp.head.data,
-      launcher,
-      ((fjbg.files++jline.files):_*))
+      val launcher = app.provider.scalaProvider.launcher
+      val currentUniqueRevision = createUniqueBuildVersion(bd)
+      (lib,comp) match {
+         case (Seq(libraryJar), Seq(compilerJar)) =>
+           ScalaInstance(
+             version + "-" + layer + "-" + currentUniqueRevision,
+             Some(version + "-" + layer + "-" + currentUniqueRevision),
+             libraryJar.data,
+             compilerJar.data,
+             launcher,
+             ((fjbg.files++jline.files):_*))
+         case _ => error("Cannot build a ScalaReference with more than one classpath element")
+      }
   }
   
   // Creates a "layer" of Scala compilation.  That is, this will build the next version of Scala from a previous version.
   // Returns the library project and compiler project from the next layer.
   // Note:  The library and compiler are not *complete* in the sense that they are missing things like "actors" and "fjbg".
   def makeLayer(layer: String, referenceScala: Setting[Task[ScalaInstance]]) : (Project, Project) = {
-    // TODO - Make version number for library...
     val library = Project(layer + "-library", file("."))  settings( (settingOverrides ++
       Seq(version := layer,
           // TODO - use depends on.
@@ -199,7 +197,7 @@ object ScalaBuild extends Build {
   // --------------------------------------------------------------
   //  Projects dependent on layered compilation (quick)
   // --------------------------------------------------------------
-  // TODO - in sabbus, these all use locker to build...
+  // TODO - in sabbus, these all use locker to build...  I think tihs way is better, but let's farm this idea around.
   lazy val dependentProjectSettings = settingOverrides ++ Seq(quickScalaInstance, quickScalaLibraryDependency)
   lazy val actors = Project("actors", file(".")) settings(dependentProjectSettings:_*) dependsOn(forkjoin)
   lazy val dbc = Project("dbc", file(".")) settings(dependentProjectSettings:_*)
@@ -210,7 +208,6 @@ object ScalaBuild extends Build {
   lazy val scalap = Project("scalap", file(".")) settings(compilerDependentProjectSettings:_*)
   lazy val partestSettings = compilerDependentProjectSettings :+ ant
   lazy val partest = Project("partest", file(".")) settings(partestSettings:_*)  dependsOn(actors,forkjoin,scalap)
-  // TODO - generate scala properties file...
 
   // --------------------------------------------------------------
   //  Continuations plugin + library
@@ -344,6 +341,7 @@ object ScalaBuild extends Build {
   // --------------------------------------------------------------
 
   class ScalaToolRunner(classpath: Classpath) {
+    // TODO - Don't use the ant task directly...
     lazy val classLoader = new java.net.URLClassLoader(classpath.map(_.data.toURI.toURL).toArray, null)
     lazy val mainClass = classLoader.loadClass("scala.tools.ant.ScalaTool")
     lazy val executeMethod = mainClass.getMethod("execute")
@@ -357,27 +355,29 @@ object ScalaBuild extends Build {
 
   def genBinTask(classpath: ScopedTask[Classpath], outputDir: ScopedSetting[File]) = (classpath, outputDir) map {
     (cp, outDir) =>
-       IO.createDirectory(outDir / "bin")
-       for( (cls, dest) <- Map(
-             "scala.tools.nsc.MainGenericRunner" -> (outDir / "bin" / "scala"),
-             "scala.tools.nsc.Main" -> (outDir / "bin" / "scalac"),
-             "scala.tools.nsc.ScalaDoc" -> (outDir / "bin" / "scaladoc"),
-             "scala.tools.nsc.CompileClient" -> (outDir / "bin" / "fsc"),
-             "scala.tools.scalap.Main" -> (outDir / "bin" / "scalap")
-           )) {
+       val binDir = outDir / "bin"
+       IO.createDirectory(binDir)
+       val classToFilename = Map(
+             "scala.tools.nsc.MainGenericRunner" -> "scala",
+             "scala.tools.nsc.Main" -> "scalac",
+             "scala.tools.nsc.ScalaDoc" -> "scaladoc",
+             "scala.tools.nsc.CompileClient" -> "fsc",
+             "scala.tools.scalap.Main" -> "scalap"
+           )
+       def genBinFiles(cls: String, dest: File): Unit = {
          val runner = new ScalaToolRunner(cp)
          runner.setClass(cls)
          runner.setFile(dest)
          runner.execute()
-       }  
-     // Ouptut a mapping...
-     Map(
-        outDir / "bin" / "scala" -> "bin/scala",
-        outDir / "bin" / "scalac" -> "bin/scalac",
-        outDir / "bin" / "scaladoc" -> "bin/scaladoc",
-        outDir / "bin" / "scalap" -> "bin/scalap",
-        outDir / "bin" / "fsc" -> "bin/fsc"
-     )     
+       }
+       def makeBinMappings(cls: String, binName: String) = {
+         val file = binDir / binName
+         val winBinName = binName + ".bat"
+         genBinFiles(cls, file)
+         Seq( file -> ("bin/"+binName), binDir / winBinName -> ("bin/"+winBinName) )
+       }
+       // TODO - Make sure these are 755...
+       classToFilename.flatMap((makeBinMappings _).tupled).toMap
   }  
   lazy val genBin = TaskKey[Map[File,String]]("gen-bin", "Creates script files for Scala distribution")
   lazy val scalaDistSettings: Seq[Setting[_]] = Seq(
