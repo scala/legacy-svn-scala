@@ -406,9 +406,11 @@ object ScalaBuild extends Build {
                           packageBin in scalaLibrary in Compile, 
                           packageBin in scalaCompiler in Compile,
                           packageBin in jline in Compile,
-                          packageBin in continuationsPlugin in Compile) map {
-      (binaries, man, html, lib, comp, jline, continuations) =>
-        binaries ++ man ++ html ++ Seq(
+                          packageBin in continuationsPlugin in Compile,
+                          managedClasspath in jline in Compile) map {
+      (binaries, man, html, lib, comp, jline, continuations, jlineDeps) =>
+        val jlineDepMap: Seq[(File, String)] = jlineDeps.map(_.data).flatMap(_ x Path.flat) map { case(a,b) => a -> ("lib/"+b) }
+        binaries ++ man ++ html ++ jlineDepMap ++ Seq(
           lib -> "lib/scala-library.jar",
           comp -> "lib/scala-compiler.jar",
           jline -> "lib/jline.jar",
