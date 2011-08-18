@@ -14,7 +14,7 @@ object ScalaBuild extends Build {
   // Collections of projects to run 'compile' on.
   lazy val compiledProjects = Seq(quickLib, quickComp, continuationsLibrary, actors, swing, dbc, forkjoin, fjbg, msil)
   // Collection of projects to 'package' and 'publish' together.
-  lazy val packagedBinaryProjects = Seq(scalaLibrary, scalaCompiler, continuationsPlugin, jline)
+  lazy val packagedBinaryProjects = Seq(scalaLibrary, scalaCompiler, continuationsPlugin, jline, scalap)
   lazy val partestRunProjects = Seq(testsuite, continuationsTestsuite)
   // Settings for root project.  These are aggregate tasks against the rest of the build.
   def projectSettings: Seq[Setting[_]] = Seq(
@@ -206,9 +206,12 @@ object ScalaBuild extends Build {
 
   // Things that compile against the compiler.
   lazy val compilerDependentProjectSettings = dependentProjectSettings ++ Seq(quickScalaCompilerDependency)
-  lazy val scalap = Project("scalap", file(".")) settings(compilerDependentProjectSettings:_*)
   lazy val partestSettings = compilerDependentProjectSettings :+ ant
   lazy val partest = Project("partest", file(".")) settings(partestSettings:_*)  dependsOn(actors,forkjoin,scalap)
+  lazy val scalapSettings = compilerDependentProjectSettings ++ Seq(
+    name := "scalap",
+    exportJars := true)
+  lazy val scalap = Project("scalap", file(".")) settings(scalapSettings:_*) dependsOn(scalaLibrary, scalaCompiler)
 
   // --------------------------------------------------------------
   //  Continuations plugin + library
@@ -331,7 +334,7 @@ object ScalaBuild extends Build {
   val runManmakerHtml = TaskKey[Map[File,String]]("make-html", "Runs the man maker project to generate html pages")
   def runManmakerTask(classpath: ScopedTask[Classpath], scalaRun: ScopedTask[ScalaRun], mainClass: String, dir: String, ext: String): Project.Initialize[Task[Map[File,String]]] =
     (classpath, runner, streams, target) map { (cp, runner, s, target) =>
-      val binaries = Seq("fsc", "sbaz", "scala", "scalac", "scaladoc", "scalap")
+      val binaries = Seq("fsc", "scala", "scalac", "scaladoc", "scalap")
       binaries map { bin =>
         val file = target / dir / (bin + ext)
         val classname = "scala.man1." + bin
@@ -407,14 +410,16 @@ object ScalaBuild extends Build {
                           packageBin in scalaCompiler in Compile,
                           packageBin in jline in Compile,
                           packageBin in continuationsPlugin in Compile,
-                          managedClasspath in jline in Compile) map {
-      (binaries, man, html, lib, comp, jline, continuations, jlineDeps) =>
+                          managedClasspath in jline in Compile,
+                          packageBin in scalap in Compile) map {
+      (binaries, man, html, lib, comp, jline, continuations, jlineDeps, scalap) =>
         val jlineDepMap: Seq[(File, String)] = jlineDeps.map(_.data).flatMap(_ x Path.flat) map { case(a,b) => a -> ("lib/"+b) }
         binaries ++ man ++ html ++ jlineDepMap ++ Seq(
           lib -> "lib/scala-library.jar",
           comp -> "lib/scala-compiler.jar",
           jline -> "lib/jline.jar",
-          continuations -> "/misc/scala-devel/plugins/continuations.jar"
+          continuations -> "/misc/scala-devel/plugins/continuations.jar",
+          scalap -> "lib/scalap.jar"
         ) toMap
     },
     makeDist <<= (makeDistMappings, baseDirectory, streams) map { (maps, dir, s) => 
