@@ -8,6 +8,10 @@ version := "2.10.0-SNAPSHOT"
 
 scalaVersion := "2.9.0-1"
 
+autoScalaLibrary := false
+
+crossPaths := false
+
 // Only need these because of weird testing jline issues.
 retrieveManaged := true
 
