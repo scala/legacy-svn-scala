@@ -7,8 +7,7 @@
 \*                                                                      */
 
 
-package scala.xml
-package include.sax
+package examples.xml
 
 import scala.xml.include._
 import scala.util.control.Exception.{ catching, ignoring }
