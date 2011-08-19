@@ -1,3 +1,7 @@
+/* NSC -- new Scala compiler
+ * Copyright 2009-2011 Scala Solutions and LAMP/EPFL
+ * @author Martin Odersky
+ */
 package scala.tools.nsc
 package interactive
 package tests.core
@@ -11,10 +15,10 @@ import scala.tools.nsc.util.SourceFile
  * presentation compiler. 
  * */
 trait AskCommand {
-  
+
   /** presentation compiler's instance. */
   protected val compiler: Global
-  
+
   /** 
    * Presentation compiler's `askXXX` actions work by doing side-effects 
    * on a `Response` instance passed as an argument during the `askXXX` 
@@ -55,11 +59,12 @@ trait AskParse extends AskCommand {
 
 /** Ask the presentation compiler to reload a sequence of `sources` */
 trait AskReload extends AskCommand {
-  
+
   /** Reload the given source files and wait for them to be reloaded. */
   def askReload(sources: Seq[SourceFile])(implicit reporter: Reporter): Response[Unit] = {
-    reporter.println("reload: " + sources.mkString("", ", ", ""))
-    
+    val sortedSources = (sources map (_.file.name)).sorted
+    reporter.println("reload: " + sortedSources.mkString(", "))
+
     ask {
       compiler.askReload(sources.toList, _)
     }
@@ -69,10 +74,10 @@ trait AskReload extends AskCommand {
 /** Ask the presentation compiler for completion at a given position. */
 trait AskCompletionAt extends AskCommand {
   import compiler.Member
-  
+
   def askCompletionAt(pos: Position)(implicit reporter: Reporter): Response[List[Member]] = {
     reporter.println("\naskTypeCompletion at " + pos.source.file.name + ((pos.line, pos.column)))
-    
+
     ask {
       compiler.askTypeCompletion(pos, _)
     }
@@ -82,7 +87,7 @@ trait AskCompletionAt extends AskCommand {
 /** Ask the presentation compiler for type info at a given position. */
 trait AskTypeAt extends AskCommand {
   import compiler.Tree
-  
+
   def askTypeAt(pos: Position)(implicit reporter: Reporter): Response[Tree] = {
     reporter.println("\naskType at " + pos.source.file.name + ((pos.line, pos.column)))
 
@@ -95,19 +100,16 @@ trait AskTypeAt extends AskCommand {
 
 trait AskType extends AskCommand {
   import compiler.Tree
-  
+
   def askType(source: SourceFile, forceReload: Boolean)(implicit reporter: Reporter): Response[Tree] = {
     ask {
       compiler.askType(source, forceReload, _)
     }
   }
-  
+
   def askType(sources: Seq[SourceFile], forceReload: Boolean)(implicit reporter: Reporter): Seq[Response[Tree]] = {
     for(source <- sources) yield 
       askType(source, forceReload)
   }
 }
-
-
-
 
