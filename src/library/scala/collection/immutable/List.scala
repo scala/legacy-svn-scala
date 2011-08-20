@@ -22,6 +22,9 @@ import annotation.tailrec
  *  and `scala.::` that implement the abstract members `isEmpty`, 
  *  `head` and `tail`.
  *
+ *  This class is optimal for last-in-first-out (LIFO), stack-like access patterns. If you need another access
+ *  pattern, for example, random access or FIFO, consider using a collection more suited to this than `List`.
+ *
  *  @example {{{
  *  // Make a list via the companion object factory
  *  val days = List("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
