@@ -44,8 +44,9 @@ trait AnyValReps {
                      "  * @return the bitwise OR of this value with the provided value\n" +
                      "  * @example {{{\n" +
                      "  * (0xf0 | 0xaa) == 0xfa\n" +
-                     "  * // in binary: ( 11110000 \n" +
-                     "  * //            | 10101010) == \n" +
+                     "  * // in binary:   11110000 \n" +
+                     "  * //            | 10101010 \n" +
+                     "  * //              -------- \n" +
                      "  * //              11111010\n" +
                      "  * }}}\n" +
                      "  */"),
@@ -53,8 +54,9 @@ trait AnyValReps {
                      "  * @return the bitwise AND of this value with the provided value\n" +
                      "  * @example {{{\n" +
                      "  * (0xf0 & 0xaa) == 0xa0\n" +
-                     "  * // in binary: ( 11110000 \n" +
-                     "  * //            & 10101010) == \n" +
+                     "  * // in binary:   11110000 \n" +
+                     "  * //            & 10101010 \n" +
+                     "  * //              -------- \n" +
                      "  * //              10100000\n" +
                      "  * }}}\n" +
                      "  */"),
@@ -62,8 +64,9 @@ trait AnyValReps {
                      "  * @return the bitwise XOR of this value with the provided value\n" +
                      "  * @example {{{\n" +
                      "  * (0xf0 ^ 0xaa) == 0x5a\n" +
-                     "  * // in binary: ( 11110000 \n" +
-                     "  * //            ^ 10101010) == \n" +
+                     "  * // in binary:   11110000 \n" +
+                     "  * //            ^ 10101010 \n" +
+                     "  * //              -------- \n" +
                      "  * //              01011010\n" +
                      "  * }}}\n" +
                      "  */"))
@@ -101,19 +104,19 @@ trait AnyValReps {
       else Nil
 
     def comparisonOps       = List(
-      Op("==", "/**\n  * @return true if this value is equal to the provided value, false otherwise\n  */"), 
-      Op("!=", "/**\n  * @return true if this value is not equal to the provided value, false otherwise\n  */"),
-      Op("<",  "/**\n  * @return true if this value is less than the provided value, false otherwise\n  */"),
-      Op("<=", "/**\n  * @return true if this value is less than or equal to the provide value, false otherwise\n  */"),
-      Op(">",  "/**\n  * @return true if this value is greater than the provided value, false otherwise\n  */"), 
-      Op(">=", "/**\n  * @return true if this value is greater than or equal to the provided value, false otherwise\n  */"))
+      Op("==", "/**\n  * @return `true` if this value is equal to the provided value, `false` otherwise\n  */"), 
+      Op("!=", "/**\n  * @return `true` if this value is not equal to the provided value, `false` otherwise\n  */"),
+      Op("<",  "/**\n  * @return `true` if this value is less than the provided value, `false` otherwise\n  */"),
+      Op("<=", "/**\n  * @return `true` if this value is less than or equal to the provide value, `false` otherwise\n  */"),
+      Op(">",  "/**\n  * @return `true` if this value is greater than the provided value, `false` otherwise\n  */"), 
+      Op(">=", "/**\n  * @return `true` if this value is greater than or equal to the provided value, `false` otherwise\n  */"))
 
     def otherOps = List(
-      Op("+", "/**\n  * @return the sum of this value with the provided value\n  */"),
-      Op("-", "/**\n  * @return the difference of this value with the provided value\n  */"),
-      Op("*", "/**\n  * @return the product of this value and the provided value\n  */"),
-      Op("/", "/**\n  * @return the quotient of this value and the provided value\n  */"),
-      Op("%", "/**\n  * @return the remainder of whole number division of this value by the provided value\n  */"))
+      Op("+", "/**\n  * @return the sum of this value and x\n  */"),
+      Op("-", "/**\n  * @return the difference of this value and x\n  */"),
+      Op("*", "/**\n  * @return the product of this value and x\n  */"),
+      Op("/", "/**\n  * @return the quotient of this value and x\n  */"),
+      Op("%", "/**\n  * @return the remainder of the division of this value by x\n  */"))
   
     // Given two numeric value types S and T , the operation type of S and T is defined as follows:
     // If both S and T are subrange types then the operation type of S and T is Int.
