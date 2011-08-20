@@ -22,11 +22,46 @@ import annotation.tailrec
  *  and `scala.::` that implement the abstract members `isEmpty`, 
  *  `head` and `tail`.
  *
+ *  This class is optimal for last-in-first-out (LIFO), stack-like access patterns. If you need another access
+ *  pattern, for example, random access or FIFO, consider using a collection more suited to this than `List`.
+ *
+ *  @example {{{
+ *  // Make a list via the companion object factory
+ *  val days = List("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
+ *
+ *  // Make a list element-by-element
+ *  val when = "AM" :: "PM" :: Nil
+ *
+ *  // Pattern match
+ *  days match {
+ *    case firstDay::otherDays =>
+ *      println("The first day of the week is: " + firstDay)
+ *    case Nil =>
+ *      println("There don't seem to be any week days.")
+ *  }
+ *  }}}
+ *
+ *  ==Performance==
+ *  '''Time:''' `List` has `O,,c,,(1)` prepend and head/tail access. Most other operations are `O,,c,,(this.length)`.
+ *  This includes the index-based lookup of elements, `length`, `append` and `reverse`.
+ *
+ *  '''Space:''' `List` implements '''structural sharing''' of the tail list. This means that many operations are either
+ *  zero- or constant-memory cost.
+ *  {{{
+ *  val mainList = List(3,2,1)
+ *  val with4 = 4 :: mainList // re-uses mainList, costs one :: instance
+ *  val with42 = 42 :: mainList // also re-uses mainList, cost one :: instance
+ *  val shorter = mainList.tail // costs nothing as it uses the same 2::1::Nil instances as mainList
+ *  }}}
+ *
  *  @author  Martin Odersky and others
  *  @version 2.8
  *  @since   1.0
  *
  *  @tparam  A    the type of the list's elements
+ *
+ *  @see Queue
+ *  @see Vector
  *
  *  @define Coll List
  *  @define coll list
@@ -50,13 +85,25 @@ sealed abstract class List[+A] extends LinearSeq[A]
 
   import scala.collection.{Iterable, Traversable, Seq, IndexedSeq}
 
+  /**
+   * `O,,c,,(1)`, `O,,m,,(0)`
+   */
   def isEmpty: Boolean
+  /**
+   * `O,,c,,(1)`, `O,,m,,(0)`
+   */
   def head: A
+  /**
+   * `O,,c,,(1)`, `O,,m,,(0)`
+   */
   def tail: List[A]
 
   // New methods in List
 
   /** Adds an element at the beginning of this list.
+   *
+   * `O,,c,,(1)`, `O,,m,,(1)`
+   *
    *  @param x the element to prepend.
    *  @return  a list which contains `x` as first element and
    *           which continues with this list.
@@ -67,6 +114,9 @@ sealed abstract class List[+A] extends LinearSeq[A]
     new scala.collection.immutable.::(x, this)
 
   /** Adds the elements of a given list in front of this list.
+   *
+   * `O,,c,,(this.length)`, `O,,m,,(this.length)`
+   *
    *  @param prefix  The list elements to prepend.
    *  @return a list resulting from the concatenation of the given
    *    list `prefix` and this list. 
@@ -81,6 +131,8 @@ sealed abstract class List[+A] extends LinearSeq[A]
   /** Adds the elements of a given list in reverse order in front of this list.
    *  `xs reverse_::: ys` is equivalent to
    *  `xs.reverse ::: ys` but is more efficient.
+   *
+   *  `O(this.length)`, `O,,m,,(this.length)`
    *
    *  @param prefix the prefix to reverse and then prepend
    *  @return       the concatenation of the reversed prefix and the current list.
@@ -142,13 +194,22 @@ sealed abstract class List[+A] extends LinearSeq[A]
     else super.++(that)
   }
 
+  /**
+   * `O,,c,,(this.length)`, `O,,m,,(this.length)`
+   */
   override def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[List[A], B, That]): That = bf match {
     case _: List.GenericCanBuildFrom[_] => (elem :: this).asInstanceOf[That]
     case _ => super.+:(elem)(bf)
   }
 
+  /**
+   * `O,,c,,(1)`, `O,,m,,(0)`
+   */
   override def toList: List[A] = this
 
+  /**
+   * `O,,c,,(n)`, `O,,m,,(n)`
+   */
   override def take(n: Int): List[A] = {
     val b = new ListBuffer[A]
     var i = 0
@@ -162,6 +223,9 @@ sealed abstract class List[+A] extends LinearSeq[A]
     else b.toList
   }
 
+  /**
+   * `O,,c,,(n)`, `O,,m,,(0)`
+   */
   override def drop(n: Int): List[A] = {
     var these = this
     var count = n
@@ -171,13 +235,19 @@ sealed abstract class List[+A] extends LinearSeq[A]
     }
     these
   }
-  
+
+  /**
+   * `O,,c,,(from + until)`, `O,,m,,(until - from)`
+   */
   override def slice(from: Int, until: Int): List[A] = {
     val lo = math.max(from, 0)
     if (until <= lo || isEmpty) Nil
     else this drop lo take (until - lo)
   }
 
+  /**
+   * `O,,c,,(this.length)`, `O,,m,,(0)`
+   */
   override def takeRight(n: Int): List[A] = {
     @tailrec
     def loop(lead: List[A], lag: List[A]): List[A] = lead match {
@@ -189,6 +259,9 @@ sealed abstract class List[+A] extends LinearSeq[A]
   
   // dropRight is inherited from LinearSeq
 
+  /**
+   * `O,,c,,(n)`, `O,,m,,(n)`
+   */
   override def splitAt(n: Int): (List[A], List[A]) = {
     val b = new ListBuffer[A]
     var i = 0
@@ -201,6 +274,9 @@ sealed abstract class List[+A] extends LinearSeq[A]
     (b.toList, these)
   }
 
+  /**
+   * `O,,c,,(this.length)`, `O,,m,,(this.length)`
+   */
   override def takeWhile(p: A => Boolean): List[A] = {
     val b = new ListBuffer[A]
     var these = this
@@ -211,6 +287,9 @@ sealed abstract class List[+A] extends LinearSeq[A]
     b.toList
   }
 
+  /**
+   * `O,,c,,(this.length)`, `O,,m,,(0)`
+   */
   override def dropWhile(p: A => Boolean): List[A] = {
     @tailrec
     def loop(xs: List[A]): List[A] =
@@ -220,6 +299,9 @@ sealed abstract class List[+A] extends LinearSeq[A]
     loop(this)
   }
 
+  /**
+   * `O,,c,,(this.length)`, `O,,m,,(this.length)`
+   */
   override def span(p: A => Boolean): (List[A], List[A]) = {
     val b = new ListBuffer[A]
     var these = this
@@ -230,6 +312,9 @@ sealed abstract class List[+A] extends LinearSeq[A]
     (b.toList, these)
   }
 
+  /**
+   * `O,,c,,(this.length)`, `O,,m,,(this.length)`
+   */
   override def reverse: List[A] = {
     var result: List[A] = Nil
     var these = this

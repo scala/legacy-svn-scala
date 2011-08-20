@@ -15,6 +15,20 @@ import annotation.tailrec
 
 /** `Queue` objects implement data structures that allow to
  *  insert and retrieve elements in a first-in-first-out (FIFO) manner.
+ *
+ *  ==Implementation and Performance==
+ *
+ *  This is implemented as a pair of `List`s, one containing the ''in'' elements and the other the ''out'' elements.
+ *  Elements are added to the ''in'' list and removed from the ''out'' list. When the ''out'' list runs dry, the
+ *  queue is pivoted by replacing the ''out'' list by ''in.reverse'', and ''in'' by ''Nil''.
+ *
+ *  This means that adding items to the list is always `O,,c,,(1)`. Removing items is `O,,c,,(1)` except in the case
+ *  where a pivot is required with a cost of `O,,c,,(this.length)`, but each time this happens, you're guaranteed
+ *  `this.length` remove operations with `O,,c,,(1)` cost. As `this.length/this.length = 1`, removing an item is on
+ *  ''average'' `A,,c,,(1)` but any single operation may be expensive.
+ *
+ *  @see List
+ *  @see Vector
  *  
  *  @author  Erik Stenman
  *  @version 1.0, 08/07/2003
@@ -36,6 +50,8 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
   /** Returns the `n`-th element of this queue. 
    *  The first element is at position `0`.
    *
+   *  `O,,c,,(this.length)`, `O,,m,,(0)`
+   *
    *  @param  n index of the element to return
    *  @return   the element at position `n` in this queue.
    *  @throws Predef.NoSuchElementException if the queue is too short.
@@ -51,31 +67,45 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
   }
 
   /** Returns the elements in the list as an iterator
+   *
+   *  `O,,c,,(this.length)`, `O,,m,,(this.length)`
    */
   override def iterator: Iterator[A] = (out ::: in.reverse).iterator
 
   /** Checks if the queue is empty.
    *
+   *  `O,,c,,(1)`, `O,,m,,(0)`
+   *
    *  @return true, iff there is no element in the queue.
    */
   override def isEmpty: Boolean = in.isEmpty && out.isEmpty
 
+  /**
+   *  `O,,c(this.length)`, `A,,c(1)`, `O,,m,,(0)`
+   */
   override def head: A =
     if (out.nonEmpty) out.head 
     else if (in.nonEmpty) in.last
     else throw new NoSuchElementException("head on empty queue")
-    
+
+  /**
+   *  `O,,c(this.length)`, `A,,c(1)`, `O,,m,,(this.length)`, `A,,m,,(1)`
+   */
   override def tail: Queue[A] =
     if (out.nonEmpty) new Queue(in, out.tail)
     else if (in.nonEmpty) new Queue(Nil, in.reverse.tail)
     else throw new NoSuchElementException("tail on empty queue")
 
   /** Returns the length of the queue.
+   *
+   * `O,,c,,(this.length)`, `O,,m,,(0)`
    */
   override def length = in.length + out.length
 
   /** Creates a new queue with element added at the end 
    *  of the old queue.
+   *
+   * `O,,c,,(1)`, `O,,m,,(1)`
    *
    *  @param  elem        the element to insert
    */
@@ -87,6 +117,8 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
    *  The elements are prepended in the order they are given out by the
    *  iterator.
    *
+   * `O,,c,,(this.length)`, `O,,m,,(this.length)`
+   *
    *  @param  iter        an iterable object
    */
   def enqueue[B >: A](iter: Iterable[B]) =
@@ -94,6 +126,8 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
 
   /** Returns a tuple with the first element in the queue,
    *  and a new queue with this element removed.
+   *
+   * `O,,c,,(this.length)`,  `A,,c,,(1)`, `O,,m,,(this.length)`, `A,,m,,(1)`
    *
    *  @throws Predef.NoSuchElementException
    *  @return the first element of the queue.
@@ -106,6 +140,8 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
 
   /** Returns the first element in the queue, or throws an error if there
    *  is no element contained in the queue.
+   *
+   *  `O,,c,,(this.length)`, `A,,c,,(1)`, `O,,m,,(0)`
    *
    *  @throws Predef.NoSuchElementException
    *  @return the first element.
