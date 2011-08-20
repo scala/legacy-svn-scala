@@ -26,6 +26,9 @@ import annotation.tailrec
  *  where a pivot is required with a cost of `O,,c,,(this.length)`, but each time this happens, you're guaranteed
  *  `this.length` remove operations with `O,,c,,(1)` cost. As `this.length/this.length = 1`, removing an item is on
  *  ''average'' `A,,c,,(1)` but any single operation may be expensive.
+ *
+ *  @see List
+ *  @see Vector
  *  
  *  @author  Erik Stenman
  *  @version 1.0, 08/07/2003
