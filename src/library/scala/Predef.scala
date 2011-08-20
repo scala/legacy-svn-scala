@@ -19,11 +19,11 @@ import annotation.elidable.ASSERTION
  *  compilation units without explicit qualification.
  *
  *  === Commonly Used Types === 
- *  Predef provides a number of type alises for types which are commonly used.
- *  In particular, type aliases are provided for the immutable collection types
- *  [[scala.collection.immutable.Map]], [[scala.collection.immutable.Set]], and
- *  the  [[scala.collection.immutable.List]] constructors (
- *  [[scala.collection.immutable.::]] and [[scala.collection.immutable.Nil]]).
+ *  Predef provides type aliases for types which are commonly used, such as
+ *  the immutable collection types [[scala.collection.immutable.Map]], 
+ *  [[scala.collection.immutable.Set]], and the [[scala.collection.immutable.List]] 
+ *  constructors ([[scala.collection.immutable.::]] and 
+ *  [[scala.collection.immutable.Nil]]).
  *  The types `Pair` (a [[scala.Tuple2]]) and `Triple` (a [[scala.Tuple3]]), with
  *  simple constructors, are also provided.
  *
@@ -66,13 +66,13 @@ import annotation.elidable.ASSERTION
  *  A number of commonly applied implicit conversions are also defined here, and
  *  in the parent type [[scala.LowPriorityImplicits]]. Implicit conversions
  *  are provided for the "widening" of numeric values, for instance converting a
- *  Short value to a Long value as required, and also
- *  to add additional higher order functions to Array values - these are described 
- *  in more detail in the [[scala.Array]] type documentation.
+ *  Short value to a Long value as required, and to add additional higher order 
+ *  functions to Array values - these are described in more detail in the [[scala.Array]] 
+ *  type documentation.
  */
 object Predef extends LowPriorityImplicits {
   /** 
-   * Return the runtime representation of a class type. `classOf[T]` is equivalent to
+   * Derive the runtime representation of a class type. `classOf[T]` is equivalent to
    * accessing the special `class` field of type `T` in Java: `T.class`.
    *
    * @note This is a stub method. The actual implementation is filled in by the compiler.
