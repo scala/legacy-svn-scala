@@ -60,6 +60,9 @@ import annotation.tailrec
  *
  *  @tparam  A    the type of the list's elements
  *
+ *  @see Queue
+ *  @see Vector
+ *
  *  @define Coll List
  *  @define coll list
  *  @define thatinfo the class of the returned collection. In the standard library configuration,
