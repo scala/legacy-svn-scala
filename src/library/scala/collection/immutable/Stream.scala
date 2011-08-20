@@ -21,8 +21,7 @@ import Stream.cons
  *  import scala.math.BigInt
  *  object Main extends App {
  * 
- *    val fibs: Stream[BigInt] = BigInt(0) #:: BigInt(1) #:: fibs.zip(
- *      fibs.tail).map { n => n._1 + n._2 }
+ *    val fibs: Stream[BigInt] = BigInt(0) #:: BigInt(1) #:: fibs.zip(fibs.tail).map { n => n._1 + n._2 }
  * 
  *    fibs take 5 foreach println
  *  }
@@ -77,8 +76,31 @@ import Stream.cons
  *  // 5
  *  }}}
  *
- *  Note that for the above solution to actually work you must have `fibs`
- *  defined as a `val` and not a method or function.
+ *  There are a number of subtle points to the above example.
+ *
+ *  - The definition of `fibs` is a `val` not a method.  The memoization of the
+ *  `Stream` requires us to have somewhere to store the information and a `val`
+ *  allows us to do that.
+ *
+ *  - While the `Stream` is actually being modified during access, this does not
+ *  change the notion of its immutability.  Once the values are memoized they do
+ *  not change and values that have yet to be memoized still "exist", they
+ *  simply haven't been realized yet.
+ *
+ *  - One must be cautious of memoization; you can very quickly eat up large
+ *  amounts of memory if you're not careful.
+ *
+ *  The definition of `fibs` above creates a larger number of objects than
+ *  necessary depending on how you might want to implement it.  The following
+ *  implementation provides a more "cost effective" implementation due to the
+ *  fact that it has a more direct route to the numbers themselves:
+ *
+ *  {{{
+ *  lazy val fib: Stream[Int] = {
+ *    def loop(h: Int, n: Int): Stream[Int] = h #:: loop(n, h + n)
+ *    loop(1, 1)
+ *  }
+ *  }}}
  *  
  *  @tparam A    the type of the elements contained in this stream.
  *  
@@ -104,7 +126,14 @@ self =>
    */
   def isEmpty: Boolean
 
-  /** Gives constant time access to the first element of this `Stream`.
+  /** Gives constant time access to the first element of this `Stream`.  Using
+   * the `fibs` example from earlier:
+   *
+   * {{{
+   * println(fibs head)
+   * // prints
+   * // 0
+   * }}}
    *
    *  @return The first element of the `Stream`.
    *  @throws Predef.NoSuchElementException if the stream is empty.
@@ -217,6 +246,7 @@ self =>
    * the definition of `fibs` in the preamble, the following would never return:
    * `List(BigInt(12)) ++ fibs`.
    *
+   * @tparam B The element type of the returned collection.'''That'''
    * @param that The [[scala.collection.GenTraversableOnce]] the be contatenated
    * to this `Stream`.
    * @return A new collection containing the result of concatenating `this` with
@@ -236,7 +266,8 @@ self =>
 
   /**
    * Create a new stream which contains all intermediate results of applying the
-   * operator to subsequent elements left to right.
+   * operator to subsequent elements left to right.  `scanLeft` is analogous to
+   * `foldLeft`.
    *
    * @note This works because the target type of the
    * [[scala.collection.mutable.Builder]] `That` is a `Stream`.
@@ -254,12 +285,25 @@ self =>
     )
     else super.scanLeft(z)(op)(bf)
 
-  /** Returns the stream resulting from applying the given function
-   *  `f` to each element of this stream.
+  /** Returns the stream resulting from applying the given function `f` to each
+   * element of this stream.  This returns a lazy `Stream` such that it does not
+   * need to be fully realized.  Taking the `fibs` example from above, we will
+   * `map` it to a Stream of Fibonacci numbers plus 12:
    *
-   *  @param f function to apply to each element.
-   *  @return  `f(a,,0,,), ..., f(a,,n,,)` if this
-   *           sequence is `a,,0,,, ..., a,,n,,`.
+   * {{{
+   * val plusTwelve = fibs.map(_ + 12)
+   * plusTwelve take 10 drop 5 foreach println
+   * // prints
+   * // 17
+   * // 20
+   * // 25
+   * // 33
+   * // 46
+   * }}}
+   *
+   * @tparam B The element type of the returned collection '''That'''.
+   * @param f function to apply to each element.
+   * @return  `f(a,,0,,), ..., f(a,,n,,)` if this sequence is `a,,0,,, ..., a,,n,,`.
    */
   override final def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
     if (isStreamBuilder(bf)) asThat(
@@ -285,12 +329,53 @@ self =>
     }
   }
   
-  /** Applies the given function `f` to each element of
-   *  this stream, then concatenates the results.
+  /** Applies the given function `f` to each element of this stream, then
+   * concatenates the results.  As with `map` this function does not need to
+   * realize the entire `Stream` but continues to keep it as a lazy `Stream`.
    *
-   *  @param f  the function to apply on each element.
-   *  @param bf $bfinfo
-   *  @return  `f(a,,0,,) ::: ... ::: f(a,,n,,)` if
+   * If we redefine the `fibs` example to create a series of
+   * [[scala.collection.immutable.Vector]]s, each of which contains the
+   * collection of Fibonacci numbers up to the current value, then we can see
+   * more clearly what's happening:
+   *
+   * {{{
+   * val fibVec: Stream[Vector[Int]] = Vector(0) #:: Vector(0, 1) #:: fibVec.zip(fibVec.tail).map(n => {
+   *   n._2 ++ Vector(n._1.last + n._2.last)
+   * })
+   * // prints
+   * // Vector(0)
+   * // Vector(0, 1)
+   * // Vector(0, 1, 1)
+   * // Vector(0, 1, 1, 2)
+   * // Vector(0, 1, 1, 2, 3)
+   * }}}
+   *
+   * If we now want to `flatMap` across that stream by adding 12 we can see what
+   * the series turns into:
+   *
+   * {{{
+   * fibVec.flatMap(_.map(_ + 12)) take 15
+   * // prints
+   * // 10
+   * // 10
+   * // 11
+   * // 10
+   * // 11
+   * // 11
+   * // 10
+   * // 11
+   * // 11
+   * // 12
+   * // 10
+   * // 11
+   * // 11
+   * // 12
+   * // 13
+   * }}}
+   *
+   * @tparam B The element type of the returned collection '''That'''.
+   * @param f  the function to apply on each element.
+   * @return  `f(a,,0,,) ::: ... ::: f(a,,n,,)` if
    *           this stream is `[a,,0,,, ..., a,,n,,]`.
    */
   override final def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That =
