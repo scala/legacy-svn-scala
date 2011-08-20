@@ -224,7 +224,7 @@ trait Members { self: ICodes =>
       val nextBlock: mutable.Map[BasicBlock, BasicBlock] = mutable.HashMap.empty
       for (b <- code.blocks.toList
         if b.successors.length == 1; 
-        val succ = b.successors.head; 
+        succ = b.successors.head; 
         if succ ne b;
         if succ.predecessors.length == 1;
         if succ.predecessors.head eq b;
@@ -254,10 +254,9 @@ trait Members { self: ICodes =>
     }
     
     def dump() {
-      val printer = new TextPrinter(new PrintWriter(Console.out, true),
-                                    new DumpLinearizer)
-      printer.printMethod(this)
-    }    
+      Console.println("dumping IMethod(" + symbol + ")")
+      newTextPrinter() printMethod this
+    }
   }
 
   /** Represent local variables and parameters */

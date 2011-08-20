@@ -165,7 +165,7 @@ self =>
     def + (elem: A): Set[A] = (Set[A]() ++ this + elem).asInstanceOf[Set[A]] // !!! concrete overrides abstract problem
     def - (elem: A): Set[A] = (Set[A]() ++ this - elem).asInstanceOf[Set[A]] // !!! concrete overrides abstract problem
     override def size = self.size
-    override def foreach[C](f: A => C) = for ((k, v) <- self) f(k)
+    override def foreach[C](f: A => C) = self.keysIterator foreach f
   }
 
   /** Creates an iterator for all keys.
@@ -197,7 +197,7 @@ self =>
   protected class DefaultValuesIterable extends Iterable[B] {
     def iterator = valuesIterator
     override def size = self.size
-    override def foreach[C](f: B => C) = for ((k, v) <- self) f(v)
+    override def foreach[C](f: B => C) = self.valuesIterator foreach f
   }
 
   /** Creates an iterator for all values in this map.
@@ -245,9 +245,6 @@ self =>
     override def contains(key: A) = self.contains(key)
     def get(key: A) = self.get(key).map(f)
   }
-
-  @deprecated("use `mapValues` instead", "2.8.0")
-  def mapElements[C](f: B => C) = mapValues(f)
 
   // The following 5 operations (updated, two times +, two times ++) should really be
   // generic, returning This[B]. We need better covariance support to express that though.

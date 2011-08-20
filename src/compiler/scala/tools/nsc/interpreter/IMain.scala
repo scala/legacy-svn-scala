@@ -19,7 +19,7 @@ import reporters._
 import symtab.Flags
 import scala.reflect.internal.Names
 import scala.tools.util.PathResolver
-import scala.tools.nsc.util.{ ScalaClassLoader, Exceptional }
+import scala.tools.nsc.util.{ ScalaClassLoader, Exceptional, Indenter }
 import ScalaClassLoader.URLClassLoader
 import Exceptional.unwrap
 import scala.collection.{ mutable, immutable }
@@ -60,9 +60,33 @@ import IMain._
  *  @author Moez A. Abdel-Gawad
  *  @author Lex Spoon
  */
-class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imports {
+class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends Imports {
   imain =>
   
+  private var currentSettings: Settings = initialSettings
+  def settings = currentSettings
+  def savingSettings[T](fn: Settings => Unit)(body: => T): T = {
+    val saved = currentSettings
+    currentSettings = saved.copy()
+    fn(currentSettings)
+    try body
+    finally currentSettings = saved
+  }
+  def mostRecentLine = prevRequestList match {
+    case Nil      => ""
+    case req :: _ => req.originalLine
+  }
+  def rerunWith(names: String*) = {
+    savingSettings((ss: Settings) => {
+      import ss._
+      names flatMap lookupSetting foreach {
+        case s: BooleanSetting => s.value = true
+        case _                 => ()
+      }
+    })(interpret(mostRecentLine))
+  }
+  def rerunForWarnings = rerunWith("-deprecation", "-unchecked", "-Xlint")
+
   /** construct an interpreter that reports to Console */
   def this(settings: Settings) = this(settings, new NewLinePrintWriter(new ConsoleWriter, true))
   def this() = this(new Settings())
@@ -240,7 +264,8 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
   lazy val isettings = new ISettings(this)
 
   /** Create a line manager.  Overridable.  */
-  protected def createLineManager(): Line.Manager = new Line.Manager
+  protected def createLineManager(): Line.Manager =
+    if (replProps.noThreads) null else new Line.Manager
 
   /** Instantiate a compiler.  Overridable. */
   protected def newCompiler(settings: Settings, reporter: Reporter) = {
@@ -407,14 +432,18 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
     }
   }
 
+  def compileSourcesKeepingRun(sources: SourceFile*) = {
+    val run = new Run()
+    reporter.reset()
+    run compileSources sources.toList
+    (!reporter.hasErrors, run)
+  }
+
   /** Compile an nsc SourceFile.  Returns true if there are
    *  no compilation errors, or false otherwise.
    */
-  def compileSources(sources: SourceFile*): Boolean = {
-    reporter.reset()
-    new Run() compileSources sources.toList
-    !reporter.hasErrors
-  }
+  def compileSources(sources: SourceFile*): Boolean =
+    compileSourcesKeepingRun(sources: _*)._1
 
   /** Compile a string.  Returns true if there are no
    *  compilation errors, or false otherwise.
@@ -460,9 +489,11 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
       case Some(trees)  => trees
     }
     repltrace(
-      trees map { t => 
-        t map { t0 => t0.getClass + " at " + safePos(t0, -1) + "\n" }
-      } mkString
+      trees map (t =>
+        t map (t0 =>
+          "  " + safePos(t0, -1) + ": " + t0.shortClass + "\n"
+        ) mkString ""
+      ) mkString "\n"
     )
     // If the last tree is a bare expression, pinpoint where it begins using the
     // AST node position and snap the line off there.  Rewrite the code embodied
@@ -746,6 +777,29 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
         lineAfterTyper(sym.info member newTermName(name))
       }
     }
+    /** We get a bunch of repeated warnings for reasons I haven't
+     *  entirely figured out yet.  For now, squash.
+     */
+    private def removeDupWarnings(xs: List[(Position, String)]): List[(Position, String)] = {
+      if (xs.isEmpty)
+        return Nil
+
+      val ((pos, msg)) :: rest = xs
+      val filtered = rest filter { case (pos0, msg0) =>
+        (msg != msg0) || (pos.lineContent.trim != pos0.lineContent.trim) || {
+          // same messages and same line content after whitespace removal
+          // but we want to let through multiple warnings on the same line
+          // from the same run.  The untrimmed line will be the same since
+          // there's no whitespace indenting blowing it.
+          (pos.lineContent == pos0.lineContent)
+        }
+      }
+      ((pos, msg)) :: removeDupWarnings(filtered)
+    }
+    def lastWarnings: List[(Position, String)] = (
+      if (lastRun == null) Nil
+      else removeDupWarnings(lastRun.deprecationWarnings.reverse) ++ lastRun.uncheckedWarnings.reverse
+    )
     private var lastRun: Run = _
     private def evalMethod(name: String) = evalClass.getMethods filter (_.getName == name) match {
       case Array(method) => method
@@ -753,10 +807,9 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
     }
     private def compileAndSaveRun(label: String, code: String) = {
       showCodeIfDebugging(code)
-      reporter.reset()
-      lastRun = new Run()
-      lastRun.compileSources(List(new BatchSourceFile(label, packaged(code))))
-      !reporter.hasErrors
+      val (success, run) = compileSourcesKeepingRun(new BatchSourceFile(label, packaged(code)))
+      lastRun = run
+      success
     }
   }
 
@@ -879,7 +932,9 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
 
         // compile the result-extraction object
         beSilentDuring {
-          lineRep compile ResultObjectSourceCode(handlers)
+          savingSettings(_.nowarn.value = true) {
+            lineRep compile ResultObjectSourceCode(handlers)
+          }
         }
       }
     }
@@ -912,6 +967,10 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
 
     /** load and run the code using reflection */
     def loadAndRun: (String, Boolean) = {
+      if (replProps.noThreads) return {
+        try   { ("" + (lineRep call sessionNames.print), true) }
+        catch { case ex => (lineRep.bindError(ex), false) }
+      }
       import interpreter.Line._
 
       try {
@@ -943,6 +1002,13 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
       case ModuleDef(_, name, _)    => name
       case _                        => naming.mostRecentVar
     })
+
+  def lastWarnings: List[(global.Position, String)] = (
+    prevRequests.reverseIterator
+       map (_.lineRep.lastWarnings)
+      find (_.nonEmpty)
+      getOrElse Nil
+  )
 
   def requestForName(name: Name): Option[Request] = {
     assert(definedNameMap != null, "definedNameMap is null")
@@ -998,20 +1064,28 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
     for {
       tpe <- typeOfTerm(id)
       clazz <- classOfTerm(id)
-      val staticSym = tpe.typeSymbol
+      staticSym = tpe.typeSymbol
       runtimeSym <- safeClass(clazz.getName)
       if runtimeSym != staticSym
       if runtimeSym isSubClass staticSym
-    } yield {
-      runtimeSym.info
     }
+    yield runtimeSym.info
   }
 
-  private object exprTyper extends { val repl: IMain.this.type = imain } with ExprTyper { }
+  object replTokens extends {
+    val global: imain.global.type = imain.global
+  } with ReplTokens { }
+
+  private object exprTyper extends {
+    val repl: IMain.this.type = imain
+  } with ExprTyper { }
+
   def parse(line: String): Option[List[Tree]] = exprTyper.parse(line)
   def typeOfExpression(expr: String, silent: Boolean = true): Option[Type] = {
     exprTyper.typeOfExpression(expr, silent)
   }
+  def prettyPrint(code: String) =
+    replTokens.prettyPrint(exprTyper tokens code)
 
   protected def onlyTerms(xs: List[Name]) = xs collect { case x: TermName => x }
   protected def onlyTypes(xs: List[Name]) = xs collect { case x: TypeName => x }
@@ -1090,9 +1164,20 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
     /** Secret bookcase entrance for repl debuggers: end the line
      *  with "// show" and see what's going on.
      */
-    if (repllog.isTrace || (code.lines exists (_.trim endsWith "// show"))) {
-      echo(code)
-      parse(code) foreach (ts => ts foreach (t => withoutUnwrapping(repldbg(asCompactString(t)))))
+    def isShow    = code.lines exists (_.trim endsWith "// show")
+    def isShowRaw = code.lines exists (_.trim endsWith "// raw")
+
+    // checking for various debug signals
+    if (isShowRaw)
+      replTokens withRawTokens prettyPrint(code)
+    else if (repllog.isTrace || isShow)
+      prettyPrint(code)
+
+    // old style
+    parse(code) foreach { ts =>
+      ts foreach { t =>
+        withoutUnwrapping(repldbg(asCompactString(t)))
+      }
     }
   }
 

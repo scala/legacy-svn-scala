@@ -116,7 +116,7 @@ trait Types extends api.Types { self: SymbolTable =>
     }
 
     private[Types] def record(tv: TypeVar) = {
-      log ::= (tv, tv.constr.cloneInternal)
+      log ::= ((tv, tv.constr.cloneInternal))
     }
     private[scala] def clear() {
       if (settings.debug.value)
@@ -826,7 +826,8 @@ trait Types extends api.Types { self: SymbolTable =>
     /** The string representation of this type, with singletypes explained. */
     def toLongString = {
       val str = toString
-      if (str endsWith ".type") str + " (with underlying type " + widen + ")"
+      if (str == "type") widen.toString
+      else if (str endsWith ".type") str + " (with underlying type " + widen + ")"
       else str
     }
 
@@ -3069,6 +3070,18 @@ A type's typeSymbol should never be inspected directly.
     }
   }
   
+  /** Substitutes the empty scope for any non-empty decls in the type. */
+  object dropAllRefinements extends TypeMap {
+    def apply(tp: Type): Type = tp match {
+      case rt @ RefinedType(parents, decls) if !decls.isEmpty =>
+        mapOver(copyRefinedType(rt, parents, EmptyScope))
+      case ClassInfoType(parents, decls, clazz) if !decls.isEmpty =>
+        mapOver(ClassInfoType(parents, EmptyScope, clazz))
+      case _ =>
+        mapOver(tp)
+    }
+  }
+
   // Set to true for A* => Seq[A]
   //   (And it will only rewrite A* in method result types.)
   //   This is the pre-existing behavior.
@@ -3471,6 +3484,7 @@ A type's typeSymbol should never be inspected directly.
    */
   object rawToExistential extends TypeMap {
     private var expanded = immutable.Set[Symbol]()
+    private var generated = immutable.Set[Type]()
     def apply(tp: Type): Type = tp match {
       case TypeRef(pre, sym, List()) if isRawIfWithoutArgs(sym) =>
         if (expanded contains sym) AnyRefClass.tpe
@@ -3481,8 +3495,10 @@ A type's typeSymbol should never be inspected directly.
         } finally {
           expanded -= sym
         }
-      case ExistentialType(_, _) => // stop to avoid infinite expansions
-        tp
+      case ExistentialType(_, _) if !(generated contains tp) => // to avoid infinite expansions. todo: not sure whether this is needed
+        val result = mapOver(tp)
+        generated += result
+        result
       case _ =>
         mapOver(tp)
     }
@@ -5641,7 +5657,7 @@ A type's typeSymbol should never be inspected directly.
               try {
                 globalGlbDepth += 1
                 val dss = ts flatMap refinedToDecls
-                for (ds <- dss; val sym <- ds.iterator) 
+                for (ds <- dss; sym <- ds.iterator)
                   if (globalGlbDepth < globalGlbLimit && !(glbThisType specializes sym))
                     try {
                       addMember(glbThisType, glbRefined, glbsym(sym))

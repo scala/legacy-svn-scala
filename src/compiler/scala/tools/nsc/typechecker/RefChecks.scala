@@ -533,19 +533,30 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
                   mismatches match {
                     // Only one mismatched parameter: say something useful.
                     case (pa, pc) :: Nil  =>
-                      val addendum =
-                        if (pa.typeSymbol == pc.typeSymbol) {
+                      val abstractSym = pa.typeSymbol
+                      val concreteSym = pc.typeSymbol
+                      def subclassMsg(c1: Symbol, c2: Symbol) = (
+                        ": %s is a subclass of %s, but method parameter types must match exactly.".format(
+                          c1.fullLocationString, c2.fullLocationString)
+                      )
+                      val addendum = (
+                        if (abstractSym == concreteSym) {
                           // TODO: what is the optimal way to test for a raw type at this point?
                           // Compilation has already failed so we shouldn't have to worry overmuch
                           // about forcing types.
-                          if (underlying.isJavaDefined && pa.typeArgs.isEmpty && pa.typeSymbol.typeParams.nonEmpty)
+                          if (underlying.isJavaDefined && pa.typeArgs.isEmpty && abstractSym.typeParams.nonEmpty)
                             ". To implement a raw type, use %s[_]".format(pa)
                           else if (pa.prefix =:= pc.prefix)
                             ": their type parameters differ"
                           else
                             ": their prefixes (i.e. enclosing instances) differ"
                         }
+                        else if (abstractSym isSubClass concreteSym)
+                          subclassMsg(abstractSym, concreteSym)
+                        else if (concreteSym isSubClass abstractSym)
+                          subclassMsg(concreteSym, abstractSym)
                         else ""
+                      )
 
                       undefined("\n(Note that %s does not match %s%s)".format(pa, pc, addendum))
                     case xs =>
@@ -1221,22 +1232,27 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           otherSym.decodedName, cannot, memberSym.decodedName)
       )
     }
+    
     /** Warn about situations where a method signature will include a type which
      *  has more restrictive access than the method itself.
      */
     private def checkAccessibilityOfReferencedTypes(tree: Tree) {
       val member = tree.symbol
+
+      def checkAccessibilityOfType(tpe: Type) {
+        val inaccessible = lessAccessibleSymsInType(tpe, member)
+        // if the unnormalized type is accessible, that's good enough
+        if (inaccessible.isEmpty) ()
+        // or if the normalized type is, that's good too
+        else if ((tpe ne tpe.normalize) && lessAccessibleSymsInType(tpe.normalize, member).isEmpty) ()
+        // otherwise warn about the inaccessible syms in the unnormalized type
+        else inaccessible foreach (sym => warnLessAccessible(sym, member))
+      }
       
       // types of the value parameters
-      member.paramss.flatten foreach { p =>
-        val normalized = p.tpe.normalize 
-        if ((normalized ne p.tpe) && lessAccessibleSymsInType(normalized, member).isEmpty) ()
-        else lessAccessibleSymsInType(p.tpe, member) foreach (sym => warnLessAccessible(sym, member))
-      }
+      member.paramss.flatten foreach (p => checkAccessibilityOfType(p.tpe))
       // upper bounds of type parameters
-      member.typeParams.map(_.info.bounds.hi.widen) foreach { tp =>
-        lessAccessibleSymsInType(tp, member) foreach (sym => warnLessAccessible(sym, member))
-      }
+      member.typeParams.map(_.info.bounds.hi.widen) foreach checkAccessibilityOfType
     }
     
     /** Check that a deprecated val or def does not override a
@@ -1392,7 +1408,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
     private def transformIf(tree: If): Tree = {
       val If(cond, thenpart, elsepart) = tree
       def unitIfEmpty(t: Tree): Tree =
-        if (t == EmptyTree) Literal(()).setPos(tree.pos).setType(UnitClass.tpe) else t
+        if (t == EmptyTree) Literal(Constant()).setPos(tree.pos).setType(UnitClass.tpe) else t
       
       cond.tpe match {
         case ConstantType(value) =>

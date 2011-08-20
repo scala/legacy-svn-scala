@@ -32,7 +32,20 @@ abstract class TreeGen extends reflect.internal.TreeGen {
   }
 
   // wrap the given expression in a SoftReference so it can be gc-ed
-  def mkSoftRef(expr: Tree): Tree = New(TypeTree(SoftReferenceClass.tpe), List(List(expr)))
+  def mkSoftRef(expr: Tree): Tree = atPos(expr.pos) {
+    New(SoftReferenceClass, expr)
+  }
+  // annotate the expression with @unchecked
+  def mkUnchecked(expr: Tree): Tree = atPos(expr.pos) {
+    // This can't be "Annotated(New(UncheckedClass), expr)" because annotations
+    // are very pick about things and it crashes the compiler with "unexpected new".
+    Annotated(New(scalaDot(UncheckedClass.name), List(Nil)), expr)
+  }
+  // if it's a Match, mark the selector unchecked; otherwise nothing.
+  def mkUncheckedMatch(tree: Tree) = tree match {
+    case Match(selector, cases) => atPos(tree.pos)(Match(mkUnchecked(selector), cases))
+    case _                      => tree
+  }
 
   def mkCached(cvar: Symbol, expr: Tree): Tree = {
     val cvarRef = mkUnattributedRef(cvar)
@@ -90,7 +103,7 @@ abstract class TreeGen extends reflect.internal.TreeGen {
     mkMethodCall(ScalaRunTimeModule, meth, targs, args)
   
   def mkSysErrorCall(message: String): Tree =
-    mkMethodCall(Sys_error, List(Literal(message)))
+    mkMethodCall(Sys_error, List(Literal(Constant(message))))
 
   /** A creator for a call to a scala.reflect.Manifest or ClassManifest factory method.
    * 

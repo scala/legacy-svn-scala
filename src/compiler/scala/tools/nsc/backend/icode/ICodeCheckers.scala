@@ -51,6 +51,14 @@ abstract class ICodeCheckers {
    *
    *  @todo Better checks for <code>MONITOR_ENTER/EXIT</code>
    *        Better checks for local var initializations
+   *
+   *  @todo Iulian says: I think there's some outdated logic in the checker.
+   * The issue with exception handlers being special for least upper
+   * bounds pointed out some refactoring in the lattice class. Maybe
+   * a worthwhile refactoring would be to make the checker use the
+   * DataFlowAnalysis class, and use the lattice trait. In the
+   * implementation of LUB, there's a flag telling if one of the
+   * successors is 'exceptional'. The inliner is using this mechanism.
    */
   class ICodeChecker {
     import icodes._
@@ -209,7 +217,13 @@ abstract class ICodeCheckers {
                   throw new CheckerException(incompatibleString) 
               }
               else {
-                val newStack = new TypeStack((s1.types, s2.types).zipped map lub)
+                val newStack: TypeStack = try {
+                    new TypeStack((s1.types, s2.types).zipped map lub)
+                } catch {
+                  case t: Exception =>
+                    checkerDebug(t.toString + ": " + s1.types.toString + " vs " + s2.types.toString)
+                    new TypeStack(s1.types)
+                }
                 if (newStack.isEmpty || s1.types == s2.types) ()  // not interesting to report
                 else checkerDebug("Checker created new stack:\n  (%s, %s) => %s".format(s1, s2, newStack))
 
@@ -697,7 +711,7 @@ abstract class ICodeCheckers {
     //////////////// Error reporting /////////////////////////
 
     def icodeError(msg: String) {
-      ICodeCheckers.this.global.globalError(
+      ICodeCheckers.this.global.warning(
         "!! ICode checker fatality in " + method + 
         "\n  at: " + basicBlock.fullString +
         "\n  error message: " + msg
