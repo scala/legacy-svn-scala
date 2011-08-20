@@ -96,6 +96,20 @@ import Stream.cons
  *  `def` to define the `Stream`) then once it is no longer being used directly,
  *  it disappears.
  *
+ *  - The fact that `tail` works at all is of interest.  In the definition of
+ *  `fibs` we have an initial `(0, 1, Stream(...))` so `tail` is deterministic.
+ *  If we deinfed `fibs` such that only `0` were concretely known then the act
+ *  of determining `tail` would require the evaluation of `tail` which would
+ *  cause an infinite recursion and stack overflow.  If we define a definition
+ *  where the tail is not initially computable then we're going to have an
+ *  infinite recursion:
+ *  {{{
+ *  // The first time we try to access the tail we're going to need more
+ *  // information which will require us to recurse, which will require us to
+ *  // recurse, which...
+ *  val sov: Stream[Vector[Int]] = Vector(0) #:: sov.zip(sov.tail).map { n => n._1 ++ n._2 }
+ *  }}}
+ *
  *  The definition of `fibs` above creates a larger number of objects than
  *  necessary depending on how you might want to implement it.  The following
  *  implementation provides a more "cost effective" implementation due to the
@@ -828,8 +842,17 @@ self =>
     result
   }
 
-  /**
-   * @note appears to recurse infinitely... why?
+  /** Evaluates and concatenates all elements within the `Stream` into a new
+   * flattened `Stream`.
+   *
+   * @tparam B The type of the elements of the resulting `Stream`.
+   * @return A new `Stream` of type `B` of the flattened elements of `this`
+   * `Stream`.
+   * @example {{{
+   * val sov: Stream[Vector[Int]] = Vector(0) #:: Vector(0, 0) #:: sov.zip(sov.tail).map { n => n._1 ++ n._2 }
+   * sov flatten take 10 mkString ", "
+   * // produces: "0, 0, 0, 0, 0, 0, 0, 0, 0, 0"
+   * }}}
    */
   override def flatten[B](implicit asTraversable: A => /*<:<!!!*/ GenTraversableOnce[B]): Stream[B] = {
     def flatten1(t: Traversable[B]): Stream[B] =
