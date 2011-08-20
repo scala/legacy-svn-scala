@@ -18,19 +18,67 @@ import Stream.cons
  *  are only evaluated when they are needed. Here is an example:
  * 
  *  {{{
- *  object Main extends Application {
- *    
- *    def from(n: Int): Stream[Int] =
- *      Stream.cons(n, from(n + 1))
- *    
- *    def sieve(s: Stream[Int]): Stream[Int] =
- *      Stream.cons(s.head, sieve(s.tail filter { _ % s.head != 0 }))
- *    
- *    def primes = sieve(from(2))
- *    
- *    primes take 10 print
+ *  import scala.math.BigInt
+ *  object Main extends App {
+ * 
+ *    val fibs: Stream[BigInt] = BigInt(0) #:: BigInt(1) #:: fibs.zip(
+ *      fibs.tail).map { n => n._1 + n._2 }
+ * 
+ *    fibs take 5 foreach println
  *  }
+ *
+ *  // prints
+ *  //
+ *  // 0
+ *  // 1
+ *  // 1
+ *  // 2
+ *  // 3
  *  }}}
+ *
+ *  The `Stream` class also employs memoization such that previously computed
+ *  values are converted from `Stream` elements to concrete values of type `A`.
+ *  To illustrate, we will alter body of the `fibs` value above and take some
+ *  more values:
+ *
+ *  {{{
+ *  import scala.math.BigInt
+ *  object Main extends App {
+ * 
+ *    val fibs: Stream[BigInt] = BigInt(0) #:: BigInt(1) #:: fibs.zip(
+ *      fibs.tail).map(n => {
+ *        println("Adding %d and %d".format(n._1, n._2))
+ *        n._1 + n._2
+ *      })
+ * 
+ *    fibs take 5 foreach println
+ *    fibs take 6 foreach println
+ *  }
+ *
+ *  // prints
+ *  //
+ *  // 0
+ *  // 1
+ *  // Adding 0 and 1
+ *  // 1
+ *  // Adding 1 and 1
+ *  // 2
+ *  // Adding 1 and 2
+ *  // 3
+ *  
+ *  // And then prints
+ *  //
+ *  // 0
+ *  // 1
+ *  // 1
+ *  // 2
+ *  // 3
+ *  // Adding 2 and 3
+ *  // 5
+ *  }}}
+ *
+ *  Note that for the above solution to actually work you must have `fibs`
+ *  defined as a `val` and not a method or function.
  *  
  *  @tparam A    the type of the elements contained in this stream.
  *  
@@ -50,15 +98,26 @@ self =>
 
   import scala.collection.{Traversable, Iterable, Seq, IndexedSeq}
 
-  /** is this stream empty? */
+  /** Indicates whether or not the `Stream` is empty.
+   *
+   * @return `true` if the `Stream` is empty and `false` otherwise.
+   */
   def isEmpty: Boolean
 
-  /** The first element of this stream 
+  /** Gives constant time access to the first element of this `Stream`.
+   *
+   *  @return The first element of the `Stream`.
    *  @throws Predef.NoSuchElementException if the stream is empty.
    */
   def head: A
 
-  /** A stream consisting of the remaining elements of this stream after the first one.
+  /** A stream consisting of the remaining elements of this stream after the
+   *  first one.
+   *
+   *  Note that this method does not force evaluation of the `Stream` but merely
+   *  returns the lazy result.
+   *
+   *  @return The tail of the `Stream`.
    *  @throws Predef.UnsupportedOperationException if the stream is empty.
    */
   def tail: Stream[A]
@@ -77,7 +136,14 @@ self =>
   def append[B >: A](rest: => TraversableOnce[B]): Stream[B] =
     if (isEmpty) rest.toStream else cons(head, tail append rest)
 
-  /** Forces evaluation of the whole stream and returns it. */
+  /** Forces evaluation of the whole stream and returns it.
+   *
+   * @note Often we use `Stream`s to represent an infinite set or series.  If
+   * that's the case for your particular `Stream` then this function will never
+   * return and will probably crash the VM with an `OutOfMemory` exception.
+   *
+   *  @return The fully realized `Stream`.
+   */
   def force: Stream[A] = {
     var these = this
     while (!these.isEmpty) these = these.tail
@@ -102,6 +168,14 @@ self =>
     loop(this, "")
   }
   
+  /** Returns the length of this `Stream`.
+   *
+   * @note In order to compute the length of the `Stream`, it must first be
+   * fully realized, which could cause the complete evaluation of an infinite
+   * series, assuming that's what your `Stream` represents.
+   *
+   * @return The length of this `Stream`.
+   */
   override def length: Int = {
     var len = 0
     var left = this
@@ -129,12 +203,24 @@ self =>
     loop(this)
   }
 
-  /** Create a new stream which contains all elements of this stream
-   *  followed by all elements of Traversable `that`.
-   *  @note It's subtle why this works. We know that if the target type
-   *  of the Builder That is either a Stream, or one of its supertypes, or undefined,
-   *  then StreamBuilder will be chosen for the implicit.
-   *  we recognize that fact and optimize to get more laziness. 
+  /** Create a new stream which contains all elements of this stream followed by
+   * all elements of Traversable `that`.
+   *
+   * @note It's subtle why this works. We know that if the target type of the
+   * [[scala.collection.mutable.Builder]] `That` is either a `Stream`, or one of
+   * its supertypes, or undefined, then `StreamBuilder` will be chosen for the
+   * implicit.  We recognize that fact and optimize to get more laziness. 
+   *
+   * @note This method doesn't cause the `Stream` to be fully realized but it
+   * should be noted that using the `++` operator from another collection type
+   * could cause infinite realization of a `Stream`.  For example, referring to
+   * the definition of `fibs` in the preamble, the following would never return:
+   * `List(BigInt(12)) ++ fibs`.
+   *
+   * @param that The [[scala.collection.GenTraversableOnce]] the be contatenated
+   * to this `Stream`.
+   * @return A new collection containing the result of concatenating `this` with
+   * `that`.
    */
   override def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That =
     // we assume there is no other builder factory on streams and therefore know that That = Stream[A]
@@ -149,9 +235,17 @@ self =>
     else super.+:(elem)(bf)
 
   /**
-   * Create a new stream which contains all intermediate results of applying the operator
-   * to subsequent elements left to right.
-   * @note This works because the target type of the Builder That is a Stream.
+   * Create a new stream which contains all intermediate results of applying the
+   * operator to subsequent elements left to right.
+   *
+   * @note This works because the target type of the
+   * [[scala.collection.mutable.Builder]] `That` is a `Stream`.
+   *
+   * @param z The initial value for the scan.
+   * @param op A function that will apply operations to successive values in the
+   * `Stream` against previous accumulated results.
+   * @return A new collection containing the modifications from the application
+   * of `op`.
    */
   override final def scanLeft[B, That](z: B)(op: (B, A) => B)(implicit bf: CanBuildFrom[Stream[A], B, That]): That =
     if (isStreamBuilder(bf)) asThat(
