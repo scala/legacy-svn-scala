@@ -10,8 +10,9 @@
 
 package scala
 
-/** `Boolean` is a member of the value classes, those whose instances are
- *  not represented as objects by the underlying host system.
+/** `Boolean` (equivalent to Java's  primitive type) is a member 
+ *  of the value classes, those whose instances are not represented as objects by the 
+ *  underlying host system.
  *
  *  There is an implicit conversion from [[scala.Boolean]] => [[scala.runtime.RichBoolean]]
  *  which provides useful non-primitive operations.

@@ -10,8 +10,9 @@
 
 package scala
 
-/** `Long` is a member of the value classes, those whose instances are
- *  not represented as objects by the underlying host system.
+/** `Long`, a 64-bit signed integer (equivalent to Java's long primitive type) is a member 
+ *  of the value classes, those whose instances are not represented as objects by the 
+ *  underlying host system.
  *
  *  There is an implicit conversion from [[scala.Long]] => [[scala.runtime.RichLong]]
  *  which provides useful non-primitive operations.
@@ -25,9 +26,23 @@ final class Long extends AnyVal {
   def toFloat: Float = sys.error("stub")
   def toDouble: Double = sys.error("stub")
 
-  def unary_+ : Long = sys.error("stub")
-  def unary_- : Long = sys.error("stub")
+  /**
+ * @return the bitwise negation of this value
+ * @example {{{
+ * ~5 == -6
+ * // in binary: ~00000101 == 
+ * //             11111010
+ * }}}
+ */
   def unary_~ : Long = sys.error("stub")
+  /**
+ * @return this value, unmodified
+ */
+  def unary_+ : Long = sys.error("stub")
+  /**
+ * @return the negation of this value
+ */
+  def unary_- : Long = sys.error("stub")
 
   def +(x: String): String = sys.error("stub")
 
@@ -262,64 +277,154 @@ final class Long extends AnyVal {
 
   /**
   * @return the bitwise OR of this value with the provided value
+  * @example {{{
+  * (0xf0 | 0xaa) == 0xfa
+  * // in binary: ( 11110000 
+  * //            | 10101010) == 
+  * //              11111010
+  * }}}
   */
   def |(x: Byte): Long = sys.error("stub")
   /**
   * @return the bitwise OR of this value with the provided value
+  * @example {{{
+  * (0xf0 | 0xaa) == 0xfa
+  * // in binary: ( 11110000 
+  * //            | 10101010) == 
+  * //              11111010
+  * }}}
   */
   def |(x: Short): Long = sys.error("stub")
   /**
   * @return the bitwise OR of this value with the provided value
+  * @example {{{
+  * (0xf0 | 0xaa) == 0xfa
+  * // in binary: ( 11110000 
+  * //            | 10101010) == 
+  * //              11111010
+  * }}}
   */
   def |(x: Char): Long = sys.error("stub")
   /**
   * @return the bitwise OR of this value with the provided value
+  * @example {{{
+  * (0xf0 | 0xaa) == 0xfa
+  * // in binary: ( 11110000 
+  * //            | 10101010) == 
+  * //              11111010
+  * }}}
   */
   def |(x: Int): Long = sys.error("stub")
   /**
   * @return the bitwise OR of this value with the provided value
+  * @example {{{
+  * (0xf0 | 0xaa) == 0xfa
+  * // in binary: ( 11110000 
+  * //            | 10101010) == 
+  * //              11111010
+  * }}}
   */
   def |(x: Long): Long = sys.error("stub")
 
   /**
   * @return the bitwise AND of this value with the provided value
+  * @example {{{
+  * (0xf0 & 0xaa) == 0xa0
+  * // in binary: ( 11110000 
+  * //            & 10101010) == 
+  * //              10100000
+  * }}}
   */
   def &(x: Byte): Long = sys.error("stub")
   /**
   * @return the bitwise AND of this value with the provided value
+  * @example {{{
+  * (0xf0 & 0xaa) == 0xa0
+  * // in binary: ( 11110000 
+  * //            & 10101010) == 
+  * //              10100000
+  * }}}
   */
   def &(x: Short): Long = sys.error("stub")
   /**
   * @return the bitwise AND of this value with the provided value
+  * @example {{{
+  * (0xf0 & 0xaa) == 0xa0
+  * // in binary: ( 11110000 
+  * //            & 10101010) == 
+  * //              10100000
+  * }}}
   */
   def &(x: Char): Long = sys.error("stub")
   /**
   * @return the bitwise AND of this value with the provided value
+  * @example {{{
+  * (0xf0 & 0xaa) == 0xa0
+  * // in binary: ( 11110000 
+  * //            & 10101010) == 
+  * //              10100000
+  * }}}
   */
   def &(x: Int): Long = sys.error("stub")
   /**
   * @return the bitwise AND of this value with the provided value
+  * @example {{{
+  * (0xf0 & 0xaa) == 0xa0
+  * // in binary: ( 11110000 
+  * //            & 10101010) == 
+  * //              10100000
+  * }}}
   */
   def &(x: Long): Long = sys.error("stub")
 
   /**
   * @return the bitwise XOR of this value with the provided value
+  * @example {{{
+  * (0xf0 ^ 0xaa) == 0x5a
+  * // in binary: ( 11110000 
+  * //            ^ 10101010) == 
+  * //              01011010
+  * }}}
   */
   def ^(x: Byte): Long = sys.error("stub")
   /**
   * @return the bitwise XOR of this value with the provided value
+  * @example {{{
+  * (0xf0 ^ 0xaa) == 0x5a
+  * // in binary: ( 11110000 
+  * //            ^ 10101010) == 
+  * //              01011010
+  * }}}
   */
   def ^(x: Short): Long = sys.error("stub")
   /**
   * @return the bitwise XOR of this value with the provided value
+  * @example {{{
+  * (0xf0 ^ 0xaa) == 0x5a
+  * // in binary: ( 11110000 
+  * //            ^ 10101010) == 
+  * //              01011010
+  * }}}
   */
   def ^(x: Char): Long = sys.error("stub")
   /**
   * @return the bitwise XOR of this value with the provided value
+  * @example {{{
+  * (0xf0 ^ 0xaa) == 0x5a
+  * // in binary: ( 11110000 
+  * //            ^ 10101010) == 
+  * //              01011010
+  * }}}
   */
   def ^(x: Int): Long = sys.error("stub")
   /**
   * @return the bitwise XOR of this value with the provided value
+  * @example {{{
+  * (0xf0 ^ 0xaa) == 0x5a
+  * // in binary: ( 11110000 
+  * //            ^ 10101010) == 
+  * //              01011010
+  * }}}
   */
   def ^(x: Long): Long = sys.error("stub")
 

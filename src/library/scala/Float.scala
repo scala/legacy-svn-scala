@@ -10,8 +10,9 @@
 
 package scala
 
-/** `Float` is a member of the value classes, those whose instances are
- *  not represented as objects by the underlying host system.
+/** `Float`, a 32-bit IEEE-754 floating point number (equivalent to Java's float primitive type) is a member 
+ *  of the value classes, those whose instances are not represented as objects by the 
+ *  underlying host system.
  *
  *  There is an implicit conversion from [[scala.Float]] => [[scala.runtime.RichFloat]]
  *  which provides useful non-primitive operations.
@@ -25,7 +26,13 @@ final class Float extends AnyVal {
   def toFloat: Float = sys.error("stub")
   def toDouble: Double = sys.error("stub")
 
+  /**
+ * @return this value, unmodified
+ */
   def unary_+ : Float = sys.error("stub")
+  /**
+ * @return the negation of this value
+ */
   def unary_- : Float = sys.error("stub")
 
   def +(x: String): String = sys.error("stub")
