@@ -12,12 +12,64 @@ trait AnyValReps {
   self: AnyVals =>
   
   sealed abstract class AnyValNum(name: String) extends AnyValRep(name) {
+
+    case class BinOp(val op : String, val doc : String)
+
     def isCardinal: Boolean = isIntegerType(this)
     def unaryOps            = if (isCardinal) List("+", "-", "~") else List("+", "-")
-    def bitwiseOps          = if (isCardinal) List("|", "&", "^") else Nil
-    def shiftOps            = if (isCardinal) List("<<", ">>>", ">>") else Nil
-    def comparisonOps       = List("==", "!=", "<", "<=", ">", ">=")
-    def otherOps            = List("+", "-" ,"*", "/", "%")
+    def bitwiseOps = 
+      if (isCardinal) 
+        List(
+          BinOp("|", "/**\n  * @return the bitwise OR of this value with the provided value\n  */"),
+          BinOp("&", "/**\n  * @return the bitwise AND of this value with the provided value\n  */"),
+          BinOp("^", "/**\n  * @return the bitwise XOR of this value with the provided value\n  */"))
+      else Nil
+
+    def shiftOps            = 
+      if (isCardinal) 
+        List(
+          BinOp("<<",  "/**\n" +
+                       "  * @return this value bit-shifted left by the specified number of bits,\n" +
+                       "  *         filling in the new right bits with zeroes.\n" +
+                       "  * @example {{{ 6 << 3 == 48 // in binary: 0110 << 3 == 0110000 }}}\n" +
+                       "  */"),
+
+          BinOp(">>>", "/**\n" +
+                       "  * @return this value bit-shifted right by the specified number of bits,\n" +
+                       "  *         filling the new left bits with zeroes. \n" +
+                       "  * @example {{{ 21 >>> 3 == 2 // in binary: 010101 >>> 3 == 010 }}}\n" +
+                       "  * @example {{{\n" +
+                       "  * -21 >>> 3 == 536870909 \n" + 
+                       "  * // in binary: 11111111 11111111 11111111 11101011 >>> 3 == \n" + 
+                       "  * //            00011111 11111111 11111111 11111101\n" +
+                       "  * }}}\n" +
+                       "  */"),
+
+          BinOp(">>",  "/**\n" +
+                       "  * @return this value bit-shifted left by the specified number of bits,\n" +
+                       "  *         filling in the right bits with the same value as the left-most bit of this.\n" +
+                       "  *         The effect of this is to retain the sign of the value.\n" +
+                       "  * @example {{{ -21 >>> 3 == -3 \n" +
+                       "  * // in binary: 11111111 11111111 11111111 11101011 >>> 3 == \n" + 
+                       "  * //            11111111 11111111 11111111 11111101\n" +
+                       "  * }}}\n" + 
+                       "  */"))
+      else Nil
+
+    def comparisonOps       = List(
+      BinOp("==", "/**\n  * @return true if this value is equal to the provided value, false otherwise\n  */"), 
+      BinOp("!=", "/**\n  * @return true if this value is not equal to the provided value, false otherwise\n  */"),
+      BinOp("<",  "/**\n  * @return true if this value is less than the provided value, false otherwise\n  */"),
+      BinOp("<=", "/**\n  * @return true if this value is less than or equal to the provide value, false otherwise\n  */"),
+      BinOp(">",  "/**\n  * @return true if this value is greater than the provided value, false otherwise\n  */"), 
+      BinOp(">=", "/**\n  * @return true if this value is greater than or equal to the provided value, false otherwise\n  */"))
+
+    def otherOps = List(
+      BinOp("+", "/**\n  * @return the sum of this value with the provided value\n  */"),
+      BinOp("-", "/**\n  * @return the difference of this value with the provided value\n  */"),
+      BinOp("*", "/**\n  * @return the product of this value and the provided value\n  */"),
+      BinOp("/", "/**\n  * @return the quotient of this value and the provided value\n  */"),
+      BinOp("%", "/**\n  * @return the remainder of whole number division of this value by the provided value\n  */"))
   
     // Given two numeric value types S and T , the operation type of S and T is defined as follows:
     // If both S and T are subrange types then the operation type of S and T is Int.
@@ -37,7 +89,7 @@ trait AnyValReps {
     def mkStringOps = List("def +(x: String): String") 
     def mkShiftOps  = (
       for (op <- shiftOps ; arg <- List(I, L)) yield
-        "def %s(x: %s): %s".format(op, arg, this opType I)
+        "%s\n  def %s(x: %s): %s".format(op.doc, op.op, arg, this opType I)
     )
     
     def clumps: List[List[String]] = {
@@ -70,9 +122,10 @@ trait AnyValReps {
      *  @param    resultFn  function which calculates return type based on arg type
      *  @return             list of function definitions
      */
-    def mkBinOpsGroup(ops: List[String], args: List[AnyValNum], resultFn: AnyValNum => AnyValRep): List[String] = (
+    def mkBinOpsGroup(ops: List[BinOp], args: List[AnyValNum], resultFn: AnyValNum => AnyValRep): List[String] = (
       ops flatMap (op =>
-        args.map(arg => "def %s(x: %s): %s".format(op, arg, resultFn(arg))) :+ ""
+        args.map(arg => 
+          "%s\n  def %s(x: %s): %s".format(op.doc, op.op, arg, resultFn(arg))) :+ ""
       )
     ).toList
   }

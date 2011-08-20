@@ -31,117 +31,441 @@ final class Int extends AnyVal {
 
   def +(x: String): String = sys.error("stub")
 
+  /**
+  * @return this value bit-shifted left by the specified number of bits,
+  *         filling in the new right bits with zeroes.
+  * @example {{{ 6 << 3 == 48 // in binary: 0110 << 3 == 0110000 }}}
+  */
   def <<(x: Int): Int = sys.error("stub")
+  /**
+  * @return this value bit-shifted left by the specified number of bits,
+  *         filling in the new right bits with zeroes.
+  * @example {{{ 6 << 3 == 48 // in binary: 0110 << 3 == 0110000 }}}
+  */
   def <<(x: Long): Int = sys.error("stub")
+  /**
+  * @return this value bit-shifted right by the specified number of bits,
+  *         filling the new left bits with zeroes. 
+  * @example {{{ 21 >>> 3 == 2 // in binary: 010101 >>> 3 == 010 }}}
+  * @example {{{
+  * -21 >>> 3 == 536870909 
+  * // in binary: 11111111 11111111 11111111 11101011 >>> 3 == 
+  * //            00011111 11111111 11111111 11111101
+  * }}}
+  */
   def >>>(x: Int): Int = sys.error("stub")
+  /**
+  * @return this value bit-shifted right by the specified number of bits,
+  *         filling the new left bits with zeroes. 
+  * @example {{{ 21 >>> 3 == 2 // in binary: 010101 >>> 3 == 010 }}}
+  * @example {{{
+  * -21 >>> 3 == 536870909 
+  * // in binary: 11111111 11111111 11111111 11101011 >>> 3 == 
+  * //            00011111 11111111 11111111 11111101
+  * }}}
+  */
   def >>>(x: Long): Int = sys.error("stub")
+  /**
+  * @return this value bit-shifted left by the specified number of bits,
+  *         filling in the right bits with the same value as the left-most bit of this.
+  *         The effect of this is to retain the sign of the value.
+  * @example {{{ -21 >>> 3 == -3 
+  * // in binary: 11111111 11111111 11111111 11101011 >>> 3 == 
+  * //            11111111 11111111 11111111 11111101
+  * }}}
+  */
   def >>(x: Int): Int = sys.error("stub")
+  /**
+  * @return this value bit-shifted left by the specified number of bits,
+  *         filling in the right bits with the same value as the left-most bit of this.
+  *         The effect of this is to retain the sign of the value.
+  * @example {{{ -21 >>> 3 == -3 
+  * // in binary: 11111111 11111111 11111111 11101011 >>> 3 == 
+  * //            11111111 11111111 11111111 11111101
+  * }}}
+  */
   def >>(x: Long): Int = sys.error("stub")
 
+  /**
+  * @return true if this value is equal to the provided value, false otherwise
+  */
   def ==(x: Byte): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is equal to the provided value, false otherwise
+  */
   def ==(x: Short): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is equal to the provided value, false otherwise
+  */
   def ==(x: Char): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is equal to the provided value, false otherwise
+  */
   def ==(x: Int): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is equal to the provided value, false otherwise
+  */
   def ==(x: Long): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is equal to the provided value, false otherwise
+  */
   def ==(x: Float): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is equal to the provided value, false otherwise
+  */
   def ==(x: Double): Boolean = sys.error("stub")
 
+  /**
+  * @return true if this value is not equal to the provided value, false otherwise
+  */
   def !=(x: Byte): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is not equal to the provided value, false otherwise
+  */
   def !=(x: Short): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is not equal to the provided value, false otherwise
+  */
   def !=(x: Char): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is not equal to the provided value, false otherwise
+  */
   def !=(x: Int): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is not equal to the provided value, false otherwise
+  */
   def !=(x: Long): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is not equal to the provided value, false otherwise
+  */
   def !=(x: Float): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is not equal to the provided value, false otherwise
+  */
   def !=(x: Double): Boolean = sys.error("stub")
 
+  /**
+  * @return true if this value is less than the provided value, false otherwise
+  */
   def <(x: Byte): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is less than the provided value, false otherwise
+  */
   def <(x: Short): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is less than the provided value, false otherwise
+  */
   def <(x: Char): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is less than the provided value, false otherwise
+  */
   def <(x: Int): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is less than the provided value, false otherwise
+  */
   def <(x: Long): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is less than the provided value, false otherwise
+  */
   def <(x: Float): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is less than the provided value, false otherwise
+  */
   def <(x: Double): Boolean = sys.error("stub")
 
+  /**
+  * @return true if this value is less than or equal to the provide value, false otherwise
+  */
   def <=(x: Byte): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is less than or equal to the provide value, false otherwise
+  */
   def <=(x: Short): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is less than or equal to the provide value, false otherwise
+  */
   def <=(x: Char): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is less than or equal to the provide value, false otherwise
+  */
   def <=(x: Int): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is less than or equal to the provide value, false otherwise
+  */
   def <=(x: Long): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is less than or equal to the provide value, false otherwise
+  */
   def <=(x: Float): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is less than or equal to the provide value, false otherwise
+  */
   def <=(x: Double): Boolean = sys.error("stub")
 
+  /**
+  * @return true if this value is greater than the provided value, false otherwise
+  */
   def >(x: Byte): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is greater than the provided value, false otherwise
+  */
   def >(x: Short): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is greater than the provided value, false otherwise
+  */
   def >(x: Char): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is greater than the provided value, false otherwise
+  */
   def >(x: Int): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is greater than the provided value, false otherwise
+  */
   def >(x: Long): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is greater than the provided value, false otherwise
+  */
   def >(x: Float): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is greater than the provided value, false otherwise
+  */
   def >(x: Double): Boolean = sys.error("stub")
 
+  /**
+  * @return true if this value is greater than or equal to the provided value, false otherwise
+  */
   def >=(x: Byte): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is greater than or equal to the provided value, false otherwise
+  */
   def >=(x: Short): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is greater than or equal to the provided value, false otherwise
+  */
   def >=(x: Char): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is greater than or equal to the provided value, false otherwise
+  */
   def >=(x: Int): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is greater than or equal to the provided value, false otherwise
+  */
   def >=(x: Long): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is greater than or equal to the provided value, false otherwise
+  */
   def >=(x: Float): Boolean = sys.error("stub")
+  /**
+  * @return true if this value is greater than or equal to the provided value, false otherwise
+  */
   def >=(x: Double): Boolean = sys.error("stub")
 
+  /**
+  * @return the bitwise OR of this value with the provided value
+  */
   def |(x: Byte): Int = sys.error("stub")
+  /**
+  * @return the bitwise OR of this value with the provided value
+  */
   def |(x: Short): Int = sys.error("stub")
+  /**
+  * @return the bitwise OR of this value with the provided value
+  */
   def |(x: Char): Int = sys.error("stub")
+  /**
+  * @return the bitwise OR of this value with the provided value
+  */
   def |(x: Int): Int = sys.error("stub")
+  /**
+  * @return the bitwise OR of this value with the provided value
+  */
   def |(x: Long): Long = sys.error("stub")
 
+  /**
+  * @return the bitwise AND of this value with the provided value
+  */
   def &(x: Byte): Int = sys.error("stub")
+  /**
+  * @return the bitwise AND of this value with the provided value
+  */
   def &(x: Short): Int = sys.error("stub")
+  /**
+  * @return the bitwise AND of this value with the provided value
+  */
   def &(x: Char): Int = sys.error("stub")
+  /**
+  * @return the bitwise AND of this value with the provided value
+  */
   def &(x: Int): Int = sys.error("stub")
+  /**
+  * @return the bitwise AND of this value with the provided value
+  */
   def &(x: Long): Long = sys.error("stub")
 
+  /**
+  * @return the bitwise XOR of this value with the provided value
+  */
   def ^(x: Byte): Int = sys.error("stub")
+  /**
+  * @return the bitwise XOR of this value with the provided value
+  */
   def ^(x: Short): Int = sys.error("stub")
+  /**
+  * @return the bitwise XOR of this value with the provided value
+  */
   def ^(x: Char): Int = sys.error("stub")
+  /**
+  * @return the bitwise XOR of this value with the provided value
+  */
   def ^(x: Int): Int = sys.error("stub")
+  /**
+  * @return the bitwise XOR of this value with the provided value
+  */
   def ^(x: Long): Long = sys.error("stub")
 
+  /**
+  * @return the sum of this value with the provided value
+  */
   def +(x: Byte): Int = sys.error("stub")
+  /**
+  * @return the sum of this value with the provided value
+  */
   def +(x: Short): Int = sys.error("stub")
+  /**
+  * @return the sum of this value with the provided value
+  */
   def +(x: Char): Int = sys.error("stub")
+  /**
+  * @return the sum of this value with the provided value
+  */
   def +(x: Int): Int = sys.error("stub")
+  /**
+  * @return the sum of this value with the provided value
+  */
   def +(x: Long): Long = sys.error("stub")
+  /**
+  * @return the sum of this value with the provided value
+  */
   def +(x: Float): Float = sys.error("stub")
+  /**
+  * @return the sum of this value with the provided value
+  */
   def +(x: Double): Double = sys.error("stub")
 
+  /**
+  * @return the difference of this value with the provided value
+  */
   def -(x: Byte): Int = sys.error("stub")
+  /**
+  * @return the difference of this value with the provided value
+  */
   def -(x: Short): Int = sys.error("stub")
+  /**
+  * @return the difference of this value with the provided value
+  */
   def -(x: Char): Int = sys.error("stub")
+  /**
+  * @return the difference of this value with the provided value
+  */
   def -(x: Int): Int = sys.error("stub")
+  /**
+  * @return the difference of this value with the provided value
+  */
   def -(x: Long): Long = sys.error("stub")
+  /**
+  * @return the difference of this value with the provided value
+  */
   def -(x: Float): Float = sys.error("stub")
+  /**
+  * @return the difference of this value with the provided value
+  */
   def -(x: Double): Double = sys.error("stub")
 
+  /**
+  * @return the product of this value and the provided value
+  */
   def *(x: Byte): Int = sys.error("stub")
+  /**
+  * @return the product of this value and the provided value
+  */
   def *(x: Short): Int = sys.error("stub")
+  /**
+  * @return the product of this value and the provided value
+  */
   def *(x: Char): Int = sys.error("stub")
+  /**
+  * @return the product of this value and the provided value
+  */
   def *(x: Int): Int = sys.error("stub")
+  /**
+  * @return the product of this value and the provided value
+  */
   def *(x: Long): Long = sys.error("stub")
+  /**
+  * @return the product of this value and the provided value
+  */
   def *(x: Float): Float = sys.error("stub")
+  /**
+  * @return the product of this value and the provided value
+  */
   def *(x: Double): Double = sys.error("stub")
 
+  /**
+  * @return the quotient of this value and the provided value
+  */
   def /(x: Byte): Int = sys.error("stub")
+  /**
+  * @return the quotient of this value and the provided value
+  */
   def /(x: Short): Int = sys.error("stub")
+  /**
+  * @return the quotient of this value and the provided value
+  */
   def /(x: Char): Int = sys.error("stub")
+  /**
+  * @return the quotient of this value and the provided value
+  */
   def /(x: Int): Int = sys.error("stub")
+  /**
+  * @return the quotient of this value and the provided value
+  */
   def /(x: Long): Long = sys.error("stub")
+  /**
+  * @return the quotient of this value and the provided value
+  */
   def /(x: Float): Float = sys.error("stub")
+  /**
+  * @return the quotient of this value and the provided value
+  */
   def /(x: Double): Double = sys.error("stub")
 
+  /**
+  * @return the remainder of whole number division of this value by the provided value
+  */
   def %(x: Byte): Int = sys.error("stub")
+  /**
+  * @return the remainder of whole number division of this value by the provided value
+  */
   def %(x: Short): Int = sys.error("stub")
+  /**
+  * @return the remainder of whole number division of this value by the provided value
+  */
   def %(x: Char): Int = sys.error("stub")
+  /**
+  * @return the remainder of whole number division of this value by the provided value
+  */
   def %(x: Int): Int = sys.error("stub")
+  /**
+  * @return the remainder of whole number division of this value by the provided value
+  */
   def %(x: Long): Long = sys.error("stub")
+  /**
+  * @return the remainder of whole number division of this value by the provided value
+  */
   def %(x: Float): Float = sys.error("stub")
+  /**
+  * @return the remainder of whole number division of this value by the provided value
+  */
   def %(x: Double): Double = sys.error("stub")
 
   def getClass(): Class[Int] = sys.error("stub")
