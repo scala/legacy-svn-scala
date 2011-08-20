@@ -22,6 +22,26 @@ import annotation.tailrec
  *  and `scala.::` that implement the abstract members `isEmpty`, 
  *  `head` and `tail`.
  *
+ *  @example {{{
+ *  // Make a list via the companion object factory
+ *  val days = List("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
+ *
+ *  // Make a list element-by-element
+ *  val when = "AM" :: "PM" :: Nil
+ *
+ *  // Pattern match
+ *  days match {
+ *    case firstDay::otherDays =>
+ *      println("The first day of the week is: " + firstDay)
+ *    case Nil =>
+ *      println("There don't seem to be any week days.")
+ *  }
+ *  }}}
+ *
+ *  ==Performance==
+ *  `List` has `O(1)` prepend and head/tail. Most other operations are `O(n)` on the number of elements in the list.
+ *  This includes the index-based lookup of elements, `length`, `append` and `reverse`.
+ *
  *  @author  Martin Odersky and others
  *  @version 2.8
  *  @since   1.0
