@@ -10,9 +10,9 @@
 
 package scala
 
-/** `Boolean` (equivalent to Java's  primitive type) is a 
- *  subtype of [[scala.AnyVal]], meaning that it is not represented by an object in
- *  the underlying runtime system.
+/** `Boolean` (equivalent to Java's `` primitive type) is a 
+ *  subtype of [[scala.AnyVal]], meaning that instances of `Boolean` are not 
+ *  represented by an object in the underlying runtime system.
  *
  *  There is an implicit conversion from [[scala.Boolean]] => [[scala.runtime.RichBoolean]]
  *  which provides useful non-primitive operations.
