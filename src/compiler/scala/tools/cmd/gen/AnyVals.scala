@@ -41,7 +41,7 @@ trait AnyValReps {
       if (isCardinal) 
         List(
           Op("|", "/**\n" +
-                     "  * @return the bitwise OR of this value with the provided value\n" +
+                     "  * @return the bitwise OR of this value and x\n" +
                      "  * @example {{{\n" +
                      "  * (0xf0 | 0xaa) == 0xfa\n" +
                      "  * // in binary:   11110000 \n" +
@@ -51,7 +51,7 @@ trait AnyValReps {
                      "  * }}}\n" +
                      "  */"),
           Op("&", "/**\n" +
-                     "  * @return the bitwise AND of this value with the provided value\n" +
+                     "  * @return the bitwise AND of this value and x\n" +
                      "  * @example {{{\n" +
                      "  * (0xf0 & 0xaa) == 0xa0\n" +
                      "  * // in binary:   11110000 \n" +
@@ -61,7 +61,7 @@ trait AnyValReps {
                      "  * }}}\n" +
                      "  */"),
           Op("^", "/**\n" +
-                     "  * @return the bitwise XOR of this value with the provided value\n" +
+                     "  * @return the bitwise XOR of this value and x\n" +
                      "  * @example {{{\n" +
                      "  * (0xf0 ^ 0xaa) == 0x5a\n" +
                      "  * // in binary:   11110000 \n" +
@@ -104,12 +104,12 @@ trait AnyValReps {
       else Nil
 
     def comparisonOps       = List(
-      Op("==", "/**\n  * @return `true` if this value is equal to the provided value, `false` otherwise\n  */"), 
-      Op("!=", "/**\n  * @return `true` if this value is not equal to the provided value, `false` otherwise\n  */"),
-      Op("<",  "/**\n  * @return `true` if this value is less than the provided value, `false` otherwise\n  */"),
-      Op("<=", "/**\n  * @return `true` if this value is less than or equal to the provide value, `false` otherwise\n  */"),
-      Op(">",  "/**\n  * @return `true` if this value is greater than the provided value, `false` otherwise\n  */"), 
-      Op(">=", "/**\n  * @return `true` if this value is greater than or equal to the provided value, `false` otherwise\n  */"))
+      Op("==", "/**\n  * @return `true` if this value is equal x, `false` otherwise\n  */"), 
+      Op("!=", "/**\n  * @return `true` if this value is not equal to x, `false` otherwise\n  */"),
+      Op("<",  "/**\n  * @return `true` if this value is less than x, `false` otherwise\n  */"),
+      Op("<=", "/**\n  * @return `true` if this value is less than or equal to x, `false` otherwise\n  */"),
+      Op(">",  "/**\n  * @return `true` if this value is greater than x, `false` otherwise\n  */"), 
+      Op(">=", "/**\n  * @return `true` if this value is greater than or equal to x, `false` otherwise\n  */"))
 
     def otherOps = List(
       Op("+", "/**\n  * @return the sum of this value and x\n  */"),
@@ -260,9 +260,9 @@ package scala
 """.trim.format(timestampString) + "\n\n")
 
   def classDocTemplate = ("""
-/** `@name@`@representation@ (equivalent to Java's @javaequiv@ primitive type) is a member 
- *  of the value classes, those whose instances are not represented as objects by the 
- *  underlying host system.
+/** `@name@`@representation@ (equivalent to Java's @javaequiv@ primitive type) is a 
+ *  subtype of [[scala.AnyVal]], meaning that it is not represented by an object in
+ *  the underlying runtime system.
  *
  *  There is an implicit conversion from [[scala.@name@]] => [[scala.runtime.Rich@name@]]
  *  which provides useful non-primitive operations.
