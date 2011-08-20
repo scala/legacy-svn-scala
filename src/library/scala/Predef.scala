@@ -72,7 +72,7 @@ import annotation.elidable.ASSERTION
  */
 object Predef extends LowPriorityImplicits {
   /** 
-   * Derive the runtime representation of a class type. `classOf[T]` is equivalent to
+   * Retrieve the runtime representation of a class type. `classOf[T]` is equivalent to
    * accessing the special `class` field of type `T` in Java: `T.class`.
    *
    * @note This is a stub method. The actual implementation is filled in by the compiler.
