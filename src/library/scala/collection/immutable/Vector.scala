@@ -35,6 +35,12 @@ object Vector extends SeqFactory[Vector] {
  *  endian bit-mapped vector trie with a branching factor of 32.  Locality is very good, but not 
  *  contiguous, which is good for very large sequences.
  *
+ *  `Vector` is not thread-safe, despite being immutable. It stores some internal variables to cache lookups. To ensure
+ *  that this state does not become corrupted, any acces to a `Vector` from multiple threads must be synchronized.
+ *
+ *  @see List
+ *  @See Queue
+ *
  *  @tparam A the element type
  *
  *  @define Coll Vector
@@ -72,15 +78,24 @@ override def companion: GenericCompanion[Vector] = Vector
   def length = endIndex - startIndex
   
   override def par = new ParVector(this)
-  
+
+  /**
+   * `O,,c,,(1)`, `O,,m,,(0)`
+   */
   override def lengthCompare(len: Int): Int = length - len
-  
+
+  /**
+   * `O,,c,,(1)`, `O,,m,,(0)`
+   */
   private[collection] final def initIterator[B >: A](s: VectorIterator[B]) {
     s.initFrom(this)
     if (dirty) s.stabilize(focus)
     if (s.depth > 1) s.gotoPos(startIndex, startIndex ^ focus)
   }
   
+  /**
+   * `O,,c,,(1)`, `O,,m,,(1)`
+   */
   @inline override def iterator: VectorIterator[A] = {
     val s = new VectorIterator[A](startIndex, endIndex)
     initIterator(s)
@@ -88,6 +103,9 @@ override def companion: GenericCompanion[Vector] = Vector
   }
 
 
+  /**
+   * `O,,c,,(1)`, `O,,m,,(1)`
+   */
   // can still be improved
   override /*SeqLike*/
   def reverseIterator: Iterator[A] = new Iterator[A] {
@@ -117,12 +135,18 @@ override def companion: GenericCompanion[Vector] = Vector
   }
 
 
+  /**
+   * `O,,c,,(1)`, `O,,m,,(0)`
+   */
   def apply(index: Int): A = {
     val idx = checkRangeConvert(index)
     //println("get elem: "+index + "/"+idx + "(focus:" +focus+" xor:"+(idx^focus)+" depth:"+depth+")")
     getElem(idx, idx ^ focus)
   }
-  
+
+  /**
+   * `O,,c,,(1)`, `O,,m,,(0)`
+   */
   private def checkRangeConvert(index: Int) = {
     val idx = index + startIndex
     if (0 <= index && idx < endIndex)
@@ -133,22 +157,34 @@ override def companion: GenericCompanion[Vector] = Vector
 
 
   // SeqLike api
-  
+
+  /**
+   * `O,,c,,(1)`, `O,,m,,(1)`
+   */
   @inline override def updated[B >: A, That](index: Int, elem: B)(implicit bf: CanBuildFrom[Vector[A], B, That]): That = {
     // just ignore bf
     updateAt(index, elem).asInstanceOf[That]
   }
 
+  /**
+   * `O,,c,,(1)`, `O,,m,,(1)`
+   */
   @inline override def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[Vector[A], B, That]): That = {
     // just ignore bf
     appendFront(elem).asInstanceOf[That]
   }
 
+  /**
+   * `O,,c,,(1)`, `O,,m,,(1)`
+   */
   @inline override def :+[B >: A, That](elem: B)(implicit bf: CanBuildFrom[Vector[A], B, That]): That = {
     // just ignore bf
     appendBack(elem).asInstanceOf[That]
   }
 
+  /**
+   * `O,,c,,(1)`, `O,,m,,(1)`
+   */
   override def take(n: Int): Vector[A] = {
     if (n <= 0)
       Vector.empty
@@ -158,6 +194,9 @@ override def companion: GenericCompanion[Vector] = Vector
       this
   }
 
+  /**
+   * `O,,c,,(1)`, `O,,m,,(1)`
+   */
   override def drop(n: Int): Vector[A] = {
     if (n <= 0)
       this
@@ -167,6 +206,9 @@ override def companion: GenericCompanion[Vector] = Vector
       Vector.empty
   }
 
+  /**
+   * `O,,c,,(1)`, `O,,m,,(1)`
+   */
   override def takeRight(n: Int): Vector[A] = {
     if (n <= 0)
       Vector.empty
@@ -176,6 +218,9 @@ override def companion: GenericCompanion[Vector] = Vector
       this
   }
 
+  /**
+   * `O,,c,,(1)`, `O,,m,,(1)`
+   */
   override def dropRight(n: Int): Vector[A] = {
     if (n <= 0)
       this
@@ -185,29 +230,47 @@ override def companion: GenericCompanion[Vector] = Vector
       Vector.empty
   }
 
+  /**
+   * `O,,c,,(1)`, `O,,m,,(0)`
+   */
   override /*IterableLike*/ def head: A = {
     if (isEmpty) throw new UnsupportedOperationException("empty.head")
     apply(0)
   }
 
+  /**
+   * `O,,c,,(1)`, `O,,m,,(1)`
+   */
   override /*TraversableLike*/ def tail: Vector[A] = {
     if (isEmpty) throw new UnsupportedOperationException("empty.tail")
     drop(1)
   }
 
+  /**
+   * `O,,c,,(1)`, `O,,m,,(0)`
+   */
   override /*TraversableLike*/ def last: A = {
     if (isEmpty) throw new UnsupportedOperationException("empty.last")
     apply(length-1)
   }
   
+  /**
+   * `O,,c,,(1)`, `O,,m,,(1)`
+   */
   override /*TraversableLike*/ def init: Vector[A] = {
     if (isEmpty) throw new UnsupportedOperationException("empty.init")
     dropRight(1)
   }
 
-  override /*IterableLike*/ def slice(from: Int, until: Int): Vector[A] = 
+  /**
+   * `O,,c,,(1)`, `O,,m,,(1)`
+   */
+  override /*IterableLike*/ def slice(from: Int, until: Int): Vector[A] =
     take(until).drop(from)
 
+  /**
+   * `O,,c,,(1)`, `O,,m,,(1)`
+   */
   override /*IterableLike*/ def splitAt(n: Int): (Vector[A], Vector[A]) = (take(n), drop(n))
   
     
@@ -221,6 +284,9 @@ override def companion: GenericCompanion[Vector] = Vector
   
   // semi-private api
 
+  /**
+   * `O,,c,,(1)`, `O,,m,,(1)`
+   */
   private[immutable] def updateAt[B >: A](index: Int, elem: B): Vector[B] = {
     val idx = checkRangeConvert(index)
     val s = new Vector[B](startIndex, endIndex, idx)
@@ -246,13 +312,16 @@ override def companion: GenericCompanion[Vector] = Vector
     dirty = true
   }
 
+  /**
+   * `O,,c,,(1)`, `O,,m,,(1)`
+   */
   private[immutable] def appendFront[B>:A](value: B): Vector[B] = {
     if (endIndex != startIndex) {
       var blockIndex = (startIndex - 1) & ~31
       var lo = (startIndex - 1) & 31
 
       if (startIndex != blockIndex + 32) {
-        val s = new Vector(startIndex - 1, endIndex, blockIndex)
+        val s = new Vector[B](startIndex - 1, endIndex, blockIndex)
         s.initFrom(this)
         s.dirty = dirty
         s.gotoPosWritable(focus, blockIndex, focus ^ blockIndex)
@@ -273,7 +342,7 @@ override def companion: GenericCompanion[Vector] = Vector
           if (depth > 1) {
             val newBlockIndex = blockIndex + shift
             val newFocus = focus + shift
-            val s = new Vector(startIndex - 1 + shift, endIndex + shift, newBlockIndex)
+            val s = new Vector[B](startIndex - 1 + shift, endIndex + shift, newBlockIndex)
             s.initFrom(this)
             s.dirty = dirty
             s.shiftTopLevel(0, shiftBlocks) // shift right by n blocks 
@@ -289,7 +358,7 @@ override def companion: GenericCompanion[Vector] = Vector
             //assert(newBlockIndex == 0)
             //assert(newFocus == 0)
 
-            val s = new Vector(startIndex - 1 + shift, endIndex + shift, newBlockIndex)
+            val s = new Vector[B](startIndex - 1 + shift, endIndex + shift, newBlockIndex)
             s.initFrom(this)
             s.dirty = dirty
             s.shiftTopLevel(0, shiftBlocks) // shift right by n elements
@@ -307,7 +376,7 @@ override def companion: GenericCompanion[Vector] = Vector
           val newFocus = focus + move
 
 
-          val s = new Vector(startIndex - 1 + move, endIndex + move, newBlockIndex)
+          val s = new Vector[B](startIndex - 1 + move, endIndex + move, newBlockIndex)
           s.initFrom(this)
           s.dirty = dirty
           s.debug
@@ -320,7 +389,7 @@ override def companion: GenericCompanion[Vector] = Vector
           val newBlockIndex = blockIndex
           val newFocus = focus
 
-          val s = new Vector(startIndex - 1, endIndex, newBlockIndex)
+          val s = new Vector[B](startIndex - 1, endIndex, newBlockIndex)
           s.initFrom(this)
           s.dirty = dirty
           s.gotoFreshPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
@@ -334,13 +403,16 @@ override def companion: GenericCompanion[Vector] = Vector
       // empty vector, just insert single element at the back
       val elems = new Array[AnyRef](32)
       elems(31) = value.asInstanceOf[AnyRef]
-      val s = new Vector(31,32,0)
+      val s = new Vector[B](31,32,0)
       s.depth = 1
       s.display0 = elems
       s
     }
   }
 
+  /**
+   * `O,,c,,(1)`, `O,,m,,(1)`
+   */
   private[immutable] def appendBack[B>:A](value: B): Vector[B] = {
 //    //println("------- append " + value)
 //    debug()
@@ -350,7 +422,7 @@ override def companion: GenericCompanion[Vector] = Vector
       
       if (endIndex != blockIndex) {
         //println("will make writable block (from "+focus+") at: " + blockIndex)
-        val s = new Vector(startIndex, endIndex + 1, blockIndex)
+        val s = new Vector[B](startIndex, endIndex + 1, blockIndex)
         s.initFrom(this)
         s.dirty = dirty
         s.gotoPosWritable(focus, blockIndex, focus ^ blockIndex)
@@ -368,7 +440,7 @@ override def companion: GenericCompanion[Vector] = Vector
           if (depth > 1) {
             val newBlockIndex = blockIndex - shift
             val newFocus = focus - shift
-            val s = new Vector(startIndex - shift, endIndex + 1 - shift, newBlockIndex)
+            val s = new Vector[B](startIndex - shift, endIndex + 1 - shift, newBlockIndex)
             s.initFrom(this)
             s.dirty = dirty
             s.shiftTopLevel(shiftBlocks, 0) // shift left by n blocks 
@@ -385,7 +457,7 @@ override def companion: GenericCompanion[Vector] = Vector
             //assert(newBlockIndex == 0)
             //assert(newFocus == 0)
 
-            val s = new Vector(startIndex - shift, endIndex + 1 - shift, newBlockIndex)
+            val s = new Vector[B](startIndex - shift, endIndex + 1 - shift, newBlockIndex)
             s.initFrom(this)
             s.dirty = dirty
             s.shiftTopLevel(shiftBlocks, 0) // shift right by n elements
@@ -398,7 +470,7 @@ override def companion: GenericCompanion[Vector] = Vector
           val newBlockIndex = blockIndex
           val newFocus = focus
 
-          val s = new Vector(startIndex, endIndex + 1, newBlockIndex)
+          val s = new Vector[B](startIndex, endIndex + 1, newBlockIndex)
           s.initFrom(this)
           s.dirty = dirty
           s.gotoFreshPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
@@ -414,7 +486,7 @@ override def companion: GenericCompanion[Vector] = Vector
     } else {
       val elems = new Array[AnyRef](32)
       elems(0) = value.asInstanceOf[AnyRef]
-      val s = new Vector(0,1,0)
+      val s = new Vector[B](0,1,0)
       s.depth = 1
       s.display0 = elems
       s
@@ -602,7 +674,7 @@ override def companion: GenericCompanion[Vector] = Vector
 
     // need to init with full display iff going to cutIndex requires swapping block at level >= d
 
-    val s = new Vector(cutIndex-shift, endIndex-shift, blockIndex-shift)
+    val s = new Vector[A](cutIndex-shift, endIndex-shift, blockIndex-shift)
     s.initFrom(this)
     s.dirty = dirty
     s.gotoPosWritable(focus, blockIndex, focus ^ blockIndex)
@@ -611,6 +683,9 @@ override def companion: GenericCompanion[Vector] = Vector
     s
   }
 
+  /**
+   * `O,,c,,(1)`, `O,,m,,(1)`
+   */
   private def dropBack0(cutIndex: Int): Vector[A] = {
     var blockIndex = (cutIndex - 1) & ~31
     var lo = ((cutIndex - 1) & 31) + 1
@@ -624,7 +699,7 @@ override def companion: GenericCompanion[Vector] = Vector
     if (cutIndex == blockIndex + 32)
       println("OUCH!!!")
 */    
-    val s = new Vector(startIndex-shift, cutIndex-shift, blockIndex-shift)
+    val s = new Vector[A](startIndex-shift, cutIndex-shift, blockIndex-shift)
     s.initFrom(this)
     s.dirty = dirty
     s.gotoPosWritable(focus, blockIndex, focus ^ blockIndex)
@@ -636,6 +711,12 @@ override def companion: GenericCompanion[Vector] = Vector
 }
 
 
+/** An iterator for looping over a `Vector`.
+ *  Usually, you will acquire instances of `VectorIterator` from `Vector.iterator.`
+ *
+ *  `VectorIterator` is not thread-safe, despite being immutable. It stores some internal variables to cache lookups.
+ *  To ensure that this state does not become corrupted, any acces to a `Vector` from multiple threads must be synchronized.
+ */
 class VectorIterator[+A](_startIndex: Int, _endIndex: Int) extends Iterator[A] with VectorPointer[A @uncheckedVariance] {
 
   private var blockIndex: Int = _startIndex & ~31
@@ -676,7 +757,7 @@ class VectorIterator[+A](_startIndex: Int, _endIndex: Int) extends Iterator[A] w
    *  Such a vector can then be split into several vectors using methods like `take` and `drop`.
    */
   private[collection] def remainingVector: Vector[A] = {
-    val v = new Vector(blockIndex + lo, _endIndex, blockIndex + lo)
+    val v = new Vector[A](blockIndex + lo, _endIndex, blockIndex + lo)
     v.initFrom(this)
     v
   }
@@ -686,6 +767,11 @@ class VectorIterator[+A](_startIndex: Int, _endIndex: Int) extends Iterator[A] w
 }
 
 
+/** Builder for `Vector`s.
+ *
+ *  `VectorBuilder` is not thread-safe, despite being immutable. It stores some internal variables to cache lookups.
+ *  To ensure that this state does not become corrupted, any acces to a `Vector` from multiple threads must be synchronized.
+ */
 final class VectorBuilder[A]() extends Builder[A,Vector[A]] with VectorPointer[A @uncheckedVariance] {
   
   // possible alternative: start with display0 = null, blockIndex = -32, lo = 32
@@ -731,20 +817,58 @@ final class VectorBuilder[A]() extends Builder[A,Vector[A]] with VectorPointer[A
 }
 
 
-
+/**
+ * A path through a trie built from nested arrays. All arrays are of length 32.
+ *
+ * The path caches the array lookups at each stage of traversing the trie.
+ * The path resolves to a 32-element block of values in ``display0``.
+ * The depth of the trie is stored in `depth`, ranging from 1..6.
+ * The root of the trie is stored in `display{''depth-1''}`. All `display{''n>=depth''}` are undefined.
+ *
+ * Each `display{''n''}` var is represented as `Array[AnyType`. This is so that when an operation widens the type of the
+ * `VectorPointer` from `T` to `U >: T`, existing arrays can all be re-used without copying them to widen their type.
+ *
+ * The values stored in the arrays can be safely cast as long as the appropriate type-invariants are respected. These
+ * are enforced by `initFrom`. When copying an existing structure, the bound on the type stored in the arrays can only
+ * ever be widened. When inserting or replacing an element, the array '''must''' be copied first, and the change made to
+ * the copy.
+ *
+ * This structure is not thread-safe.
+ */
 private[immutable] trait VectorPointer[T] {
+    /** Depth of nesting of arrays of arrays. Counting from 0. Maximum of 5. */
     private[immutable] var depth: Int = _
+    /** Array[T] */
     private[immutable] var display0: Array[AnyRef] = _
+    /** Array[Array[T]] */
     private[immutable] var display1: Array[AnyRef] = _
+    /** Array[Array[Array[T]]] */
     private[immutable] var display2: Array[AnyRef] = _
+    /** Array[Array[Array[Array[T]]]] */
     private[immutable] var display3: Array[AnyRef] = _
+    /** Array[Array[Array[Array[Array[T]]]]] */
     private[immutable] var display4: Array[AnyRef] = _
+    /** Array[Array[Array[Array[Array[Array[T]]]]]] */
     private[immutable] var display5: Array[AnyRef] = _
 
-    // used
-    private[immutable] final def initFrom[U](that: VectorPointer[U]): Unit = initFrom(that, that.depth)
+    /** Initialize this `VectorPointer` from another one, to have the same depth and point to the exact same path.
+     *
+     * This is the version that is used.
+     *
+     * `O,,c,,(1)`, `O,,m,,(0)`
+     *
+     * @tparam U  Type of the other vector. We must be at least as general as `that` to maintain type-safety of the
+     *          underlying arrays.
+     */
+    private[immutable] final def initFrom[U <: T](that: VectorPointer[U]): Unit = initFrom(that, that.depth)
     
-    private[immutable] final def initFrom[U](that: VectorPointer[U], depth: Int) = {
+    /** Initialize this `VectorPointer` from another one, to have the same depth and point to the exact same path.
+     *
+     * This version is not directly used.
+     *
+     * `O,,c,,(1)`, `O,,m,,(0)`
+     */
+    private[immutable] final def initFrom[U <: T](that: VectorPointer[U], depth: Int) = {
       this.depth = depth
       (depth - 1) match {
         case -1 =>
@@ -779,7 +903,12 @@ private[immutable] trait VectorPointer[T] {
     }
 
 
-    // requires structure is at pos oldIndex = xor ^ index
+    /** Get an element given the current index and the xor of this and ``oldIndex``, the index that the display arrays
+     * are focussed on.
+     * 
+     * Requires structure is at pos oldIndex = xor ^ index
+     * `O,,c,,(1)`, `O,,m,,(0)`
+     */
     private[immutable] final def getElem(index: Int, xor: Int): T = {
       if (xor < (1 << 5)) { // level = 0
         display0(index & 31).asInstanceOf[T]
@@ -803,10 +932,17 @@ private[immutable] trait VectorPointer[T] {
       }
     }
 
-
-    // go to specific position
-    // requires structure is at pos oldIndex = xor ^ index,
-    // ensures structure is at pos index
+    /** Go to the specific position minimizing the lookups for random access patterns.
+     *
+     * This assumes that the structure is currently at `pos oldIndex = xor ^ index`. If this is not the case, then this
+     * has undefined behaviour. Afterwards, the structure is positioned on the block containing `index`.
+     *
+     * The `xor` argument is used to minimize how many levels down from `display0` need to be altered, so that in the
+     * common case of moving within the same block, nothing is updated, for the next-most common case of moving to the
+     * next block in `display1`, only one lookup is done, and so on.
+     *
+     * `O,,c,,(1)`, `O,,m,,(0)`
+     */
     private[immutable] final def gotoPos(index: Int, xor: Int): Unit = {
       if (xor < (1 << 5)) { // level = 0 (could maybe removed)
       } else
@@ -841,9 +977,19 @@ private[immutable] trait VectorPointer[T] {
 
 
 
-    // USED BY ITERATOR
-
-    // xor: oldIndex ^ index
+    /** Go to the starting block containing the index.
+     *  Ideal for sequential access patterns. This is used by Iterator.
+     *
+     * This assumes that the structure is currently at `pos oldIndex = xor ^ index`. If this is not the case, then this
+     * has undefined behaviour. Afterwards, the structure is positioned on the recursively-starting block (zero-indexed)
+     * in the sub-tree spanning the old and new indexes.
+     *
+     * The `xor` argument is used to minimize how many levels down from `display0` need to be altered, so that in the
+     * common case of moving within the same block, nothing is updated, for the next-most common case of moving to the
+     * next block in `display1`, only one lookup is done, and so on.
+     *
+     * `O,,c,,(1)`, `O,,m,,(0)`
+     */
     private[immutable] final def gotoNextBlockStart(index: Int, xor: Int): Unit = { // goto block start pos
       if (xor < (1 << 10)) { // level = 1
         display0 = display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
@@ -874,9 +1020,16 @@ private[immutable] trait VectorPointer[T] {
       }
     }
 
-    // USED BY BUILDER
-
-    // xor: oldIndex ^ index
+    /**Go to the starting block containing the index, copying the structure as needed to ensure that it is ready for
+     * destructive update, and inserting a new root array.
+     * This is used by the builder.
+     *
+     * This assumes that the structure is currently at `pos oldIndex = xor ^ index`. If this is not the case, then this
+     * has undefined behaviour. Afterwards, the structure is positioned on the block containing `index`.
+     * The arrays in the path from the root to the block are copied to make them safe for writing to.
+     *
+     * `O,,c,,(1)`, `O,,m,,(0)`
+     */
     private[immutable] final def gotoNextBlockStartWritable(index: Int, xor: Int): Unit = { // goto block start pos
       if (xor < (1 << 10)) { // level = 1
         if (depth == 1) { display1 = new Array(32); display1(0) = display0; depth+=1}
@@ -931,6 +1084,9 @@ private[immutable] trait VectorPointer[T] {
 
     // STUFF BELOW USED BY APPEND / UPDATE
 
+    /**
+     * `O,,c,,(a.length)`, `O,,m,,(a.length)`
+     */
     private[immutable] final def copyOf(a: Array[AnyRef]) = {
       //println("copy")
       if (a eq null) println ("NULL")
@@ -939,6 +1095,9 @@ private[immutable] trait VectorPointer[T] {
       b
     }
 
+    /**
+     * `O,,c,,(a.length)`, `O,,m,,(a.length)`
+     */
     private[immutable] final def nullSlotAndCopy(array: Array[AnyRef], index: Int) = {
       //println("copy and null")
       val x = array(index)
@@ -951,6 +1110,9 @@ private[immutable] trait VectorPointer[T] {
     // requires structure is at pos index
     // ensures structure is clean and at pos index and writable at all levels except 0
 
+    /**
+     * `O,,c,,(1)`, `O,,m,,(1)`
+     */
     private[immutable] final def stabilize(index: Int) = (depth - 1) match {
       case 5 =>
         display5 = copyOf(display5)
@@ -996,6 +1158,9 @@ private[immutable] trait VectorPointer[T] {
     
     // prepare for writing at an existing position
 
+    /**
+     * `O,,c,,(1)`, `O,,m,,(1)`
+     */
     // requires structure is clean and at pos oldIndex = xor ^ newIndex,
     // ensures structure is dirty and at pos newIndex and writable at level 0
     private[immutable] final def gotoPosWritable0(newIndex: Int, xor: Int): Unit = (depth - 1) match {
@@ -1106,6 +1271,9 @@ private[immutable] trait VectorPointer[T] {
 
 
 
+    /**
+     * `O,,c,,(1)`, `O,,m,,(1)`
+     */
     // USED IN APPEND
     // create a new block at the bottom level (and possibly nodes on its path) and prepares for writing
 
@@ -1189,6 +1357,9 @@ private[immutable] trait VectorPointer[T] {
     }
 
 
+    /**
+     * `O,,c,,(1)`, `O,,m,,(1)`
+     */
     // requires structure is dirty and at pos oldIndex,
     // ensures structure is dirty and at pos newIndex and writable at level 0
     private[immutable] final def gotoFreshPosWritable1(oldIndex: Int, newIndex: Int, xor: Int): Unit = {
