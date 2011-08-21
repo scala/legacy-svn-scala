@@ -15,7 +15,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import scala.collection.immutable.Stream
 
 /**
-  * This package contains factories for [[scala.sys.process.ProcessIO]],
+  * This object contains factories for [[scala.sys.process.ProcessIO]],
   * which can be used to control the I/O of a [[scala.sys.process.Process]]
   * when a [[scala.sys.process.ProcessBuilder]] is started with the `run`
   * command.
