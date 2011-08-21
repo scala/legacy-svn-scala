@@ -27,7 +27,7 @@ import scala.collection.parallel.mutable.ParHashMap
  *  of the load factor and the current capacity, the hash table is rehashed (that is, internal data structures are rebuilt)
  *  so that the hash table has approximately twice the number of buckets.
  *
- *  As a general rule, the default load factor (.75) offers a good tradeoff between time and space costs.
+ *  As a general rule, the default load factor (0.75) offers a good tradeoff between time and space costs.
  *  Higher values decrease the space overhead but increase the lookup cost (reflected in most of the operations of the `HashMap` class, including get and put).
  *  The expected number of entries in the map and its load factor should be taken into account when setting its initial capacity, so as to minimize the number of rehash operations.
  *  If the initial capacity is greater than the maximum number of entries divided by the load factor, no rehash operations will ever occur.
@@ -59,6 +59,30 @@ import scala.collection.parallel.mutable.ParHashMap
  *  Note that, contrary to the behaviour of `java.util.HashMap`, `HashMap` does not throw `ConcurrentModificationException`.
  *
  *  This class shares a lot of characteristics with `java.util.HashMap`. For more information, please see [[http://download.oracle.com/javase/6/docs/api/java/util/HashMap.html java.util.HashMap]].
+ *
+ *  @example {{{
+ *  import scala.collection.mutable.HashMap
+ *
+ *  val map = HashMap[Int, String]()
+ *
+ *  map += 1 -> "one"
+ *  map += 2 -> "two"
+ *
+ *  println(map)                         // Map(1 -> one, 2 -> two)
+ *  println(map(1))                      // one
+ *  println(map.get(2))                  // Some(two)
+ *  println(map.getOrElse(3, "unknown")) // unknown
+ *
+ *  map -= 1
+ *
+ *  println(map)                         // Map(2 -> two)
+ *
+ *  // You can also use the factory method to initialise the map:
+ *
+ *  val map2 = HashMap[Int, String](1 -> "one", 2 -> "two")
+ *
+ *  println(map2)                         // Map(1 -> one, 2 -> two)
+ *  }}}
  *
  *  @since 1
  *  
