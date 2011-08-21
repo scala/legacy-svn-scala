@@ -96,8 +96,9 @@ trait AnyValReps {
                        "  * @return this value bit-shifted left by the specified number of bits,\n" +
                        "  *         filling in the right bits with the same value as the left-most bit of this.\n" +
                        "  *         The effect of this is to retain the sign of the value.\n" +
-                       "  * @example {{{ -21 >>> 3 == -3 \n" +
-                       "  * // in binary: 11111111 11111111 11111111 11101011 >>> 3 == \n" + 
+                       "  * @example {{{\n" +
+                       "  * -21 >> 3 == -3 \n" +
+                       "  * // in binary: 11111111 11111111 11111111 11101011 >> 3 == \n" + 
                        "  * //            11111111 11111111 11111111 11111101\n" +
                        "  * }}}\n" + 
                        "  */"))

@@ -84,8 +84,9 @@ final class Byte extends AnyVal {
   * @return this value bit-shifted left by the specified number of bits,
   *         filling in the right bits with the same value as the left-most bit of this.
   *         The effect of this is to retain the sign of the value.
-  * @example {{{ -21 >>> 3 == -3 
-  * // in binary: 11111111 11111111 11111111 11101011 >>> 3 == 
+  * @example {{{
+  * -21 >> 3 == -3 
+  * // in binary: 11111111 11111111 11111111 11101011 >> 3 == 
   * //            11111111 11111111 11111111 11111101
   * }}}
   */
@@ -94,8 +95,9 @@ final class Byte extends AnyVal {
   * @return this value bit-shifted left by the specified number of bits,
   *         filling in the right bits with the same value as the left-most bit of this.
   *         The effect of this is to retain the sign of the value.
-  * @example {{{ -21 >>> 3 == -3 
-  * // in binary: 11111111 11111111 11111111 11101011 >>> 3 == 
+  * @example {{{
+  * -21 >> 3 == -3 
+  * // in binary: 11111111 11111111 11111111 11101011 >> 3 == 
   * //            11111111 11111111 11111111 11111101
   * }}}
   */
