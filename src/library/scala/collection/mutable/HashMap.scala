@@ -19,7 +19,9 @@ import scala.collection.parallel.mutable.ParHashMap
  *  This implementation provides constant-time performance for the basic operations (get and put), assuming the hash function disperses the elements properly among the buckets.
  *  Iteration over collection views requires time proportional to the "capacity" of the `HashMap` instance (the number of buckets) plus its size (the number of key-value mappings).
  *
- *  An instance of `HashMap` has two parameters that affect its performance: initial capacity and load factor. The load factor for a `HashMap` is set to 0.75 by default
+ *  == Performance Tuning ==
+ *
+ *  An instance of `HashMap` has two parameters that affect its performance: initial capacity and load factor. The load factor for a `HashMap` is set to 0.75 by default.
  *  The capacity is the number of buckets in the hash table, and the initial capacity is simply the capacity at the time the hash table is created, 16 if unspecified.
  *  As the hash table fills up, the load factor is used to decide whether to increase the capacity. When the number of entries in the hash table exceeds the product
  *  of the load factor and the current capacity, the hash table is rehashed (that is, internal data structures are rebuilt)
@@ -41,6 +43,8 @@ import scala.collection.parallel.mutable.ParHashMap
  *  }
  *  }}}
  *
+ *  == Concurrency considerations ==
+ *
  *  Note that this implementation is not synchronized. If multiple threads access a hash map concurrently, and at least one of the threads modifies the map structurally,
  *  it must be synchronized externally. (A structural modification is any operation that adds or deletes one or more mappings; merely changing the value
  *  associated with a key that an instance already contains is not a structural modification.) This is typically accomplished by synchronizing
@@ -52,6 +56,7 @@ import scala.collection.parallel.mutable.ParHashMap
  *
  *  The iterators returned by all of this class's "collection view methods" are mutable, so if the map is structurally modified at any time after the iterator is created
  *  in any way except, the iterator will behave in a non-deterministic way.
+ *  Note that, contrary to the behaviour of `java.util.HashMap`, `HashMap` does not throw `ConcurrentModificationException`.
  *
  *  This class shares a lot of characteristics with `java.util.HashMap`. For more information, please see [[http://download.oracle.com/javase/6/docs/api/java/util/HashMap.html java.util.HashMap]].
  *
