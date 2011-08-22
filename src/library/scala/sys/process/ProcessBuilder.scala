@@ -23,7 +23,7 @@ import ProcessBuilder._
   * redirecting the output.
   *
   * One creates a `ProcessBuilder` through factories provided in [[scala.sys.process.Process]]'s
-  * object companion, or implicit conversions based on these factories made available in the
+  * companion object, or implicit conversions based on these factories made available in the
   * package object [[scala.sys.process]].
   *
   * Let's examine in detail one example of usage:
@@ -41,7 +41,7 @@ import ProcessBuilder._
   * mirrors a shell pipe (`|`).
   *   2. `#&&` conditionally executes the second command if the previous one finished with
   * exit value 0. It mirrors shell's `&&`.
-  *   3. `#||` conditonally executes the third command if the exit value of the previous
+  *   3. `#||` conditionally executes the third command if the exit value of the previous
   * command is is different than zero. It mirrors shell's `&&`.
   *
   * Not shown here, the equivalent of a shell's `;` would be `###`. The reason for this name is
@@ -56,8 +56,8 @@ import ProcessBuilder._
   * an exception at the end of the `Stream` is the exit value is non-zero. To avoid exceptions,
   * one can use `lines_!` instead.
   *
-  * One can also start the commands in specific ways to further control its I/O. Using `!<` to
-  * to start the commands will use the stdin from the current process for them. All methods can
+  * One can also start the commands in specific ways to further control their I/O. Using `!<` to
+  * start the commands will use the stdin from the current process for them. All methods can
   * be used passing a [[scala.sys.process.ProcessLogger]] to capture the output, both stderr and
   * stdout. And, when using `run`, one can pass a [[scala.sys.process.ProcessIO]] to control
   * stdin, stdout and stderr.

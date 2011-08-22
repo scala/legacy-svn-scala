@@ -15,7 +15,7 @@ import ProcessBuilder._
 /** Represents a process that is running or has finished running.
  *  It may be a compound process with several underlying native processes (such as 'a #&& b`).
  *
- *  This trait is often not used directly, though its object companion contains
+ *  This trait is often not used directly, though its companion object contains
  *  factories for [[scala.sys.process.ProcessBuilder]], the main component of this
  *  package.
  *
@@ -39,7 +39,7 @@ trait Process {
 object Process extends ProcessImpl with ProcessCreation { }
 
 /** Factories for creating [[scala.sys.process.ProcessBuilder]]. They can be
- *  found on and used through [[scala.sys.process.Process]]'s object companion.
+ *  found on and used through [[scala.sys.process.Process]]'s companion object.
  */
 trait ProcessCreation {  
   /** Create a [[scala.sys.process.ProcessBuilder]] from a `String`, including the 
@@ -183,7 +183,7 @@ trait ProcessCreation {
 }
 
 /** Provide implicit conversions for the factories offered by [[scala.sys.process.Process]]'s
-  * object companion. These implicits can then be used to decrease the noise in a pipeline
+  * companion object. These implicits can then be used to decrease the noise in a pipeline
   * of commands, making it look more shell-like. They are available through the package object
   * [[scala.sys.process]].
   */
