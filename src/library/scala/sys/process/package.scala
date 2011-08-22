@@ -25,8 +25,8 @@ package scala.sys {
     * redirection operators available on [[scala.sys.process.ProcessBuilder]].
     *
     * The example below shows how to build and combine such commands. It searches for `null` uses in the `src`
-    * directory, printing a message indicating whether they were found or not. The first command pipes the
-    * output to the second command, whose exit value is then used to chose between the third or fourth
+    * directory, printing a message indicating whether they were found or not. The first command pipes its
+    * output to the second command, whose exit value is then used to choose between the third or fourth
     * commands. This same example is explained in greater detail on [[scala.sys.process.ProcessBuilder]].
     *
     * {{{
