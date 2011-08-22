@@ -314,7 +314,15 @@ object ScalaBuild extends Build {
   // Scaladocs
   def distScalaInstance = makeScalaReference("dist", scalaLibrary, scalaCompiler, fjbg)
   lazy val documentationSettings: Seq[Setting[_]] = dependentProjectSettings ++ Seq(
-    defaultExcludes in Compile := (".*"  - ".") || HiddenFileFilter,
+    defaultExcludes in unmanagedSources := ((".*"  - ".") || HiddenFileFilter ||
+      "reflect/Print.scala" ||
+      "reflect/Symbol.scala" ||
+      "reflect/Tree.scala" ||
+      "reflect/Type.scala" ||
+      "runtime/*$.scala" ||
+      "runtime/ScalaRuntime.scala" ||
+      "runtime/StringAdd.scala" ||
+      "scala/swing/test/*"),
     sourceFilter in Compile := ("*.scala"),
     unmanagedSourceDirectories in Compile <<= baseDirectory apply { dir =>
       Seq(dir / "src" / "library" / "scala", dir / "src" / "actors", dir / "src" / "swing", dir / "src" / "continuations" / "library")
@@ -322,8 +330,9 @@ object ScalaBuild extends Build {
     compile := inc.Analysis.Empty,
     scaladocOptions in Compile <++= (baseDirectory) map (bd => 
       Seq("-sourcepath", (bd / "src" / "library").getAbsolutePath,
-          "-doc-no-compile", (bd / "src" / "library-aux").getAbsolutePath,
-          "-doc-source-url", "https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/€{FILE_PATH}.scala#L1"
+          "-doc-no-compile", (bd / "src" / "library-aux").getAbsolutePath //,
+          // This causes some wierd REGEX explosion...
+          // "-doc-source-url", """https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/€{FILE_PATH}.scala#L1"""
       )),
     classpathOptions in Compile := ClasspathOptions.manual
   )
