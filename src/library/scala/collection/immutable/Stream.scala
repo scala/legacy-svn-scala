@@ -95,6 +95,51 @@ import Stream.cons
  *  If, on the other hand, there is nothing holding on to the head (e.g. we used
  *  `def` to define the `Stream`) then once it is no longer being used directly,
  *  it disappears.
+ *  {{{
+ *  // For example, let's build the natural numbers and do some silly iteration
+ *  // over them.
+ *
+ *  // We'll start with a silly iteration
+ *  def loop(s: String, i: Int, iter: Iterator[Int]): Unit = {
+ *    // Stop after 200,000
+ *    if (i < 200001) {
+ *      if (i % 50000 == 0) println(s + i)
+ *      loop(s, iter.next, iter)
+ *    }
+ *  }
+ *  
+ *  // Our first Stream definition will be a val definition
+ *  val stream1: Stream[Int] = {
+ *    def loop(v: Int): Stream[Int] = v #:: loop(v + 1)
+ *    loop(0)
+ *  }
+ *  
+ *  // Because stream1 is a val, everything that the iterator produces is held
+ *  // by virtue of the fact that the head of the Stream is held in stream1
+ *  val it1 = stream1.iterator
+ *  loop("Iterator1: ", it1.next, it1)
+ *  
+ *  // We can redefine this Stream such that all we have is the Iterator left
+ *  // and allow the Stream to be garbage collected as required.  Using a def
+ *  // to provide the Stream ensures that no val is holding onto the head as
+ *  // is the case with stream1
+ *  def stream2: Stream[Int] = {
+ *    def loop(v: Int): Stream[Int] = v #:: loop(v + 1)
+ *    loop(0)
+ *  }
+ *  val it2 = stream2.iterator
+ *  loop("Iterator2: ", it2.next, it2)
+ *  
+ *  // And, of course, we don't actually need a Stream at all for such a simple
+ *  // problem.  There's no reason to use a Stream if you don't actually need
+ *  // one.
+ *  val it3 = new Iterator[Int] {
+ *    var i = -1
+ *    def hasNext = true
+ *    def next: Int = { i += 1; i }
+ *  }
+ *  loop("Iterator3: ", it3.next, it3)
+ *  }}}
  *
  *  - The fact that `tail` works at all is of interest.  In the definition of
  *  `fibs` we have an initial `(0, 1, Stream(...))` so `tail` is deterministic.
