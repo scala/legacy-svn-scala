@@ -28,7 +28,7 @@ object ScalaBuild extends Build {
     publishLocal <<= packagedBinaryProjects.map(p => publishLocal in p).join.map(_.head),
     packageDoc in Compile <<= (packageDoc in documentation in Compile).identity,
     packageSrc in Compile <<= (packageSrc in documentation in Compile).identity,
-    test <<= (runPartest in testsuite, runPartest in continuationsTestsuite, checkSame in testsuite) map { (a,b,c) => () },
+    test in Test <<= (runPartest in testsuite, runPartest in continuationsTestsuite, checkSame in testsuite) map { (a,b,c) => () },
     lockerLock <<= (lockFile in lockerLib, lockFile in lockerComp, compile in Compile in lockerLib, compile in Compile in lockerComp) map { (lib, comp, _, _) =>
       Seq(lib,comp).foreach(f => IO.touch(f))
     },
@@ -211,7 +211,7 @@ object ScalaBuild extends Build {
   lazy val scalapSettings = compilerDependentProjectSettings ++ Seq(
     name := "scalap",
     exportJars := true)
-  lazy val scalap = Project("scalap", file(".")) settings(scalapSettings:_*) dependsOn(scalaLibrary, scalaCompiler)
+  lazy val scalap = Project("scalap", file(".")) settings(scalapSettings:_*) //dependsOn(scalaCompiler)
 
   // --------------------------------------------------------------
   //  Continuations plugin + library
@@ -291,7 +291,7 @@ object ScalaBuild extends Build {
     checkSameCompiler <<= checkSameBinaryProjects(quickComp, strappComp),
     checkSame <<= (checkSameLibrary, checkSameCompiler) map ((a,b) => ())
   )
-  val testsuite = Project("testsuite", file(".")) settings(testsuiteSetttings:_*) dependsOn(partest,swing,scalaLibrary,scalaCompiler,fjbg)
+  val testsuite = Project("testsuite", file(".")) settings(testsuiteSetttings:_*) dependsOn(swing,scalaLibrary,scalaCompiler,fjbg, partest)
 
   lazy val continuationsTestsuiteSetttings: Seq[Setting[_]] = testsuiteSetttings ++ Seq[Setting[_]](
     scalacOptions in Test <++= (exportedProducts in Compile in continuationsPlugin) map { 
@@ -402,8 +402,8 @@ object ScalaBuild extends Build {
     autoScalaLibrary := false,
     unmanagedJars in Compile := Seq(),
     genBin <<= genBinTask(fullClasspath in quickComp in Runtime, target),
-    // TODO - We could *really* clean this up in many ways.   Let's look into making a a Seq of "direct jars"
-    // a seq of "plugin jars" and "binaries" and "documentation" mappings that this can aggregate.
+    // TODO - We could *really* clean this up in many ways.   Let's look into making a a Seq of "direct jars" (scalaLibrary, scalaCompiler, jline, scalap)
+    // a seq of "plugin jars" (continuationsPlugin) and "binaries" (genBin) and "documentation" mappings (genBin) that this can aggregate.
     // really need to figure out a better way to pull jline + jansi.
     makeDistMappings <<= (genBin, 
                           runManmakerMan in manmaker,
