@@ -2,19 +2,25 @@ import sbt._
 
 import Build._
 import Keys._
+import Project.Initialize
+import complete._
 
 /** This object */
 object partest {
 
   /** The key for the run-partest task that exists in Scala's test suite. */
-  lazy val runPartest = TaskKey[Unit]("run-partest", "Runs the partest test suite against the current trunk")
+  lazy val runPartest = TaskKey[Unit]("run-partest", "Runs the partest test suite against the quick.")
+  lazy val runPartestSingle = InputKey[Unit]("run-partest-single", "Runs a single partest test against quick.")
   lazy val partestRunner = TaskKey[PartestRunner]("partest-runner", "Creates a runner that can run partest suites")
   lazy val partestTestRuns = TaskKey[Map[String, Seq[File]]]("partest-tests", "Creates a map of test-type to a sequence of the test files/directoryies to test.")
+  lazy val partestTestRunsForCompletion = TaskKey[(Set[String], Set[String])]("partest-tests-completion")
 
   lazy val partestTaskSettings: Seq[Setting[_]] = Seq(
     partestRunner <<= partestRunnerTask(fullClasspath in Runtime),
     partestTestRuns <<= partestTestRunTaskDefault(baseDirectory),
-    runPartest <<= runPartestTask(partestRunner, partestTestRuns, scalacOptions in Test)
+    runPartest <<= runPartestTask(partestRunner, partestTestRuns, scalacOptions in Test),
+    partestTestRunsForCompletion <<= partestTestRuns map convertTestsForAutoComplete,
+    runPartestSingle <<= runSingleTestTask(partestRunner, partestTestRuns, scalacOptions in Test)
   )
 
   // What's fun here is that we want "*.scala" files *and* directories in the base directory...
@@ -35,13 +41,16 @@ object partest {
      }
   // TODO - Split partest task into Configurations and build a Task for each Configuration.
   // *then* mix all of them together for run-testsuite or something clever like this.
-  def runPartestTask(runner: ScopedTask[PartestRunner], testRuns: ScopedTask[Map[String,Seq[File]]], scalacOptions: ScopedTask[Seq[String]]): Project.Initialize[Task[Unit]] =
+  def runPartestTask(runner: ScopedTask[PartestRunner], testRuns: ScopedTask[Map[String,Seq[File]]], scalacOptions: ScopedTask[Seq[String]]): Initialize[Task[Unit]] =
     (runner, testRuns, scalacOptions, streams) map {     
       (runner, runs, scalaOpts, s) =>
-        val testArgs = runs withFilter (!_._2.isEmpty) flatMap { case (testType, files) =>
+        runPartestImpl(runner, runs, scalaOpts, s)
+    }
+  private def runPartestImpl(runner: PartestRunner, runs: Map[String,Seq[File]], scalacOptions: Seq[String], s: TaskStreams): Unit = {
+    val testArgs = runs withFilter (!_._2.isEmpty) flatMap { case (testType, files) =>
           Seq("-"+testType, files.mkString(","))
         }
-        val extraArgs = scalaOpts flatMap (opt => Seq("-scalacoption", opt))
+        val extraArgs = scalacOptions flatMap (opt => Seq("-scalacoption", opt))
         import collection.JavaConverters._
         val results: collection.mutable.Map[String,Int] = runner.run((testArgs ++ extraArgs).toArray).asScala
         // TODO - save results
@@ -56,9 +65,39 @@ object partest {
         } else {
           s.log.info(""+results.size+" tests passed.")
         }
+  }
+
+  def convertTestsForAutoComplete(tests: Map[String, Seq[File]]): (Set[String], Set[String]) = {
+    (tests.keys.toSet, (for { 
+      (testType, files) <- tests.toSet
+      file <- files
+    } yield cleanFileName(file)).toSet )
+  }
+
+  /** Takes a test file, as sent ot Partest, and cleans it up for auto-complete */
+  def cleanFileName(file: File): String = {
+    // TODO - Something intelligent here
+    import scala.util.matching.Regex
+    val TestPattern = new Regex(".*/test/(.*)")    
+    file.getCanonicalPath match {
+       case TestPattern(n) => n
+       case _ => file.getName
     }
-  
-  
+  }
+
+  def runSingleTestParser: (State, (Set[String], Set[String])) => Parser[(String, String)] = {
+    import DefaultParsers._
+    (state, tests) =>
+      ((Space ~> token(NotSpace examples tests._1)) <~ Space) ~ token(NotSpace examples tests._2)
+  }
+
+  def runSingleTestTask(runner: ScopedTask[PartestRunner], tests: ScopedTask[Map[String, Seq[File]]], scalacOptions: ScopedTask[Seq[String]]) : Initialize[InputTask[Unit]] = {
+    import sbinary.DefaultProtocol._
+    val default = (Set[String](), Set[String]())
+    InputTask(TaskData(partestTestRunsForCompletion)(runSingleTestParser)(default)) { result =>
+        (runner, result, scalacOptions, streams) map { (r, test, o, s) => runPartestImpl(r, Map(test._1 -> Seq(new File(test._2))), o, s) }
+    }
+  }  
   def partestRunnerTask(classpath: ScopedTask[Classpath]): Project.Initialize[Task[PartestRunner]] =
      (classpath) map { (cp) => 
        new PartestRunner(Build.data(cp)) 
