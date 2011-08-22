@@ -24,8 +24,10 @@ package scala.sys {
     * package object from `String` and other types. The pipe is composed through unix-like pipeline and I/O
     * redirection operators available on [[scala.sys.process.ProcessBuilder]].
     *
-    * The example below search for `null` uses in the `src` directory. It pipes the output of one command
-    * to another, and then execute one of two commands based on the exit value.
+    * The example below shows how to build and combine such commands. It searches for `null` uses in the `src`
+    * directory, printing a message indicating whether they were found or not. The first command pipes the
+    * output to the second command, whose exit value is then used to chose between the third or fourth
+    * commands. This same example is explained in greater detail on [[scala.sys.process.ProcessBuilder]].
     *
     * {{{
     * import scala.sys.process._
