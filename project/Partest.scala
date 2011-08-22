@@ -30,10 +30,11 @@ object partest {
     // TODO - Only allow directories that have "*.scala" children...
     case _ => base * "*" filter { f => !f.getName.endsWith(".obj") && (f.isDirectory || f.getName.endsWith(".scala")) }
   }
+  lazy val partestTestTypes = Seq("run", "jvm", "pos", "neg", "buildmanager", "res", "shootout", "scalap", "specialized", "presentation")
   // TODO - Figure out how to specify only a subset of resources...
   def partestTestRunTaskDefault(baseDirectory: ScopedSetting[File]): Project.Initialize[Task[Map[String, Seq[File]]]] =
      (baseDirectory) map { dir =>
-       Seq("run", "jvm", "pos", "neg", "buildmanager", "res", "shootout", "scalap", "specialized", "presentation") map {
+       partestTestTypes map {
          testType => 
            val testDir = dir / "test"
            testType -> partestResources(testDir / "files" / testType, testType).get           
@@ -85,16 +86,19 @@ object partest {
     }
   }
 
-  def runSingleTestParser: (State, (Set[String], Set[String])) => Parser[(String, String)] = {
+  def runSingleTestParser: (State, Map[String,Set[String]]) => Parser[(String,String)] = {
     import DefaultParsers._
     (state, tests) =>
-      ((Space ~> token(NotSpace examples tests._1)) <~ Space) ~ token(NotSpace examples tests._2)
+      (Space ~> token(NotSpace examples partestTestTypes.toSet)) flatMap { testType =>
+        // TODO - Figure out how to use partestTestRuns Key so this works with continuations...
+        lazy val files = partestResources(new File(".") / "test" / "files" / testType, testType).get.map(_.getPath).toSet
+        (Space ~> token(NotSpace examples tests.get(testType).getOrElse(files)) map { test => (testType, test) })
+      }
   }
 
   def runSingleTestTask(runner: ScopedTask[PartestRunner], tests: ScopedTask[Map[String, Seq[File]]], scalacOptions: ScopedTask[Seq[String]]) : Initialize[InputTask[Unit]] = {
     import sbinary.DefaultProtocol._
-    val default = (Set[String](), Set[String]())
-    InputTask(TaskData(partestTestRunsForCompletion)(runSingleTestParser)(default)) { result =>
+    InputTask(TaskData(partestTestRunsForCompletion)(runSingleTestParser)(Map())) { result =>
         (runner, result, scalacOptions, streams) map { (r, test, o, s) => runPartestImpl(r, Map(test._1 -> Seq(new File(test._2))), o, s) }
     }
   }  
