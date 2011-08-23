@@ -174,7 +174,7 @@ class Function(val i: Int) extends Group("Function") with Arity {
  *  shorthand for the anonymous class definition %s:
  *
  *  {{{
- *  object Main extends Application { %s }
+ *  object Main extends App { %s }
  *  }}}"""
   
   def toStr() = "\"" + ("<function%d>" format i) + "\""
@@ -238,7 +238,7 @@ class Function(val i: Int) extends Group("Function") with Arity {
     curryComment +
     "  def curried: %s => R = {\n    %s\n  }\n".format(
       targs mkString " => ", body
-    ) + """  @deprecated("Use `curried` instead", "2.8.0")""" + "\n  def curry = curried\n"
+    )
   }
 
   override def moreMethods = curryMethod + tupleMethod

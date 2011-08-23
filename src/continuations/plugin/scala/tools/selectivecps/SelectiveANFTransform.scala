@@ -78,7 +78,7 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
               case Match(selector, cases) if (ext.isDefined && getAnswerTypeAnn(body.tpe).isEmpty) =>
                 val cases1 = for {
                   cd @ CaseDef(pat, guard, caseBody) <- cases
-                  val caseBody1 = transExpr(body, None, ext)
+                  caseBody1 = transExpr(body, None, ext)
                 } yield {
                   treeCopy.CaseDef(cd, transform(pat), transform(guard), caseBody1)
                 }
@@ -201,7 +201,7 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
 
           val caseVals = for {
             cd @ CaseDef(pat, guard, body) <- cases
-            val bodyVal = transExpr(body, cpsA2, cpsR2)
+            bodyVal = transExpr(body, cpsA2, cpsR2)
           } yield {
             treeCopy.CaseDef(cd, transform(pat), transform(guard), bodyVal)
           }
@@ -211,12 +211,13 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
 
         case ldef @ LabelDef(name, params, rhs) =>
           if (hasAnswerTypeAnn(tree.tpe)) {
-            val sym = currentOwner.newMethod(tree.pos, name)//unit.fresh.newName(tree.pos, "myloopvar")
+            val sym = currentOwner.newMethod(tree.pos, name)
                         .setInfo(ldef.symbol.info)
                         .setFlag(Flags.SYNTHETIC)
           
             val rhs1 = new TreeSymSubstituter(List(ldef.symbol), List(sym)).transform(rhs)
             val rhsVal = transExpr(rhs1, None, getAnswerTypeAnn(tree.tpe))
+            new ChangeOwnerTraverser(currentOwner, sym) traverse rhsVal
 
             val stm1 = localTyper.typed(DefDef(sym, rhsVal))
             val expr = localTyper.typed(Apply(Ident(sym), List()))
@@ -233,7 +234,7 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
         
           val catchVals = for {
             cd @ CaseDef(pat, guard, body) <- catches
-            val bodyVal = transExpr(body, cpsA, cpsR)
+            bodyVal = transExpr(body, cpsA, cpsR)
           } yield {
             treeCopy.CaseDef(cd, transform(pat), transform(guard), bodyVal)
           }
@@ -354,6 +355,8 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
                       .setInfo(valueTpe)
                       .setFlag(Flags.SYNTHETIC)
                       .setAnnotations(List(AnnotationInfo(MarkerCPSSym.tpe, Nil, Nil)))
+
+          new ChangeOwnerTraverser(currentOwner, sym) traverse expr
 
           (stms ::: List(ValDef(sym, expr) setType(NoType)),
              Ident(sym) setType(valueTpe) setPos(tree.pos), linearize(spc, spcVal)(unit, tree.pos))

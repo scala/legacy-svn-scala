@@ -353,4 +353,23 @@ object Test extends Properties("HtmlFactory") {
       case _ => false
     }
   }
+
+  property("Default arguments of synthesized constructor") = {
+    val files = createTemplates("SI_4287.scala")
+
+    files("ClassWithSugar.html") match {
+      case node: scala.xml.Node => {
+        node.toString.contains(">123<")
+      }
+      case _ => false
+    }
+  }
+
+  property("Default arguments of synthesized constructor") = {
+    createTemplate("SI_4507.scala") match {
+      case node: scala.xml.Node =>
+        ! node.toString.contains("<li>returns silently when evaluating true and true</li>")
+      case _ => false
+    }
+  }
 }

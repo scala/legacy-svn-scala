@@ -276,6 +276,11 @@ class Table extends Component with Scrollable.Wrapper {
    */
   def apply(row: Int, column: Int): Any = model.getValueAt(row, viewToModelColumn(column))
   
+  // TODO: this is Java 6 stuff
+  // def apply(row: Int, column: Int): Any = model.getValueAt(viewToModelRow(row), viewToModelColumn(column))
+  //def viewToModelRow(idx: Int) = peer.convertRowIndexToModel(idx)
+  //def modelToViewRow(idx: Int) = peer.convertRowIndexToView(idx)
+  
   def viewToModelColumn(idx: Int) = peer.convertColumnIndexToModel(idx)
   def modelToViewColumn(idx: Int) = peer.convertColumnIndexToView(idx)
 

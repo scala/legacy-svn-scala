@@ -83,6 +83,9 @@ abstract class UnCurry extends InfoTransform
     private lazy val serialVersionUIDAnnotation =
       AnnotationInfo(SerialVersionUIDAttr.tpe, List(Literal(Constant(0))), List())
 
+    /** Set of mutable local variables that are free in some inner method. */
+    private val freeMutableVars: mutable.Set[Symbol] = new mutable.HashSet  
+ 
     override def transformUnit(unit: CompilationUnit) {
       freeMutableVars.clear()
       freeLocalsTraverser(unit.body)
@@ -263,17 +266,8 @@ abstract class UnCurry extends InfoTransform
 
         fun.vparams foreach (_.symbol.owner = applyMethod)
         new ChangeOwnerTraverser(fun.symbol, applyMethod) traverse fun.body
-
-        def mkUnchecked(tree: Tree) = {
-          def newUnchecked(expr: Tree) = Annotated(New(gen.scalaDot(UncheckedClass.name), List(Nil)), expr)
-          tree match {
-            case Match(selector, cases) => atPos(tree.pos) { Match(newUnchecked(selector), cases) }
-            case _                      => tree
-          }
-        }
-        
         def applyMethodDef() = {
-          val body = if (isPartial) mkUnchecked(fun.body) else fun.body
+          val body = if (isPartial) gen.mkUncheckedMatch(fun.body) else fun.body
           DefDef(Modifiers(FINAL), nme.apply, Nil, List(fun.vparams), TypeTree(restpe), body) setSymbol applyMethod
         }
         def isDefinedAtMethodDef() = {
@@ -291,7 +285,7 @@ abstract class UnCurry extends InfoTransform
             substTree(CaseDef(cdef.pat.duplicate, cdef.guard.duplicate, Literal(Constant(true))))
           def defaultCase = CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(Constant(false)))
           
-          DefDef(m, mkUnchecked(
+          DefDef(m, gen.mkUncheckedMatch(
             if (cases exists treeInfo.isDefaultCase) Literal(Constant(true))
             else Match(substTree(selector.duplicate), (cases map transformCase) :+ defaultCase)
           ))
@@ -743,59 +737,57 @@ abstract class UnCurry extends InfoTransform
           newMembers += forwtree
       }
     }
-  }
-  
-  /** Set of mutable local variables that are free in some inner method. */
-  private val freeMutableVars: mutable.Set[Symbol] = new mutable.HashSet
-  
-  /** PP: There is apparently some degree of overlap between the CAPTURED
-   *  flag and the role being filled here.  I think this is how this was able
-   *  to go for so long looking only at DefDef and Ident nodes, as bugs
-   *  would only emerge under more complicated conditions such as #3855.
-   *  I'll try to figure it all out, but if someone who already knows the
-   *  whole story wants to fill it in, that too would be great.
-   */   
-  private val freeLocalsTraverser = new Traverser {
-    var currentMethod: Symbol = NoSymbol
-    var maybeEscaping = false
     
-    def withEscaping(body: => Unit) {
-      val saved = maybeEscaping
-      maybeEscaping = true
-      try body
-      finally maybeEscaping = saved
-    }
-    
-    override def traverse(tree: Tree) = tree match {
-      case DefDef(_, _, _, _, _, _) =>
-        val lastMethod = currentMethod
-        currentMethod = tree.symbol
-        try super.traverse(tree)
-        finally currentMethod = lastMethod
-      /** A method call with a by-name parameter represents escape. */
-      case Apply(fn, args) if fn.symbol.paramss.nonEmpty =>
-        traverse(fn)
-        (fn.symbol.paramss.head, args).zipped foreach { (param, arg) =>
-          if (param.tpe != null && isByNameParamType(param.tpe))
-            withEscaping(traverse(arg))
-          else
-            traverse(arg)          
-        }
-      /** The rhs of a closure represents escape. */
-      case Function(vparams, body) =>
-        vparams foreach traverse
-        withEscaping(traverse(body))
+    /**
+     * PP: There is apparently some degree of overlap between the CAPTURED
+     *  flag and the role being filled here.  I think this is how this was able
+     *  to go for so long looking only at DefDef and Ident nodes, as bugs
+     *  would only emerge under more complicated conditions such as #3855.
+     *  I'll try to figure it all out, but if someone who already knows the
+     *  whole story wants to fill it in, that too would be great.
+     */
+    val freeLocalsTraverser = new Traverser {
+      var currentMethod: Symbol = NoSymbol
+      var maybeEscaping = false
 
-      /** The appearance of an ident outside the method where it was defined or
-       *  anytime maybeEscaping is true implies escape.
-       */
-      case Ident(_) =>
-        val sym = tree.symbol
-        if (sym.isVariable && sym.owner.isMethod && (maybeEscaping || sym.owner != currentMethod))
-          assert(false, "Failure to lift "+sym+sym.locationString); freeMutableVars += sym
-      case _ =>
-        super.traverse(tree)
+      def withEscaping(body: => Unit) {
+        val saved = maybeEscaping
+        maybeEscaping = true
+        try body
+        finally maybeEscaping = saved
+      }
+
+      override def traverse(tree: Tree) = tree match {
+        case DefDef(_, _, _, _, _, _) =>
+          val lastMethod = currentMethod
+          currentMethod = tree.symbol
+          try super.traverse(tree)
+          finally currentMethod = lastMethod
+        /** A method call with a by-name parameter represents escape. */
+        case Apply(fn, args) if fn.symbol.paramss.nonEmpty =>
+          traverse(fn)
+          (fn.symbol.paramss.head, args).zipped foreach { (param, arg) =>
+            if (param.tpe != null && isByNameParamType(param.tpe))
+              withEscaping(traverse(arg))
+            else
+              traverse(arg)
+          }
+        /** The rhs of a closure represents escape. */
+        case Function(vparams, body) =>
+          vparams foreach traverse
+          withEscaping(traverse(body))
+
+        /**
+         * The appearance of an ident outside the method where it was defined or
+         *  anytime maybeEscaping is true implies escape.
+         */
+        case Ident(_) =>
+          val sym = tree.symbol
+          if (sym.isVariable && sym.owner.isMethod && (maybeEscaping || sym.owner != currentMethod))
+            assert(false, "Failure to lift " + sym + " in "+sym.owner+" in unit "+unit); freeMutableVars += sym
+        case _ =>
+          super.traverse(tree)
+      }
     }
   }
-  
 }

@@ -1,5 +1,5 @@
 object Test extends Application {
-  for(val n <- List(2500,25000,250000)) {
+  for(n <- List(2500,25000,250000)) {
     System.setIn(new java.io.FileInputStream(System.getProperty("partest.cwd")+"/knucleotide-input"+n+".txt"))
     knucleotide.main(Array(n.toString)) 
   }

@@ -1551,21 +1551,22 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           if (info(m).target.hasAccessorFlag) hasSpecializedFields = true
           if (m.isClassConstructor) {
             val origParamss = parameters(info(m).target)
-
-            val vparams = 
-              for ((tp, sym) <- m.info.paramTypes zip origParamss(0))
-                yield m.newValue(sym.pos, specializedName(sym, typeEnv(cls)))
-                       .setInfo(tp)
-                       .setFlag(sym.flags)
-
+            val vparams = (
+              for ((tp, sym) <- m.info.paramTypes zip origParamss(0)) yield (
+                m.newValue(sym.pos, specializedName(sym, typeEnv(cls)))
+                  .setInfo(tp)
+                  .setFlag(sym.flags)
+              )
+            )
             // param accessors for private members (the others are inherited from the generic class)
-            if (m.isPrimaryConstructor)
-              for (param <- vparams if cls.info.nonPrivateMember(param.name) == NoSymbol;
-                   val acc = param.cloneSymbol(cls).setFlag(PARAMACCESSOR | PRIVATE)) {
+            if (m.isPrimaryConstructor) {
+              for (param <- vparams ; if cls.info.nonPrivateMember(param.name) == NoSymbol) {
+                val acc = param.cloneSymbol(cls).setFlag(PARAMACCESSOR | PRIVATE)
                 cls.info.decls.enter(acc)
                 mbrs += ValDef(acc, EmptyTree).setType(NoType).setPos(m.pos)
               }
-            
+            }
+
             // ctor
             mbrs += atPos(m.pos)(DefDef(m, Modifiers(m.flags), List(vparams) map (_ map ValDef), EmptyTree))
           } else {
