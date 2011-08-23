@@ -8,7 +8,8 @@ object ScalaBuild extends Build {
   lazy val lockerLock: TaskKey[Unit] = TaskKey("locker-lock", "Locks the locker layer of the compiler build such that it won't rebuild on changed source files.")
   lazy val lockerUnlock: TaskKey[Unit] = TaskKey("locker-unlock", "Unlocks the locker layer of the compiler so that it will be recompiled on changed source files.")
   lazy val lockFile: SettingKey[File] = SettingKey("lock-file", "Location of the lock file compiling this project.")
-  lazy val makeDist: TaskKey[File] = TaskKey("make-dist", "Creates a mini-distribution (scala home directory) for this build.")
+  lazy val makeDist: TaskKey[File] = TaskKey("make-dist", "Creates a mini-distribution (scala home directory) for this build in a zip file.")
+  lazy val makeExplodedDist: TaskKey[File] = TaskKey("make-exploded-dist", "Creates a mini-distribution (scala home directory) for this build in a directory.")
   lazy val makeDistMappings: TaskKey[Map[File, String]] = TaskKey("make-dist-mappings", "Creates distribution mappings for creating zips,jars,directorys,etc.")
 
   // Collections of projects to run 'compile' on.
@@ -21,7 +22,8 @@ object ScalaBuild extends Build {
     doc in Compile <<= (doc in documentation in Compile).identity,
     // These next two aggregate commands on several projects and return results that are to be ignored by remaining tasks.
     compile in Compile <<= compiledProjects.map(p => compile in p in Compile).join.map(_.head),
-    clean <<= compiledProjects.map(p => clean in p).dependOn,
+    // TODO - just clean target? i.e. target map IO.deleteRecursively
+    clean <<= (compiledProjects ++ partestRunProjects).map(p => clean in p).dependOn,
     packageBin in Compile <<= packagedBinaryProjects.map(p => packageBin in p in Compile).join.map(_.head),
     // TODO - Make sure scalaLibrary has packageDoc + packageSrc from documentation attached...
     publish <<= packagedBinaryProjects.map(p => publish in p).join.map(_.head),
@@ -35,7 +37,8 @@ object ScalaBuild extends Build {
     lockerUnlock <<= (lockFile in lockerLib, lockFile in lockerComp) map { (lib, comp) =>
       Seq(lib,comp).foreach(IO.delete)
     },
-    makeDist <<= (makeDist in scaladist).identity
+    makeDist <<= (makeDist in scaladist).identity,
+    makeExplodedDist <<= (makeExplodedDist in scaladist).identity
     // TODO - Make exported products == makeDist so we can use this when creating a *real* distribution.
   )
   // Note: Root project is determined by lowest-alphabetical project that has baseDirectory as file(".").  we use aaa_ to 'win'.
@@ -392,7 +395,8 @@ object ScalaBuild extends Build {
          runner.setClass(cls)
          runner.setFile(dest)
          runner.execute()
-         // TODO - Mark generated files as executable (755 or a+x)
+         // TODO - Mark generated files as executable (755 or a+x) that is *not* JDK6 specific...
+         dest.setExecutable(true)
        }
        def makeBinMappings(cls: String, binName: String) = {
          val file = binDir / binName
@@ -439,6 +443,12 @@ object ScalaBuild extends Build {
       IO.zip(maps, file)
       s.log.info("Created " + file.getAbsolutePath)
       file
+    },
+    makeExplodedDist <<= (makeDistMappings, baseDirectory, streams) map { (maps, dir, s) => 
+      val targetDir = dir / "target" / "scala-dist"
+      IO.createDirectory(targetDir)
+      IO.copy(for((file, name) <- maps) yield (file, targetDir / name))
+      targetDir
     }
   )
   lazy val scaladist = Project("dist", file(".")) settings(scalaDistSettings:_*)
