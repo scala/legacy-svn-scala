@@ -448,6 +448,8 @@ object ScalaBuild extends Build {
       val targetDir = dir / "target" / "scala-dist"
       IO.createDirectory(targetDir)
       IO.copy(for((file, name) <- maps) yield (file, targetDir / name))
+      // Hack to make binaries be executable.  TODO - Fix for JDK 5 and below...
+      maps.values filter (_ startsWith "bin/") foreach (f => (targetDir / f).setExecutable(true))
       targetDir
     }
   )
