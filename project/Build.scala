@@ -3,7 +3,7 @@ import Keys._
 import partest._
 import SameTest._
 
-object ScalaBuild extends Build {
+object ScalaBuild extends Build with Layers {
   // New tasks/settings specific to the scala build.
   lazy val lockerLock: TaskKey[Unit] = TaskKey("locker-lock", "Locks the locker layer of the compiler build such that it won't rebuild on changed source files.")
   lazy val lockerUnlock: TaskKey[Unit] = TaskKey("locker-unlock", "Unlocks the locker layer of the compiler so that it will be recompiled on changed source files.")
@@ -40,6 +40,7 @@ object ScalaBuild extends Build {
     makeDist <<= (makeDist in scaladist).identity,
     makeExplodedDist <<= (makeExplodedDist in scaladist).identity
     // TODO - Make exported products == makeDist so we can use this when creating a *real* distribution.
+    // TODO - Generate binaries that work against quick, so ~ compile + these scripts will always be up-to-date...
   )
   // Note: Root project is determined by lowest-alphabetical project that has baseDirectory as file(".").  we use aaa_ to 'win'.
   lazy val aaa_root = Project("scala", file(".")) settings(projectSettings:_*)
@@ -127,77 +128,6 @@ object ScalaBuild extends Build {
   // Strapp is used to test binary 'sameness' between things built with locker and things built with quick.
   lazy val (strappLib, strappComp) = makeLayer("strapp", quickScalaInstance)
 
-
-
-  // --------------------------------------------------------------
-  //  Helper methods for layered compilation.
-  // --------------------------------------------------------------
-  def makeScalaReference(layer : String, library: Project, compiler: Project, fjbg: Project) =
-     scalaInstance <<= (appConfiguration, version,
-                        baseDirectory,
-                        (exportedProducts in library in Compile),
-                        (exportedProducts in compiler in Compile),
-                        (exportedProducts in fjbg in Compile),
-                        (fullClasspath in jline in Runtime)) map {
-    (app, version: String, bd: File, lib: Classpath, comp: Classpath, fjbg: Classpath, jline: Classpath) =>
-      val launcher = app.provider.scalaProvider.launcher
-      val currentUniqueRevision = createUniqueBuildVersion(bd)
-      (lib,comp) match {
-         case (Seq(libraryJar), Seq(compilerJar)) =>
-           ScalaInstance(
-             version + "-" + layer + "-" + currentUniqueRevision,
-             Some(version + "-" + layer + "-" + currentUniqueRevision),
-             libraryJar.data,
-             compilerJar.data,
-             launcher,
-             ((fjbg.files++jline.files):_*))
-         case _ => error("Cannot build a ScalaReference with more than one classpath element")
-      }
-  }
-  
-  // Creates a "layer" of Scala compilation.  That is, this will build the next version of Scala from a previous version.
-  // Returns the library project and compiler project from the next layer.
-  // Note:  The library and compiler are not *complete* in the sense that they are missing things like "actors" and "fjbg".
-  def makeLayer(layer: String, referenceScala: Setting[Task[ScalaInstance]]) : (Project, Project) = {
-    val library = Project(layer + "-library", file("."))  settings( (settingOverrides ++
-      Seq(version := layer,
-          // TODO - use depends on.
-          unmanagedClasspath in Compile <<= (exportedProducts in forkjoin in Compile).identity,
-          managedClasspath in Compile := Seq(),
-          scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "library"),
-          resourceDirectory in Compile <<= baseDirectory apply (_ / "src" / "library"),   
-          defaultExcludes in unmanagedResources := ("*.scala" | "*.java"),
-          // TODO - Allow other scalac option settings.
-          scalacOptions in Compile <++= (scalaSource in Compile) map (src => Seq("-sourcepath", src.getAbsolutePath)),
-          classpathOptions := ClasspathOptions.manual,
-          referenceScala
-      )) :_*)
-
-    // Define the compiler
-    val compiler = Project(layer + "-compiler", file(".")) settings((settingOverrides ++
-      Seq(version := layer,
-        scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "compiler"),
-        resourceDirectory in Compile <<= baseDirectory apply (_ / "src" / "compiler"),
-        defaultExcludes in unmanagedResources := "*.scala",
-        // Note, we might be able to use the default task, but for some reason ant was filtering files out.  Not sure what's up, but we'll
-        // stick with that for now.
-        unmanagedResources in Compile <<= (baseDirectory) map {
-          (bd) =>
-            val dirs = Seq(bd / "src" / "compiler")
-		dirs.descendentsExcept( ("*.html" | "*.gif" | "*.png" | "*.js" | "*.css" | "*.tmpl" | "*.swf" | "*.properties"),"*.scala").get
-        },
-        // TODO - Use depends on *and* SBT's magic dependency mechanisms...
-        unmanagedClasspath in Compile <<= Seq(forkjoin, library, fjbg, jline, msil).map(exportedProducts in Compile in _).join.map(_.flatten),
-        classpathOptions := ClasspathOptions.manual,
-        ant,
-        referenceScala
-        )
-      ):_*)
-
-    // Return the generated projects.
-    (library, compiler)
-  }
-
   // --------------------------------------------------------------
   //  Projects dependent on layered compilation (quick)
   // --------------------------------------------------------------
@@ -206,6 +136,9 @@ object ScalaBuild extends Build {
   lazy val actors = Project("actors", file(".")) settings(dependentProjectSettings:_*) dependsOn(forkjoin)
   lazy val dbc = Project("dbc", file(".")) settings(dependentProjectSettings:_*)
   lazy val swing = Project("swing", file(".")) settings(dependentProjectSettings:_*) dependsOn(actors)
+  // This project will generate man pages (in man1 and html) for scala.    
+  lazy val manmakerSettings: Seq[Setting[_]] = dependentProjectSettings :+ ant
+  lazy val manmaker = Project("manual", file(".")) settings(manmakerSettings:_*)
 
   // Things that compile against the compiler.
   lazy val compilerDependentProjectSettings = dependentProjectSettings ++ Seq(quickScalaCompilerDependency)
@@ -341,27 +274,6 @@ object ScalaBuild extends Build {
   )
   lazy val documentation = Project("documentation", file(".")) settings(documentationSettings: _*) dependsOn(quickLib, quickComp, actors, fjbg, forkjoin, swing, continuationsLibrary)
 
-  // This project will generate man pages (in man1 and html) for scala.
-  val runManmakerMan = TaskKey[Map[File,String]]("make-man", "Runs the man maker project to generate man pages")
-  val runManmakerHtml = TaskKey[Map[File,String]]("make-html", "Runs the man maker project to generate html pages")
-  def runManmakerTask(classpath: ScopedTask[Classpath], scalaRun: ScopedTask[ScalaRun], mainClass: String, dir: String, ext: String): Project.Initialize[Task[Map[File,String]]] =
-    (classpath, runner, streams, target) map { (cp, runner, s, target) =>
-      val binaries = Seq("fsc", "scala", "scalac", "scaladoc", "scalap")
-      binaries map { bin =>
-        val file = target / dir / (bin + ext)
-        val classname = "scala.man1." + bin
-        IO.createDirectory(file.getParentFile)
-        toError(runner.run(mainClass, Build.data(cp), Seq(classname, file.getAbsolutePath), s.log))   
-        file -> ("man/" + dir + "/" + bin + ext)
-      } toMap
-    }    
-  lazy val manmakerSettings: Seq[Setting[_]] = dependentProjectSettings ++ Seq(
-    runManmakerMan <<= runManmakerTask(fullClasspath in Runtime, runner in run, "scala.tools.docutil.EmitManPage", "man1", ".1"),
-    runManmakerHtml <<= runManmakerTask(fullClasspath in Runtime, runner in run, "scala.tools.docutil.EmitHtml", "doc", ".html"),
-    ant
-  )
-  lazy val manmaker = Project("manual", file(".")) settings(manmakerSettings:_*)
-
   // --------------------------------------------------------------
   //  Packaging a distro
   // --------------------------------------------------------------
@@ -373,6 +285,7 @@ object ScalaBuild extends Build {
     lazy val executeMethod = mainClass.getMethod("execute")
     lazy val setFileMethod = mainClass.getMethod("setFile", classOf[java.io.File])
     lazy val setClassMethod = mainClass.getMethod("setClass", classOf[String])
+    lazy val setClasspathMethod = mainClass.getMethod("setClassPath", classOf[String])
     lazy val instance = mainClass.newInstance()
     def setClass(cls: String): Unit = setClassMethod.invoke(instance, cls)
     def setFile(file: File): Unit = setFileMethod.invoke(instance, file)
@@ -406,8 +319,23 @@ object ScalaBuild extends Build {
        }
        // TODO - Make sure these are 755...
        classToFilename.flatMap((makeBinMappings _).tupled).toMap
-  }  
-  lazy val genBin = TaskKey[Map[File,String]]("gen-bin", "Creates script files for Scala distribution")
+  }
+  def runManmakerTask(classpath: ScopedTask[Classpath], scalaRun: ScopedTask[ScalaRun], mainClass: String, dir: String, ext: String): Project.Initialize[Task[Map[File,String]]] =
+    (classpath, scalaRun, streams, target) map { (cp, runner, s, target) =>
+      val binaries = Seq("fsc", "scala", "scalac", "scaladoc", "scalap")
+      binaries map { bin =>
+        val file = target / "man" / dir / (bin + ext)
+        val classname = "scala.man1." + bin
+        IO.createDirectory(file.getParentFile)
+        toError(runner.run(mainClass, Build.data(cp), Seq(classname, file.getAbsolutePath), s.log))   
+        file -> ("man/" + dir + "/" + bin + ext)
+      } toMap
+    }
+  
+  val genBin = TaskKey[Map[File,String]]("gen-bin", "Creates script files for Scala distribution")
+  val runManmakerMan = TaskKey[Map[File,String]]("make-man", "Runs the man maker project to generate man pages")
+  val runManmakerHtml = TaskKey[Map[File,String]]("make-html", "Runs the man maker project to generate html pages")
+
   lazy val scalaDistSettings: Seq[Setting[_]] = Seq(
     crossPaths := false,
     target <<= (baseDirectory, name) apply (_ / "target" / _),
@@ -415,12 +343,14 @@ object ScalaBuild extends Build {
     autoScalaLibrary := false,
     unmanagedJars in Compile := Seq(),
     genBin <<= genBinTask(fullClasspath in quickComp in Runtime, target),
+    runManmakerMan <<= runManmakerTask(fullClasspath in Runtime in manmaker, runner in manmaker, "scala.tools.docutil.EmitManPage", "man1", ".1"),
+    runManmakerHtml <<= runManmakerTask(fullClasspath in Runtime in manmaker, runner in manmaker, "scala.tools.docutil.EmitHtml", "doc", ".html"),
     // TODO - We could *really* clean this up in many ways.   Let's look into making a a Seq of "direct jars" (scalaLibrary, scalaCompiler, jline, scalap)
     // a seq of "plugin jars" (continuationsPlugin) and "binaries" (genBin) and "documentation" mappings (genBin) that this can aggregate.
     // really need to figure out a better way to pull jline + jansi.
     makeDistMappings <<= (genBin, 
-                          runManmakerMan in manmaker,
-                          runManmakerHtml in manmaker,
+                          runManmakerMan,
+                          runManmakerHtml,
                           packageBin in scalaLibrary in Compile, 
                           packageBin in scalaCompiler in Compile,
                           packageBin in jline in Compile,
@@ -444,13 +374,17 @@ object ScalaBuild extends Build {
       s.log.info("Created " + file.getAbsolutePath)
       file
     },
-    makeExplodedDist <<= (makeDistMappings, baseDirectory, streams) map { (maps, dir, s) => 
-      val targetDir = dir / "target" / "scala-dist"
-      IO.createDirectory(targetDir)
-      IO.copy(for((file, name) <- maps) yield (file, targetDir / name))
+    makeExplodedDist <<= (makeDistMappings, target, streams) map { (maps, dir, s) => 
+      def sameFile(f: File, f2: File) = f.getCanonicalPath == f2.getCanonicalPath
+      IO.createDirectory(dir)
+      IO.copy(for {
+       (file, name) <- maps
+       val file2 = dir / name
+       if !sameFile(file,file2)
+      } yield (file, file2))
       // Hack to make binaries be executable.  TODO - Fix for JDK 5 and below...
-      maps.values filter (_ startsWith "bin/") foreach (f => (targetDir / f).setExecutable(true))
-      targetDir
+      maps.values filter (_ startsWith "bin/") foreach (f => (dir / f).setExecutable(true))
+      dir
     }
   )
   lazy val scaladist = Project("dist", file(".")) settings(scalaDistSettings:_*)
