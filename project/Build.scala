@@ -41,7 +41,7 @@ object ScalaBuild extends Build with Layers {
     makeDist <<= (makeDist in scaladist).identity,
     makeExplodedDist <<= (makeExplodedDist in scaladist).identity,
     // Note: We override unmanagedSources so that ~ compile will look at all these sources, then run our aggregated compile...
-    unmanagedSourceDirectories in Compile <<= baseDirectory apply { dir =>
+    unmanagedSourceDirectories in Compile <<= baseDirectory apply (_ / "src") apply { dir =>
       Seq("library/scala","actors","compiler","fjbg","swing","continuations/library","forkjoin") map (dir / _)
     }
     // TODO - Make exported products == makeDist so we can use this when creating a *real* distribution.
