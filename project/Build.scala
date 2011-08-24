@@ -37,8 +37,13 @@ object ScalaBuild extends Build with Layers {
     lockerUnlock <<= (lockFile in lockerLib, lockFile in lockerComp) map { (lib, comp) =>
       Seq(lib,comp).foreach(IO.delete)
     },
+    genBinQuick <<= (genBinQuick in scaladist).identity,
     makeDist <<= (makeDist in scaladist).identity,
-    makeExplodedDist <<= (makeExplodedDist in scaladist).identity
+    makeExplodedDist <<= (makeExplodedDist in scaladist).identity,
+    // Note: We override unmanagedSources so that ~ compile will look at all these sources, then run our aggregated compile...
+    unmanagedSourceDirectories in Compile <<= baseDirectory apply { dir =>
+      Seq("library/scala","actors","compiler","fjbg","swing","continuations/library","forkjoin") map (dir / _)
+    }
     // TODO - Make exported products == makeDist so we can use this when creating a *real* distribution.
     // TODO - Generate binaries that work against quick, so ~ compile + these scripts will always be up-to-date...
   )
@@ -246,11 +251,13 @@ object ScalaBuild extends Build with Layers {
   // --------------------------------------------------------------
   //  Generating Documentation.
   // --------------------------------------------------------------
-
+  
+  // TODO - Migrate this into the dist project.
   // Scaladocs
   def distScalaInstance = makeScalaReference("dist", scalaLibrary, scalaCompiler, fjbg)
   lazy val documentationSettings: Seq[Setting[_]] = dependentProjectSettings ++ Seq(
-    defaultExcludes in unmanagedSources := ((".*"  - ".") || HiddenFileFilter ||
+    // TODO - Make these work for realz.
+    defaultExcludes in unmanagedSources in Compile := ((".*"  - ".") || HiddenFileFilter ||
       "reflect/Print.scala" ||
       "reflect/Symbol.scala" ||
       "reflect/Tree.scala" ||
@@ -289,35 +296,38 @@ object ScalaBuild extends Build with Layers {
     lazy val instance = mainClass.newInstance()
     def setClass(cls: String): Unit = setClassMethod.invoke(instance, cls)
     def setFile(file: File): Unit = setFileMethod.invoke(instance, file)
+    def setClasspath(cp: String): Unit = setClasspathMethod.invoke(instance, cp)
     def execute(): Unit = executeMethod.invoke(instance)
   }
 
-  def genBinTask(classpath: ScopedTask[Classpath], outputDir: ScopedSetting[File]) = (classpath, outputDir) map {
-    (cp, outDir) =>
-       val binDir = outDir / "bin"
-       IO.createDirectory(binDir)
-       val classToFilename = Map(
-             "scala.tools.nsc.MainGenericRunner" -> "scala",
-             "scala.tools.nsc.Main" -> "scalac",
-             "scala.tools.nsc.ScalaDoc" -> "scaladoc",
-             "scala.tools.nsc.CompileClient" -> "fsc",
-             "scala.tools.scalap.Main" -> "scalap"
-           )
-       def genBinFiles(cls: String, dest: File): Unit = {
-         val runner = new ScalaToolRunner(cp)
+  def genBinTask(runner: ScopedTask[ScalaToolRunner], outputDir: ScopedSetting[File], classpath: ScopedTask[Classpath], useClasspath: Boolean): Project.Initialize[sbt.Task[Map[File,String]]] =
+    (runner, outputDir, classpath, streams) map { (runner, outDir, cp, s) =>
+        IO.createDirectory(outDir)
+        val classToFilename = Map(
+          "scala.tools.nsc.MainGenericRunner" -> "scala",
+          "scala.tools.nsc.Main" -> "scalac",
+          "scala.tools.nsc.ScalaDoc" -> "scaladoc",
+          "scala.tools.nsc.CompileClient" -> "fsc",
+          "scala.tools.scalap.Main" -> "scalap"
+          )
+       if(useClasspath) { 
+         val classpath = Build.data(cp).map(_.getCanonicalPath).distinct.mkString(",")
+         s.log.debug("Setting classpath = " + classpath)
+         runner.setClasspath(classpath)
+       }
+       def genBinFiles(cls: String, dest: File) = {
          runner.setClass(cls)
          runner.setFile(dest)
          runner.execute()
          // TODO - Mark generated files as executable (755 or a+x) that is *not* JDK6 specific...
          dest.setExecutable(true)
        }
-       def makeBinMappings(cls: String, binName: String) = {
-         val file = binDir / binName
+       def makeBinMappings(cls: String, binName: String): Map[File,String] = {
+         val file = outDir / binName
          val winBinName = binName + ".bat"
          genBinFiles(cls, file)
-         Seq( file -> ("bin/"+binName), binDir / winBinName -> ("bin/"+winBinName) )
+         Map( file -> ("bin/"+binName), outDir / winBinName -> ("bin/"+winBinName) )
        }
-       // TODO - Make sure these are 755...
        classToFilename.flatMap((makeBinMappings _).tupled).toMap
   }
   def runManmakerTask(classpath: ScopedTask[Classpath], scalaRun: ScopedTask[ScalaRun], mainClass: String, dir: String, ext: String): Project.Initialize[Task[Map[File,String]]] =
@@ -331,8 +341,11 @@ object ScalaBuild extends Build with Layers {
         file -> ("man/" + dir + "/" + bin + ext)
       } toMap
     }
-  
-  val genBin = TaskKey[Map[File,String]]("gen-bin", "Creates script files for Scala distribution")
+
+  val genBinRunner = TaskKey[ScalaToolRunner]("gen-bin-runner", "Creates a utility to generate script files for Scala.")  
+  val genBin = TaskKey[Map[File,String]]("gen-bin", "Creates script files for Scala distribution.")
+  val binDir = SettingKey[File]("binaries-directory", "Directory where binary scripts will be located.")
+  val genBinQuick = TaskKey[Map[File,String]]("gen-quick-bin", "Creates script files for testing against current Scala build classfiles (not local dist).")
   val runManmakerMan = TaskKey[Map[File,String]]("make-man", "Runs the man maker project to generate man pages")
   val runManmakerHtml = TaskKey[Map[File,String]]("make-html", "Runs the man maker project to generate html pages")
 
@@ -342,7 +355,13 @@ object ScalaBuild extends Build with Layers {
     scalaSource in Compile <<= (baseDirectory, name) apply (_ / "src" / _),
     autoScalaLibrary := false,
     unmanagedJars in Compile := Seq(),
-    genBin <<= genBinTask(fullClasspath in quickComp in Runtime, target),
+    genBinRunner <<= (fullClasspath in quickComp in Runtime) map (new ScalaToolRunner(_)),
+    binDir <<= target(_/"bin"),
+    genBin <<= genBinTask(genBinRunner, binDir, fullClasspath in Runtime, false),
+    binDir in genBinQuick <<= baseDirectory apply (_ / "target" / "bin"),
+    fullClasspath in Runtime in genBinQuick <<= Seq(quickComp,quickLib,scalap,actors,fjbg,jline,forkjoin).map(classDirectory in Compile in _).join.map(Attributed.blankSeq),
+    fullClasspath in Runtime in genBinQuick <++= (fullClasspath in Compile in jline),
+    genBinQuick <<= genBinTask(genBinRunner, binDir in genBinQuick, fullClasspath in Runtime in genBinQuick, true),
     runManmakerMan <<= runManmakerTask(fullClasspath in Runtime in manmaker, runner in manmaker, "scala.tools.docutil.EmitManPage", "man1", ".1"),
     runManmakerHtml <<= runManmakerTask(fullClasspath in Runtime in manmaker, runner in manmaker, "scala.tools.docutil.EmitHtml", "doc", ".html"),
     // TODO - We could *really* clean this up in many ways.   Let's look into making a a Seq of "direct jars" (scalaLibrary, scalaCompiler, jline, scalap)
