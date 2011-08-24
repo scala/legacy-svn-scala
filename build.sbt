@@ -9,3 +9,24 @@ scalaVersion := "2.9.1.RC3"
 organization := "org.scala-lang"
 
 ivyScala ~= { (is: Option[IvyScala]) => is.map(_.copy(checkExplicit = false) ) }
+
+pomIncludeRepository := { _ => false }
+
+publishMavenStyle := true
+
+pomExtra := <xml:group>
+  <inceptionYear>2002</inceptionYear>
+    <licenses>
+      <license>
+        <name>BSD-like</name>
+        <url>http://www.scala-lang.org/downloads/license.html</url>
+      </license>
+    </licenses>
+    <scm>
+      <connection>scm:svn:http://lampsvn.epfl.ch/svn-repos/scala/scala/trunk</connection>
+    </scm>
+    <issueManagement>
+      <system>jira</system>
+      <url>http://issues.scala-lang.org</url>
+    </issueManagement>
+  </xml:group>

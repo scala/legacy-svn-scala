@@ -45,7 +45,6 @@ object ScalaBuild extends Build with Layers {
       Seq("library/scala","actors","compiler","fjbg","swing","continuations/library","forkjoin") map (dir / _)
     }
     // TODO - Make exported products == makeDist so we can use this when creating a *real* distribution.
-    // TODO - Generate binaries that work against quick, so ~ compile + these scripts will always be up-to-date...
   )
   // Note: Root project is determined by lowest-alphabetical project that has baseDirectory as file(".").  we use aaa_ to 'win'.
   lazy val aaa_root = Project("scala", file(".")) settings(projectSettings:_*)
@@ -53,24 +52,8 @@ object ScalaBuild extends Build with Layers {
   // External dependencies used for various projects
   lazy val ant = libraryDependencies += "org.apache.ant" % "ant" % "1.8.2"
 
-  def pomLicensing: Setting[_] = pomExtra := <xml:group>
-  <inceptionYear>2002</inceptionYear>
-    <licenses>
-      <license>
-        <name>BSD-like</name>
-        <url>http://www.scala-lang.org/downloads/license.html</url>
-      </license>
-    </licenses>
-    <scm>
-      <connection>scm:svn:http://lampsvn.epfl.ch/svn-repos/scala/scala/trunk</connection>
-    </scm>
-    <issueManagement>
-      <system>jira</system>
-      <url>http://issues.scala-lang.org</url>
-    </issueManagement>
-  </xml:group>
-
   // These are setting overrides for most artifacts in the Scala build file.
+  // TODO - what can we move into build.sbt...
   def settingOverrides: Seq[Setting[_]] = Seq(
                              crossPaths := false,
                              publishArtifact in packageDoc := false,
@@ -85,8 +68,7 @@ object ScalaBuild extends Build with Layers {
                              // Most libs in the compiler use this order to build.
                              compileOrder in Compile := CompileOrder.JavaThenScala,
                              lockFile <<= target(_ / "compile.lock"),
-                             skip in Compile <<= lockFile.map(_  exists),
-                             pomLicensing
+                             skip in Compile <<= lockFile.map(_  exists)
                             )
   // TODO - Figure out a way to uniquely determine a version to assign to Scala builds...
   def createUniqueBuildVersion(baseDirectory: File): String = "0.2"
@@ -215,8 +197,7 @@ object ScalaBuild extends Build with Layers {
     packageSrc in Compile <<= (packageSrc in documentation in Compile).identity,
     fullClasspath in Runtime <<= (exportedProducts in Compile).identity,
     addPropertiesFile("library.properties"),
-    quickScalaInstance,
-    pomLicensing
+    quickScalaInstance
   )
   lazy val scalaLibrary = Project("scala-library", file(".")) settings(scalaLibArtifactSettings:_*)
 
@@ -232,8 +213,7 @@ object ScalaBuild extends Build with Layers {
     unmanagedJars in Compile := Seq(),
     fullClasspath in Runtime <<= (exportedProducts in Compile).identity,
     addPropertiesFile("compiler.properties"),
-    quickScalaInstance,
-    pomLicensing
+    quickScalaInstance
   )
   lazy val scalaCompiler = Project("scala-compiler", file(".")) settings(scalaBinArtifactSettings:_*) dependsOn(scalaLibrary)
   lazy val fullQuickScalaReference = makeScalaReference("pack", scalaLibrary, scalaCompiler, fjbg)
