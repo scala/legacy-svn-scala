@@ -338,7 +338,7 @@ class AnyVals extends AnyValReps with AnyValTemplates {
   object L extends AnyValNum("Long",    Some("64-bit signed integer"),                 "long")
   object F extends AnyValNum("Float",   Some("32-bit IEEE-754 floating point number"), "float")
   object D extends AnyValNum("Double",  Some("64-bit IEEE-754 floating point number"), "double")
-  object Z extends AnyValRep("Boolean", None, "") {
+  object Z extends AnyValRep("Boolean", None,                                          "boolean") {
     def classLines = """
 /**
  * Negates a Boolean expression.
