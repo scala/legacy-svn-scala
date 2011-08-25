@@ -66,9 +66,9 @@ object SBTRunner extends DirectRunner {
     // This next bit uses java maps...
     import collection.JavaConverters._
     (for { 
-     (testType, files) <- runs
+     (testType, files) <- runs.par
      (path, result) <- reflectiveRunTestsForFiles(files,testType).asScala
-    } yield (path, result)) asJava
+    } yield (path, result)).seq asJava
   }
 
   def main(args: Array[String]): Unit = {
