@@ -29,7 +29,7 @@ import transform._
 import backend.icode.{ ICodes, GenICode, ICodeCheckers }
 import backend.{ ScalaPrimitives, Platform, MSILPlatform, JavaPlatform }
 import backend.jvm.GenJVM
-import backend.opt.{ Inliners, ClosureElimination, DeadCodeElimination }
+import backend.opt.{ Inliners, InlineExceptionHandlers, ClosureElimination, DeadCodeElimination }
 import backend.icode.analysis._
 
 class Global(var currentSettings: Settings, var reporter: Reporter) extends SymbolTable
@@ -262,7 +262,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     // debugging
     def checkPhase = wasActive(settings.check)
     def logPhase   = isActive(settings.log)
-    def writeICode = settings.writeICode.value
+
+    // Write *.icode files the setting was given.
+    def writeICode = settings.writeICode.isSetByUser && isActive(settings.writeICode)
     
     // showing/printing things
     def browsePhase   = isActive(settings.browse) 
@@ -395,7 +397,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   } with Pickler
  
   // phaseName = "refchecks"
-  object refchecks extends {
+  object refChecks extends {
     val global: Global.this.type = Global.this
     val runsAfter = List[String]("pickler")
     val runsRightAfter = None
@@ -499,11 +501,18 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     val runsAfter = List[String]("icode")
     val runsRightAfter = None
   } with Inliners
- 
+
+  // phaseName = "inlineExceptionHandlers"
+  object inlineExceptionHandlers extends {
+    val global: Global.this.type = Global.this
+    val runsAfter = List[String]("inliner")
+    val runsRightAfter = None
+  } with InlineExceptionHandlers
+
   // phaseName = "closelim"
   object closureElimination extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List[String]("inliner")
+    val runsAfter = List[String]("inlineExceptionHandlers")
     val runsRightAfter = None
   } with ClosureElimination
  
@@ -588,7 +597,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       analyzer.typerFactory   -> "the meat and potatoes: type the trees",
       superAccessors          -> "add super accessors in traits and nested classes",
       pickler                 -> "serialize symbol tables",
-      refchecks               -> "reference/override checking, translate nested objects",
+      refChecks               -> "reference/override checking, translate nested objects",
       uncurry                 -> "uncurry, translate function values to anonymous classes",
       tailCalls               -> "replace tail calls by jumps",
       specializeTypes         -> "@specialized-driven class and method specialization",
@@ -601,6 +610,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       cleanup                 -> "platform-specific cleanups, generate reflective calls",
       genicode                -> "generate portable intermediate code",
       inliner                 -> "optimization: do inlining",
+      inlineExceptionHandlers -> "optimization: inline exception handlers",      
       closureElimination      -> "optimization: eliminate uncalled closures",
       deadCode                -> "optimization: eliminate dead code",
       terminal                -> "The last phase in the compiler chain"
@@ -1011,7 +1021,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
         phaseTimings(globalPhase) = currentTime - startTime
 
         // write icode to *.icode files
-        if (opt.writeICode && (runIsAt(icodePhase) || opt.printPhase && runIsPast(icodePhase)))
+        if (opt.writeICode)
           writeICode()
 
         // print trees

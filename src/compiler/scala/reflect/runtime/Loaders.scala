@@ -5,7 +5,7 @@ import internal.Flags
 
 import java.lang.{Class => jClass, Package => jPackage}
 
-trait Loaders { self: Universe => 
+trait Loaders { self: SymbolTable => 
   
   /** The lazy type for root.
    */
