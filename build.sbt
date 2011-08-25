@@ -1,10 +1,12 @@
 // resolvers += ScalaToolsSnapshots
 resolvers += "junit interface repo" at "https://repository.jboss.org/nexus/content/repositories/scala-tools-releases"
 
+resolvers += Resolver.url("Typesafe nightlies", url("https://typesafe.artifactoryonline.com/typesafe/ivy-snapshots/"))(Resolver.ivyStylePatterns)
+
 version := "2.10.0-SNAPSHOT"
 
 // TODO - Should this be the same as the version we're building?
-scalaVersion := "2.9.1.RC3"
+//scalaVersion := "2.9.1.RC3"
 
 organization := "org.scala-lang"
 

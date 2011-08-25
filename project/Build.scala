@@ -359,6 +359,7 @@ object ScalaBuild extends Build with Layers {
     binDir <<= target(_/"bin"),
     genBin <<= genBinTask(genBinRunner, binDir, fullClasspath in Runtime, false),
     binDir in genBinQuick <<= baseDirectory apply (_ / "target" / "bin"),
+    // Configure the classpath this way to avoid having .jar files and previous layers on the classpath.
     fullClasspath in Runtime in genBinQuick <<= Seq(quickComp,quickLib,scalap,actors,fjbg,jline,forkjoin).map(classDirectory in Compile in _).join.map(Attributed.blankSeq),
     fullClasspath in Runtime in genBinQuick <++= (fullClasspath in Compile in jline),
     genBinQuick <<= genBinTask(genBinRunner, binDir in genBinQuick, fullClasspath in Runtime in genBinQuick, true),
