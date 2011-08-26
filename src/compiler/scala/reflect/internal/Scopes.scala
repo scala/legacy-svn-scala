@@ -79,6 +79,8 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       this.toList foreach (clone enter _)
       clone
     }
+    
+    def mkScope: Scope = new Scope()
 
     /** is the scope empty? */
     override def isEmpty: Boolean = elems eq null

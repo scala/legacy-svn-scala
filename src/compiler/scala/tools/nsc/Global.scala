@@ -397,7 +397,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   } with Pickler
  
   // phaseName = "refchecks"
-  object refchecks extends {
+  object refChecks extends {
     val global: Global.this.type = Global.this
     val runsAfter = List[String]("pickler")
     val runsRightAfter = None
@@ -597,7 +597,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       analyzer.typerFactory   -> "the meat and potatoes: type the trees",
       superAccessors          -> "add super accessors in traits and nested classes",
       pickler                 -> "serialize symbol tables",
-      refchecks               -> "reference/override checking, translate nested objects",
+      refChecks               -> "reference/override checking, translate nested objects",
+      liftcode                -> "reify trees",
       uncurry                 -> "uncurry, translate function values to anonymous classes",
       tailCalls               -> "replace tail calls by jumps",
       specializeTypes         -> "@specialized-driven class and method specialization",
@@ -622,7 +623,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   // and attractive -Xshow-phases output is unlikely if the descs span 20 files anyway.
   private val otherPhaseDescriptions = Map(
     "flatten"  -> "eliminate inner classes",
-    "liftcode" -> "reify trees",
     "jvm"      -> "generate JVM bytecode"
   ) withDefaultValue ""
   

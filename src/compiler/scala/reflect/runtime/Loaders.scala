@@ -5,12 +5,12 @@ import internal.Flags
 
 import java.lang.{Class => jClass, Package => jPackage}
 
-trait Loaders { self: Universe => 
+trait Loaders { self: SymbolTable => 
   
   /** The lazy type for root.
    */
   override val rootLoader = new LazyType {
-    override def complete(sym: Symbol) = sym setInfo new PackageType(definitions.RootClass)
+    override def complete(sym: Symbol) = sym setInfo newPackageType(definitions.RootClass)
   }
   
   /** The standard completer for top-level classes 
@@ -22,14 +22,15 @@ trait Loaders { self: Universe =>
    */
   class TopClassCompleter(clazz: Symbol, module: Symbol) extends LazyType {
     def makePackage() {
-      val ptpe = new PackageType(module.moduleClass)
+      val ptpe = newPackageType(module.moduleClass)
       for (sym <- List(clazz, module, module.moduleClass)) {
         sym setFlag Flags.PACKAGE
         sym setInfo ptpe
       }
     }
     override def complete(sym: Symbol) = {
-      //println("completing "+sym+"/"+clazz.fullName) //debug
+      println("completing "+sym+"/"+clazz.fullName+
+              (if (sym == clazz) 1 else if (sym == module) 2 else if (sym == module.moduleClass) 3 else 4)) //debug
       assert(sym == clazz || sym == module || sym == module.moduleClass)
       try {
         unpickleClass(clazz, module, jClass.forName(clazz.fullName))
@@ -79,7 +80,8 @@ trait Loaders { self: Universe =>
    *  a TopClassCompleter type. When any of the two symbols is forced via info,
    *  the TopClassCompleter will sort things out.
    */
-  class PackageType(pkg: Symbol) extends ClassInfoType(List(), newScope, pkg) {
+  def newPackageType(pkg: Symbol) = new ClassInfoType(List(), new PackageScope(pkg), pkg) {
+    /*
     override def decl(name: Name): Symbol = 
       (decls lookup name) orElse {
         assert(this eq pkg.info, this+" "+pkg.info)
@@ -91,5 +93,25 @@ trait Loaders { self: Universe =>
     override def member(name: Name): Symbol = decl(name)
     override def findMember(name: Name, excludedFlags: Long, requiredFlags: Long, stableOnly: Boolean) = 
       member(name).filter (m => m.hasAllFlags(requiredFlags) && !m.hasFlag(excludedFlags))
+*/
+    override def safeToString = pkg.toString
+  }
+
+  class PackageScope(pkg: Symbol) extends Scope {
+    override def lookupEntry(name: Name): ScopeEntry = {
+      val e = super.lookupEntry(name)
+      if (e != null)
+        e
+      else try {
+        if (name.isTypeName) jClass.forName(pkg.fullName + "." + name)
+        val (clazz, module) = createClassModule(pkg, name.toTypeName, new TopClassCompleter(_, _))
+        println("created "+module+"/"+module.moduleClass+" in "+pkg+", scope = "+(this map (_.name)))
+        lookupEntry(name)
+      } catch {
+        case ex: ClassNotFoundException => 
+          println("not found: "+pkg.fullName + "." + name)
+          null
+      }
+    }
   }
 }

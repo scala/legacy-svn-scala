@@ -2,6 +2,7 @@ package scala.reflect
 package runtime
 
 import java.lang.{ Class => jClass, Package => jPackage }
+import java.io.IOException
 import java.lang.reflect.{
   Method => jMethod,
   Constructor => jConstructor,
@@ -21,13 +22,14 @@ import internal.pickling.UnPickler
 import collection.mutable.{ HashMap, ListBuffer }
 import internal.Flags._
 
-trait JavaToScala extends ConversionUtil { self: Universe =>
+trait JavaToScala extends ConversionUtil { self: SymbolTable =>
 
   import definitions._
 
   private object unpickler extends UnPickler {
     val global: JavaToScala.this.type = self
   }
+  
 
   /**
    * Generate types for top-level Scala root class and root companion object
@@ -38,29 +40,42 @@ trait JavaToScala extends ConversionUtil { self: Universe =>
    *                   ScalaSignature or ScalaLongSignature annotation.
    */
   def unpickleClass(clazz: Symbol, module: Symbol, jclazz: jClass[_]): Unit = {
-    //println("unpickling " + clazz + " " + module)//debug
-    val ssig = jclazz.getAnnotation(classOf[scala.reflect.ScalaSignature])
-    if (ssig != null) {
-      val bytes = ssig.bytes.getBytes
-      val len = ByteCodecs.decode(bytes)
-      unpickler.unpickle(bytes take len, 0, clazz, module, jclazz.getName)
-    } else {
-      val slsig = jclazz.getAnnotation(classOf[scala.reflect.ScalaLongSignature])
-      if (slsig != null) {
-        val byteSegments = slsig.bytes map (_.getBytes)
-        val lens = byteSegments map ByteCodecs.decode
-        val bytes = Array.ofDim[Byte](lens.sum)
-        var len = 0
-        for ((bs, l) <- byteSegments zip lens) {
-          bs.copyToArray(bytes, len, l)
-          len += l
+    def markAbsent(tpe: Type) = List(clazz, module, module.moduleClass) foreach (_ setInfo tpe)
+    try {
+      println("unpickling " + clazz + " " + module) //debug
+      markAbsent(NoType)
+      val ssig = jclazz.getAnnotation(classOf[scala.reflect.ScalaSignature])
+      if (ssig != null) {
+        val bytes = ssig.bytes.getBytes
+        val len = ByteCodecs.decode(bytes)
+        println("short sig:" + len)
+        unpickler.unpickle(bytes take len, 0, clazz, module, jclazz.getName)
+      } else {
+        val slsig = jclazz.getAnnotation(classOf[scala.reflect.ScalaLongSignature])
+        if (slsig != null) {
+          val byteSegments = slsig.bytes map (_.getBytes)
+          val lens = byteSegments map ByteCodecs.decode
+          val bytes = Array.ofDim[Byte](lens.sum)
+          var len = 0
+          for ((bs, l) <- byteSegments zip lens) {
+            bs.copyToArray(bytes, len, l)
+            len += l
+          }
+          println("long sig") //debug
+          unpickler.unpickle(bytes, 0, clazz, module, jclazz.getName)
+        } else { // class does not have a Scala signature; it's a Java class
+          println("no sig found for " + jclazz) //debug
+          initClassModule(clazz, module, new FromJavaClassCompleter(clazz, module, jclazz))
         }
-        //println("long sig")//debug
-        unpickler.unpickle(bytes, 0, clazz, module, jclazz.getName)
-      } else { // class does not have a Scala signature; it's a Java class
-        //println("no sig found for " + jclazz)//debug
-        initClassModule(clazz, module, new FromJavaClassCompleter(clazz, module, jclazz))
       }
+    } catch {
+      case ex: IOException =>
+        markAbsent(ErrorType)
+        if (settings.debug.value) ex.printStackTrace()
+        val msg = ex.getMessage()
+        throw new IOException(
+          if (msg eq null) "reflection error while loading " + clazz.name
+          else "error while loading " + clazz.name + ", " + msg)
     }
   }
 
@@ -82,7 +97,7 @@ trait JavaToScala extends ConversionUtil { self: Universe =>
    */
   private class TypeParamCompleter(jtvar: jTypeVariable[_ <: GenericDeclaration]) extends LazyType {
     override def complete(sym: Symbol) = {
-      sym setInfo TypeBounds(NothingClass.tpe, lub(jtvar.getBounds.toList map typeToScala))
+      sym setInfo TypeBounds(NothingClass.tpe, glb(jtvar.getBounds.toList map typeToScala map objToAny))
     }
   }
 
@@ -106,7 +121,7 @@ trait JavaToScala extends ConversionUtil { self: Universe =>
    */
   private class FromJavaClassCompleter(clazz: Symbol, module: Symbol, jclazz: jClass[_]) extends LazyType {
     override def complete(sym: Symbol) = {
-      //println("completing from Java " + sym + "/" + clazz.fullName)//debug
+      println("completing from Java " + sym + "/" + clazz.fullName)//debug
       assert(sym == clazz || sym == module || sym == module.moduleClass, sym)
       val flags = toScalaFlags(jclazz.getModifiers, isClass = true)
       clazz setFlag (flags | JAVA)
@@ -238,11 +253,13 @@ trait JavaToScala extends ConversionUtil { self: Universe =>
    *  this one bypasses the cache.
    */
   private def makeScalaPackage(fullname: String): Symbol = {
+    println("make scala pkg "+fullname)
     val split = fullname lastIndexOf '.'
     val owner = if (split > 0) packageNameToScala(fullname take split) else RootClass
-    assert(owner.isModuleClass)
+    assert(owner.isModuleClass, owner+" when making "+fullname)
     val name = fullname drop (split + 1)
     val pkg = owner.info decl newTermName(name)
+    println(" = "+pkg+"/"+pkg.moduleClass)
     pkg.moduleClass
   }
 
@@ -272,9 +289,11 @@ trait JavaToScala extends ConversionUtil { self: Universe =>
       case java.lang.Boolean.TYPE   => BooleanClass
       case _ =>
         // jclazz is top-level - get signature
-        val (clazz, module) = createClassModule(
-          sOwner(jclazz), newTypeName(jclazz.getSimpleName), new TopClassCompleter(_, _))
-        clazz
+        sOwner(jclazz).info decl newTypeName(jclazz.getSimpleName)
+//        val (clazz, module) = createClassModule(
+//          sOwner(jclazz), newTypeName(jclazz.getSimpleName), new TopClassCompleter(_, _))
+//        classCache enter (jclazz, clazz)
+//        clazz
     }
   }
 
@@ -310,7 +329,7 @@ trait JavaToScala extends ConversionUtil { self: Universe =>
         val tparam = owner.newExistential(NoPosition, newTypeName("T$" + tparams.length))
           .setInfo(TypeBounds(
             lub(jwild.getLowerBounds.toList map typeToScala),
-            glb(jwild.getUpperBounds.toList map typeToScala)))
+            glb(scala.tools.nsc.util.trace("glb args")(jwild.getUpperBounds.toList) map typeToScala map objToAny)))
         tparams += tparam
         typeRef(NoPrefix, tparam, List())
       case _ =>
@@ -368,7 +387,11 @@ trait JavaToScala extends ConversionUtil { self: Universe =>
     copyAnnotations(field, jfield)
     field
   }
-
+  
+  private def setMethType(meth: Symbol, tparams: List[Symbol], paramtpes: List[Type], restpe: Type) = {
+    meth setInfo polyType(tparams, MethodType(meth.owner.newSyntheticValueParams(paramtpes map objToAny), restpe))
+  }
+  
   /**
    * The Scala method that corresponds to given Java method without taking
    *  Scala pickling info into account.
@@ -382,7 +405,7 @@ trait JavaToScala extends ConversionUtil { self: Universe =>
     val tparams = jmeth.getTypeParameters.toList map createTypeParameter
     val paramtpes = jmeth.getGenericParameterTypes.toList map typeToScala
     val resulttpe = typeToScala(jmeth.getGenericReturnType)
-    meth setInfo polyType(tparams, MethodType(clazz.newSyntheticValueParams(paramtpes), resulttpe))
+    setMethType(meth, tparams, paramtpes, resulttpe)
     copyAnnotations(meth, jmeth)
     meth
   }
@@ -400,6 +423,7 @@ trait JavaToScala extends ConversionUtil { self: Universe =>
       .setFlag(toScalaFlags(jconstr.getModifiers, isClass = false) | JAVA)
     val tparams = jconstr.getTypeParameters.toList map createTypeParameter
     val paramtpes = jconstr.getGenericParameterTypes.toList map typeToScala
+    setMethType(meth, tparams, paramtpes, clazz.tpe)
     meth setInfo polyType(tparams, MethodType(clazz.newSyntheticValueParams(paramtpes), clazz.tpe))
     copyAnnotations(meth, jconstr)
     meth
