@@ -14,7 +14,6 @@ object partest {
   lazy val partestRunner = TaskKey[PartestRunner]("partest-runner", "Creates a runner that can run partest suites")
   lazy val partestTests = TaskKey[Map[String, Seq[File]]]("partest-tests", "Creates a map of test-type to a sequence of the test files/directoryies to test.")
   lazy val partestDirs = SettingKey[Map[String,File]]("partest-dirs", "The map of partest test type to directory associated with that test type")
-  lazy val partestTestRunsForCompletion = TaskKey[(Set[String], Set[String])]("partest-tests-completion")
 
   lazy val partestTaskSettings: Seq[Setting[_]] = Seq(
     partestDirs <<= baseDirectory apply { bd =>
@@ -23,7 +22,6 @@ object partest {
     partestRunner <<= partestRunnerTask(fullClasspath in Runtime),
     partestTests <<= partestTestsTask(partestDirs),
     runPartest <<= runPartestTask(partestRunner, partestTests, scalacOptions in Test),
-    partestTestRunsForCompletion <<= partestTests map convertTestsForAutoComplete,
     runPartestSingle <<= runSingleTestTask(partestRunner, partestDirs, scalacOptions in Test)
   )
 
@@ -108,8 +106,9 @@ object partest {
         (runner, result, testDirs, scalacOptions, streams) map { 
           (r, test, dirs, o, s) => 
             val (testType, filter) = test
+            // TODO - Use partest resources somehow to filter the filter correctly....
             val files: Seq[File] = if(filter == "*") partestResources(dirs(testType), testType).get
-                                   else (dirs(testType) ** filter).get
+                                   else (dirs(testType) * filter).get
             runPartestImpl(r, Map(test._1 -> files), o, s)
         }
     }
