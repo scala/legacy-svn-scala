@@ -12,15 +12,19 @@ object partest {
   lazy val runPartest = TaskKey[Unit]("run-partest", "Runs the partest test suite against the quick.")
   lazy val runPartestSingle = InputKey[Unit]("run-partest-single", "Runs a single partest test against quick.")
   lazy val partestRunner = TaskKey[PartestRunner]("partest-runner", "Creates a runner that can run partest suites")
-  lazy val partestTestRuns = TaskKey[Map[String, Seq[File]]]("partest-tests", "Creates a map of test-type to a sequence of the test files/directoryies to test.")
+  lazy val partestTests = TaskKey[Map[String, Seq[File]]]("partest-tests", "Creates a map of test-type to a sequence of the test files/directoryies to test.")
+  lazy val partestDirs = SettingKey[Map[String,File]]("partest-dirs", "The map of partest test type to directory associated with that test type")
   lazy val partestTestRunsForCompletion = TaskKey[(Set[String], Set[String])]("partest-tests-completion")
 
   lazy val partestTaskSettings: Seq[Setting[_]] = Seq(
+    partestDirs <<= baseDirectory apply { bd =>
+      partestTestTypes map (testType => testType -> (bd / "test" / "files" / testType)) toMap
+    },
     partestRunner <<= partestRunnerTask(fullClasspath in Runtime),
-    partestTestRuns <<= partestTestRunTaskDefault(baseDirectory),
-    runPartest <<= runPartestTask(partestRunner, partestTestRuns, scalacOptions in Test),
-    partestTestRunsForCompletion <<= partestTestRuns map convertTestsForAutoComplete,
-    runPartestSingle <<= runSingleTestTask(partestRunner, partestTestRuns, scalacOptions in Test)
+    partestTests <<= partestTestsTask(partestDirs),
+    runPartest <<= runPartestTask(partestRunner, partestTests, scalacOptions in Test),
+    partestTestRunsForCompletion <<= partestTests map convertTestsForAutoComplete,
+    runPartestSingle <<= runSingleTestTask(partestRunner, partestDirs, scalacOptions in Test)
   )
 
   // What's fun here is that we want "*.scala" files *and* directories in the base directory...
@@ -32,13 +36,10 @@ object partest {
   }
   lazy val partestTestTypes = Seq("run", "jvm", "pos", "neg", "buildmanager", "res", "shootout", "scalap", "specialized", "presentation")
   // TODO - Figure out how to specify only a subset of resources...
-  def partestTestRunTaskDefault(baseDirectory: ScopedSetting[File]): Project.Initialize[Task[Map[String, Seq[File]]]] =
-     (baseDirectory) map { dir =>
-       partestTestTypes map {
-         testType => 
-           val testDir = dir / "test"
-           testType -> partestResources(testDir / "files" / testType, testType).get           
-       } toMap
+  def partestTestsTask(testDirs: ScopedSetting[Map[String,File]]): Project.Initialize[Task[Map[String, Seq[File]]]] =
+     (testDirs) map { dirs =>
+       (for( (testType, testDir) <- dirs)
+        yield testType -> partestResources(testDir, testType).get ).toMap
      }
   // TODO - Split partest task into Configurations and build a Task for each Configuration.
   // *then* mix all of them together for run-testsuite or something clever like this.
@@ -87,20 +88,30 @@ object partest {
   }
 
   // TODO - Allow a filter for the second part of this...
-  def runSingleTestParser: (State, Map[String,Set[String]]) => Parser[(String,String)] = {
+  def runSingleTestParser(testDirs: Map[String,File]): State => Parser[(String,String)] = {
     import DefaultParsers._
-    (state, tests) =>
-      (Space ~> token(NotSpace examples partestTestTypes.toSet)) flatMap { testType =>
-        // TODO - Figure out how to use partestTestRuns Key so this works with continuations...
-        lazy val files = partestResources(new File(".") / "test" / "files" / testType, testType).get.map(_.getPath).toSet
-        (Space ~> token(NotSpace examples tests.get(testType).getOrElse(files)) map { test => (testType, test) })
+    (state) =>
+      (Space ~> token(NotSpace examples testDirs.keys.toSet)) flatMap { testType =>
+        def getResourceNames(dir: File): Set[String] = 
+          (for { 
+            file <- partestResources(dir, testType).get
+            rfile <- file.relativeTo(dir).toList
+           } yield rfile.getName).toSet
+        def files = testDirs.get(testType).map(getResourceNames)
+        (Space ~> token(NotSpace examples files.getOrElse(Set())) map { test => (testType, test) })
       }
   }
 
-  def runSingleTestTask(runner: ScopedTask[PartestRunner], tests: ScopedTask[Map[String, Seq[File]]], scalacOptions: ScopedTask[Seq[String]]) : Initialize[InputTask[Unit]] = {
+  def runSingleTestTask(runner: ScopedTask[PartestRunner], testDirs: ScopedSetting[Map[String, File]], scalacOptions: ScopedTask[Seq[String]]) : Initialize[InputTask[Unit]] = {
     import sbinary.DefaultProtocol._
-    InputTask(TaskData(partestTestRunsForCompletion)(runSingleTestParser)(Map())) { result =>
-        (runner, result, scalacOptions, streams) map { (r, test, o, s) => runPartestImpl(r, Map(test._1 -> Seq(new File(test._2))), o, s) }
+    InputTask(testDirs apply runSingleTestParser) { result =>
+        (runner, result, testDirs, scalacOptions, streams) map { 
+          (r, test, dirs, o, s) => 
+            val (testType, filter) = test
+            val files: Seq[File] = if(filter == "*") partestResources(dirs(testType), testType).get
+                                   else (dirs(testType) ** filter).get
+            runPartestImpl(r, Map(test._1 -> files), o, s)
+        }
     }
   }  
   def partestRunnerTask(classpath: ScopedTask[Classpath]): Project.Initialize[Task[PartestRunner]] =

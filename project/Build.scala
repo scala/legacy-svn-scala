@@ -225,13 +225,11 @@ object ScalaBuild extends Build with Layers {
     scalacOptions in Test <++= (exportedProducts in Compile in continuationsPlugin) map { 
      case Seq(cpDir) => Seq("-Xplugin-require:continuations", "-P:continuations:enable", "-Xplugin:"+cpDir.data.getAbsolutePath)
     },
-    partestTestRuns <<= (baseDirectory) map { dir =>
-       Seq("continuations-neg", "continuations-run") map {
-         testType => 
-           val testDir = dir / "test"
-           testType.drop("continuations-".length).toString -> partestResources(testDir / "files" / testType, testType).get
-       } toMap   
-    } 
+    partestDirs <<= baseDirectory apply { bd =>
+      def mkFile(name: String) = bd / "test" / "files" / name
+      def mkTestType(name: String) = name.drop("continuations-".length).toString
+      Seq("continuations-neg", "continuations-run") map (t => mkTestType(t) -> mkFile(t)) toMap
+    }
   )
   val continuationsTestsuite = Project("continuations-testsuite", file(".")) settings(continuationsTestsuiteSetttings:_*) dependsOn(partest,swing,scalaLibrary,scalaCompiler,fjbg)
 
