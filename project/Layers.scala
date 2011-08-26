@@ -16,8 +16,6 @@ trait Layers extends Build {
   def msil: Project
   /** A settings that adds an ant dependency. */
   def ant: Setting[_]
-  /** Creates a unique version, based on file timestamps, to tag a release with. */
-  def createUniqueBuildVersion(baseDirectory: File): String
 
   /** Creates a reference Scala version that can be used to build other projects.   This takes in the raw
     * library, compiler and fjbg libraries as well as a string representing the layer name (used for compiling the compile-interface).
@@ -31,12 +29,10 @@ trait Layers extends Build {
                         (fullClasspath in jline in Runtime)) map {
     (app, version: String, bd: File, lib: Classpath, comp: Classpath, fjbg: Classpath, jline: Classpath) =>
       val launcher = app.provider.scalaProvider.launcher
-      val currentUniqueRevision = createUniqueBuildVersion(bd)
       (lib,comp) match {
          case (Seq(libraryJar), Seq(compilerJar)) =>
            ScalaInstance(
-             version + "-" + layer + "-" + currentUniqueRevision,
-             Some(version + "-" + layer + "-" + currentUniqueRevision),
+             version + "-" + layer + "-",
              libraryJar.data,
              compilerJar.data,
              launcher,
@@ -61,6 +57,7 @@ trait Layers extends Build {
           // TODO - Allow other scalac option settings.
           scalacOptions in Compile <++= (scalaSource in Compile) map (src => Seq("-sourcepath", src.getAbsolutePath)),
           classpathOptions := ClasspathOptions.manual,
+          resourceGenerators in Compile <+= (baseDirectory, version, resourceManaged) map Release.generatePropertiesFile("library.properties"),
           referenceScala
       )) :_*)
 
@@ -70,6 +67,7 @@ trait Layers extends Build {
         scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "compiler"),
         resourceDirectory in Compile <<= baseDirectory apply (_ / "src" / "compiler"),
         defaultExcludes in unmanagedResources := "*.scala",
+        resourceGenerators in Compile <+= (baseDirectory, version, resourceManaged) map Release.generatePropertiesFile("compiler.properties"),
         // Note, we might be able to use the default task, but for some reason ant was filtering files out.  Not sure what's up, but we'll
         // stick with that for now.
         unmanagedResources in Compile <<= (baseDirectory) map {

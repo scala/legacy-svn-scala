@@ -13,8 +13,8 @@ object SBTRunner extends DirectRunner {
     var JAVAC_CMD: String      = "javac"
     var CLASSPATH: String      = _
     var LATEST_LIB: String     = _
-    val testRootPath: String   = PathSettings.testRoot.path
-    val testRootDir: Directory = PathSettings.testRoot
+    val testRootPath: String   = "test"
+    val testRootDir: Directory = Directory(testRootPath)
   }
   
   def reflectiveRunTestsForFiles(kindFiles: Array[File], kind: String):java.util.HashMap[String,Int] = {
@@ -66,7 +66,7 @@ object SBTRunner extends DirectRunner {
     // This next bit uses java maps...
     import collection.JavaConverters._
     (for { 
-     (testType, files) <- runs.par
+     (testType, files) <- runs
      (path, result) <- reflectiveRunTestsForFiles(files,testType).asScala
     } yield (path, result)).seq asJava
   }

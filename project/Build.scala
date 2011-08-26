@@ -70,8 +70,6 @@ object ScalaBuild extends Build with Layers {
                              lockFile <<= target(_ / "compile.lock"),
                              skip in Compile <<= lockFile.map(_  exists)
                             )
-  // TODO - Figure out a way to uniquely determine a version to assign to Scala builds...
-  def createUniqueBuildVersion(baseDirectory: File): String = "0.2"
 
   // --------------------------------------------------------------
   //  Libraries used by Scalac that change infrequently
@@ -177,15 +175,6 @@ object ScalaBuild extends Build with Layers {
   // --------------------------------------------------------------
   val allSubpathsCopy = (dir: File) => (dir.*** --- dir) x (relativeTo(dir)|flat)
   def productTaskToMapping(products : Seq[File]) = products flatMap { p => allSubpathsCopy(p) }
-  // This creates the *.properties file used to determine the current version of scala at runtime.  TODO - move these somewhere utility like.
-  def makePropertiesFile(f: File, version: String): Unit =
-    IO.write(f, "version.number = "+version+"\ncopyright.string = Copyright 2002-2011, LAMP/EPFL")
-  def addPropertiesFile(name: String) =
-    mappings in packageBin in Compile <<= (mappings in packageBin in Compile, target, version) map { (m, dir, v) =>
-      val f = dir / name
-      makePropertiesFile(f, v)
-      m :+ (f, name)
-    }
   lazy val packageScalaLibBinTask = Seq(quickLib, continuationsLibrary, dbc, actors, swing, forkjoin).map(p => products in p in Compile).join.map(_.flatten).map(productTaskToMapping)
   lazy val scalaLibArtifactSettings: Seq[Setting[_]] = inConfig(Compile)(Defaults.packageTasks(packageBin, packageScalaLibBinTask)) ++ Seq(
     name := "scala-library",
@@ -196,7 +185,6 @@ object ScalaBuild extends Build with Layers {
     packageDoc in Compile <<= (packageDoc in documentation in Compile).identity,
     packageSrc in Compile <<= (packageSrc in documentation in Compile).identity,
     fullClasspath in Runtime <<= (exportedProducts in Compile).identity,
-    addPropertiesFile("library.properties"),
     quickScalaInstance
   )
   lazy val scalaLibrary = Project("scala-library", file(".")) settings(scalaLibArtifactSettings:_*)
@@ -212,7 +200,6 @@ object ScalaBuild extends Build with Layers {
     autoScalaLibrary := false,
     unmanagedJars in Compile := Seq(),
     fullClasspath in Runtime <<= (exportedProducts in Compile).identity,
-    addPropertiesFile("compiler.properties"),
     quickScalaInstance
   )
   lazy val scalaCompiler = Project("scala-compiler", file(".")) settings(scalaBinArtifactSettings:_*) dependsOn(scalaLibrary)

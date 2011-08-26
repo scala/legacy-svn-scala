@@ -70,6 +70,8 @@ fi
 java $JAVA_OPTS \
   -XX:+CMSClassUnloadingEnabled \
   -XX:MaxPermSize=512m \
-  -Xmx3g -Xss2M \
+  -Xmx3g -Xms3g -Xss2M \
   -XX:ReservedCodeCacheSize=160m \
+  -XX:+UseParallelGC \
+  -XX:+CMSClassUnloadingEnabled \
   -jar "$sbtjar" "$@"

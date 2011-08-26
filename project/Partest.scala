@@ -86,6 +86,7 @@ object partest {
     }
   }
 
+  // TODO - Allow a filter for the second part of this...
   def runSingleTestParser: (State, Map[String,Set[String]]) => Parser[(String,String)] = {
     import DefaultParsers._
     (state, tests) =>
