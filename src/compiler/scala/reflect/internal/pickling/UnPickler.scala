@@ -36,7 +36,9 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
     try {
       new Scan(bytes, offset, classRoot, moduleRoot, filename).run()
     } catch {
-      case ex: IOException =>
+      case ex: IOException => 
+        throw ex
+      case ex: MissingRequirementError =>
         throw ex
       case ex: Throwable =>
         /*if (settings.debug.value)*/ ex.printStackTrace()
@@ -815,14 +817,12 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
     protected def errorBadSignature(msg: String) =
       throw new RuntimeException("malformed Scala signature of " + classRoot.name + " at " + readIndex + "; " + msg)
 
-    protected def errorMissingRequirement(msg: String): Nothing =
-      if (debug) errorBadSignature(msg)
-      else throw new IOException("class file needed by "+classRoot.name+" is missing.\n"+msg) 
-
-    protected def errorMissingRequirement(name: Name, owner: Symbol): Nothing = 
-      errorMissingRequirement(
-        "reference " + (if (name.isTypeName) "type " else "value ") +
-        name.decode + " of " + owner.tpe.widen + " refers to nonexisting symbol.")
+    protected def errorMissingRequirement(name: Name, owner: Symbol): Symbol = 
+      missingHook(owner, name) orElse {
+        throw new MissingRequirementError(
+            "reference " + (if (name.isTypeName) "type " else "value ") +
+            name.decode + " of " + owner.tpe.widen)
+    }
 
     def inferMethodAlternative(fun: Tree, argtpes: List[Type], restpe: Type) {} // can't do it; need a compiler for that.
 
