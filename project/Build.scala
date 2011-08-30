@@ -212,8 +212,9 @@ object ScalaBuild extends Build with Layers {
   /* lazy val scalacheckSettings: Seq[Setting[_]] = Seq(fullQuickScalaReference, crossPaths := false)
   lazy val scalacheck = ProjectRef(uri("https://github.com/rickynils/scalacheck.git"), "scalacheck") */
 
-  lazy val testsuiteSetttings: Seq[Setting[_]] = compilerDependentProjectSettings ++ partestTaskSettings ++ Seq(
+  lazy val testsuiteSetttings: Seq[Setting[_]] = compilerDependentProjectSettings ++ partestTaskSettings ++ VerifyClassLoad.settings ++ Seq(
     unmanagedBase <<= baseDirectory / "test/files/lib",
+    fullClasspath in VerifyClassLoad.checkClassLoad <<= (fullClasspath in scalaLibrary in Runtime).identity,
     autoScalaLibrary := false,
     checkSameLibrary <<= checkSameBinaryProjects(quickLib, strappLib),
     checkSameCompiler <<= checkSameBinaryProjects(quickComp, strappComp),
