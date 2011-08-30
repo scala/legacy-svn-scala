@@ -159,5 +159,6 @@ The form is available at:
 http://www.scala-lang.org/sites/default/files/contributor_agreement.pdf
 
 Thank you!
+
 _The Scala Team_
 
