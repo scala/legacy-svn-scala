@@ -54,21 +54,21 @@ Scala in layers. Each layer is a complete compiled Scala compiler and library.
 A superior layer is always compiled by the layer just below it. Here is a short
 description of the four layers that used, from bottom to top:
 
-`starr`: the stable reference Scala release which is shared by all the
+* `starr`: the stable reference Scala release which is shared by all the
 developers. It is found in the repository as 'lib/scala-compiler.jar' and
 'lib/scala-library.jar'. Any committable source code must be compiled directly
 by starr to guarantee the bootstrapping of the compiler.
 
-'locker': the local reference which is compiled by starr and is the work
+* `locker`: the local reference which is compiled by starr and is the work
 compiler in a typical development cycle. When it has been built once, it is
 “frozen” in this state. Updating it to fit the current source code must be
 explicitly requested (see below).
 
-'quick': the layer which is incrementally built when testing changes in the
+* `quick`: the layer which is incrementally built when testing changes in the
 compiler or library. This is considered an actual new version when locker is
 up-to-date in relation to the source code.
 
-'strap': a test layer used to check stability of the build.
+* `strap`: a test layer used to check stability of the build.
 
 ### DEPENDENT CHANGES:
 
@@ -81,46 +81,45 @@ bootstrapping is still possible, or a new starr if it is not.
 ### REQUIREMENTS FOR BUILD:
 
 The Scala build systm uses the Simple Build Tool
-  - A Java runtime environment (JRE) or SDK 1.6 or above.
-  - On Linux/Mac
+* A Java runtime environment (JRE) or SDK 1.6 or above.
+* On Linux/Mac
     * bash to run the xsbt script
     * curl or wget for obtaining SBT
-  - On Windows
+* On Windows
     * A valid SBT installation.
 
 
 ## Part III. Common SBT session use-cases
 
 
-'locker-lock'
-  Compiles locker and 'locks' it from being recompiled on source changes.
+* `locker-lock`
+    Compiles locker and 'locks' it from being recompiled on source changes.
 
-'compile'
-  A quick compilation (to quick) of your changes using the locker compiler.
-    - This will rebuild all quick if locker changed.
-    - This will rebuild locker if it is unlocked.
+* `compile`
+    A quick compilation (to quick) of your changes using the locker compiler.
+    * This will rebuild all quick if locker changed.
+    * This will rebuild locker if it is unlocked.
 
-'locker-unlock'
-  Marks that locker should be recompiled on source changes.
+* `locker-unlock`
+    Marks that locker should be recompiled on source changes.
 
-'test'
-  Runs the full testing suite against the 'quick' compiler.
+* `test`
+    Runs the full testing suite against the 'quick' compiler.
 
+* `doc`
+    Generates the HTML documentation for the library from the sources using the
+    scaladoc tool in quick.
 
-'doc'
-  Generates the HTML documentation for the library from the sources using the
-  scaladoc tool in quick.
+* `dist`
+    Builds a 'mini' distribution.
+    * Builds everything twice more and compares bit-to-bit the two builds (to
+        make sure it is stable).
+    * Creates a local distribution in 'target/scala-dist.zip'.
 
-'dist'
-  Builds a 'mini' distribution.
-    - Builds everything twice more and compares bit-to-bit the two builds (to
-      make sure it is stable).
-    - Creates a local distribution in 'target/scala-dist.zip'.
+* `clean`
+    Removes all temporary build files (locker is preserved if locked).
 
-'clean'
-  Removes all temporary build files (locker is preserved if locked).
-
-TODO - Add optimise/non-optimise targets...
+_TODO - Add optimise/non-optimise targets..._
 
 ## Part V. Contributing to Scala
 
@@ -135,22 +134,22 @@ the available contact form.
 In detail:
 
 * Scala website (links to everything else):
-  http://www.scala-lang.org
+     http://www.scala-lang.org
 
 * Scala documentation:
-  http://www.scala-lang.org/node/197
+     http://www.scala-lang.org/node/197
 
 * Scala mailing lists:
-  http://www.scala-lang.org/node/199
+     http://www.scala-lang.org/node/199
 
 * Scala bug and issue tracker:
-  https://issues.scala-lang.org
+     https://issues.scala-lang.org
 
 * Scala live SVN source tree:
-  http://www.scala-lang.org/node/213
+     http://www.scala-lang.org/node/213
 
 * Contact form:
-  http://www.scala-lang.org/node/188
+     http://www.scala-lang.org/node/188
 
 
 If you are interested in contributing code, we ask you to complete and submit
@@ -160,5 +159,5 @@ The form is available at:
 http://www.scala-lang.org/sites/default/files/contributor_agreement.pdf
 
 Thank you!
-The Scala Team
+_The Scala Team_
 
