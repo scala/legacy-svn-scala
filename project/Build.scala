@@ -11,6 +11,7 @@ object ScalaBuild extends Build with Layers {
   lazy val makeDist: TaskKey[File] = TaskKey("make-dist", "Creates a mini-distribution (scala home directory) for this build in a zip file.")
   lazy val makeExplodedDist: TaskKey[File] = TaskKey("make-exploded-dist", "Creates a mini-distribution (scala home directory) for this build in a directory.")
   lazy val makeDistMappings: TaskKey[Map[File, String]] = TaskKey("make-dist-mappings", "Creates distribution mappings for creating zips,jars,directorys,etc.")
+  lazy val pushStarr: TaskKey[Unit] = TaskKey("make-dist-mappings", "Creates distribution mappings for creating zips,jars,directorys,etc.")
 
   // Collections of projects to run 'compile' on.
   lazy val compiledProjects = Seq(quickLib, quickComp, continuationsLibrary, actors, swing, dbc, forkjoin, fjbg, msil)
@@ -43,8 +44,9 @@ object ScalaBuild extends Build with Layers {
     // Note: We override unmanagedSources so that ~ compile will look at all these sources, then run our aggregated compile...
     unmanagedSourceDirectories in Compile <<= baseDirectory apply (_ / "src") apply { dir =>
       Seq("library/scala","actors","compiler","fjbg","swing","continuations/library","forkjoin") map (dir / _)
-    }
+    },
     // TODO - Make exported products == makeDist so we can use this when creating a *real* distribution.
+    commands += Release.pushStarr
   )
   // Note: Root project is determined by lowest-alphabetical project that has baseDirectory as file(".").  we use aaa_ to 'win'.
   lazy val aaa_root = Project("scala", file(".")) settings(projectSettings:_*)

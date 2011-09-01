@@ -4,6 +4,26 @@ import Keys._
 object Release {
 
   // TODO - move more of the dist project over here...
+  lazy val pushStarr = Command.command("push-starr") { (state: State) =>
+      def f(s: Setting[_]): Setting[_] = s.key.key match {
+        case version.key => // TODO - use full version
+          s.asInstanceOf[Setting[String]].mapInit( (_,_) => timeFormat format (new java.util.Date))
+        case organization.key =>
+          s.asInstanceOf[Setting[String]].mapInit( (_,_) => "org.scala-lang.bootstrapp")
+        case _ => s
+      }
+      val extracted = Project.extract(state)
+      import extracted._
+      val transformed = session.mergeSettings map ( s => f(s) )
+      val newStructure = Load.reapply(transformed, structure)
+      Project.setProject(session, newStructure, state)
+   }
+
+  lazy val timeFormat = {
+    val formatter = new java.text.SimpleDateFormat("yyyyMMdd'T'HHmmss")
+    formatter.setTimeZone(java.util.TimeZone.getTimeZone("GMT"))
+    formatter
+  }
 
   /** This generates a  properties file, if it does not already exist, with the maximum lastmodified timestamp
     * of any source file. */
