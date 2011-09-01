@@ -15,7 +15,7 @@ object ScalaBuild extends Build with Layers {
   // Collections of projects to run 'compile' on.
   lazy val compiledProjects = Seq(quickLib, quickComp, continuationsLibrary, actors, swing, dbc, forkjoin, fjbg, msil)
   // Collection of projects to 'package' and 'publish' together.
-  lazy val packagedBinaryProjects = Seq(scalaLibrary, scalaCompiler, continuationsPlugin, jline, scalap)
+  lazy val packagedBinaryProjects = Seq(scalaLibrary, scalaCompiler, actors, swing, continuationsPlugin, jline, scalap)
   lazy val partestRunProjects = Seq(testsuite, continuationsTestsuite)
   // Settings for root project.  These are aggregate tasks against the rest of the build.
   def projectSettings: Seq[Setting[_]] = Seq(
@@ -134,9 +134,17 @@ object ScalaBuild extends Build with Layers {
   // --------------------------------------------------------------
   //  Projects dependent on layered compilation (quick)
   // --------------------------------------------------------------
+  def addCheaterDependency(projectName: String): Setting[_] = 
+    ivyXML <<= (version, organization) apply { (v, o) => 
+      <dependencies>
+        <dependency org={o} name={projectName} rev={v} />
+      </dependencies>
+    }
+
   // TODO - in sabbus, these all use locker to build...  I think tihs way is better, but let's farm this idea around.
-  lazy val dependentProjectSettings = settingOverrides ++ Seq(quickScalaInstance, quickScalaLibraryDependency)
-  lazy val actors = Project("actors", file(".")) settings(dependentProjectSettings:_*) dependsOn(forkjoin)
+  // TODO - Actors + swing separate jars...
+  lazy val dependentProjectSettings = settingOverrides ++ Seq(quickScalaInstance, quickScalaLibraryDependency, addCheaterDependency("scala-library"))
+  lazy val actors = Project("actors", file(".")) settings(dependentProjectSettings:_*) dependsOn(forkjoin % "provided")
   lazy val dbc = Project("dbc", file(".")) settings(dependentProjectSettings:_*)
   lazy val swing = Project("swing", file(".")) settings(dependentProjectSettings:_*) dependsOn(actors)
   // This project will generate man pages (in man1 and html) for scala.    
@@ -144,12 +152,13 @@ object ScalaBuild extends Build with Layers {
   lazy val manmaker = Project("manual", file(".")) settings(manmakerSettings:_*)
 
   // Things that compile against the compiler.
-  lazy val compilerDependentProjectSettings = dependentProjectSettings ++ Seq(quickScalaCompilerDependency)
+  lazy val compilerDependentProjectSettings = dependentProjectSettings ++ Seq(quickScalaCompilerDependency, addCheaterDependency("scala-compiler"))
   lazy val partestSettings = compilerDependentProjectSettings :+ ant
   lazy val partest = Project("partest", file(".")) settings(partestSettings:_*)  dependsOn(actors,forkjoin,scalap)
   lazy val scalapSettings = compilerDependentProjectSettings ++ Seq(
     name := "scalap",
-    exportJars := true)
+    exportJars := true
+  )
   lazy val scalap = Project("scalap", file(".")) settings(scalapSettings:_*) //dependsOn(scalaCompiler)
 
   // --------------------------------------------------------------
@@ -160,6 +169,7 @@ object ScalaBuild extends Build with Layers {
     resourceDirectory in Compile <<= baseDirectory(_ / "src/continuations/plugin/"),
     exportJars := true,
     name := "continuations"  // Note: This artifact is directly exported.
+
   )
   lazy val continuationsPlugin = Project("continuations-plugin", file(".")) settings(continuationsPluginSettings:_*)
   lazy val continuationsLibrarySettings = dependentProjectSettings ++ Seq(
@@ -175,7 +185,7 @@ object ScalaBuild extends Build with Layers {
   // --------------------------------------------------------------
   val allSubpathsCopy = (dir: File) => (dir.*** --- dir) x (relativeTo(dir)|flat)
   def productTaskToMapping(products : Seq[File]) = products flatMap { p => allSubpathsCopy(p) }
-  lazy val packageScalaLibBinTask = Seq(quickLib, continuationsLibrary, dbc, actors, swing, forkjoin).map(p => products in p in Compile).join.map(_.flatten).map(productTaskToMapping)
+  lazy val packageScalaLibBinTask = Seq(quickLib, continuationsLibrary, dbc, forkjoin).map(p => products in p in Compile).join.map(_.flatten).map(productTaskToMapping)
   lazy val scalaLibArtifactSettings: Seq[Setting[_]] = inConfig(Compile)(Defaults.packageTasks(packageBin, packageScalaLibBinTask)) ++ Seq(
     name := "scala-library",
     crossPaths := false,

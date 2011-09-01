@@ -16,6 +16,8 @@ pomIncludeRepository := { _ => false }
 
 publishMavenStyle := true
 
+makePomConfiguration <<= makePomConfiguration apply (_.copy(configurations = Some(Seq(Compile, Default))))
+
 pomExtra := <xml:group>
   <inceptionYear>2002</inceptionYear>
     <licenses>
