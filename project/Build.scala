@@ -145,7 +145,7 @@ object ScalaBuild extends Build with Layers {
 
   // TODO - in sabbus, these all use locker to build...  I think tihs way is better, but let's farm this idea around.
   // TODO - Actors + swing separate jars...
-  lazy val dependentProjectSettings = settingOverrides ++ Seq(quickScalaInstance, quickScalaLibraryDependency, addCheaterDependency("scala-library"))
+  lazy val dependentProjectSettings = settingOverrides ++ Seq(quickScalaInstance, quickScalaLibraryDependency /*, addCheaterDependency("scala-library")*/ )
   lazy val actors = Project("actors", file(".")) settings(dependentProjectSettings:_*) dependsOn(forkjoin % "provided")
   lazy val dbc = Project("dbc", file(".")) settings(dependentProjectSettings:_*)
   lazy val swing = Project("swing", file(".")) settings(dependentProjectSettings:_*) dependsOn(actors)
@@ -154,7 +154,7 @@ object ScalaBuild extends Build with Layers {
   lazy val manmaker = Project("manual", file(".")) settings(manmakerSettings:_*)
 
   // Things that compile against the compiler.
-  lazy val compilerDependentProjectSettings = dependentProjectSettings ++ Seq(quickScalaCompilerDependency, addCheaterDependency("scala-compiler"))
+  lazy val compilerDependentProjectSettings = dependentProjectSettings ++ Seq(quickScalaCompilerDependency /*, addCheaterDependency("scala-compiler")*/ )
   lazy val partestSettings = compilerDependentProjectSettings :+ ant
   lazy val partest = Project("partest", file(".")) settings(partestSettings:_*)  dependsOn(actors,forkjoin,scalap)
   lazy val scalapSettings = compilerDependentProjectSettings ++ Seq(
