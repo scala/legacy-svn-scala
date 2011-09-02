@@ -4,19 +4,37 @@ import Keys._
 object Release {
 
   // TODO - move more of the dist project over here...
+
+
   lazy val pushStarr = Command.command("push-starr") { (state: State) =>
       def f(s: Setting[_]): Setting[_] = s.key.key match {
         case version.key => // TODO - use full version
           s.asInstanceOf[Setting[String]].mapInit( (_,_) => timeFormat format (new java.util.Date))
         case organization.key =>
           s.asInstanceOf[Setting[String]].mapInit( (_,_) => "org.scala-lang.bootstrapp")
+        // TODO - Switch publish repo to be typesafe starr repo.
+        case publishTo.key =>
+          s.asInstanceOf[Setting[Option[Resolver]]].mapInit((_,_) => Some("Starr Repo" at "http://typesafe.artifactoryonline.com/typesafe/starr-releases/"))
         case _ => s
       }
       val extracted = Project.extract(state)
       import extracted._
+      // Swap version on projects
       val transformed = session.mergeSettings map ( s => f(s) )
       val newStructure = Load.reapply(transformed, structure)
-      Project.setProject(session, newStructure, state)
+      val newState = Project.setProject(session, newStructure, state)
+      // TODO - Run tasks.  Specifically, push scala-compiler + scala-library.  *Then* bump the STARR version locally.
+      // The final course of this command should be:
+      // publish-local
+      // Project.evaluateTask(publishLocal, newState)
+      // bump STARR version setting
+      // TODO - Define Task
+      // Rebuild quick + test to ensure it works
+      // Project.evaluateTask(test, newState)
+      // push STARR remotely
+      Project.evaluateTask(publish, newState)
+      // Revert to previous project state.
+      Project.setProject(session, structure, state)
    }
 
   lazy val timeFormat = {

@@ -12,6 +12,7 @@ object partest {
   /** The key for the run-partest task that exists in Scala's test suite. */
   lazy val runPartest       = TaskKey[Unit]("run-partest", "Runs the partest test suite against the quick.")
   lazy val runPartestSingle = InputKey[Unit]("run-partest-single", "Runs a single partest test against quick.")
+  lazy val runPartestGrep   = InputKey[Unit]("run-partest-grep", "Runs a single partest test against quick.")
   lazy val partestRunner    = TaskKey[PartestRunner]("partest-runner", "Creates a runner that can run partest suites")
   lazy val partestTests     = TaskKey[Map[String, Seq[File]]]("partest-tests", "Creates a map of test-type to a sequence of the test files/directoryies to test.")
   lazy val partestDirs      = SettingKey[Map[String,File]]("partest-dirs", "The map of partest test type to directory associated with that test type")
