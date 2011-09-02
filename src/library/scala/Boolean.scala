@@ -10,8 +10,9 @@
 
 package scala
 
-/** `Boolean` is a member of the value classes, those whose instances are
- *  not represented as objects by the underlying host system.
+/** `Boolean` (equivalent to Java's `boolean` primitive type) is a 
+ *  subtype of [[scala.AnyVal]], meaning that instances of `Boolean` are not 
+ *  represented by an object in the underlying runtime system.
  *
  *  There is an implicit conversion from [[scala.Boolean]] => [[scala.runtime.RichBoolean]]
  *  which provides useful non-primitive operations.
@@ -19,7 +20,7 @@ package scala
 final class Boolean extends AnyVal {
   /**
    * Negates a Boolean expression.
-   *
+   * 
    * - `!a` results in `false` if and only if `a` evaluates to `true` and
    * - `!a` results in `true` if and only if `a` evaluates to `false`.
    *
@@ -41,11 +42,11 @@ final class Boolean extends AnyVal {
     *
     * `a != b` returns `true` if and only if
     *  - `a` is `true` and `b` is `false` or
-    *  - `a` is `false` and `b` is `true`.
+    *  - `a` is `false` and `b` is `true`. 
     */
   def !=(x: Boolean): Boolean = sys.error("stub")
 
-  /**
+  /** 
     * Compares two Boolean expressions and returns `true` if one or both of them evaluate to true.
     *
     * `a || b` returns `true` if and only if
@@ -59,7 +60,7 @@ final class Boolean extends AnyVal {
     */
   def ||(x: Boolean): Boolean = sys.error("stub")
 
-  /**
+  /** 
     * Compares two Boolean expressions and returns `true` if both of them evaluate to true.
     *
     * `a && b` returns `true` if and only if
@@ -75,7 +76,7 @@ final class Boolean extends AnyVal {
   // def ||(x: => Boolean): Boolean = sys.error("stub")
   // def &&(x: => Boolean): Boolean = sys.error("stub")
 
-  /**
+  /** 
     * Compares two Boolean expressions and returns `true` if one or both of them evaluate to true.
     *
     * `a | b` returns `true` if and only if
@@ -87,17 +88,17 @@ final class Boolean extends AnyVal {
     */
   def |(x: Boolean): Boolean  = sys.error("stub")
 
-  /**
+  /** 
     * Compares two Boolean expressions and returns `true` if both of them evaluate to true.
     *
     * `a & b` returns `true` if and only if
     *  - `a` and `b` are `true`.
     *
-    * @note This method evaluates both `a` and `b`, even if the result is already determined after evaluating `a`.
+    * @note This method evaluates both `a` and `b`, even if the result is already determined after evaluating `a`. 
     */
   def &(x: Boolean): Boolean  = sys.error("stub")
 
-  /**
+  /** 
     * Compares two Boolean expressions and returns `true` if they evaluate to a different value.
     *
     * `a ^ b` returns `true` if and only if
