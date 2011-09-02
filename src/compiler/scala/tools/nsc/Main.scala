@@ -73,8 +73,8 @@ object Main extends Driver with EvalLoop {
   
   override def newCompiler(): Global = 
     if (settings.Yrangepos.value) new interactive.Global(settings, reporter)
-    else new Global(settings, reporter)
-  
+    else Global(settings, reporter)
+
   override def doCompile(compiler: Global) {
     if (settings.resident.value)
       resident(compiler)
