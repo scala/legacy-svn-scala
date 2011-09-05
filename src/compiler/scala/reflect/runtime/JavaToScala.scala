@@ -2,6 +2,7 @@ package scala.reflect
 package runtime
 
 import java.lang.{ Class => jClass, Package => jPackage }
+import java.io.IOException
 import java.lang.reflect.{
   Method => jMethod,
   Constructor => jConstructor,
@@ -11,10 +12,12 @@ import java.lang.reflect.{
   Type => jType,
   TypeVariable => jTypeVariable,
   GenericDeclaration,
+  GenericArrayType,
   ParameterizedType,
   WildcardType,
   AnnotatedElement
 }
+import internal.MissingRequirementError
 import internal.pickling.ByteCodecs
 import internal.ClassfileConstants._
 import internal.pickling.UnPickler
@@ -28,6 +31,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
   private object unpickler extends UnPickler {
     val global: JavaToScala.this.type = self
   }
+  
 
   /**
    * Generate types for top-level Scala root class and root companion object
@@ -38,29 +42,45 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    *                   ScalaSignature or ScalaLongSignature annotation.
    */
   def unpickleClass(clazz: Symbol, module: Symbol, jclazz: jClass[_]): Unit = {
-    //println("unpickling " + clazz + " " + module)//debug
-    val ssig = jclazz.getAnnotation(classOf[scala.reflect.ScalaSignature])
-    if (ssig != null) {
-      val bytes = ssig.bytes.getBytes
-      val len = ByteCodecs.decode(bytes)
-      unpickler.unpickle(bytes take len, 0, clazz, module, jclazz.getName)
-    } else {
-      val slsig = jclazz.getAnnotation(classOf[scala.reflect.ScalaLongSignature])
-      if (slsig != null) {
-        val byteSegments = slsig.bytes map (_.getBytes)
-        val lens = byteSegments map ByteCodecs.decode
-        val bytes = Array.ofDim[Byte](lens.sum)
-        var len = 0
-        for ((bs, l) <- byteSegments zip lens) {
-          bs.copyToArray(bytes, len, l)
-          len += l
+    def markAbsent(tpe: Type) = List(clazz, module, module.moduleClass) foreach (_ setInfo tpe)
+    def handleError(ex: Exception) = {
+      markAbsent(ErrorType)
+      if (settings.debug.value) ex.printStackTrace()
+      val msg = ex.getMessage()
+      throw new MissingRequirementError(
+        if (msg eq null) "reflection error while loading " + clazz.name
+        else "error while loading " + clazz.name + ", " + msg)
+    }
+    try {
+      info("unpickling " + clazz + " " + module) //debug
+      markAbsent(NoType)
+      val ssig = jclazz.getAnnotation(classOf[scala.reflect.ScalaSignature])
+      if (ssig != null) {
+        val bytes = ssig.bytes.getBytes
+        val len = ByteCodecs.decode(bytes)
+        unpickler.unpickle(bytes take len, 0, clazz, module, jclazz.getName)
+      } else {
+        val slsig = jclazz.getAnnotation(classOf[scala.reflect.ScalaLongSignature])
+        if (slsig != null) {
+          val byteSegments = slsig.bytes map (_.getBytes)
+          val lens = byteSegments map ByteCodecs.decode
+          val bytes = Array.ofDim[Byte](lens.sum)
+          var len = 0
+          for ((bs, l) <- byteSegments zip lens) {
+            bs.copyToArray(bytes, len, l)
+            len += l
+          }
+          unpickler.unpickle(bytes, 0, clazz, module, jclazz.getName)
+        } else { // class does not have a Scala signature; it's a Java class
+          info("no sig found for " + jclazz) //debug
+          initClassModule(clazz, module, new FromJavaClassCompleter(clazz, module, jclazz))
         }
-        //println("long sig")//debug
-        unpickler.unpickle(bytes, 0, clazz, module, jclazz.getName)
-      } else { // class does not have a Scala signature; it's a Java class
-        //println("no sig found for " + jclazz)//debug
-        initClassModule(clazz, module, new FromJavaClassCompleter(clazz, module, jclazz))
       }
+    } catch {
+      case ex: MissingRequirementError =>
+        handleError(ex)
+      case ex: IOException =>
+        handleError(ex)
     }
   }
 
@@ -81,8 +101,9 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    *  @param   jtvar   The Java type variable
    */
   private class TypeParamCompleter(jtvar: jTypeVariable[_ <: GenericDeclaration]) extends LazyType {
+    override def load(sym: Symbol) = complete(sym)
     override def complete(sym: Symbol) = {
-      sym setInfo TypeBounds(NothingClass.tpe, lub(jtvar.getBounds.toList map typeToScala))
+      sym setInfo TypeBounds(NothingClass.tpe, glb(jtvar.getBounds.toList map typeToScala map objToAny))
     }
   }
 
@@ -105,39 +126,86 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    *  @param   jclazz  The Java class
    */
   private class FromJavaClassCompleter(clazz: Symbol, module: Symbol, jclazz: jClass[_]) extends LazyType {
-    override def complete(sym: Symbol) = {
-      //println("completing from Java " + sym + "/" + clazz.fullName)//debug
-      assert(sym == clazz || sym == module || sym == module.moduleClass, sym)
+    override def load(sym: Symbol) = {
+      info("completing from Java " + sym + "/" + clazz.fullName)//debug
+      assert(sym == clazz || (module != NoSymbol && (sym == module || sym == module.moduleClass)), sym)
       val flags = toScalaFlags(jclazz.getModifiers, isClass = true)
       clazz setFlag (flags | JAVA)
-      module setFlag (flags & PRIVATE | JAVA)
-      module.moduleClass setFlag (flags & PRIVATE | JAVA)
+      if (module != NoSymbol) {
+        module setFlag (flags & PRIVATE | JAVA)
+        module.moduleClass setFlag (flags & PRIVATE | JAVA)
+      }
 
       copyAnnotations(clazz, jclazz)
       // to do: annotations to set also for module?
 
-      val tparams = jclazz.getTypeParameters.toList map createTypeParameter
+      clazz setInfo new LazyPolyType(jclazz.getTypeParameters.toList map createTypeParameter)
+      if (module != NoSymbol) {
+        module setInfo module.moduleClass.tpe
+        module.moduleClass setInfo new LazyPolyType(List())
+      }
+    }
+    override def complete(sym: Symbol): Unit = {
+      load(sym)
+      completeRest()
+    }
+    def completeRest(): Unit = {
+      val tparams = clazz.rawInfo.typeParams
 
-      val jsuperclazz = jclazz.getGenericSuperclass
-      val superclazz = if (jsuperclazz == null) AnyClass.tpe else typeToScala(jsuperclazz)
-      val parents = superclazz :: (jclazz.getGenericInterfaces.toList map typeToScala)
+      val parents = try {
+        parentsLevel += 1
+        val jsuperclazz = jclazz.getGenericSuperclass
+        val superclazz = if (jsuperclazz == null) AnyClass.tpe else typeToScala(jsuperclazz)
+        superclazz :: (jclazz.getGenericInterfaces.toList map typeToScala)
+      } finally {
+        parentsLevel -= 1
+      }
       clazz setInfo polyType(tparams, new ClassInfoType(parents, newScope, clazz))
-      module.moduleClass setInfo new ClassInfoType(List(), newScope, module.moduleClass)
-      module setInfo module.moduleClass.tpe
+      if (module != NoSymbol) {
+        module.moduleClass setInfo new ClassInfoType(List(), newScope, module.moduleClass)
+      }
 
-      def enter(sym: Symbol) =
-        (if (sym.isStatic) module.moduleClass else clazz).info.decls enter sym
+      def enter(sym: Symbol, mods: Int) =
+        (if (jModifier.isStatic(mods)) module.moduleClass else clazz).info.decls enter sym
 
-      for (jfield <- jclazz.getDeclaredFields)
-        enter(jfieldAsScala(jfield))
+      pendingLoadActions = { () =>
+        
+        println("entering members of "+jclazz)
 
-      for (jmeth <- jclazz.getDeclaredMethods)
-        enter(jmethodAsScala(jmeth))
+        for (jinner <- jclazz.getDeclaredClasses) {
+          println("... entering "+jinner)
+          enter(jclassAsScala(jinner, clazz), jinner.getModifiers)
+        }
+        
+        for (jfield <- jclazz.getDeclaredFields)
+          enter(jfieldAsScala(jfield), jfield.getModifiers)
 
-      for (jconstr <- jclazz.getConstructors)
-        enter(jconstrAsScala(jconstr))
+        for (jmeth <- jclazz.getDeclaredMethods)
+          enter(jmethodAsScala(jmeth), jmeth.getModifiers)
+
+        for (jconstr <- jclazz.getConstructors)
+          enter(jconstrAsScala(jconstr), jconstr.getModifiers)
+          
+      } :: pendingLoadActions
+      
+      if (parentsLevel == 0) {
+        while (!pendingLoadActions.isEmpty) {
+          val item = pendingLoadActions.head
+          pendingLoadActions = pendingLoadActions.tail
+          item()
+        }
+      }
+    }
+    class LazyPolyType(override val typeParams: List[Symbol]) extends LazyType {
+      override def complete(sym: Symbol) {
+        completeRest()
+      }
     }
   }
+  
+  /** used to avoid cyclies */
+  var parentsLevel = 0
+  var pendingLoadActions: List[() => Unit] = Nil
 
   /**
    * If Java modifiers `mods` contain STATIC, return the module class
@@ -237,12 +305,21 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    * The Scala package with given fully qualified name. Unlike `packageNameToScala`,
    *  this one bypasses the cache.
    */
-  private def makeScalaPackage(fullname: String): Symbol = {
+  def makeScalaPackage(fullname: String): Symbol = {
+    println("make scala pkg "+fullname)
     val split = fullname lastIndexOf '.'
     val owner = if (split > 0) packageNameToScala(fullname take split) else RootClass
-    assert(owner.isModuleClass)
-    val name = fullname drop (split + 1)
-    val pkg = owner.info decl newTermName(name)
+    assert(owner.isModuleClass, owner+" when making "+fullname)
+    val name = newTermName(fullname drop (split + 1))
+    var pkg = owner.info decl name
+    if (pkg == NoSymbol) {
+      pkg = owner.newPackage(NoPosition, name)
+      pkg.moduleClass setInfo new LazyPackageType
+      pkg setInfo pkg.moduleClass.tpe
+      owner.info.decls enter pkg
+    } else if (!pkg.isPackage) 
+      throw new ReflectError(pkg+" is not a package")
+    println(" = "+pkg+"/"+pkg.moduleClass)
     pkg.moduleClass
   }
 
@@ -255,7 +332,9 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    */
   def classToScala(jclazz: jClass[_]): Symbol = classCache.toScala(jclazz) {
     if (jclazz.isMemberClass) {
-      sOwner(jclazz).info.decl(newTypeName(jclazz.getSimpleName)).asInstanceOf[ClassSymbol]
+      val sym = sOwner(jclazz).info.decl(newTypeName(jclazz.getSimpleName))
+      assert(sym.isType, sym+"/"+jclazz+"/"+sOwner(jclazz)+"/"+jclazz.getSimpleName)
+      sym.asInstanceOf[ClassSymbol]
     } else if (jclazz.isLocalClass) { // local classes not preserved by unpickling - treat as Java
       jclassAsScala(jclazz)
     } else if (jclazz.isArray) {
@@ -272,9 +351,11 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
       case java.lang.Boolean.TYPE   => BooleanClass
       case _ =>
         // jclazz is top-level - get signature
-        val (clazz, module) = createClassModule(
-          sOwner(jclazz), newTypeName(jclazz.getSimpleName), new TopClassCompleter(_, _))
-        clazz
+        sOwner(jclazz).info decl newTypeName(jclazz.getSimpleName)
+//        val (clazz, module) = createClassModule(
+//          sOwner(jclazz), newTypeName(jclazz.getSimpleName), new TopClassCompleter(_, _))
+//        classCache enter (jclazz, clazz)
+//        clazz
     }
   }
 
@@ -310,7 +391,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
         val tparam = owner.newExistential(NoPosition, newTypeName("T$" + tparams.length))
           .setInfo(TypeBounds(
             lub(jwild.getLowerBounds.toList map typeToScala),
-            glb(jwild.getUpperBounds.toList map typeToScala)))
+            glb(jwild.getUpperBounds.toList map typeToScala map objToAny)))
         tparams += tparam
         typeRef(NoPrefix, tparam, List())
       case _ =>
@@ -338,6 +419,8 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
       val args0 = japplied.getActualTypeArguments
       val (args, bounds) = targsToScala(pre.typeSymbol, args0.toList)
       ExistentialType(bounds, typeRef(pre, sym, args))
+    case jarr: GenericArrayType =>
+      arrayType(typeToScala(jarr.getGenericComponentType))
     case jtvar: jTypeVariable[_] =>
       val tparam = tparamToScala(jtvar)
       typeRef(NoPrefix, tparam, List())
@@ -349,10 +432,12 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    *  @param jclazz  The Java class
    *  @return A Scala class symbol that wraps all reflection info of `jclazz`
    */
-  private def jclassAsScala(jclazz: jClass[_]): Symbol = {
-    val (clazz, module) = createClassModule(
-      sOwner(jclazz), newTypeName(jclazz.getSimpleName), new FromJavaClassCompleter(_, _, jclazz))
-    clazz
+  private def jclassAsScala(jclazz: jClass[_]): Symbol = jclassAsScala(jclazz, sOwner(jclazz))
+  
+  private def jclassAsScala(jclazz: jClass[_], owner: Symbol): Symbol = {
+    val clazz = owner.newClass(NoPosition, newTypeName(jclazz.getSimpleName))
+    classCache enter (jclazz, clazz)
+    clazz setInfo new FromJavaClassCompleter(clazz, NoSymbol, jclazz)
   }
 
   /**
@@ -365,10 +450,15 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
     val field = sOwner(jfield).newValue(NoPosition, newTermName(jfield.getName))
       .setFlag(toScalaFlags(jfield.getModifiers, isClass = false) | JAVA)
       .setInfo(typeToScala(jfield.getGenericType))
+    fieldCache enter (jfield, field)
     copyAnnotations(field, jfield)
     field
   }
-
+  
+  private def setMethType(meth: Symbol, tparams: List[Symbol], paramtpes: List[Type], restpe: Type) = {
+    meth setInfo polyType(tparams, MethodType(meth.owner.newSyntheticValueParams(paramtpes map objToAny), restpe))
+  }
+  
   /**
    * The Scala method that corresponds to given Java method without taking
    *  Scala pickling info into account.
@@ -379,10 +469,11 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
     val clazz = sOwner(jmeth)
     val meth = clazz.newMethod(NoPosition, newTermName(jmeth.getName))
       .setFlag(toScalaFlags(jmeth.getModifiers, isClass = false) | JAVA)
+    methodCache enter (jmeth, meth)
     val tparams = jmeth.getTypeParameters.toList map createTypeParameter
     val paramtpes = jmeth.getGenericParameterTypes.toList map typeToScala
     val resulttpe = typeToScala(jmeth.getGenericReturnType)
-    meth setInfo polyType(tparams, MethodType(clazz.newSyntheticValueParams(paramtpes), resulttpe))
+    setMethType(meth, tparams, paramtpes, resulttpe)
     copyAnnotations(meth, jmeth)
     meth
   }
@@ -396,12 +487,16 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
   private def jconstrAsScala(jconstr: jConstructor[_]): Symbol = {
     // [Martin] Note: I know there's a lot of duplication wrt jmethodAsScala, but don't think it's worth it to factor this out.
     val clazz = sOwner(jconstr)
-    val meth = clazz.newMethod(NoPosition, nme.CONSTRUCTOR)
+    val constr = clazz.newMethod(NoPosition, nme.CONSTRUCTOR)
       .setFlag(toScalaFlags(jconstr.getModifiers, isClass = false) | JAVA)
+    constructorCache enter (jconstr, constr)
     val tparams = jconstr.getTypeParameters.toList map createTypeParameter
     val paramtpes = jconstr.getGenericParameterTypes.toList map typeToScala
-    meth setInfo polyType(tparams, MethodType(clazz.newSyntheticValueParams(paramtpes), clazz.tpe))
-    copyAnnotations(meth, jconstr)
-    meth
+    setMethType(constr, tparams, paramtpes, clazz.tpe)
+    constr setInfo polyType(tparams, MethodType(clazz.newSyntheticValueParams(paramtpes), clazz.tpe))
+    copyAnnotations(constr, jconstr)
+    constr
   }
 }
+
+class ReflectError(msg: String) extends java.lang.Error(msg)

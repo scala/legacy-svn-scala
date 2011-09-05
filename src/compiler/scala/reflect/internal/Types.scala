@@ -1508,6 +1508,9 @@ trait Types extends api.Types { self: SymbolTable =>
     def apply(parents: List[Type], decls: Scope, clazz: Symbol): RefinedType =
       new RefinedType0(parents, decls, clazz)
   }
+  
+  /** Overridden in reflection compiler */
+  def validateClassInfo(tp: ClassInfoType) {}
 
   /** A class representing a class info
    */
@@ -1516,6 +1519,7 @@ trait Types extends api.Types { self: SymbolTable =>
     override val decls: Scope,
     override val typeSymbol: Symbol) extends CompoundType 
   {
+    validateClassInfo(this)
     
     /** refs indices */
     private final val NonExpansive = 0
@@ -1905,7 +1909,8 @@ A type's typeSymbol should never be inspected directly.
     // @M: initialize (by sym.info call) needed (see test/files/pos/ticket0137.scala)
     @inline private def etaExpand: Type = {
       val tpars = sym.info.typeParams // must go through sym.info for typeParams to initialise symbol
-      typeFunAnon(tpars, copyTypeRef(this, pre, sym, tpars map (_.tpeHK))) // todo: also beta-reduce?
+      if (tpars.isEmpty) this
+      else typeFunAnon(tpars, copyTypeRef(this, pre, sym, tpars map (_.tpeHK))) // todo: also beta-reduce?
     }
 
     override def dealias: Type = 
@@ -2754,6 +2759,7 @@ A type's typeSymbol should never be inspected directly.
   /** A class representing an as-yet unevaluated type.
    */
   abstract class LazyType extends Type {
+    def fromSource = false
     override def isComplete: Boolean = false
     override def complete(sym: Symbol)
     override def safeToString = "<?>"    
@@ -3405,7 +3411,7 @@ A type's typeSymbol should never be inspected directly.
       val elems = scope.toList
       val elems1 = mapOver(elems)
       if (elems1 eq elems) scope
-      else new Scope(elems1)
+      else scope.mkScope(elems1)
     }
 
     /** Map this function over given list of symbols */
@@ -5499,11 +5505,16 @@ A type's typeSymbol should never be inspected directly.
   private val lubResults = new mutable.HashMap[(Int, List[Type]), Type]
   private val glbResults = new mutable.HashMap[(Int, List[Type]), Type]
 
-  def lub(ts: List[Type]): Type = try {
-    lub(ts, lubDepth(ts))
-  } finally {
-    lubResults.clear()
-    glbResults.clear()
+  def lub(ts: List[Type]): Type = ts match {
+    case List() => NothingClass.tpe
+    case List(t) => t 
+    case _ =>
+      try {
+        lub(ts, lubDepth(ts))
+      } finally {
+        lubResults.clear()
+        glbResults.clear()
+      }
   }
  
   /** The least upper bound wrt <:< of a list of types */
@@ -5631,26 +5642,39 @@ A type's typeSymbol should never be inspected directly.
   private var globalGlbDepth = 0
   private final val globalGlbLimit = 2
 
-  def glb(ts: List[Type]): Type = try {
-    glb(ts, lubDepth(ts))
-  } finally {
-    lubResults.clear()
-    glbResults.clear()
+  /** The greatest lower bound wrt <:< of a list of types */
+  def glb(ts: List[Type]): Type = elimSuper(ts) match {
+    case List() => AnyClass.tpe
+    case List(t) => t
+    case ts0 =>
+      try {
+        glbNorm(ts0, lubDepth(ts0))
+      } finally {
+        lubResults.clear()
+        glbResults.clear()
+      }
+  }
+  
+  private def glb(ts: List[Type], depth: Int): Type = elimSuper(ts) match {
+    case List() => AnyClass.tpe
+    case List(t) => t
+    case ts0 => glbNorm(ts0, depth)
   }
 
-  /** The greatest lower bound wrt <:< of a list of types */
-  private def glb(ts: List[Type], depth: Int): Type = {
-    def glb0(ts0: List[Type]): Type = elimSuper(ts0) match {
+  /** The greatest lower bound wrt <:< of a list of types, which have been normalized
+   *  wrt elimSuper */
+  private def glbNorm(ts: List[Type], depth: Int): Type = {
+    def glb0(ts0: List[Type]): Type = ts0 match {
       case List() => AnyClass.tpe
       case List(t) => t
       case ts @ PolyType(tparams, _) :: _ =>
         val tparams1 = (tparams, matchingBounds(ts, tparams).transpose).zipped map
           ((tparam, bounds) => tparam.cloneSymbol.setInfo(lub(bounds, depth)))
-        PolyType(tparams1, glb0(matchingInstTypes(ts, tparams1)))
+        PolyType(tparams1, glbNorm(matchingInstTypes(ts, tparams1), depth))
       case ts @ MethodType(params, _) :: rest =>
-        MethodType(params, glb0(matchingRestypes(ts, params map (_.tpe))))
+        MethodType(params, glbNorm(matchingRestypes(ts, params map (_.tpe)), depth))
       case ts @ NullaryMethodType(_) :: rest =>
-        NullaryMethodType(glb0(matchingRestypes(ts, Nil)))
+        NullaryMethodType(glbNorm(matchingRestypes(ts, Nil), depth))
       case ts @ TypeBounds(_, _) :: rest =>
         TypeBounds(lub(ts map (_.bounds.lo), depth), glb(ts map (_.bounds.hi), depth))
       case ts =>
@@ -6069,7 +6093,7 @@ A type's typeSymbol should never be inspected directly.
 
   /** Perform operation `p` on arguments `tp1`, `arg2` and print trace of computation. */
   private def explain[T](op: String, p: (Type, T) => Boolean, tp1: Type, arg2: T): Boolean = {
-    Console.println(indent + tp1 + " " + op + " " + arg2 + "?" /* + "("+tp1.getClass+","+arg2.asInstanceOf[AnyRef].getClass+")"*/)
+    Console.println(indent + tp1 + " " + op + " " + arg2 + "?" /* + "("+tp1.getClass+","+arg2.getClass+")"*/)
     indent = indent + "  "
     val result = p(tp1, arg2)
     indent = indent dropRight 2

@@ -272,7 +272,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     settings.outputDirs setSingleOutput virtualDirectory
     settings.exposeEmptyPackage.value = true
 
-    new Global(settings, reporter)
+    Global(settings, reporter)
   }
   
   /** Parent classloader.  Overridable. */
@@ -1174,7 +1174,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       prettyPrint(code)
 
     // old style
-    parse(code) foreach { ts =>
+    beSilentDuring(parse(code)) foreach { ts =>
       ts foreach { t =>
         withoutUnwrapping(repldbg(asCompactString(t)))
       }
