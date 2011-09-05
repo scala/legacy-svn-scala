@@ -23,9 +23,7 @@ trait SymbolTable extends internal.SymbolTable with JavaToScala with ScalaToJava
   override def validateClassInfo(tp: ClassInfoType) {
     assert(!tp.typeSymbol.isPackageClass || tp.decls.isInstanceOf[PackageScope])
   }
-  
-  protected var verbose = false
-  
+    
   def info(msg: => String) = 
-    if (verbose) println("[reflect-compiler] "+msg)
+    if (settings.verbose.value) println("[reflect-compiler] "+msg)
 }
