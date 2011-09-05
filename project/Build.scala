@@ -91,7 +91,7 @@ object ScalaBuild extends Build with Layers {
   // had it building against locker, so we'll do worse and build
   // build against STARR for now.
   lazy val msilSettings = settingOverrides ++ Seq(
-                            defaultExcludes ~= (_ || "tests"),
+                            defaultExcludes := ("tests"),
                             javacOptions ++= Seq("-source", "1.4"),
                             STARR                         
                           )
