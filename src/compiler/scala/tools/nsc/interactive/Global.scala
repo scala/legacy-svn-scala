@@ -617,7 +617,7 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
       val result = typedTreeAt(pos)
       removeUnitOf(pos.source)
       result
-    case Some(unit) =>  
+    case Some(unit) =>
       informIDE("typedTreeAt " + pos)
       parseAndEnter(unit)
       val tree = locateTree(pos)
@@ -813,17 +813,24 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
   private def typeMembers(pos: Position): Stream[List[TypeMember]] = {
     var tree = typedTreeAt(pos)
 
+    val context = doLocateContext(pos)
+    
     // if tree consists of just x. or x.fo where fo is not yet a full member name
     // ignore the selection and look in just x.
     tree match {
       case Select(qual, name) if tree.tpe == ErrorType => tree = qual
+      case ierr: analyzer.InteractiveErrorTree => 
+        ierr.emit(context)
+        ierr.retrieveEmitted match {
+          case Select(qual, name) => tree = qual
+          case _ =>
+        }
       case _ => 
     }
 
-    val context = doLocateContext(pos)
+    
 
     if (tree.tpe == null)
-      // TODO: guard with try/catch to deal with ill-typed qualifiers.
       tree = analyzer.newTyper(context).typedQualifier(tree)
       
     debugLog("typeMembers at "+tree+" "+tree.tpe)
