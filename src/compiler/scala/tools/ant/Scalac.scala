@@ -156,7 +156,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
   /** Prints out the files being compiled by the scalac ant task
    *  (not only the number of files). */
   protected var scalacDebugging: Boolean = false
-  
+
   /** Helpers */
   private def setOrAppend(old: Option[Path], arg: Path): Option[Path] = old match {
     case Some(x)  => x append arg ; Some(x)
@@ -168,11 +168,11 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
   }
   private def createNewPath(getter: () => Option[Path], setter: (Option[Path]) => Unit) = {
     if (getter().isEmpty)
-      setter(Some(new Path(getProject())))
+      setter(Some(new Path(getProject)))
  
     getter().get.createPath()
   }
-      
+
   private def plural(xs: List[Any]) = if (xs.size > 1) "s" else ""
   private def plural(x: Int) = if (x > 1) "s" else ""
 
@@ -381,7 +381,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
    *  @return The destination as a file. */
   protected def getDestination: File =
     if (destination.isEmpty) buildError("Member 'destination' is empty.")
-    else existing(getProject().resolveFile(destination.get.toString))
+    else existing(getProject resolveFile destination.get.toString)
 
   /** Gets the value of the `sourcepath` attribute in a
    *  Scala-friendly form.
@@ -416,14 +416,14 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
    *  @param name A relative or absolute path to the file as a string.
    *  @return     A file created from the name. */
   protected def nameToFile(name: String): File =
-    existing(getProject().resolveFile(name))
+    existing(getProject resolveFile name)
 
   /** Tests if a file exists and prints a warning in case it doesn't. Always
    *  returns the file, even if it doesn't exist.
    *  @param file A file to test for existance.
    *  @return     The same file. */
   protected def existing(file: File): File = {
-    if (!file.exists())
+    if (!file.exists)
       log("Element '" + file.toString + "' does not exist.",
           Project.MSG_WARN)
     file
@@ -433,7 +433,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
    *  @param path A path to convert.
    *  @return     A string-representation of the path like `a.jar:b.jar`. */
   protected def asString(path: List[File]): String =
-    path.map(asString).mkString(File.pathSeparator)
+    path.map(asString) mkString File.pathSeparator
 
   /** Transforms a file into a Scalac-readable string.
    *  @param path A file to convert.
@@ -447,9 +447,9 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
 
   protected def newSettings(error: String=>Unit): Settings =
     new Settings(error)
+
   protected def newGlobal(settings: Settings, reporter: Reporter) =
     new Global(settings, reporter)
-
 
 /*============================================================================*\
 **                           The big execute method                           **
@@ -469,17 +469,29 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
     val mapper = new GlobPatternMapper()
     mapper setTo "*.class"
     mapper setFrom "*.scala"
-    
+
     var javaOnly = true
-    
+
     def getOriginFiles(originDir: File) = {
-      val includedFiles = getDirectoryScanner(originDir).getIncludedFiles()
-      val javaFiles = includedFiles filter (_ endsWith ".java")
-      val scalaFiles = {
+      val scanner = getDirectoryScanner(originDir)
+      val includedFiles = scanner.getIncludedFiles
+      val includedJavaFiles = includedFiles filter (_ endsWith ".java")
+      val includedScalaFiles = {
         val xs = includedFiles filter (_ endsWith ".scala")
         if (force) xs
         else new SourceFileScanner(this).restrict(xs, originDir, destination.get, mapper)
       }
+
+      val excludedFiles = scanner.getExcludedFiles
+      val excludedJavaFiles = excludedFiles filter (_ endsWith ".java")
+      val excludedScalaFiles = {
+        val xs = excludedFiles filter (_ endsWith ".scala")
+        if (force) xs
+        else new SourceFileScanner(this).restrict(xs, originDir, destination.get, mapper)
+      }
+
+      val javaFiles = includedJavaFiles diff excludedJavaFiles
+      val scalaFiles = includedScalaFiles diff excludedScalaFiles
 
       javaOnly = javaOnly && (scalaFiles.length == 0)
       val list = (scalaFiles ++ javaFiles).toList
@@ -500,7 +512,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
       
       list
     }
-    
+
     // Scans source directories to build up a compile lists.
     // If force is false, only files were the .class file in destination is
     // older than the .scala file will be used.
@@ -562,11 +574,11 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
     val (settings, sourceFiles, javaOnly) = initialize
     if (sourceFiles.isEmpty || javaOnly)
       return
-      
+
     if (fork) executeFork(settings, sourceFiles)  // TODO - Error
     else executeInternal(settings, sourceFiles)
   }
-  
+
   protected def executeFork(settings: Settings, sourceFiles: List[File]) {
       val java = new Java(this)
       java setFork true
@@ -584,17 +596,17 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
         }
         path
       }
-      
+
       java setClasspath scalacPath
       java setClassname MainClass
 
       // Write all settings to a temporary file
       def writeSettings() : File = {
-        def escapeArgument(arg : String) = if(arg.matches(".*\\s.*")) ('"' + arg + '"') else arg
+        def escapeArgument(arg : String) = if (arg matches ".*\\s.*") '"' + arg + '"' else arg
         val file = File.createTempFile("scalac-ant-",".args")
         file.deleteOnExit()
         val out = new PrintWriter(new BufferedWriter(new FileWriter(file)))
-        
+
         try {
           for (setting <- settings.visibleSettings ; arg <- setting.unparse)
             out println escapeArgument(arg)
@@ -602,7 +614,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
             out println escapeArgument(file.getAbsolutePath)
         }
         finally out.close()
-        
+
         file
       }
       val res = execWithArgFiles(java, List(writeSettings.getAbsolutePath))
@@ -610,12 +622,12 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
         buildError("Compilation failed because of an internal compiler error;"+
               " see the error output for details.")
   }
-  
+
   /** Performs the compilation. */
   protected def executeInternal(settings: Settings, sourceFiles : List[File]) {
     val reporter = new ConsoleReporter(settings)
     val compiler = newGlobal(settings, reporter)  // compiles the actual code
-    
+
     try new compiler.Run compile (sourceFiles map (_.toString))
     catch {
       case ex: Throwable =>
