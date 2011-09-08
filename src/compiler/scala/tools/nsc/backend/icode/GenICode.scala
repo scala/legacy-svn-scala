@@ -140,7 +140,7 @@ abstract class GenICode extends SubComponent  {
         abort("Illegal tree in gen: " + tree)
     }
 
-    private def genStat(trees: List[Tree], ctx: Context): Context = 
+    private def genStat(trees: List[Tree], ctx: Context): Context =
       trees.foldLeft(ctx)((currentCtx, t) => genStat(t, currentCtx))
 
     /**
