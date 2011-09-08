@@ -20,7 +20,7 @@ trait Loaders { self: SymbolTable =>
    *  by unpickling information from the corresponding Java class. If no Java class
    *  is found, a package is created instead.
    */
-  class TopClassCompleter(clazz: Symbol, module: Symbol) extends LazyType {
+  class TopClassCompleter(clazz: Symbol, module: Symbol) extends SymLoader {
 //    def makePackage() {
 //      println("wrong guess; making package "+clazz)
 //      val ptpe = newPackageType(module.moduleClass)
@@ -29,11 +29,13 @@ trait Loaders { self: SymbolTable =>
 //        sym setInfo ptpe
 //      }
 //    }
+    
     override def complete(sym: Symbol) = {
       info("completing "+sym+"/"+clazz.fullName)
       assert(sym == clazz || sym == module || sym == module.moduleClass)
 //      try {
-      unpickleClass(clazz, module, jClass.forName(clazz.fullName))
+      atPhaseNotLaterThan(picklerPhase) {
+        unpickleClass(clazz, module, jClass.forName(clazz.fullName))
 //      } catch {
 //        case ex: ClassNotFoundException => makePackage()
 //        case ex: NoClassDefFoundError => makePackage()
@@ -48,6 +50,7 @@ trait Loaders { self: SymbolTable =>
           // the clause above and load a collection class such as collection.Iterable.
           // You'll see an error that class `parallel` has the wrong name.
 //      }
+      }
     }
     override def load(sym: Symbol) = complete(sym)
   }
@@ -85,18 +88,24 @@ trait Loaders { self: SymbolTable =>
     }
   }
   
+  def invalidClassName(name: Name) = {
+    val dp = name pos '$'
+    0 < dp && dp < (name.length - 1)
+  }
+  
   class PackageScope(pkgClass: Symbol) extends Scope {
+    assert(pkgClass.isType)
     private var negatives = mutable.Set[Name]()
     override def lookupEntry(name: Name): ScopeEntry = {
       val e = super.lookupEntry(name)
       if (e != null)
         e
-      else if (negatives contains name)
+      else if (invalidClassName(name) || (negatives contains name))
         null
       else try {
         jClass.forName(pkgClass.fullName + "." + name)
         val (clazz, module) = createClassModule(pkgClass, name.toTypeName, new TopClassCompleter(_, _))
-        info("created "+module+"/"+module.moduleClass+" in "+pkgClass+", scope = "+(this map (_.name)))
+        info("created "+module+"/"+module.moduleClass+" in "+pkgClass)
         lookupEntry(name)
       } catch {
         case (_: ClassNotFoundException) | (_: NoClassDefFoundError) => 
@@ -105,12 +114,10 @@ trait Loaders { self: SymbolTable =>
           null
       }
     }
-    override def mkScope(decls: List[Symbol]) = {
-      val result = new PackageScope(pkgClass)
-      decls foreach (result enter)
-      result
-    }
   }
   
   override def newPackageScope(pkgClass: Symbol) = new PackageScope(pkgClass)
+  
+  override def scopeTransform(owner: Symbol)(op: => Scope): Scope = 
+    if (owner.isPackageClass) owner.info.decls else op
 }
