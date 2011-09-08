@@ -29,7 +29,8 @@ trait Warnings {
     warnInaccessible,
     warnNullaryOverride,
     warnNullaryUnit,
-    warnAdaptedArgs
+    warnAdaptedArgs,
+    warnCompareUnrelated
   )
 
   // Warning groups.
@@ -52,6 +53,8 @@ trait Warnings {
   val warnInaccessible     = BooleanSetting   ("-Ywarn-inaccessible", "Warn about inaccessible types in method signatures.")
   val warnNullaryOverride  = BooleanSetting   ("-Ywarn-nullary-override", 
     "Warn when non-nullary overrides nullary, e.g. `def foo()` over `def foo`.")  
+  val warnCompareUnrelated = BooleanSetting   ("-Ywarn-compare-unrelated",
+    "Warn when comparing terms of unrelated types.")
   
   // Backward compatibility.
   def Xwarnfatal    = fatalWarnings
