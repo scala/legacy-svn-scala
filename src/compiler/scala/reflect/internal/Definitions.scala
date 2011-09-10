@@ -131,10 +131,13 @@ trait Definitions extends reflect.api.StandardDefinitions {
       RootClass.sourceModule = rp
       rp
     }
+    
     // This is the actual root of everything, including the package _root_.
-    lazy val RootClass: ModuleClassSymbol = NoSymbol.newModuleClass(NoPosition, tpnme.ROOT)
-          .setFlag(FINAL | MODULE | PACKAGE | JAVA).setInfo(rootLoader) 
-
+    lazy val RootClass: ModuleClassSymbol = (
+      NoSymbol.newModuleClass(NoPosition, tpnme.ROOT)
+        setFlag (FINAL | MODULE | PACKAGE | JAVA)
+        setInfo rootLoader
+    )
     // The empty package, which holds all top level types without given packages.
     lazy val EmptyPackage       = RootClass.newPackage(NoPosition, nme.EMPTY_PACKAGE_NAME).setFlag(FINAL)
     lazy val EmptyPackageClass  = EmptyPackage.moduleClass
@@ -289,6 +292,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def isJavaRepeatedParamType(tp: Type)  = tp.typeSymbol == JavaRepeatedParamClass
     def isRepeatedParamType(tp: Type)      = isScalaRepeatedParamType(tp) || isJavaRepeatedParamType(tp)
     
+    def isJavaVarArgs(params: List[Symbol])  = params.nonEmpty && isJavaRepeatedParamType(params.last.tpe)
     def isScalaVarArgs(params: List[Symbol]) = params.nonEmpty && isScalaRepeatedParamType(params.last.tpe)
     def isVarArgsList(params: List[Symbol])  = params.nonEmpty && isRepeatedParamType(params.last.tpe)
     def isVarArgTypes(formals: List[Type])   = formals.nonEmpty && isRepeatedParamType(formals.last)
