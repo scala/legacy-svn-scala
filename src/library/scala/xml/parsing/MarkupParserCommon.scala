@@ -163,10 +163,10 @@ private[scala] trait MarkupParserCommon extends TokenTests {
   }
 
   def xCharRef: String = xCharRef(() => ch, () => nextch)
-  
+
   /** Create a lookahead reader which does not influence the input */
   def lookahead(): BufferedIterator[Char]
-  
+
   /** The library and compiler parsers had the interesting distinction of
    *  different behavior for nextch (a function for which there are a total
    *  of two plausible behaviors, so we know the design space was fully
@@ -176,7 +176,7 @@ private[scala] trait MarkupParserCommon extends TokenTests {
    */
   def ch: Char
   def nextch(): Unit
-  def ch_returning_nextch: Char
+  protected def ch_returning_nextch: Char
   def eof: Boolean
 
   // def handle: HandleType
@@ -185,7 +185,7 @@ private[scala] trait MarkupParserCommon extends TokenTests {
   def xHandleError(that: Char, msg: String): Unit
   def reportSyntaxError(str: String): Unit
   def reportSyntaxError(pos: Int, str: String): Unit
-  
+
   def truncatedError(msg: String): Nothing
   def errorNoEnd(tag: String): Nothing
 
@@ -199,7 +199,7 @@ private[scala] trait MarkupParserCommon extends TokenTests {
     else xHandleError(that, "'%s' expected instead of '%s'".format(that, ch))
   }
   def xToken(that: Seq[Char]) { that foreach xToken }
-  
+
   /** scan [S] '=' [S]*/
   def xEQ() = { xSpaceOpt; xToken('='); xSpaceOpt }
 
@@ -210,17 +210,17 @@ private[scala] trait MarkupParserCommon extends TokenTests {
   def xSpace() =
     if (isSpace(ch)) { nextch; xSpaceOpt }
     else xHandleError(ch, "whitespace expected")
-    
+
   /** Apply a function and return the passed value */
-  def returning[T](x: T)(f: T => Unit): T = { f(x) ; x }
- 
+  def returning[T](x: T)(f: T => Unit): T = { f(x); x }
+
   /** Execute body with a variable saved and restored after execution */
   def saving[A, B](getter: A, setter: A => Unit)(body: => B): B = {
     val saved = getter
     try body
     finally setter(saved)
-  }  
-    
+  }
+
   /** Take characters from input stream until given String "until"
    *  is seen.  Once seen, the accumulated characters are passed
    *  along with the current Position to the supplied handler function.
