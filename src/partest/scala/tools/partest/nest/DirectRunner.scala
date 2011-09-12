@@ -3,8 +3,6 @@
  * @author Philipp Haller
  */
 
-// $Id$
-
 package scala.tools.partest
 package nest
 
@@ -22,9 +20,9 @@ case class TestRunParams(val scalaCheckParentClassLoader: ScalaClassLoader)
 trait DirectRunner {
 
   def fileManager: FileManager
-  
+
   import PartestDefaults.numActors
-  
+
   def denotesTestFile(arg: String) = Path(arg).hasExtension("scala", "res")
   def denotesTestDir(arg: String)  = Path(arg).ifDirectory(_.files.nonEmpty) exists (x => x)
   def denotesTestPath(arg: String) = denotesTestDir(arg) || denotesTestFile(arg)
@@ -54,20 +52,20 @@ trait DirectRunner {
     val groupSize = (kindFiles.length / numActors) + 1
 
     val consFM = new ConsoleFileManager
-    import consFM.{ latestCompFile, latestLibFile, latestPartestFile }
+    import consFM.{ latestCompFile, latestLibFile, latestActorsFile, latestPartestFile }
     val scalacheckURL = PathSettings.scalaCheck.toURL
     val scalaCheckParentClassLoader = ScalaClassLoader.fromURLs(
-      List(scalacheckURL, latestCompFile.toURI.toURL, latestLibFile.toURI.toURL, latestPartestFile.toURI.toURL)
+      List(scalacheckURL, latestCompFile.toURI.toURL, latestLibFile.toURI.toURL, latestActorsFile.toURI.toURL, latestPartestFile.toURI.toURL)
     )
     Output.init()
-    
+
     val workers = kindFiles.grouped(groupSize).toList map { toTest =>
       val worker = new Worker(fileManager, TestRunParams(scalaCheckParentClassLoader))
       worker.start()
       worker ! RunTests(kind, toTest)
       worker
     }
-    
+
     workers map { w =>
       receiveWithin(3600 * 1000) {
         case Results(testResults) => testResults
