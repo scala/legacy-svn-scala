@@ -53,7 +53,7 @@ trait Layers extends Build {
           managedClasspath in Compile := Seq(),
           scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "library"),
           resourceDirectory in Compile <<= baseDirectory apply (_ / "src" / "library"),   
-          defaultExcludes in unmanagedResources := ("*.scala" | "*.java"),
+          defaultExcludes in unmanagedResources := ("*.scala" | "*.java" | "*.disabled"),
           // TODO - Allow other scalac option settings.
           scalacOptions in Compile <++= (scalaSource in Compile) map (src => Seq("-sourcepath", src.getAbsolutePath)),
           classpathOptions := ClasspathOptions.manual,
@@ -73,7 +73,7 @@ trait Layers extends Build {
         unmanagedResources in Compile <<= (baseDirectory) map {
           (bd) =>
             val dirs = Seq(bd / "src" / "compiler")
-		dirs.descendentsExcept( ("*.html" | "*.gif" | "*.png" | "*.js" | "*.css" | "*.tmpl" | "*.swf" | "*.properties"),"*.scala").get
+            dirs.descendentsExcept( ("*.xml" | "*.html" | "*.gif" | "*.png" | "*.js" | "*.css" | "*.tmpl" | "*.swf" | "*.properties"),"*.scala").get
         },
         // TODO - Use depends on *and* SBT's magic dependency mechanisms...
         unmanagedClasspath in Compile <<= Seq(forkjoin, library, fjbg, jline, msil).map(exportedProducts in Compile in _).join.map(_.flatten),

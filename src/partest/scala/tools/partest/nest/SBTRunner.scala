@@ -36,6 +36,7 @@ object SBTRunner extends DirectRunner {
 
   def mainReflect(args: Array[String]): java.util.Map[String,Int] = {
     setProp("partest.debug", "true")
+    setProperties()
     
     val Argument = new scala.util.matching.Regex("-(.*)")
     def parseArgs(args: Seq[String], data: CommandLineOptions): CommandLineOptions = args match {

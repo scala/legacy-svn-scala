@@ -37,6 +37,26 @@ object Release {
       Project.setProject(session, structure, state)
    }
 
+  // TODO - Autocomplete
+  /*lazy val setStarrHome = Command.single("set-starr-home") { (state: State, homeDir: String) =>
+    def f(s: Setting[_]): Setting[_] = 
+      if(s.key.key == scalaInstance.key) {
+        s.asInstanceOf[Setting[ScalaInstance]] mapInit { (key, value) =>
+           if(value.version == "starr")  
+             scalaInstance <<= appConfiguration map { app =>
+               val launcher = app.provider.scalaProvider.launcher
+               ScalaInstance("starr", new File(homeDir), launcher)
+             }
+           else value
+        }
+      } else s
+    val extracted = Project.extract(state)
+    import extracted._
+    val transformed = session.mergeSettings map f
+    val newStructure = Load.reapply(transformed, structure)
+    Project.setProject(session, newStructure, state)
+  }*/
+
   lazy val timeFormat = {
     val formatter = new java.text.SimpleDateFormat("yyyyMMdd'T'HHmmss")
     formatter.setTimeZone(java.util.TimeZone.getTimeZone("GMT"))

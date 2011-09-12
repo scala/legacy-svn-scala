@@ -11,12 +11,11 @@ object ScalaBuild extends Build with Layers {
   lazy val makeDist: TaskKey[File] = TaskKey("make-dist", "Creates a mini-distribution (scala home directory) for this build in a zip file.")
   lazy val makeExplodedDist: TaskKey[File] = TaskKey("make-exploded-dist", "Creates a mini-distribution (scala home directory) for this build in a directory.")
   lazy val makeDistMappings: TaskKey[Map[File, String]] = TaskKey("make-dist-mappings", "Creates distribution mappings for creating zips,jars,directorys,etc.")
-  lazy val pushStarr: TaskKey[Unit] = TaskKey("make-dist-mappings", "Creates distribution mappings for creating zips,jars,directorys,etc.")
 
   // Collections of projects to run 'compile' on.
   lazy val compiledProjects = Seq(quickLib, quickComp, continuationsLibrary, actors, swing, dbc, forkjoin, fjbg, msil)
   // Collection of projects to 'package' and 'publish' together.
-  lazy val packagedBinaryProjects = Seq(scalaLibrary, scalaCompiler, actors, swing, continuationsPlugin, jline, scalap)
+  lazy val packagedBinaryProjects = Seq(scalaLibrary, scalaCompiler, swing, dbc, continuationsPlugin, jline, scalap)
   lazy val partestRunProjects = Seq(testsuite, continuationsTestsuite)
   // Settings for root project.  These are aggregate tasks against the rest of the build.
   def projectSettings: Seq[Setting[_]] = Seq(
@@ -47,6 +46,7 @@ object ScalaBuild extends Build with Layers {
     },
     // TODO - Make exported products == makeDist so we can use this when creating a *real* distribution.
     commands += Release.pushStarr
+    //commands += Release.setStarrHome
   )
   // Note: Root project is determined by lowest-alphabetical project that has baseDirectory as file(".").  we use aaa_ to 'win'.
   lazy val aaa_root = Project("scala", file(".")) settings(projectSettings:_*)
@@ -109,6 +109,7 @@ object ScalaBuild extends Build with Layers {
   def STARR = scalaInstance <<= appConfiguration map { app =>
     val launcher = app.provider.scalaProvider.launcher
     ScalaInstance(
+      "starr",
       file("lib/scala-library.jar"),
       file("lib/scala-compiler.jar"),
       launcher,
@@ -182,12 +183,14 @@ object ScalaBuild extends Build with Layers {
   )
   lazy val continuationsLibrary = Project("continuations-library", file(".")) settings(continuationsLibrarySettings:_*)
 
+  // TODO - OSGi Manifest
+
   // --------------------------------------------------------------
   //  Real Library Artifact
   // --------------------------------------------------------------
   val allSubpathsCopy = (dir: File) => (dir.*** --- dir) x (relativeTo(dir)|flat)
   def productTaskToMapping(products : Seq[File]) = products flatMap { p => allSubpathsCopy(p) }
-  lazy val packageScalaLibBinTask = Seq(quickLib, continuationsLibrary, dbc, forkjoin).map(p => products in p in Compile).join.map(_.flatten).map(productTaskToMapping)
+  lazy val packageScalaLibBinTask = Seq(quickLib, continuationsLibrary, forkjoin, actors).map(p => products in p in Compile).join.map(_.flatten).map(productTaskToMapping)
   lazy val scalaLibArtifactSettings: Seq[Setting[_]] = inConfig(Compile)(Defaults.packageTasks(packageBin, packageScalaLibBinTask)) ++ Seq(
     name := "scala-library",
     crossPaths := false,
@@ -384,6 +387,13 @@ object ScalaBuild extends Build with Layers {
           continuations -> "misc/scala-devel/plugins/continuations.jar",
           scalap -> "lib/scalap.jar"
         ) toMap
+    },
+    // Add in some more dependencies
+    makeDistMappings <<= (makeDistMappings, 
+                          packageBin in swing in Compile,
+                          packageBin in dbc in Compile) map {
+      (dist, s, d) =>
+        dist ++ Seq(s -> "lib/scala-swing.jar", d -> "lib/scala-dbc.jar")
     },
     makeDist <<= (makeDistMappings, baseDirectory, streams) map { (maps, dir, s) => 
       s.log.debug("Map = " + maps.mkString("\n")) 
