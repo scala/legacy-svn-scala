@@ -106,7 +106,7 @@ object ScalaBuild extends Build with Layers {
 
   // Need a report on this...
   // TODO - Resolve STARR from a repo..
-  def STARR = scalaInstance <<= appConfiguration map { app =>
+  lazy val STARR = scalaInstance <<= appConfiguration map { app =>
     val launcher = app.provider.scalaProvider.launcher
     ScalaInstance(
       "starr",
@@ -200,7 +200,8 @@ object ScalaBuild extends Build with Layers {
     packageDoc in Compile <<= (packageDoc in documentation in Compile).identity,
     packageSrc in Compile <<= (packageSrc in documentation in Compile).identity,
     fullClasspath in Runtime <<= (exportedProducts in Compile).identity,
-    quickScalaInstance
+    quickScalaInstance,
+    target <<= (baseDirectory, name) apply (_ / "target" / _)
   )
   lazy val scalaLibrary = Project("scala-library", file(".")) settings(scalaLibArtifactSettings:_*)
 
@@ -215,7 +216,8 @@ object ScalaBuild extends Build with Layers {
     autoScalaLibrary := false,
     unmanagedJars in Compile := Seq(),
     fullClasspath in Runtime <<= (exportedProducts in Compile).identity,
-    quickScalaInstance
+    quickScalaInstance,
+    target <<= (baseDirectory, name) apply (_ / "target" / _)
   )
   lazy val scalaCompiler = Project("scala-compiler", file(".")) settings(scalaBinArtifactSettings:_*) dependsOn(scalaLibrary)
   lazy val fullQuickScalaReference = makeScalaReference("pack", scalaLibrary, scalaCompiler, fjbg)
@@ -361,7 +363,7 @@ object ScalaBuild extends Build with Layers {
     genBin <<= genBinTask(genBinRunner, binDir, fullClasspath in Runtime, false),
     binDir in genBinQuick <<= baseDirectory apply (_ / "target" / "bin"),
     // Configure the classpath this way to avoid having .jar files and previous layers on the classpath.
-    fullClasspath in Runtime in genBinQuick <<= Seq(quickComp,quickLib,scalap,actors,fjbg,jline,forkjoin).map(classDirectory in Compile in _).join.map(Attributed.blankSeq),
+    fullClasspath in Runtime in genBinQuick <<= Seq(quickComp,quickLib,scalap,actors,swing,dbc,fjbg,jline,forkjoin).map(classDirectory in Compile in _).join.map(Attributed.blankSeq),
     fullClasspath in Runtime in genBinQuick <++= (fullClasspath in Compile in jline),
     genBinQuick <<= genBinTask(genBinRunner, binDir in genBinQuick, fullClasspath in Runtime in genBinQuick, true),
     runManmakerMan <<= runManmakerTask(fullClasspath in Runtime in manmaker, runner in manmaker, "scala.tools.docutil.EmitManPage", "man1", ".1"),
