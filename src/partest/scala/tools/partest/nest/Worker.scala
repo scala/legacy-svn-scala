@@ -401,7 +401,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
   def runTests(files: List[File])(topcont: Map[String, Int] => Unit) {
     val compileMgr = new CompileManager(fileManager)
     if (kind == "scalacheck") fileManager.CLASSPATH += File.pathSeparator + PathSettings.scalaCheck
-    
+
     filesRemaining = files
 
     // You don't default "succeeded" to true.
@@ -539,15 +539,15 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
       case "scalacheck" =>
         val succFn: (File, File) => Boolean = { (logFile, outDir) =>
           NestUI.verbose("compilation of "+file+" succeeded\n")
-          
+
           val outURL    = outDir.getAbsoluteFile.toURI.toURL
           val logWriter = new PrintStream(new FileOutputStream(logFile), true)
-          
+
           Output.withRedirected(logWriter) {
             // this classloader is test specific: its parent contains library classes and others
             ScalaClassLoader.fromURLs(List(outURL), params.scalaCheckParentClassLoader).run("Test", Nil)
           }
-          
+
           NestUI.verbose(file2String(logFile))
           // obviously this must be improved upon
           val lines = SFile(logFile).lines map (_.trim) filterNot (_ == "") toBuffer;

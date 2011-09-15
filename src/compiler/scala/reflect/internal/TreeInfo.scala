@@ -35,10 +35,8 @@ abstract class TreeInfo {
   /** Is tree a declaration or type definition? 
    */
   def isDeclarationOrTypeDef(tree: Tree): Boolean = tree match {
-    case DefDef(_, _, _, _, _, EmptyTree)
-       | ValDef(_, _, _, EmptyTree)
-       | TypeDef(_, _, _, _) => true
-    case _ => false
+    case x: ValOrDefDef   => x.rhs eq EmptyTree
+    case _                => tree.isInstanceOf[TypeDef]
   }
 
   /** Is tree legal as a member definition of an interface?
@@ -116,7 +114,16 @@ abstract class TreeInfo {
    */
   def zipMethodParamsAndArgs(t: Tree): List[(Symbol, Tree)] = t match {
     case Apply(fn, args) =>
-      val params = fn.symbol.paramss(applyDepth(fn))
+      val depth  = applyDepth(fn)
+      // There could be applies which go beyond the parameter list(s),
+      // being applied to the result of the method call.
+      // !!! Note that this still doesn't seem correct, although it should
+      // be closer than what it replaced.
+      val params = (
+        if (depth < fn.symbol.paramss.size) fn.symbol.paramss(depth)
+        else if (fn.symbol.paramss.isEmpty) Nil
+        else fn.symbol.paramss.last
+      )
       val plen   = params.length
       val alen   = args.length
       def fail() = {

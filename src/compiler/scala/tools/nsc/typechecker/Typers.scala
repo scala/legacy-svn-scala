@@ -3637,7 +3637,7 @@ trait Typers extends Modes with Adaptations {
           val appStart = startTimer(failedApplyNanos)
           val opeqStart = startTimer(failedOpEqNanos)
           
-          def onError(reportError: => ErrorTree): Tree = {
+          def onError(reportError: => Tree): Tree = {
               fun match {
                 case Select(qual, name) 
                 if !isPatternMode && nme.isOpAssignmentName(name.decode) =>
@@ -3661,7 +3661,7 @@ trait Typers extends Modes with Adaptations {
           silent(_.typed(fun, forFunMode(mode), funpt),
                  if ((mode & EXPRmode) != 0) false else context.reportAmbiguousErrors,  
                  if ((mode & EXPRmode) != 0) tree else context.tree) match {
-            case fun1: Tree if !fun1.containsError() =>
+            case fun1: Tree if !fun1.containsErrorOrIsErrorTyped() =>
               val fun2 = if (stableApplication) stabilizeFun(fun1, mode, pt) else fun1
               incCounter(typedApplyCount)
               def isImplicitMethod(tpe: Type) = tpe match {
@@ -3699,8 +3699,7 @@ trait Typers extends Modes with Adaptations {
               if (settings.errortrees.value)
                 println("[ErrorTree silent] Encounter error in silent typing of apply")
 
-              val ex = quickErrorTreeFinder(eTree)
-              onError(if (ex.exception == null) ex else TypedApplyError(fun, ex.exception))
+              onError(if (eTree.containsError()) {val ex = quickErrorTreeFinder(eTree); if (ex.exception == null) ex else TypedApplyError(fun, ex.exception)} else eTree)
             
             case ex: TypeError =>
               onError(TypedApplyError(fun, ex))
@@ -3907,14 +3906,23 @@ trait Typers extends Modes with Adaptations {
               "\nname = "+name+"\nfound = "+sym+"\nowner = "+context.enclClass.owner
             )
           }
+
+          def makeInteractiveErrorTree = {
+            val tree1 = tree match {
+              case Select(_, _) => treeCopy.Select(tree, qual, name)
+              case SelectFromTypeTree(_, _) => treeCopy.SelectFromTypeTree(tree, qual, name)
+            }
+            setError(tree1)
+          }          
+
           
           if (forInteractive)
-            NotAMemberInteractive(tree)
+            makeInteractiveErrorTree
           else if (!qual.tpe.widen.isErroneous) {
             val lastTry = missingHook(qual.tpe.typeSymbol, name)
             if (lastTry != NoSymbol) return typed1(tree setSymbol lastTry, mode, pt)
             NotAMemberError(tree, qual, name)
-          } else  
+          } else
             NotAMemberErroneous(tree)
         } else {
           val tree1 = tree match {
@@ -4844,10 +4852,9 @@ trait Typers extends Modes with Adaptations {
     // have to report missing errors (if any)
     def computeType(tree: Tree, pt: Type): Type = {
       val tree1 = typed(tree, pt)
-      if (tree1.containsError()) {
-        assert(errorTreesFinder(tree1).isEmpty, "All type errors have been reported during computation of type")
+      if (tree1.containsError())
         ErrorType
-      } else {
+      else {
         transformed(tree) = tree1
         val (tpe, errs) = packedType(tree1, context.owner)
         try {
@@ -4855,7 +4862,6 @@ trait Typers extends Modes with Adaptations {
           tpe
         } catch {
           case _: TypeError =>
-            assert(false, "No type errors can be thrown after type was computed")
             ErrorType
         }
       }
