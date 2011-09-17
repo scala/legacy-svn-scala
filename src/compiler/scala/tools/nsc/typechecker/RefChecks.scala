@@ -1269,10 +1269,11 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
     /** Similar to deprecation: check if the symbol is marked with @migration
      *  indicating it has changed semantics between versions.
      */
-    private def checkMigration(sym: Symbol, pos: Position) = {
-      for (msg <- sym.migrationMessage)
-        unit.warning(pos, sym.fullLocationString + " has changed semantics:\n" + msg)
-    }
+    private def checkMigration(sym: Symbol, pos: Position) =
+      if (sym.hasMigrationAnnotation && settings.Xmigration.isSetAndAtMost(sym.migrationVersion.get))
+        unit.warning(pos, "%s has changed semantics in version %s:\n%s".format(
+          sym.fullLocationString, sym.migrationVersion.get, sym.migrationMessage.get)
+        )
     
     private def lessAccessible(otherSym: Symbol, memberSym: Symbol): Boolean = (
          (otherSym != NoSymbol)
@@ -1460,8 +1461,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
        *  arbitrarily choose one as more important than the other.
        */
       checkDeprecated(sym, tree.pos)
-      if (settings.Xmigration28.value)
-        checkMigration(sym, tree.pos)        
+      checkMigration(sym, tree.pos)
       
       if (currentClass != sym.owner && sym.hasLocalFlag) {
         var o = currentClass
