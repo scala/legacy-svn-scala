@@ -1413,7 +1413,8 @@ DOCUMENTATION
       docsourceurl="https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/€{FILE_PATH}.scala#L1"
       docUncompilable="${src.dir}/library-aux"
       sourcepath="${src.dir}"
-      classpathref="pack.classpath">
+      classpathref="pack.classpath"
+      docRootContent="${src.dir}/library/rootdoc.txt">
       <src>
         <files includes="${src.dir}/actors"/>
         <files includes="${src.dir}/library/scala"/>
