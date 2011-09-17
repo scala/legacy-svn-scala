@@ -518,7 +518,7 @@ trait Parsers {
 
   /** A parser matching input elements that satisfy a given predicate.
    *
-   *  `elem(p)(el => "Unexpected "+el)` succeeds if the input starts with an element `e` for which `p(e)` is true.
+   *  `acceptIf(p)(el => "Unexpected "+el)` succeeds if the input starts with an element `e` for which `p(e)` is true.
    *
    *  @param  err    A function from the received element into an error message.
    *  @param  p      A predicate that determines which elements match.
@@ -547,7 +547,7 @@ trait Parsers {
     else Failure(expected+" expected", in)
   }
 
-  /** A parser that matches only the given an [[scala.collection.Iterable]] collection of elements `es`.
+  /** A parser that matches only the given [[scala.collection.Iterable]] collection of elements `es`.
    *
    *  `acceptSeq(es)` succeeds if the input subsequently provides the elements in the iterable `es`.
    *
