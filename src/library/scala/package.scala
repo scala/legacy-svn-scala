@@ -74,35 +74,37 @@ package object scala {
   // Migrated from Predef
   @deprecated("Use Thread.currentThread instead", "2.9.0")
   def currentThread = java.lang.Thread.currentThread()
-  
+
+  /*@XML*/
   // Moved back into Predef to avoid unnecessary indirection by
   // way of the scala package object within the standard library,
   // but bridged for compatibility.
   @bridge def $scope = scala.xml.TopScope
+  /*XML@*/
 
   // Numeric types which were moved into scala.math.*
-  
+
   type BigDecimal = scala.math.BigDecimal
   val BigDecimal = scala.math.BigDecimal
-  
+
   type BigInt = scala.math.BigInt
   val BigInt = scala.math.BigInt
   
   type Equiv[T] = scala.math.Equiv[T]
   val Equiv = scala.math.Equiv
-  
+
   type Fractional[T] = scala.math.Fractional[T]
   type Integral[T] = scala.math.Integral[T]
 
   type Numeric[T] = scala.math.Numeric[T]
   val Numeric = scala.math.Numeric
-  
+
   type Ordered[T] = scala.math.Ordered[T]
   val Ordered = scala.math.Ordered
-  
+
   type Ordering[T] = scala.math.Ordering[T]
   val Ordering = scala.math.Ordering
-  
+
   type PartialOrdering[T] = scala.math.PartialOrdering[T]  
   type PartiallyOrdered[T] = scala.math.PartiallyOrdered[T]
 
