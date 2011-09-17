@@ -40,7 +40,8 @@ object Platform {
     * @throws java.lang.IndexOutOfBoundsException If either srcPos` or `destPos` are
     *                outside of the bounds of their respective arrays; or if `length`
     *                is negative; or if there are less than `length` elements available
-    *                after `srcPos` or `destPos` in `src` and `dest` respectively. */
+    *                after `srcPos` or `destPos` in `src` and `dest` respectively.
+	*/
   @inline
   def arraycopy(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: Int) {
     System.arraycopy(src, srcPos, dest, destPos, length)
@@ -61,7 +62,6 @@ object Platform {
    *  @example {{{
    *  val a = scala.compat.Platform.createArray(classOf[Int], 4).asInstanceOf[Array[Int]] // returns Array[Int](0, 0, 0, 0)
    *  }}}
-   *  returns
    *
    *  @param elemClass the ''Class'' object of the component type of the array
    *  @param length    the length of the new array
@@ -76,7 +76,8 @@ object Platform {
 
   /** Assigns the value of 0 to each element in the array.
     * @param arr     A non-null Array[Int].
-    * @throws java.lang.NullPointerException If arr is `null`. */
+    * @throws java.lang.NullPointerException If arr is `null`.
+	*/
   @inline
   def arrayclear(arr: Array[Int]) { java.util.Arrays.fill(arr, 0) }
 
@@ -109,7 +110,8 @@ object Platform {
     * UTC.
     * 
     * Note that the operating system timer used to obtain this value may be less
-    * precise than a millisecond. */
+    * precise than a millisecond.
+	*/
   @inline
   def currentTime: Long = System.currentTimeMillis()
 
