@@ -24,7 +24,7 @@ import scala.util.matching.Regex
 object PagedSeq {
   final val UndeterminedEnd = Int.MaxValue
 
-  /** Constructs a sequence from an iterator */
+  /** Constructs a paged sequence from an iterator */
   def fromIterator[T: ClassManifest](source: Iterator[T]): PagedSeq[T] = 
     new PagedSeq[T]((data: Array[T], start: Int, len: Int) => {
       var i = 0
@@ -35,11 +35,11 @@ object PagedSeq {
       if (i == 0) -1 else i
     })
 
-  /** Constructs a sequence from an iterable */
+  /** Constructs a paged sequence from an iterable */
   def fromIterable[T: ClassManifest](source: Iterable[T]): PagedSeq[T] = 
     fromIterator(source.iterator)
 
-  /** Constructs a character sequence from a string iterator */
+  /** Constructs a paged character sequence from a string iterator */
   def fromStrings(source: Iterator[String]): PagedSeq[Char] = {
     var current: String = ""
     def more(data: Array[Char], start: Int, len: Int): Int =
@@ -56,11 +56,11 @@ object PagedSeq {
     new PagedSeq(more(_: Array[Char], _: Int, _: Int))
   }
 
-  /** Constructs a character sequence from a string iterable */
+  /** Constructs a paged character sequence from a string iterable */
   def fromStrings(source: Iterable[String]): PagedSeq[Char] = 
     fromStrings(source.iterator)
 
-  /** Constructs a character sequence from a line iterator
+  /** Constructs a paged character sequence from a line iterator
    *  Lines do not contain trailing `\n` characters; The method inserts
    *  a line separator `\n` between any two lines in the sequence.
    */
@@ -74,29 +74,29 @@ object PagedSeq {
     }) 
   }                    
 
-  /** Constructs a character sequence from a line iterable
+  /** Constructs a paged character sequence from a line iterable
    *  Lines do not contain trailing `\n` characters; The method inserts
    *  a line separator `\n` between any two lines in the sequence.
    */
   def fromLines(source: Iterable[String]): PagedSeq[Char] =
     fromLines(source.iterator)
 
-  /** Constructs a character sequence from an input reader
+  /** Constructs a paged character sequence from an input reader
    */
   def fromReader(source: Reader): PagedSeq[Char] =
     new PagedSeq(source.read(_: Array[Char], _: Int, _: Int))
 
-  /** Constructs a character sequence from an input file
+  /** Constructs a paged character sequence from an input file
    */
   def fromFile(source: File): PagedSeq[Char] = 
     fromReader(new FileReader(source))
     
-  /** Constructs a character sequence from a file with given name
+  /** Constructs a paged character sequence from a file with given name
    */
   def fromFile(source: String): PagedSeq[Char] = 
     fromFile(new File(source))
 
-  /** Constructs a character sequence from a scala.io.Source value
+  /** Constructs a paged character sequence from a scala.io.Source value
    */
   def fromSource(source: io.Source) = 
     fromLines(source.getLines())
@@ -108,12 +108,12 @@ import PagedSeq._
 /** An implementation of lazily computed sequences, where elements are stored
  *  in "pages", i.e. arrays of fixed size.
  *
- *  A paged sequence is constructed from a method that produces more characters when asked.
- *  The producer method is analogous to the read method in java.io.Reader.
- *  This method takes three parameters: an array of characters, a start index, and an end index.
+ *  A paged sequence is constructed from a function that produces more elements when asked.
+ *  The producer function - `more`, is similar to the read method in java.io.Reader.
+ *  The `more` function takes three parameters: an array of elements, a start index, and an end index.
  *  It should try to fill the array between start and end indices (excluding end index).
- *  It returns the number of characters produced, or -1 if end of logical input stream was reached
- *  before reading any character.
+ *  It returns the number of elements produced, or -1 if end of logical input stream was reached
+ *  before reading any element.
  *  
  *  @tparam T     the type of the elements contained in this paged sequence, with a `ClassManifest` context bound.
  *  
@@ -151,7 +151,7 @@ extends scala.collection.IndexedSeq[T]
   }
 
   /** The length of the paged sequence
-   *  Note: calling this method will force the entire sequence to be read.
+   *  @note Calling this method will force the entire sequence to be read.
    */
   def length: Int = {
     while (!latest.isLast) addMore()
@@ -174,9 +174,9 @@ extends scala.collection.IndexedSeq[T]
       val p = page(index + start); index + start < p.end
     }
     
-   /** The subsequence from index `start` upto `end -1` if `end`
-   *   is lesser than the length of the current sequence and upto 
-   *   length of the sequence otherwise. This is limited upto the length
+   /** The subsequence from index `start` up to `end -1` if `end`
+   *   is lesser than the length of the current sequence and up to 
+   *   length of the sequence otherwise. This is limited up to the length
    *   of the current sequence if `end` is larger than its length.
    */
   override def slice(_start: Int, _end: Int): PagedSeq[T] = {
@@ -214,42 +214,40 @@ private class Page[T: ClassManifest](val num: Int) {
   /** A later page in the sequence, serves a cache for pointing to last page */
   var later : Page[T] = this
 
-  /** The number of characters read into this page */
+  /** The number of elements read into this page */
   var filled: Int = 0
 
-  /** Is this page the permanently last one in the sequence? Only true once `more`
-   *  method has returned -1 to signal end of input. */
+  /** Set true if the current page is the last in the sequence or if 
+  *   the `more` function returned -1 signalling end of input. */
   var isLast: Boolean = false
 
-  /** The character array */
+  /** The element array */
   final val data = new Array[T](PageSize)
 
-  /** The index of the first character in this page relative to the whole sequence */ 
+  /** The index of the first element in this page relative to the whole sequence */ 
   final def start = num * PageSize
 
-  /** The index of the character following the last character in this page relative 
+  /** The index of the element following the last element in this page relative 
    *  to the whole sequence */ 
   final def end = start + filled
 
   /** The last page as currently present in the sequence; This can change as more
-   *  characters get appended.
-   */
+   *  elements get appended to the sequence.  */
   final def latest: Page[T] = {
     if (later.next != null) later = later.next.latest
     later
   }
 
-  /** The character at given sequence index. 
+  /** The element at given sequence index. 
    *  That index is relative to the whole sequence, not the page. */
   def apply(index: Int) = {
     if (index < start || index - start >= filled) throw new IndexOutOfBoundsException(index.toString)
     data(index - start)
   }
 
-  /** Produces more characters by calling `more` and appends them on the current page,
+  /** Produces more elements by calling `more` and adds them on the current page,
    *  or fills a subsequent page if current page is full.
-   *  pre: if current page is full, it is the last one in the sequence.
-   */
+   *  @note If current page is full, it is the last one in the sequence.  */
   final def addMore(more: (Array[T], Int, Int) => Int): Page[T] =
     if (filled == PageSize) {
       next = new Page[T](num + 1)
