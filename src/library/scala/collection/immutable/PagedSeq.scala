@@ -17,12 +17,14 @@ import scala.util.matching.Regex
 /** The `PagedSeq` object defines a lazy implementations of 
  *  a random access sequence. 
  *  
+ * Provides utility methods that return instances of `PagedSeq[Char]`. 
+ * `fromIterator` and `fromIterable` provide generalised instances of `PagedSeq`
  *  @since 2.7
  */  
 object PagedSeq {
   final val UndeterminedEnd = Int.MaxValue
 
-  /** Constructs a character sequence from a character iterator */
+  /** Constructs a sequence from an iterator */
   def fromIterator[T: ClassManifest](source: Iterator[T]): PagedSeq[T] = 
     new PagedSeq[T]((data: Array[T], start: Int, len: Int) => {
       var i = 0
@@ -33,7 +35,7 @@ object PagedSeq {
       if (i == 0) -1 else i
     })
 
-  /** Constructs a character sequence from a character iterable */
+  /** Constructs a sequence from an iterable */
   def fromIterable[T: ClassManifest](source: Iterable[T]): PagedSeq[T] = 
     fromIterator(source.iterator)
 
@@ -105,6 +107,13 @@ import PagedSeq._
 
 /** An implementation of lazily computed sequences, where elements are stored
  *  in "pages", i.e. arrays of fixed size.
+ *
+ *  A paged sequence is constructed from a method that produces more characters when asked.
+ *  The producer method is analogous to the read method in java.io.Reader.
+ *  This method takes three parameters: an array of characters, a start index, and an end index.
+ *  It should try to fill the array between start and end indices (excluding end index).
+ *  It returns the number of characters produced, or -1 if end of logical input stream was reached
+ *  before reading any character.
  *  
  *  @tparam T     the type of the elements contained in this paged sequence, with a `ClassManifest` context bound.
  *  
@@ -122,13 +131,6 @@ class PagedSeq[T: ClassManifest] protected(
   end: Int)
 extends scala.collection.IndexedSeq[T]
 {
-  /**  A paged sequence is constructed from a method that produces more characters when asked.
-   *  The producer method is analogous to the read method in java.io.Reader.
-   *  It takes three parameters: an array of characters, a start index, and an end index.
-   *  It should try to fill the array between start and end indices (not including end index).
-   *  It returns the number of characters produced, or -1 if end of logical input stream was reached
-   *  before any character was read.
-   */  
   def this(more: (Array[T], Int, Int) => Int) = this(more, new Page[T](0), 0, UndeterminedEnd)
   
   private var current: Page[T] = first1
@@ -148,21 +150,22 @@ extends scala.collection.IndexedSeq[T]
     current
   }
 
-  /** The length of the character sequence
-   *  Note: calling this method will force sequence to be read until the end.
+  /** The length of the paged sequence
+   *  Note: calling this method will force the entire sequence to be read.
    */
   def length: Int = {
     while (!latest.isLast) addMore()
     (latest.end min end) - start
   }
 
-  /** The character at position `index`.
+  /** The element at position `index`.
    */
   def apply(index: Int) =
     if (isDefinedAt(index)) page(index + start)(index + start)
     else throw new IndexOutOfBoundsException(index.toString)
 
-  /** Is character sequence defined at `index`?
+  /** Predicate method to check if an element is defined 
+   *  at position `index` of the current sequence.
    *  Unlike `length` this operation does not force reading
    *  a lazy sequence to the end.
    */
@@ -171,8 +174,10 @@ extends scala.collection.IndexedSeq[T]
       val p = page(index + start); index + start < p.end
     }
     
-  /** the subsequence from index `start` up to and excluding
-   *  the minimum of index `end` and the length of the current sequence.
+   /** The subsequence from index `start` upto `end -1` if `end`
+   *   is lesser than the length of the current sequence and upto 
+   *   length of the sequence otherwise. This is limited upto the length
+   *   of the current sequence if `end` is larger than its length.
    */
   override def slice(_start: Int, _end: Int): PagedSeq[T] = {
     page(start)
@@ -183,8 +188,8 @@ extends scala.collection.IndexedSeq[T]
     new PagedSeq(more, f, s, e)
   }
 
-  /** the subsequence from index `start` up to the
-   *  length of the current sequence.
+  /** The subsequence from index `start` up to 
+   *  the length of the current sequence.
    */
   def slice(start: Int): PagedSeq[T] = slice(start, UndeterminedEnd)
 
@@ -212,7 +217,7 @@ private class Page[T: ClassManifest](val num: Int) {
   /** The number of characters read into this page */
   var filled: Int = 0
 
-  /** Is this page the permamnently last one in the sequence? Only true once `more`
+  /** Is this page the permanently last one in the sequence? Only true once `more`
    *  method has returned -1 to signal end of input. */
   var isLast: Boolean = false
 
@@ -226,7 +231,9 @@ private class Page[T: ClassManifest](val num: Int) {
    *  to the whole sequence */ 
   final def end = start + filled
 
-  /** The currently last page in the sequence; might change as more characters are appended */
+  /** The last page as currently present in the sequence; This can change as more
+   *  characters get appended.
+   */
   final def latest: Page[T] = {
     if (later.next != null) later = later.next.latest
     later
@@ -239,8 +246,8 @@ private class Page[T: ClassManifest](val num: Int) {
     data(index - start)
   }
 
-  /** produces more characters by calling `more` and appends them on the current page,
-   *  or fills a subsequent page if current page is full 
+  /** Produces more characters by calling `more` and appends them on the current page,
+   *  or fills a subsequent page if current page is full.
    *  pre: if current page is full, it is the last one in the sequence.
    */
   final def addMore(more: (Array[T], Int, Int) => Int): Page[T] =
