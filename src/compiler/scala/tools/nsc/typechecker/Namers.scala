@@ -41,8 +41,8 @@ trait Namers { self: Analyzer =>
     }
   }
 
-  private class NormalNamer(context : Context) extends Namer(context)
-  def newNamer(context : Context) : Namer = new NormalNamer(context)
+  private class NormalNamer(context: Context) extends Namer(context)
+  def newNamer(context: Context): Namer = new NormalNamer(context)
 
   // In the typeCompleter (templateSig) of a case class (resp it's module),
   // synthetic `copy` (reps `apply`, `unapply`) methods are added. To compute
@@ -64,7 +64,7 @@ trait Namers { self: Analyzer =>
   def resetNamer() {
     classAndNamerOfModule.clear
   }
-  
+
   abstract class Namer(val context: Context) extends NamerErrorTrees {
 
     val typer = newTyper(context)
@@ -254,7 +254,7 @@ trait Namers { self: Analyzer =>
           setPrivateWithin(tree, m.moduleClass, tree.mods)
 
         context.unit.synthetics -= m
-      } else {        
+      } else {
         m = context.owner.newModule(tree.pos, tree.name)
         m.setFlag(moduleFlags)
         m = setPrivateWithin(tree, m, tree.mods)
@@ -266,7 +266,7 @@ trait Namers { self: Analyzer =>
       if (m.owner.isPackageClass && !m.isPackage) {
         m.moduleClass.sourceFile = context.unit.source.file
         currentRun.symSource(m) = m.moduleClass.sourceFile
-        registerTopLevelSym(m)          
+        registerTopLevelSym(m)
       }
       m
     }
@@ -424,7 +424,7 @@ trait Namers { self: Analyzer =>
       while ((e ne null) && (e.owner eq scope) && (e.sym ne sym)) e = e.tail
       if (!((e ne null) && (e.owner eq scope))) context.scope.enter(sym)
     }
-    
+
     def enterSym(tree: Tree): Context = {
       def finishWith(tparams: List[TypeDef]) { enterSymFinishWith(tree, tparams) }
       def finish() = finishWith(Nil)
@@ -452,7 +452,7 @@ trait Namers { self: Analyzer =>
               if (context.owner == EmptyPackageClass) RootClass else context.owner)
             val namer = newNamer(context.make(tree, sym.moduleClass, sym.info.decls))
             namer enterSyms stats
-            
+
           case tree @ ClassDef(mods, name, tparams, impl) =>
             tree.symbol = enterClassSymbol(tree)
             finishWith(tparams)
@@ -483,7 +483,7 @@ trait Namers { self: Analyzer =>
             tree.symbol = enterModuleSymbol(tree)
             sym.moduleClass setInfo namerOf(sym).moduleClassTypeCompleter(tree)
             finish
-          
+
           case vd @ ValDef(mods, name, tp, rhs) =>
             if ((!context.owner.isClass ||
                  (mods.isPrivateLocal && !mods.isCaseAccessor) ||
@@ -522,7 +522,7 @@ trait Namers { self: Analyzer =>
                     } else {
                       val mFlag = if (mods1.isLazy) MUTABLE else 0
                       val lFlag = if (mods.isPrivateLocal) 0 else LOCAL
-                      val newflags = mods1.flags & FieldFlags | PRIVATE | lFlag | mFlag          
+                      val newflags = mods1.flags & FieldFlags | PRIVATE | lFlag | mFlag
                       owner.newValue(tree.pos, nme.getterToLocal(name)) setFlag newflags
                     }
                   enterInScope(vsym)
@@ -558,7 +558,7 @@ trait Namers { self: Analyzer =>
             setInfo(sym)(namerOf(sym).typeCompleter(tree))
             return context.makeNewImport(imp)
           case _ =>
-        }        
+        }
       }
       catch {
         case ex: TypeError =>
@@ -770,7 +770,7 @@ trait Namers { self: Analyzer =>
         } else {
           tp
         }
-      }          
+      }
       def enterSelf(self: ValDef) {
         if (!self.tpt.isEmpty) {
           clazz.typeOfThis = selfTypeCompleter(self.tpt)
@@ -813,7 +813,7 @@ trait Namers { self: Analyzer =>
           esym.asInstanceOf[TypeSymbol].refreshType()
           esym setInfo earlyMap(esym.info)
         }
-      
+
 /*
         println("earlies: "+(earlyTypes map (_.symbol)))
         println("earlies: "+(earlyTypes map (_.symbol.tpe)))
@@ -822,7 +822,7 @@ trait Namers { self: Analyzer =>
         println(templ)
      
 */
-	  
+
       }
 */
       var parents0 = typer.parentTypes(templ)
@@ -948,7 +948,7 @@ trait Namers { self: Analyzer =>
         else MethodType(params, restpe)
       }
 
-      def thisMethodType(restpe: Type) =  {
+      def thisMethodType(restpe: Type) = {
         import scala.collection.mutable.ListBuffer
         val okParams = ListBuffer[Symbol]()
         // can we relax these restrictions? see test/files/pos/depmet_implicit_oopsla_session_2.scala and neg/depmet_try_implicit.scala for motivation
@@ -1127,7 +1127,7 @@ trait Namers { self: Analyzer =>
                   case _ =>
                     return // fix #3649 (prevent crash in erroneous source code)
                            // nmr == null can happen in IDE; this is really an ugly hack on top[ of an ugly hack but it seems to work
-                }    
+                }
               }
               deftParams = cdef.tparams map copyUntypedInvariant
               nmr
@@ -1236,7 +1236,7 @@ trait Namers { self: Analyzer =>
     def addApplyUnapply(cdef: ClassDef, namer: Namer) {
       if (!cdef.symbol.hasAbstractFlag)
         namer.enterSyntheticSym(caseModuleApplyMeth(cdef))
-        
+
       namer.enterSyntheticSym(caseModuleUnapplyMeth(cdef))
     }
 
@@ -1285,7 +1285,7 @@ trait Namers { self: Analyzer =>
           tree match {
             case ClassDef(_, _, tparams, impl) =>
               newNamer(context.makeNewScope(tree, sym)).classSig(tparams, impl)
-            
+
             case ModuleDef(_, _, impl) =>
               val clazz = sym.moduleClass
               clazz.setInfo(newNamer(context.makeNewScope(tree, clazz)).templateSig(impl))
@@ -1512,7 +1512,7 @@ trait Namers { self: Analyzer =>
         NoSymbol
     }
   }
-  
+
   def companionSymbolOf(sym: Symbol, context: Context) =
     if (sym.isTerm) companionClassOf(sym, context)
     else if (sym.isClass) companionModuleOf(sym, context)

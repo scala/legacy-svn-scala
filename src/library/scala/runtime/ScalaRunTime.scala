@@ -8,13 +8,15 @@
 
 package scala.runtime
 
-import scala.reflect.ClassManifest
 import scala.collection.{ Seq, IndexedSeq, TraversableView }
 import scala.collection.mutable.WrappedArray
 import scala.collection.immutable.{ StringLike, NumericRange, List, Stream, Nil, :: }
 import scala.collection.generic.{ Sorted }
-import scala.xml.{ Node, MetaData }
 import scala.util.control.ControlThrowable
+/*@XML*/
+import scala.xml.{ Node, MetaData }
+/*XML@*/
+
 import java.lang.Double.doubleToLongBits
 import java.lang.reflect.{ Modifier, Method => JMethod }
 
@@ -203,21 +205,21 @@ object ScalaRunTime {
     case y: Product if x.productArity == y.productArity => x.productIterator sameElements y.productIterator
     case _                                              => false
   }
-  
+
   // hashcode -----------------------------------------------------------
   //
   // Note that these are the implementations called by ##, so they
   // must not call ## themselves.
- 
+
   @inline def hash(x: Any): Int =
     if (x == null) 0
     else if (x.isInstanceOf[java.lang.Number]) BoxesRunTime.hashFromNumber(x.asInstanceOf[java.lang.Number])
     else x.hashCode
-  
+
   @inline def hash(dv: Double): Int = {
     val iv = dv.toInt
     if (iv == dv) return iv
-    
+
     val lv = dv.toLong
     if (lv == dv) return lv.hashCode
 
@@ -227,7 +229,7 @@ object ScalaRunTime {
   @inline def hash(fv: Float): Int = {
     val iv = fv.toInt
     if (iv == fv) return iv
-    
+
     val lv = fv.toLong
     if (lv == fv) return hash(lv)
     else fv.hashCode
@@ -272,14 +274,16 @@ object ScalaRunTime {
   def stringOf(arg: Any, maxElements: Int): String = {    
     def isScalaClass(x: AnyRef) =
       Option(x.getClass.getPackage) exists (_.getName startsWith "scala.")
-    
+
     def isTuple(x: AnyRef) =
       x.getClass.getName matches """^scala\.Tuple(\d+).*"""
 
     // When doing our own iteration is dangerous
     def useOwnToString(x: Any) = x match {
+      /*@XML*/
       // Node extends NodeSeq extends Seq[Node] and MetaData extends Iterable[MetaData]
       case _: Node | _: MetaData => true
+      /*XML@*/
       // Range/NumericRange have a custom toString to avoid walking a gazillion elements
       case _: Range | _: NumericRange[_] => true
       // Sorted collections to the wrong thing (for us) on iteration - ticket #3493
@@ -300,7 +304,7 @@ object ScalaRunTime {
       case (k, v)   => inner(k) + " -> " + inner(v)
       case _        => inner(arg)
     }
-    
+
     // Special casing Unit arrays, the value class which uses a reference array type.
     def arrayToString(x: AnyRef) = {
       if (x.getClass.getComponentType == classOf[BoxedUnit])
@@ -334,11 +338,12 @@ object ScalaRunTime {
       case _: StackOverflowError | _: UnsupportedOperationException | _: AssertionError => "" + arg
     }
   }
+
   /** stringOf formatted for use in a repl result. */
   def replStringOf(arg: Any, maxElements: Int): String = {
     val s  = stringOf(arg, maxElements)
     val nl = if (s contains "\n") "\n" else ""
-    
+
     nl + s + "\n"
   }
 }
