@@ -10,9 +10,9 @@
 
 package scala
 
-/** `Double`, a 64-bit IEEE-754 floating point number (equivalent to Java's `double` primitive type) is a 
- *  subtype of [[scala.AnyVal]], meaning that instances of `Double` are not 
- *  represented by an object in the underlying runtime system.
+/** `Double`, a 64-bit IEEE-754 floating point number (equivalent to Java's `double` primitive type), is a 
+ *  subtype of [[scala.AnyVal]]. Instances of `Double` are not represented by an object in
+ *  the underlying runtime system.
  *
  *  There is an implicit conversion from [[scala.Double]] => [[scala.runtime.RichDouble]]
  *  which provides useful non-primitive operations.

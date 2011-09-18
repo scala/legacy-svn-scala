@@ -10,9 +10,9 @@
 
 package scala
 
-/** `Long`, a 64-bit signed integer (equivalent to Java's `long` primitive type) is a 
- *  subtype of [[scala.AnyVal]], meaning that instances of `Long` are not 
- *  represented by an object in the underlying runtime system.
+/** `Long`, a 64-bit signed integer (equivalent to Java's `long` primitive type), is a 
+ *  subtype of [[scala.AnyVal]]. Instances of `Long` are not represented by an object in
+ *  the underlying runtime system.
  *
  *  There is an implicit conversion from [[scala.Long]] => [[scala.runtime.RichLong]]
  *  which provides useful non-primitive operations.

@@ -10,9 +10,9 @@
 
 package scala
 
-/** `Short`, a 16-bit signed integer (equivalent to Java's `short` primitive type) is a 
- *  subtype of [[scala.AnyVal]], meaning that instances of `Short` are not 
- *  represented by an object in the underlying runtime system.
+/** `Short`, a 16-bit signed integer (equivalent to Java's `short` primitive type), is a 
+ *  subtype of [[scala.AnyVal]]. Instances of `Short` are not represented by an object
+ *  in the underlying runtime system.
  *
  *  There is an implicit conversion from [[scala.Short]] => [[scala.runtime.RichShort]]
  *  which provides useful non-primitive operations.
