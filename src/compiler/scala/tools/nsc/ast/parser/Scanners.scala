@@ -10,7 +10,9 @@ import scala.reflect.internal.Chars._
 import Tokens._
 import scala.annotation.switch
 import scala.collection.mutable.{ ListBuffer, ArrayBuffer }
+/*@XML*/
 import scala.xml.Utility.{ isNameStart }
+/*XML@*/
 
 /** See Parsers.scala / ParsersCommon for some explanation of ScannersCommon.
  */
@@ -141,7 +143,7 @@ trait Scanners extends ScannersCommon {
     protected def putDocChar(c: Char) {
       if (docBuffer ne null) docBuffer.append(c)
     }
-      
+
     protected def foundDocComment(value: String, start: Int, end: Int) = ()
 
     private class TokenData0 extends TokenData
@@ -164,7 +166,7 @@ trait Scanners extends ScannersCommon {
       nextToken()
       off
     }
-    
+
     /** Produce next token, filling TokenData fields of Scanner.
      */
     def nextToken() {
@@ -297,6 +299,7 @@ trait Scanners extends ScannersCommon {
           putChar(ch)
           nextChar()
           getIdentRest()  // scala-mode: wrong indent for multi-line case blocks
+/*@XML*/
         case '<' => // is XMLSTART?
           val last = if (charOffset >= 2) buf(charOffset - 2) else ' '
           nextChar()
@@ -308,8 +311,9 @@ trait Scanners extends ScannersCommon {
               putChar('<')
               getOperatorRest()
           }
+/*XML@*/
         case '~' | '!' | '@' | '#' | '%' |
-             '^' | '*' | '+' | '-' | /*'<' | */
+             '^' | '*' | '+' | '-' | /*'<' | */ /*@NOXML '<' | XMLNO@*/
              '>' | '?' | ':' | '=' | '&' | 
              '|' | '\\' =>
           putChar(ch)
@@ -489,7 +493,7 @@ trait Scanners extends ScannersCommon {
     def inLastOfStat(token: Int) = token match {
       case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT | STRINGLIT | SYMBOLLIT |
            IDENTIFIER | BACKQUOTED_IDENT | THIS | NULL | TRUE | FALSE | RETURN | USCORE | 
-           TYPE | XMLSTART | RPAREN | RBRACKET | RBRACE =>
+           TYPE /*@XML*/| XMLSTART /*XML@*/ | RPAREN | RBRACKET | RBRACE =>
         true
       case _ =>
         false
@@ -497,12 +501,12 @@ trait Scanners extends ScannersCommon {
 
 // Identifiers ---------------------------------------------------------------
 
-    private def getBackquotedIdent(): Unit = {
+    private def getBackquotedIdent() {
       nextChar()
-      if (getStringLit('`')) { 
-        finishNamed(); 
+      if (getStringLit('`')) {
+        finishNamed()
         if (name.length == 0) syntaxError("empty quoted identifier")
-        token = BACKQUOTED_IDENT 
+        token = BACKQUOTED_IDENT
       }
       else syntaxError("unclosed quoted identifier")
     }
@@ -767,7 +771,7 @@ trait Scanners extends ScannersCommon {
         nextChar()
       }
       token = INTLIT
-      
+
       /** When we know for certain it's a number after using a touch of lookahead */
       def restOfNumber() = {
         putChar(ch)
@@ -789,7 +793,7 @@ trait Scanners extends ScannersCommon {
           else checkNoLetter()
         }
       }
-      
+
       if (base > 10 || ch != '.')
         restOfUncertainToken()
       else {
@@ -807,16 +811,16 @@ trait Scanners extends ScannersCommon {
             /** These letters may be part of a literal, or a method invocation on an Int */
             case 'd' | 'D' | 'f' | 'F' =>
               !isIdentifierPart(lookahead.getc())
-          
+
             /** A little more special handling for e.g. 5e7 */
             case 'e' | 'E' =>
               val ch = lookahead.getc()
               !isIdentifierPart(ch) || (isDigit(ch) || ch == '+' || ch == '-')
-            
+
             case x  =>
               !isIdentifierStart(x)
           }
-        
+
         if (isDefinitelyNumber) restOfNumber()
         else restOfUncertainToken()
       }
@@ -888,16 +892,16 @@ trait Scanners extends ScannersCommon {
     }
 
     // ------------- brace counting and healing ------------------------------
- 
+
     /** overridden in UnitScanners:
      *  apply brace patch if one exists for this offset
      *  return true if subsequent end of line handling should be suppressed.
      */
     def applyBracePatch(): Boolean = false
- 
+
     /** overridden in UnitScanners */
     def parenBalance(token: Int) = 0
-    
+
     /** overridden in UnitScanners */
     def healBraces(): List[BracePatch] = List()
 
@@ -910,7 +914,7 @@ trait Scanners extends ScannersCommon {
   } // end Scanner
 
   // ------------- keyword configuration -----------------------------------
-  
+
   private val allKeywords = List[(Name, Int)](
     nme.ABSTRACTkw  -> ABSTRACT,
     nme.CASEkw      -> CASE,
@@ -1006,7 +1010,9 @@ trait Scanners extends ScannersCommon {
     case COMMA => "','"
     case CASECLASS => "case class"
     case CASEOBJECT => "case object"
+/*@XML*/
     case XMLSTART => "$XMLSTART$<"
+/*XML@*/
     case _ =>
       (token2name get token) match {
         case Some(name) => "'" + name + "'"

@@ -38,16 +38,16 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
     private var validCurrentOwner = true
     private var accDefs: List[(Symbol, ListBuffer[Tree])] = List()
     
-    private def accDefBuf(clazz: Symbol) = 
+    private def accDefBuf(clazz: Symbol) =
       accDefs collectFirst { case (`clazz`, buf) => buf } getOrElse sys.error("no acc def buf for "+clazz)
 
-    private def transformArgs(args: List[Tree], params: List[Symbol]) =
-      ((args, params).zipped map { (arg, param) =>
+    private def transformArgs(params: List[Symbol], args: List[Tree]) = {
+      treeInfo.zipMethodParamsAndArgs(params, args) map { case (param, arg) =>
         if (isByNameParamType(param.tpe))
           withInvalidOwner { checkPackedConforms(transform(arg), param.tpe.typeArgs.head) }
         else transform(arg)
-      }) :::
-      (args drop params.length map transform)
+      }
+    }
 
     private def checkPackedConforms(tree: Tree, pt: Type): Tree = {
       if (tree.tpe exists (_.typeSymbol.isExistentialSkolem)) {
@@ -231,8 +231,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
             super.transform(tree)
 
         case Apply(fn, args) =>
-          assert(fn.tpe != null, tree) 
-          treeCopy.Apply(tree, transform(fn), transformArgs(args, fn.tpe.params))
+          assert(fn.tpe != null, tree)
+          treeCopy.Apply(tree, transform(fn), transformArgs(fn.tpe.params, args))
         case Function(vparams, body) =>
           withInvalidOwner {
             treeCopy.Function(tree, vparams, transform(body))
