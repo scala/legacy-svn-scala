@@ -37,9 +37,9 @@ pomExtra := <xml:group>
 
 //onLoad in Global <<= (onLoad in Global) ?? { (s: State) => println("Base onload"); s }
 onLoad in Global := { (state: State) =>
-  println("--------------------------------")
-  println("Fixing up scalacheck references.")
-  println("--------------------------------")
+  //println("--------------------------------")
+  //println("Fixing up scalacheck references.")
+  //println("--------------------------------")
   // TODO -fix up scalacheck
   val extracted = Project.extract(state)
   import extracted._
@@ -51,6 +51,9 @@ onLoad in Global := { (state: State) =>
         // TODO - Do we need to modify this to be in scope of scalacheck? most likely...
         quickScalaInstance
       } else s
+    case onLoad.key =>
+      // Remove onloads now that we've fixed everything!
+      s.asInstanceOf[Setting[State => State]].mapInit((_,_) => identity _)
     case _ => s
    }
    val transformed = session.mergeSettings map ( s => f(s) )
