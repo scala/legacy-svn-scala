@@ -14,8 +14,8 @@ trait Layers extends Build {
   def fjbg: Project
   /** Reference to MSIL generator library */
   def msil: Project
-  /** A settings that adds an ant dependency. */
-  def ant: Setting[_]
+  /** A setting that adds some external dependencies. */
+  def externalDeps: Setting[_]
 
   /** Creates a reference Scala version that can be used to build other projects.   This takes in the raw
     * library, compiler and fjbg libraries as well as a string representing the layer name (used for compiling the compile-interface).
@@ -78,7 +78,7 @@ trait Layers extends Build {
         // TODO - Use depends on *and* SBT's magic dependency mechanisms...
         unmanagedClasspath in Compile <<= Seq(forkjoin, library, fjbg, jline, msil).map(exportedProducts in Compile in _).join.map(_.flatten),
         classpathOptions := ClasspathOptions.manual,
-        ant,
+        externalDeps,
         referenceScala
         )
       ):_*)
