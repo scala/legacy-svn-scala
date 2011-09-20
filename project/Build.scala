@@ -266,8 +266,8 @@ object ScalaBuild extends Build with Layers {
   // --------------------------------------------------------------
   //  Testing
   // --------------------------------------------------------------
-  /* lazy val scalacheckSettings: Seq[Setting[_]] = Seq(fullQuickScalaReference, crossPaths := false)
-  lazy val scalacheck = ProjectRef(uri("https://github.com/rickynils/scalacheck.git"), "scalacheck") */
+  /* lazy val scalacheckSettings: Seq[Setting[_]] = Seq(fullQuickScalaReference, crossPaths := false)*/
+  lazy val scalacheck: ProjectReference = uri("git://github.com/rickynils/scalacheck.git")
 
   lazy val testsuiteSettings: Seq[Setting[_]] = compilerDependentProjectSettings ++ partestTaskSettings ++ VerifyClassLoad.settings ++ Seq(
     unmanagedBase <<= baseDirectory / "test/files/lib",
@@ -275,7 +275,8 @@ object ScalaBuild extends Build with Layers {
     autoScalaLibrary := false,
     checkSameLibrary <<= checkSameBinaryProjects(quickLib, strappLib),
     checkSameCompiler <<= checkSameBinaryProjects(quickComp, strappComp),
-    checkSame <<= (checkSameLibrary, checkSameCompiler) map ((a,b) => ())
+    checkSame <<= (checkSameLibrary, checkSameCompiler) map ((a,b) => ()),
+    autoScalaLibrary := false
   )
   lazy val continuationsTestsuiteSettings: Seq[Setting[_]] = testsuiteSettings ++ Seq(
     scalacOptions in Test <++= (exportedProducts in Compile in continuationsPlugin) map { 

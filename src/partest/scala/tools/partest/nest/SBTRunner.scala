@@ -32,7 +32,8 @@ object SBTRunner extends DirectRunner {
 
   case class CommandLineOptions(classpath: Option[String] = None,
                                 tests: Map[String, Array[File]] = Map(),
-                                scalacOptions: Seq[String] = Seq())
+                                scalacOptions: Seq[String] = Seq(),
+                                justFailedTests: Boolean = false)
 
   def mainReflect(args: Array[String]): java.util.Map[String,Int] = {
     setProp("partest.debug", "true")
@@ -40,17 +41,12 @@ object SBTRunner extends DirectRunner {
     
     val Argument = new scala.util.matching.Regex("-(.*)")
     def parseArgs(args: Seq[String], data: CommandLineOptions): CommandLineOptions = args match {
-      case Seq("-cp", cp, rest @ _*) =>
-        parseArgs(rest, data.copy(classpath=Some(cp)))
-      // TODO - This is ugly, maybe we just add another parameter list to avoid ugliness and parsing.
-      // I'll stop being lame after things work though...
-      case Seq("-scalacoption", opt, rest @ _*) => 
-        parseArgs(rest, data.copy(scalacOptions= data.scalacOptions :+ opt))
-      case Seq(Argument(name), runFiles, rest @ _*) => 
-        parseArgs(rest, data.copy(tests=data.tests + (name -> runFiles.split(",").map(new File(_)))))
-      case Seq() => data
-      case x =>        
-        sys.error("Unknown command line options: " + x)
+      case Seq("--failed", rest @ _*)               => parseArgs(rest, data.copy(justFailedTests = true))
+      case Seq("-cp", cp, rest @ _*)                => parseArgs(rest, data.copy(classpath=Some(cp)))
+      case Seq("-scalacoption", opt, rest @ _*)     => parseArgs(rest, data.copy(scalacOptions= data.scalacOptions :+ opt))
+      case Seq(Argument(name), runFiles, rest @ _*) => parseArgs(rest, data.copy(tests=data.tests + (name -> runFiles.split(",").map(new File(_)))))
+      case Seq()                                    => data
+      case x                                        => sys.error("Unknown command line options: " + x)
     }
     val config = parseArgs(args, CommandLineOptions())
     fileManager.SCALAC_OPTS = config.scalacOptions.mkString(" ")
@@ -60,6 +56,7 @@ object SBTRunner extends DirectRunner {
     fileManager.LATEST_LIB = lib getOrElse error("No scala-library found! Classpath = " + fileManager.CLASSPATH)
     // TODO - Do something useful here!!!
     fileManager.JAVAC_CMD = "javac"
+    fileManager.failed      = config.justFailedTests
     // TODO - Make this a flag?
     //fileManager.updateCheck = true
     // Now run and report...

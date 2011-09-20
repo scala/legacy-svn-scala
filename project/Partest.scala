@@ -12,6 +12,7 @@ object partest {
   /** The key for the run-partest task that exists in Scala's test suite. */
   lazy val runPartest       = TaskKey[Unit]("run-partest", "Runs the partest test suite against the quick.")
   lazy val runPartestSingle = InputKey[Unit]("run-partest-single", "Runs a single partest test against quick.")
+  lazy val runPartestFailed = TaskKey[Unit]("run-partest-failed", "Runs failed partest tests.")
   lazy val runPartestGrep   = InputKey[Unit]("run-partest-grep", "Runs a single partest test against quick.")
   lazy val partestRunner    = TaskKey[PartestRunner]("partest-runner", "Creates a runner that can run partest suites")
   lazy val partestTests     = TaskKey[Map[String, Seq[File]]]("partest-tests", "Creates a map of test-type to a sequence of the test files/directoryies to test.")
@@ -24,7 +25,8 @@ object partest {
     partestRunner <<= partestRunnerTask(fullClasspath in Runtime),
     partestTests <<= partestTestsTask(partestDirs),
     runPartest <<= runPartestTask(partestRunner, partestTests, scalacOptions in Test),
-    runPartestSingle <<= runSingleTestTask(partestRunner, partestDirs, scalacOptions in Test)
+    runPartestSingle <<= runSingleTestTask(partestRunner, partestDirs, scalacOptions in Test),
+    runPartestFailed <<= runPartestTask(partestRunner, partestTests, scalacOptions in Test, Seq("--failed"))
   )
 
   // What's fun here is that we want "*.scala" files *and* directories in the base directory...
@@ -42,17 +44,17 @@ object partest {
 
   // TODO - Split partest task into Configurations and build a Task for each Configuration.
   // *then* mix all of them together for run-testsuite or something clever like this.
-  def runPartestTask(runner: ScopedTask[PartestRunner], testRuns: ScopedTask[Map[String,Seq[File]]], scalacOptions: ScopedTask[Seq[String]]): Initialize[Task[Unit]] = {
+  def runPartestTask(runner: ScopedTask[PartestRunner], testRuns: ScopedTask[Map[String,Seq[File]]], scalacOptions: ScopedTask[Seq[String]], extraArgs: Seq[String] = Seq()): Initialize[Task[Unit]] = {
     (runner, testRuns, scalacOptions, streams) map {
-      (runner, runs, scalaOpts, s) => runPartestImpl(runner, runs, scalaOpts, s)
+      (runner, runs, scalaOpts, s) => runPartestImpl(runner, runs, scalaOpts, s, extraArgs)
     }
   }
-  private def runPartestImpl(runner: PartestRunner, runs: Map[String, Seq[File]], scalacOptions: Seq[String], s: TaskStreams): Unit = {
+  private def runPartestImpl(runner: PartestRunner, runs: Map[String, Seq[File]], scalacOptions: Seq[String], s: TaskStreams, extras: Seq[String] = Seq()): Unit = {
     val testArgs  = runs.toSeq collect { case (kind, files) if files.nonEmpty => Seq("-" + kind, files mkString ",") } flatten
     val extraArgs = scalacOptions flatMap (opt => Seq("-scalacoption", opt))
 
     import collection.JavaConverters._
-    val results = runner run Array(testArgs ++ extraArgs: _*) asScala
+    val results = runner run Array(testArgs ++ extraArgs ++ extras: _*) asScala
     // TODO - save results
     val failures = results collect {
       case (path, 1) => path + " [FAILED]"
