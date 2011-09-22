@@ -179,24 +179,43 @@ object ScalaBuild extends Build with Layers {
   //  Projects dependent on layered compilation (quick)
   // --------------------------------------------------------------
   def addCheaterDependency(projectName: String): Setting[_] = 
-    ivyXML <<= (version, organization) apply { (v, o) => 
-      <dependencies>
-        <dependency org={o} name={projectName} rev={v} />
-      </dependencies>
+    pomPostProcess <<= (version, organization, pomPostProcess) apply { (v,o,k) => 
+      val dependency: scala.xml.Node = 
+        <dependency>
+          <groupId>{o}</groupId>
+          <artifactid>{projectName}</artifactid>
+          <version>{v}</version>
+        </dependency>
+      def fixDependencies(node: scala.xml.Node): scala.xml.Node = node match {
+         case <dependencies>{nested@_*}</dependencies> => <dependencies>{dependency}{nested}</dependencies>
+         case x                                        => x
+      }
+      // This is a hack to get around issues where \ and \\ don't work if any of the children are `scala.xml.Group`.
+      def hasDependencies(root: scala.xml.Node): Boolean =
+        root.child collectFirst {
+          case n: scala.xml.Elem if n.label == "dependencies" => n
+        } isEmpty
+      k andThen { 
+        case n @ <project>{ nested@_*}</project> if hasDependencies(n)   =>
+          <project><dependencies>{dependency}</dependencies>{nested}</project>
+        case <project>{ nested@_*}</project>                                       => 
+          <project>{ nested map fixDependencies }</project>
+      }
     }
 
   // TODO - in sabbus, these all use locker to build...  I think tihs way is better, but let's farm this idea around.
   // TODO - Actors + swing separate jars...
-  lazy val dependentProjectSettings = settingOverrides ++ Seq(quickScalaInstance, quickScalaLibraryDependency /*, addCheaterDependency("scala-library")*/ )
+  lazy val dependentProjectSettings = settingOverrides ++ Seq(quickScalaInstance, quickScalaLibraryDependency, addCheaterDependency("scala-library"))
   lazy val actors = Project("actors", file(".")) settings(dependentProjectSettings:_*) dependsOn(forkjoin % "provided")
   lazy val dbc = Project("dbc", file(".")) settings(dependentProjectSettings:_*)
-  lazy val swing = Project("swing", file(".")) settings(dependentProjectSettings:_*) dependsOn(actors)
+  // TODO - Remove actors dependency from pom...
+  lazy val swing = Project("swing", file(".")) settings(dependentProjectSettings:_*) dependsOn(actors % "provided")
   // This project will generate man pages (in man1 and html) for scala.    
   lazy val manmakerSettings: Seq[Setting[_]] = dependentProjectSettings :+ externalDeps
   lazy val manmaker = Project("manual", file(".")) settings(manmakerSettings:_*)
 
   // Things that compile against the compiler.
-  lazy val compilerDependentProjectSettings = dependentProjectSettings ++ Seq(quickScalaCompilerDependency /*, addCheaterDependency("scala-compiler")*/ )
+  lazy val compilerDependentProjectSettings = dependentProjectSettings ++ Seq(quickScalaCompilerDependency, addCheaterDependency("scala-compiler"))
   lazy val partestSettings = compilerDependentProjectSettings :+ externalDeps
   lazy val partest = Project("partest", file(".")) settings(partestSettings:_*)  dependsOn(actors,forkjoin,scalap)
   lazy val scalapSettings = compilerDependentProjectSettings ++ Seq(
@@ -291,7 +310,7 @@ object ScalaBuild extends Build with Layers {
   val testsuite = (
     Project("testsuite", file(".")) 
     settings (testsuiteSettings:_*)
-    dependsOn (swing, scalaLibrary, scalaCompiler, fjbg, partest)
+    dependsOn (swing, scalaLibrary, scalaCompiler, fjbg, partest) //, scalacheck)
   )
   val continuationsTestsuite = (
     Project("continuations-testsuite", file("."))
