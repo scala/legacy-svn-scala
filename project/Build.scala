@@ -324,9 +324,9 @@ object ScalaBuild extends Build with Layers {
     compile := inc.Analysis.Empty,
     scaladocOptions in Compile <++= (baseDirectory) map (bd => 
       Seq("-sourcepath", (bd / "src" / "library").getAbsolutePath,
-          "-doc-no-compile", (bd / "src" / "library-aux").getAbsolutePath //,
-          // This causes some wierd REGEX explosion...
-          // "-doc-source-url", """https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/€{FILE_PATH}.scala#L1"""
+          "-doc-no-compile", (bd / "src" / "library-aux").getAbsolutePath,
+          "-doc-source-url", """https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/€{FILE_PATH}.scala#L1""",
+          "-doc-root-content", (bd / "compiler/scala/tools/nsc/doc/html/resource/lib/rootdoc.txt").getAbsolutePath
       )),
     classpathOptions in Compile := ClasspathOptions.manual
   )

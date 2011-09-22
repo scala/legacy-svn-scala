@@ -73,7 +73,7 @@ trait Layers extends Build {
         unmanagedResources in Compile <<= (baseDirectory) map {
           (bd) =>
             val dirs = Seq(bd / "src" / "compiler")
-            dirs.descendentsExcept( ("*.xml" | "*.html" | "*.gif" | "*.png" | "*.js" | "*.css" | "*.tmpl" | "*.swf" | "*.properties"),"*.scala").get
+            dirs.descendentsExcept( ("*.xml" | "*.html" | "*.gif" | "*.png" | "*.js" | "*.css" | "*.tmpl" | "*.swf" | "*.properties" | "*.txt"),"*.scala").get
         },
         // TODO - Use depends on *and* SBT's magic dependency mechanisms...
         unmanagedClasspath in Compile <<= Seq(forkjoin, library, fjbg, jline, msil).map(exportedProducts in Compile in _).join.map(_.flatten),
