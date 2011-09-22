@@ -27,7 +27,7 @@ import scala.reflect.internal.Chars.{ isScalaLetter }
 trait ParsersCommon extends ScannersCommon {
   val global : Global
   import global._
-  
+
   trait ParserCommon {
     val in: ScannerCommon
     def freshName(prefix: String): Name
@@ -74,7 +74,7 @@ trait ParsersCommon extends ScannersCommon {
       accept(RBRACKET)
       ret
     }
-    
+
     /** Creates an actual Parens node (only used during parsing.)
      */
     @inline final def makeParens(body: => List[Tree]): Parens =
@@ -118,7 +118,7 @@ trait ParsersCommon extends ScannersCommon {
  *    </li>
  *  </ol>
  */
-trait Parsers extends Scanners with MarkupParsers with ParsersCommon {
+trait Parsers extends Scanners /*@XML*/ with MarkupParsers /*XML@*/ with ParsersCommon {
 self =>
   val global: Global 
   import global._
@@ -158,6 +158,7 @@ self =>
     def incompleteInputError(msg: String): Unit = throw new MalformedInput(source.content.length - 1, msg)
 
     /** the markup parser */
+/*@XML*/
     lazy val xmlp = new MarkupParser(this, true)
 
     object symbXMLBuilder extends SymbolicXMLBuilder(this, true) { // DEBUG choices
@@ -167,6 +168,7 @@ self =>
 
     def xmlLiteral : Tree = xmlp.xLiteral
     def xmlLiteralPattern : Tree = xmlp.xLiteralPattern
+/*XML@*/
   }
 
   class OutlineParser(source: SourceFile) extends SourceFileParser(source) {
@@ -175,16 +177,20 @@ self =>
       accept(LBRACE)  
       var openBraces = 1
       while (in.token != EOF && openBraces > 0) {
+        /*@XML*/
         if (in.token == XMLSTART) xmlLiteral()
         else {
+        /*XML@*/
           if (in.token == LBRACE) openBraces += 1
           else if (in.token == RBRACE) openBraces -= 1
           in.nextToken()
+        /*@XML*/
         }
+        /*XML@*/
       }
       body
     }
-    
+
     override def blockExpr(): Tree = skipBraces(EmptyTree)
 
     override def templateBody(isPre: Boolean) = skipBraces((emptyValDef, List(EmptyTree)))
@@ -193,7 +199,7 @@ self =>
   class UnitParser(val unit: global.CompilationUnit, patches: List[BracePatch]) extends SourceFileParser(unit.source) {
 
     def this(unit: global.CompilationUnit) = this(unit, List())
-    
+
     override def newScanner = new UnitScanner(unit, patches)
 
     override def freshTermName(prefix: String): TermName = unit.freshTermName(prefix)
@@ -219,7 +225,7 @@ self =>
     def showSyntaxErrors() =
       for ((offset, msg) <- syntaxErrors)
         unit.error(o2p(offset), msg)
-    
+
     override def syntaxError(offset: Int, msg: String) { 
       if (smartParsing) syntaxErrors += ((offset, msg))
       else unit.error(o2p(offset), msg) 
@@ -247,7 +253,7 @@ self =>
   final val Local = 0
   final val InBlock = 1
   final val InTemplate = 2
-  
+
   import nme.raw
 
   abstract class Parser extends ParserCommon {
@@ -258,7 +264,7 @@ self =>
     def freshTypeName(prefix: String): TypeName
     def o2p(offset: Int): Position
     def r2p(start: Int, mid: Int, end: Int): Position
-    
+
     /** whether a non-continuable syntax error has been seen */
     private var lastErrorOffset : Int = -1
 
@@ -294,7 +300,7 @@ self =>
     private def inScalaRootPackage       = inScalaPackage && currentPackage == "scala"    
     private def isScalaArray(name: Name) = inScalaRootPackage && name == tpnme.Array
     private def isAnyValType(name: Name) = inScalaRootPackage && anyValNames(name)
-    
+
     def parseStartRule: () => Tree
 
     /** This is the general parse entry point.
@@ -304,7 +310,7 @@ self =>
       accept(EOF)
       t
     }
-    
+
     /** This is the parse entry point for code which is not self-contained, e.g.
      *  a script which is a series of template statements.  They will be
      *  swaddled in Trees until the AST is equivalent to the one returned
@@ -313,7 +319,7 @@ self =>
     def scriptBody(): Tree = {
       val stmts = templateStatSeq(false)._2
       accept(EOF)
-      
+
       def mainModuleName = settings.script.value
       /** If there is only a single object template in the file and it has a
        *  suitable main method, we will use it rather than building another object
@@ -351,10 +357,10 @@ self =>
         }
         Some(makePackaging(0, emptyPkg, newStmts))
       }
-      
+
       if (mainModuleName == ScriptRunner.defaultScriptMain)
         searchForMain() foreach { return _ }
-      
+
       /** Here we are building an AST representing the following source fiction,
        *  where `moduleName` is from -Xscript (defaults to "Main") and <stmts> are
        *  the result of parsing the script file.
@@ -393,7 +399,7 @@ self =>
       def moduleName  = ScriptRunner scriptMain settings
       def moduleBody  = Template(List(scalaScalaObjectConstr), emptyValDef, List(emptyInit, mainDef))
       def moduleDef   = ModuleDef(NoMods, moduleName, moduleBody)
-      
+
       // package <empty> { ... }
       makePackaging(0, emptyPkg, List(moduleDef))
     }
@@ -417,7 +423,7 @@ self =>
       placeholderTypes = List()
 
       val res = op
-      
+
       placeholderParams match {
         case vd :: _ => 
           syntaxError(vd.pos, "unbound placeholder parameter", false)
@@ -624,7 +630,7 @@ self =>
     def isExprIntroToken(token: Int): Boolean = isLiteralToken(token) || (token match {
       case IDENTIFIER | BACKQUOTED_IDENT |
            THIS | SUPER | IF | FOR | NEW | USCORE | TRY | WHILE |
-           DO | RETURN | THROW | LPAREN | LBRACE | XMLSTART => true
+           DO | RETURN | THROW | LPAREN | LBRACE /*@XML*/| XMLSTART /*XML@*/ => true
       case _ => false
     })
 
@@ -639,10 +645,10 @@ self =>
     def isTypeIntro: Boolean = isTypeIntroToken(in.token)
 
     def isStatSeqEnd = in.token == RBRACE || in.token == EOF
-    
+
     def isStatSep(token: Int): Boolean = 
       token == NEWLINE || token == NEWLINES || token == SEMI
-    
+
     def isStatSep: Boolean = isStatSep(in.token)
 
 
@@ -1383,6 +1389,7 @@ self =>
      *  Expr ::= implicit Id => Expr
      *  }}}
      */
+
     def implicitClosure(start: Int, location: Int): Tree = {
       val param0 = convertToParam {
         atPos(in.offset) {
@@ -1448,7 +1455,9 @@ self =>
       }
       else simpleExpr()
     }
+    /*@XML*/
     def xmlLiteral(): Tree
+    /*XML@*/
     
     /** {{{
      *  SimpleExpr    ::= new (ClassTemplate | TemplateBody)
@@ -1468,8 +1477,10 @@ self =>
       val t =
         if (isLiteral) atPos(in.offset)(literal(false))
         else in.token match {
+          /*@XML*/
           case XMLSTART =>
             xmlLiteral()
+          /*XML@*/
           case IDENTIFIER | BACKQUOTED_IDENT | THIS | SUPER =>
             path(true, false)
           case USCORE =>
@@ -1815,8 +1826,10 @@ self =>
             atPos(start) { literal(false) }
           case LPAREN =>
             atPos(start)(makeParens(noSeq.patterns()))
+          /*@XML*/
           case XMLSTART =>
             xmlLiteralPattern()
+          /*XML@*/
           case _ =>
             syntaxErrorOrIncomplete("illegal start of simple pattern", true)
             errorPatternTree
@@ -1858,7 +1871,9 @@ self =>
       if (in.token == RPAREN) Nil
       else seqPatterns()
     }
-    def xmlLiteralPattern(): Tree    
+    /*@XML*/
+    def xmlLiteralPattern(): Tree
+    /*XML@*/
 
 /* -------- MODIFIERS and ANNOTATIONS ------------------------------------------- */    
 
@@ -1879,7 +1894,8 @@ self =>
       (mods | mod) withPosition (mod, pos)
     }
 
-    private def tokenRange(token: TokenData) = r2p(token.offset, token.offset, token.offset + token.name.length - 1)
+    private def tokenRange(token: TokenData) =
+      r2p(token.offset, token.offset, token.offset + token.name.length - 1)
 
     /** {{{
      *  AccessQualifier ::= `[' (Id | this) `]'
