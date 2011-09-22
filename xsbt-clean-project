@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# This script just does something I find annoying to do manually all the time.  If you see wierd errors, try it.
+
+for dir in "/home/$USER/.sbt target"
+do
+targets=`find ${dir} -name "target"`
+for target in $targets
+do
+  rm -rf ${target}
+done
+done
+
