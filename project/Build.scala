@@ -21,6 +21,7 @@ object ScalaBuild extends Build with Layers {
 
   // Build wide settings:
   override lazy val settings = super.settings ++ Seq(
+    autoScalaLibrary := false,
     resolvers += Resolver.url(
       "Typesafe nightlies", 
       url("https://typesafe.artifactoryonline.com/typesafe/ivy-snapshots/")
@@ -51,10 +52,7 @@ object ScalaBuild extends Build with Layers {
     commands += Command.command("fix-uri-projects") { (state: State) =>
       if(state.get(buildFixed) getOrElse false) state
       else {
-        println("--------------------------------")
-        println("Fixing up scalacheck references.")
-        println("--------------------------------")
-        // TODO -fix up scalacheck
+        // TODO -fix up scalacheck's dependencies!
         val extracted = Project.extract(state)
         import extracted._
         def f(s: Setting[_]): Setting[_] = s.key.key match {
@@ -62,7 +60,6 @@ object ScalaBuild extends Build with Layers {
             s.key.scope.project match {
               case Select(p @ ProjectRef(uri, name)) =>
                 if(uri == scalacheck) {
-                  println("Rewriting setting for: " + s)
                   fullQuickScalaReference mapKey Project.mapScope(_ => s.key.scope)
                 } else s
               case _ => s
@@ -372,7 +369,7 @@ object ScalaBuild extends Build with Layers {
   val testsuite = (
     Project("testsuite", file(".")) 
     settings (testsuiteSettings:_*)
-    dependsOn (swing, scalaLibrary, scalaCompiler, fjbg, partest, scalacheck)
+    dependsOn (swing, scalaLibrary, scalaCompiler, fjbg, partest)
   )
   val continuationsTestsuite = (
     Project("continuations-testsuite", file("."))
