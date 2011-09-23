@@ -21,13 +21,13 @@ trait Layers extends Build {
     * library, compiler and fjbg libraries as well as a string representing the layer name (used for compiling the compile-interface).
     */
   def makeScalaReference(layer : String, library: Project, compiler: Project, fjbg: Project) =
-     scalaInstance <<= (appConfiguration, version,
-                        baseDirectory,
+     scalaInstance <<= (appConfiguration in library,
+                        version in library,
                         (exportedProducts in library in Compile),
                         (exportedProducts in compiler in Compile),
                         (exportedProducts in fjbg in Compile),
                         (fullClasspath in jline in Runtime)) map {
-    (app, version: String, bd: File, lib: Classpath, comp: Classpath, fjbg: Classpath, jline: Classpath) =>
+    (app, version: String, lib: Classpath, comp: Classpath, fjbg: Classpath, jline: Classpath) =>
       val launcher = app.provider.scalaProvider.launcher
       (lib,comp) match {
          case (Seq(libraryJar), Seq(compilerJar)) =>

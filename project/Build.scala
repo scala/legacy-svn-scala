@@ -17,6 +17,67 @@ object ScalaBuild extends Build with Layers {
     "Creates a mini-distribution (scala home directory) for this build in a directory.")
   lazy val makeDistMappings: TaskKey[Map[File, String]] = TaskKey("make-dist-mappings", 
     "Creates distribution mappings for creating zips,jars,directorys,etc.")
+  lazy val buildFixed = AttributeKey[Boolean]("build-uri-fixed")
+
+  // Build wide settings:
+  override lazy val settings = super.settings ++ Seq(
+    resolvers += Resolver.url(
+      "Typesafe nightlies", 
+      url("https://typesafe.artifactoryonline.com/typesafe/ivy-snapshots/")
+    )(Resolver.ivyStylePatterns),
+    resolvers ++= Seq(
+      "junit interface repo" at "https://repository.jboss.org/nexus/content/repositories/scala-tools-releases",
+      ScalaToolsSnapshots
+    ),
+    organization := "org.scala-lang",
+    version := "2.10.0-SNAPSHOT",
+    scalaVersion := "2.10.0-SNAPSHOT",
+    pomExtra := <xml:group>
+      <inceptionYear>2002</inceptionYear>
+        <licenses>
+          <license>
+            <name>BSD-like</name>
+            <url>http://www.scala-lang.org/downloads/license.html</url>
+          </license>
+        </licenses>
+        <scm>
+          <connection>scm:svn:http://lampsvn.epfl.ch/svn-repos/scala/scala/trunk</connection>
+        </scm>
+        <issueManagement>
+          <system>jira</system>
+          <url>http://issues.scala-lang.org</url>
+        </issueManagement>
+      </xml:group>,
+    commands += Command.command("fix-uri-projects") { (state: State) =>
+      if(state.get(buildFixed) getOrElse false) state
+      else {
+        println("--------------------------------")
+        println("Fixing up scalacheck references.")
+        println("--------------------------------")
+        // TODO -fix up scalacheck
+        val extracted = Project.extract(state)
+        import extracted._
+        def f(s: Setting[_]): Setting[_] = s.key.key match {
+          case scalaInstance.key =>
+            s.key.scope.project match {
+              case Select(p @ ProjectRef(uri, name)) =>
+                if(uri == scalacheck) {
+                  println("Rewriting setting for: " + s)
+                  fullQuickScalaReference mapKey Project.mapScope(_ => s.key.scope)
+                } else s
+              case _ => s
+            }
+          case _ => s
+         }
+         val transformed = session.mergeSettings map ( s => f(s) )
+         val newStructure = Load.reapply(transformed, structure)
+         Project.setProject(session, newStructure, state).put(buildFixed, true)
+      }
+    },
+    onLoad in Global <<= (onLoad in Global) apply (_ andThen { (state: State) =>
+      "fix-uri-projects" :: state
+    })
+  )
 
   // Collections of projects to run 'compile' on.
   lazy val compiledProjects = Seq(quickLib, quickComp, continuationsLibrary, actors, swing, dbc, forkjoin, fjbg, msil)
@@ -192,14 +253,15 @@ object ScalaBuild extends Build with Layers {
       }
       // This is a hack to get around issues where \ and \\ don't work if any of the children are `scala.xml.Group`.
       def hasDependencies(root: scala.xml.Node): Boolean =
-        root.child collectFirst {
+        (root.child collectFirst {
           case n: scala.xml.Elem if n.label == "dependencies" => n
-        } isEmpty
+        } isEmpty)
+      // TODO - Keep namespace on project...
       k andThen { 
         case n @ <project>{ nested@_*}</project> if hasDependencies(n)   =>
-          <project><dependencies>{dependency}</dependencies>{nested}</project>
+          <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0">{nested}<dependencies>{dependency}</dependencies></project>
         case <project>{ nested@_*}</project>                                       => 
-          <project>{ nested map fixDependencies }</project>
+          <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0">{ nested map fixDependencies }</project>
       }
     }
 
@@ -222,7 +284,7 @@ object ScalaBuild extends Build with Layers {
     name := "scalap",
     exportJars := true
   )
-  lazy val scalap = Project("scalap", file(".")) settings(scalapSettings:_*) //dependsOn(scalaCompiler)
+  lazy val scalap = Project("scalap", file(".")) settings(scalapSettings:_*)
 
   // --------------------------------------------------------------
   //  Continuations plugin + library
@@ -286,7 +348,7 @@ object ScalaBuild extends Build with Layers {
   //  Testing
   // --------------------------------------------------------------
   /* lazy val scalacheckSettings: Seq[Setting[_]] = Seq(fullQuickScalaReference, crossPaths := false)*/
-  lazy val scalacheck: ProjectReference = uri("git://github.com/rickynils/scalacheck.git")
+  lazy val scalacheck = uri("git://github.com/rickynils/scalacheck.git")
 
   lazy val testsuiteSettings: Seq[Setting[_]] = compilerDependentProjectSettings ++ partestTaskSettings ++ VerifyClassLoad.settings ++ Seq(
     unmanagedBase <<= baseDirectory / "test/files/lib",
@@ -310,7 +372,7 @@ object ScalaBuild extends Build with Layers {
   val testsuite = (
     Project("testsuite", file(".")) 
     settings (testsuiteSettings:_*)
-    dependsOn (swing, scalaLibrary, scalaCompiler, fjbg, partest) //, scalacheck)
+    dependsOn (swing, scalaLibrary, scalaCompiler, fjbg, partest, scalacheck)
   )
   val continuationsTestsuite = (
     Project("continuations-testsuite", file("."))
@@ -341,7 +403,7 @@ object ScalaBuild extends Build with Layers {
       Seq(dir / "src" / "library" / "scala", dir / "src" / "actors", dir / "src" / "swing", dir / "src" / "continuations" / "library")
     },
     compile := inc.Analysis.Empty,
-    scaladocOptions in Compile <++= (baseDirectory) map (bd => 
+    scaladocOptions in Compile in doc <++= (baseDirectory) map (bd => 
       Seq("-sourcepath", (bd / "src" / "library").getAbsolutePath,
           "-doc-no-compile", (bd / "src" / "library-aux").getAbsolutePath,
           "-doc-source-url", """https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/€{FILE_PATH}.scala#L1""",
