@@ -55,19 +55,17 @@ object ScalaBuild extends Build with Layers {
         // TODO -fix up scalacheck's dependencies!
         val extracted = Project.extract(state)
         import extracted._
-        def f(s: Setting[_]): Setting[_] = s.key.key match {
-          case scalaInstance.key =>
-            s.key.scope.project match {
-              case Select(p @ ProjectRef(uri, name)) =>
-                if(uri == scalacheck) {
-                  fullQuickScalaReference mapKey Project.mapScope(_ => s.key.scope)
-                } else s
-              case _ => s
-            }
-          case _ => s
+        def fix(s: Setting[_]): Setting[_] = s match {
+          case ScopedExternalSetting(`scalacheck`, scalaInstance.key, setting)    => fullQuickScalaReference mapKey Project.mapScope(_ => s.key.scope)
+          case s                                                                  => s
          }
-         val transformed = session.mergeSettings map ( s => f(s) )
-         val newStructure = Load.reapply(transformed, structure)
+         val transformed = session.mergeSettings map ( s => fix(s) )
+         val scopes = transformed collect { case ScopedExternalSetting(`scalacheck`, _, s) => s.key.scope } toSet
+         // Create some fixers so we don't download scala or rely on it.
+         val fixers = for { scope <- scopes
+                            setting <- Seq(autoScalaLibrary := false, crossPaths := false)
+                      } yield setting mapKey Project.mapScope(_ => scope)
+         val newStructure = Load.reapply(transformed ++ fixers, structure)
          Project.setProject(session, newStructure, state).put(buildFixed, true)
       }
     },
@@ -369,7 +367,7 @@ object ScalaBuild extends Build with Layers {
   val testsuite = (
     Project("testsuite", file(".")) 
     settings (testsuiteSettings:_*)
-    dependsOn (swing, scalaLibrary, scalaCompiler, fjbg, partest)
+    dependsOn (swing, scalaLibrary, scalaCompiler, fjbg, partest, scalacheck)
   )
   val continuationsTestsuite = (
     Project("continuations-testsuite", file("."))
@@ -564,4 +562,13 @@ object ScalaBuild extends Build with Layers {
     Project("dist", file("."))
     settings (scalaDistSettings: _*)
   )
+}
+
+/** Matcher to make updated remote project references easier. */
+object ScopedExternalSetting {
+  def unapply[T](s: Setting[_]): Option[(URI, AttributeKey[_], Setting[_])] =
+    s.key.scope.project match {
+      case Select(p @ ProjectRef(uri, _)) => Some((uri, s.key.key, s))
+      case _                              => None
+    }
 }
