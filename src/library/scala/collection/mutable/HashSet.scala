@@ -49,19 +49,21 @@ extends Set[A]
   def this() = this(null)
   
   override def companion: GenericCompanion[HashSet] = HashSet
-
+  
   override def size = tableSize
-
+  
   def contains(elem: A): Boolean = containsEntry(elem)
-
+  
   def += (elem: A): this.type = { addEntry(elem); this }
+  
   def -= (elem: A): this.type = { removeEntry(elem); this }
   
   override def par = new ParHashSet(hashTableContents)
   
   override def add(elem: A): Boolean = addEntry(elem)
+  
   override def remove(elem: A): Boolean = removeEntry(elem).isDefined
-
+  
   override def clear() = clearTable()
   
   override def foreach[U](f: A =>  U) {
