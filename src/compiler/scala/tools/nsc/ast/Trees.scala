@@ -17,10 +17,9 @@ import scala.reflect.internal.Flags.TRAIT
 trait Trees extends reflect.internal.Trees { self: Global =>
   
   // --- additional cases --------------------------------------------------------
+  
   /** Only used during parsing */
-  case class Parens(args: List[Tree]) extends Tree {
-    protected def errorSubtrees = args
-  }
+  case class Parens(args: List[Tree]) extends Tree
 
   /** Documented definition, eliminated by analyzer */
   case class DocDef(comment: DocComment, definition: Tree)
@@ -30,8 +29,6 @@ trait Trees extends reflect.internal.Trees { self: Global =>
     override def isDef = definition.isDef
     override def isTerm = definition.isTerm
     override def isType = definition.isType
-    
-    protected def errorSubtrees = List(definition)
   }
   
 
@@ -39,20 +36,14 @@ trait Trees extends reflect.internal.Trees { self: Global =>
    *  eliminated by typecheck (doTypedApply)
    */
   case class AssignOrNamedArg(lhs: Tree, rhs: Tree)
-       extends TermTree {
-    protected def errorSubtrees = List(lhs, rhs)
-  }
+       extends TermTree
   
  /** Array selection <qualifier> . <name> only used during erasure */
   case class SelectFromArray(qualifier: Tree, name: Name, erasure: Type)
-       extends TermTree with RefTree {
-    protected def errorSubtrees = List(qualifier)
-  }
+       extends TermTree with RefTree { }
   
   /** emitted by typer, eliminated by refchecks */
-  case class TypeTreeWithDeferredRefCheck()(val check: () => Either[AbsErrorTree, TypeTree]) extends TypTree {
-    protected def errorSubtrees = Nil
-  }
+  case class TypeTreeWithDeferredRefCheck()(val check: () => TypeTree) extends TypTree
   
   // --- factory methods ----------------------------------------------------------
 
@@ -254,7 +245,7 @@ trait Trees extends reflect.internal.Trees { self: Global =>
     protected def resetDef(tree: Tree) {
       tree.symbol = NoSymbol
     }
-    override def traverse(tree: Tree): Unit = {
+    override def traverse(tree: Tree): Unit = { 
       tree match {
         case _: DefTree | Function(_, _) | Template(_, _, _) =>
           resetDef(tree)

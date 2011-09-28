@@ -283,12 +283,6 @@ trait Contexts { self: Analyzer =>
       else throw new TypeError(pos, msg1)
     }
 
-/*!!!    def errorTree(pos: Position, msg: String): ErrorTree = {
-      error(pos, msg)
-      ErrorTree(msg) setPos pos
-    }
-    */
-
     def warning(pos:  Position, msg: String) = {
       if (reportGeneralErrors) unit.warning(pos, msg)
     }

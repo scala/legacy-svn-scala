@@ -249,9 +249,6 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         }
       }
 
-      def isAbstractTypeWithoutFBound(sym: Symbol) = // (part of DEVIRTUALIZE) 
-        sym.isAbstractType && !sym.isFBounded
-
       def infoString(sym: Symbol) = infoString0(sym, sym.owner != clazz)
       def infoStringWithLocation(sym: Symbol) = infoString0(sym, true)
 
@@ -290,6 +287,8 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
                 infoStringWithLocation(other),
                 infoStringWithLocation(member)
               )
+            else if (settings.debug.value)
+              analyzer.foundReqMsg(member.tpe, other.tpe)
             else ""
           
           "overriding %s;\n %s %s%s".format(
@@ -371,14 +370,13 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             overrideError("cannot be used here - classes can only override abstract types");
           } else if (other.isFinal) { // (1.2)
             overrideError("cannot override final member");
-          } else if (!other.isDeferred && !(member hasFlag (OVERRIDE | ABSOVERRIDE | SYNTHETIC))) { // (1.3), SYNTHETIC because of DEVIRTUALIZE
+          } else if (!other.isDeferred && !member.isAnyOverride) {
             overrideError("needs `override' modifier");
-          } else if ((other hasFlag ABSOVERRIDE) && other.isIncompleteIn(clazz) && !(member hasFlag ABSOVERRIDE)) {
+          } else if (other.isAbstractOverride && other.isIncompleteIn(clazz) && !member.isAbstractOverride) {
             overrideError("needs `abstract override' modifiers")
-          } else if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) && 
-                     (other hasFlag ACCESSOR) && other.accessed.isVariable && !other.accessed.isLazy) {
+          } else if (member.isAnyOverride && (other hasFlag ACCESSOR) && other.accessed.isVariable && !other.accessed.isLazy) {
             overrideError("cannot override a mutable variable")
-          } else if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) && 
+          } else if (member.isAnyOverride &&
                      !(member.owner.thisType.baseClasses exists (_ isSubClass other.owner)) && 
                      !member.isDeferred && !other.isDeferred && 
                      intersectionIsEmpty(member.extendedOverriddenSymbols, other.extendedOverriddenSymbols)) {
@@ -386,11 +384,11 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
                           "(this rule is designed to prevent ``accidental overrides'')")
           } else if (other.isStable && !member.isStable) { // (1.4)
             overrideError("needs to be a stable, immutable value")
-          } else if (member.isValue && (member hasFlag LAZY) &&
-                     other.isValue && !other.isSourceMethod && !other.isDeferred && !(other hasFlag LAZY)) {
+          } else if (member.isValue && member.isLazy &&
+                     other.isValue && !other.isSourceMethod && !other.isDeferred && !other.isLazy) {
             overrideError("cannot override a concrete non-lazy value")
-          } else if (other.isValue && (other hasFlag LAZY) && !other.isSourceMethod && !other.isDeferred &&
-                     member.isValue && !(member hasFlag LAZY)) {
+          } else if (other.isValue && other.isLazy && !other.isSourceMethod && !other.isDeferred &&
+                     member.isValue && !member.isLazy) {
             overrideError("must be declared lazy to override a concrete lazy value")
           } else {
             checkOverrideTypes()
@@ -1194,15 +1192,10 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
 
     /* Check whether argument types conform to bounds of type parameters */
     private def checkBounds(pre: Type, owner: Symbol, tparams: List[Symbol], argtps: List[Type], pos: Position): Unit =
-      try typer.infer.checkBounds(pos, pre, owner, tparams, argtps, "") match {
-        case Some(err) => err.emit(typer.context)
-        case _ => ()
-      }
+      try typer.infer.checkBounds(pos, pre, owner, tparams, argtps, "")
       catch {
-        case ex: TypeError =>
-          // checkBounds no longer throws errors (apart from Cyclic ones)
-          // so maybe it is safe to remove/simplify this catch?
-          unit.error(pos, ex.getMessage())
+        case ex: TypeError => 
+          unit.error(pos, ex.getMessage());
           if (settings.explaintypes.value) {
             val bounds = tparams map (tp => tp.info.instantiateTypeParams(tparams, argtps).bounds)
             (argtps, bounds).zipped map ((targ, bound) => explainTypes(bound.lo, targ))
@@ -1360,13 +1353,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         case tpt@TypeTree() =>
           if(tpt.original != null) {
             tpt.original foreach {
-              case dc@TypeTreeWithDeferredRefCheck() =>
-                dc.check() match {
-                  case Left(err) =>
-                    err.emit()
-                  case Right(t) =>
-                    applyRefchecksToAnnotations(t) // #2416
-                }
+              case dc@TypeTreeWithDeferredRefCheck() => applyRefchecksToAnnotations(dc.check()) // #2416
               case _ =>
             }
           }
@@ -1530,11 +1517,8 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             if(tpt.original != null) {
               tpt.original foreach {
                 case dc@TypeTreeWithDeferredRefCheck() =>
-                  dc.check() match {
-                    case Left(err) => err.emit()
-                    case Right(tree) => transform(tree) // #2416 -- only call transform to do refchecks, but discard results
-                      // tpt has the right type if the deferred checks are ok
-                  }
+                  transform(dc.check()) // #2416 -- only call transform to do refchecks, but discard results
+                  // tpt has the right type if the deferred checks are ok
                 case _ =>
               }
             }
@@ -1610,7 +1594,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         result
       } catch {
         case ex: TypeError =>
-          if (settings.debug.value) ex.printStackTrace()
+          if (settings.debug.value) ex.printStackTrace();
           unit.error(tree.pos, ex.getMessage())
           tree
       } finally {

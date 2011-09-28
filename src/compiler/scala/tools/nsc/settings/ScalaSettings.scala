@@ -28,7 +28,7 @@ trait ScalaSettings extends AbsScalaSettings
    *  - Otherwise, if CLASSPATH is set, it is that
    *  - If neither of those, then "." is used.
    */
-  protected def defaultClasspath = Option(sys.props("CLASSPATH")) getOrElse "."
+  protected def defaultClasspath = sys.env.getOrElse("CLASSPATH", ".")
 
   /** Disable a setting */
   def disable(s: Setting) = allSettings -= s
@@ -60,7 +60,6 @@ trait ScalaSettings extends AbsScalaSettings
   val assemextdirs  = StringSetting     ("-Xassem-extdirs", "dirs", "(Requires -target:msil) List of directories containing assemblies.  default:lib", Defaults.scalaLibDir.path).dependsOn(target, "msil")
   val sourcedir     = StringSetting     ("-Xsourcedir", "directory", "(Requires -target:msil) Mirror source folder structure in output directory.", ".").dependsOn(target, "msil")
   val checkInit     = BooleanSetting    ("-Xcheckinit", "Wrap field accessors to throw an exception on uninitialized access.")
-  val errortrees    = BooleanSetting    ("-Yerrortrees", "Provide more info about error trees." )
   val noassertions  = BooleanSetting    ("-Xdisable-assertions", "Generate no assertions or assumptions.")
   val elidebelow    = IntSetting        ("-Xelide-below", "Calls to @elidable methods are omitted if method priority is lower than argument",
                                                 elidable.MINIMUM, None, elidable.byName get _)
@@ -159,6 +158,7 @@ trait ScalaSettings extends AbsScalaSettings
   val Ytyperdebug   = BooleanSetting    ("-Ytyper-debug", "Trace all type assignments.")
   val Yinferdebug   = BooleanSetting    ("-Yinfer-debug", "Trace type inference and implicit search.")
   val Ypmatdebug    = BooleanSetting    ("-Ypmat-debug", "Trace all pattern matcher activity.")
+  val Yreifydebug    = BooleanSetting   ("-Yreify-debug", "Trace reification actions.")
   val Yreplsync     = BooleanSetting    ("-Yrepl-sync", "Do not use asynchronous code for repl startup")
   val Yrepldebug    = BooleanSetting    ("-Yrepl-debug", "Trace all repl activity.") .
                                           withPostSetHook(_ => interpreter.replProps.debug setValue true)

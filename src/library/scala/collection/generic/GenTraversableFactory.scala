@@ -54,7 +54,7 @@ abstract class GenTraversableFactory[CC[X] <: GenTraversable[X] with GenericTrav
      *  @param from  the collection requesting the builder to be created.
      *  @return the result of invoking the `genericBuilder` method on `from`.
      */
-    def apply(from: Coll) = from.genericBuilder[A] 
+    def apply(from: Coll) = from.genericBuilder[A]
     
     /** Creates a new builder from scratch
      *  @return the result of invoking the `newBuilder` method of this factory.
