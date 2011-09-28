@@ -15,9 +15,9 @@ import Flags._
  */
 abstract class TreeInfo {
   val global: SymbolTable
+
   import global._ 
-  
-  import definitions.ThrowableClass
+  import definitions.{ isVarArgsList, ThrowableClass }
 
   /* Does not seem to be used. Not sure what it does anyway.
   def isOwnerDefinition(tree: Tree): Boolean = tree match {
@@ -35,10 +35,8 @@ abstract class TreeInfo {
   /** Is tree a declaration or type definition? 
    */
   def isDeclarationOrTypeDef(tree: Tree): Boolean = tree match {
-    case DefDef(_, _, _, _, _, EmptyTree)
-       | ValDef(_, _, _, EmptyTree)
-       | TypeDef(_, _, _, _) => true
-    case _ => false
+    case x: ValOrDefDef   => x.rhs eq EmptyTree
+    case _                => tree.isInstanceOf[TypeDef]
   }
 
   /** Is tree legal as a member definition of an interface?
@@ -68,6 +66,10 @@ abstract class TreeInfo {
   }
 
   /** Is tree a stable and pure expression?
+   *  !!! Clarification on what is meant by "pure" here would be appreciated.
+   *  This implementation allows both modules and lazy vals, which are pure in
+   *  the sense that they always return the same result, but which are also
+   *  side effecting.  So for now, "pure" != "not side effecting".
    */
   def isPureExpr(tree: Tree): Boolean = tree match {
     case EmptyTree
@@ -77,6 +79,10 @@ abstract class TreeInfo {
       true
     case Ident(_) =>
       tree.symbol.isStable
+    // this case is mostly to allow expressions like -5 and +7, but any
+    // member of an anyval should be safely pure
+    case Select(Literal(const), name) =>
+      const.isAnyVal && (const.tpe.member(name) != NoSymbol)
     case Select(qual, _) =>
       tree.symbol.isStable && isPureExpr(qual)
     case TypeApply(fn, _) =>
@@ -94,6 +100,61 @@ abstract class TreeInfo {
       (stats forall isPureDef) && isPureExpr(expr)
     case _ =>
       false
+  }
+
+  def zipMethodParamsAndArgs(params: List[Symbol], args: List[Tree]): List[(Symbol, Tree)] = {
+    val plen   = params.length
+    val alen   = args.length
+    def fail() = {
+      global.debugwarn(
+        "Mismatch trying to zip method parameters and argument list:\n" +
+        "  params = " + params + "\n" +
+        "    args = " + args + "\n"
+      )
+      params zip args
+    }
+
+    if (plen == alen) params zip args
+    else if (params.isEmpty) fail
+    else if (isVarArgsList(params)) {
+      val plenInit = plen - 1
+      if (alen == plenInit) {
+        if (alen == 0) Nil        // avoid calling mismatched zip
+        else params.init zip args
+      }
+      else if (alen < plenInit) fail
+      else {
+        val front = params.init zip (args take plenInit)
+        val back  = args drop plenInit map (a => (params.last, a))
+        front ++ back
+      }
+    }
+    else fail
+  }
+
+  /**
+   * Selects the correct parameter list when there are nested applications.
+   * Given Apply(fn, args), args might correspond to any of fn.symbol's parameter
+   * lists.  To choose the correct one before uncurry, we have to unwrap any
+   * applies: for instance Apply(fn @ Apply(Apply(_, _), _), args) implies args
+   * correspond to the third parameter list.
+   *
+   * Also accounts for varargs.
+   */
+  def zipMethodParamsAndArgs(t: Tree): List[(Symbol, Tree)] = t match {
+    case Apply(fn, args) =>
+      val depth  = applyDepth(fn)
+      // There could be applies which go beyond the parameter list(s),
+      // being applied to the result of the method call.
+      // !!! Note that this still doesn't seem correct, although it should
+      // be closer than what it replaced.
+      val params = (
+        if (depth < fn.symbol.paramss.size) fn.symbol.paramss(depth)
+        else if (fn.symbol.paramss.isEmpty) Nil
+        else fn.symbol.paramss.last
+      )
+      zipMethodParamsAndArgs(params, args)
+    case _  => Nil
   }
 
   /** Is symbol potentially a getter of a variable?
@@ -323,6 +384,15 @@ abstract class TreeInfo {
     case _                      => tree
   }
 
+  /** The depth of the nested applies: e.g. Apply(Apply(Apply(_, _), _), _)
+   *  has depth 3.  Continues through type applications (without counting them.)
+   */
+  def applyDepth(tree: Tree): Int = tree match {
+    case Apply(fn, _)           => 1 + applyDepth(fn)
+    case TypeApply(fn, _)       => applyDepth(fn)
+    case AppliedTypeTree(fn, _) => applyDepth(fn)
+    case _                      => 0
+  }
   def firstArgument(tree: Tree): Tree = tree match {
     case Apply(fn, args) => 
       val f = firstArgument(fn)

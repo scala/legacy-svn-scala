@@ -6,7 +6,7 @@ import java.lang.reflect.{
   Method => jMethod, Constructor => jConstructor, Modifier => jModifier, Field => jField, 
   Member => jMember, Type => jType, Array => jArray, GenericDeclaration}
 
-trait ScalaToJava extends ConversionUtil { self: Universe =>
+trait ScalaToJava extends ConversionUtil { self: SymbolTable =>
   
   import definitions._
   
@@ -43,7 +43,7 @@ trait ScalaToJava extends ConversionUtil { self: Universe =>
     else if (clazz == ArrayClass) 
       noClass
     else if (clazz.owner.isPackageClass)
-      jClass.forName(clazz.fullName) 
+      javaClass(clazz.fullName) 
     else if (clazz.owner.isClass)
       classToJava(clazz.owner)
         .getDeclaredClasses

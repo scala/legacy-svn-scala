@@ -13,6 +13,7 @@ import scala.compat.Platform.currentTime
 import scala.tools.nsc.util.{ ClassPath }
 import classfile.ClassfileParser
 import reflect.internal.Flags._
+import reflect.internal.MissingRequirementError
 import util.Statistics._
 import scala.tools.nsc.io.AbstractFile
 
@@ -29,7 +30,7 @@ abstract class SymbolLoaders {
     assert(owner.info.decls.lookup(member.name) == NoSymbol, owner.fullName + "." + member.name)
     owner.info.decls enter member
     member
-  }    
+  }
 
   private def realOwner(root: Symbol): Symbol = {
     if (root.isRoot) definitions.EmptyPackageClass else root
@@ -81,8 +82,10 @@ abstract class SymbolLoaders {
   /**
    * A lazy type that completes itself by calling parameter doComplete.
    * Any linked modules/classes or module classes are also initialized.
+   * Todo: consider factoring out behavior from TopClassCompleter/SymbolLoader into
+   * supertrait SymLoader
    */
-  abstract class SymbolLoader extends LazyType {
+  abstract class SymbolLoader extends SymLoader {
 
     /** Load source or class file for `root`, return */
     protected def doComplete(root: Symbol): Unit
@@ -104,7 +107,16 @@ abstract class SymbolLoaders {
         case _ => ()
       })
     }
-    override def complete(root: Symbol) : Unit = {
+    
+    override def complete(root: Symbol) {
+      def signalError(ex: Exception) {
+        ok = false
+        if (settings.debug.value) ex.printStackTrace()
+        val msg = ex.getMessage()
+        globalError(
+          if (msg eq null) "i/o error while loading " + root.name
+          else "error while loading " + root.name + ", " + msg);
+      }
       try {
         val start = currentTime
         val currentphase = phase
@@ -116,12 +128,9 @@ abstract class SymbolLoaders {
         setSource(root.companionSymbol) // module -> class, class -> module
       } catch {
         case ex: IOException =>
-          ok = false
-          if (settings.debug.value) ex.printStackTrace()
-          val msg = ex.getMessage()
-          globalError(
-            if (msg eq null) "i/o error while loading " + root.name
-            else "error while loading " + root.name + ", " + msg);
+          signalError(ex)
+        case ex: MissingRequirementError =>
+          signalError(ex)
       }
       initRoot(root)
       if (!root.isPackageClass) initRoot(root.companionSymbol)
@@ -131,7 +140,7 @@ abstract class SymbolLoaders {
 
     private def markAbsent(sym: Symbol): Unit = {
       val tpe: Type = if (ok) NoType else ErrorType
-      
+
       if (sym != NoSymbol) 
         sym setInfo tpe
     }
@@ -224,37 +233,8 @@ abstract class SymbolLoaders {
       for (pkg <- classpath.packages) {
         enterPackage(root, pkg.name, newPackageLoader(pkg))
       }
-
-      // if there's a $member object, enter its members as well.
-      val pkgModule = root.info.decl(nme.PACKAGEkw)
-      if (pkgModule.isModule && !pkgModule.rawInfo.isInstanceOf[SourcefileLoader]) {
-        // println("open "+pkgModule)//DEBUG
-        openPackageModule(pkgModule)()
-      }
-    }
-  }
-
-  def openPackageModule(module: Symbol)(packageClass: Symbol = module.owner): Unit = {
-    // unlink existing symbols in the package
-    for (member <- module.info.decls.iterator) {
-      if (!member.isPrivate && !member.isConstructor) {
-        // todo: handle overlapping definitions in some way: mark as errors
-        // or treat as abstractions. For now the symbol in the package module takes precedence.
-        for (existing <- packageClass.info.decl(member.name).alternatives)
-          packageClass.info.decls.unlink(existing)
-      }
-    }
-    // enter non-private decls the class
-    for (member <- module.info.decls.iterator) {
-      if (!member.isPrivate && !member.isConstructor) {
-        packageClass.info.decls.enter(member)
-      }
-    }
-    // enter decls of parent classes
-    for (pt <- module.info.parents; p = pt.typeSymbol) {
-      if (p != definitions.ObjectClass && p != definitions.ScalaObjectClass) {
-        openPackageModule(p)(packageClass)
-      }
+      
+      openPackageModule(root)
     }
   }
 
@@ -322,6 +302,7 @@ abstract class SymbolLoaders {
 
   class SourcefileLoader(val srcfile: AbstractFile) extends SymbolLoader {
     protected def description = "source file "+ srcfile.toString
+    override def fromSource = true
     override def sourcefile = Some(srcfile)
     protected def doComplete(root: Symbol): Unit = global.currentRun.compileLate(srcfile)
   }

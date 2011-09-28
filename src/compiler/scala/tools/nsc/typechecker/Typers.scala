@@ -712,8 +712,7 @@ trait Typers extends Modes with Adaptations {
      *  (11) Widen numeric literals to their expected type, if necessary
      *  (12) When in mode EXPRmode, convert E to { E; () } if expected type is scala.Unit.
      *  (13) When in mode EXPRmode, apply AnnotationChecker conversion if expected type is annotated.
-     *  (14) When in more EXPRmode, convert E to Code.lift(E) if expected type is Code[_]
-     *  (15) When in mode EXPRmode, apply a view
+     *  (14) When in mode EXPRmode, apply a view
      *  If all this fails, error
      */
     protected def adapt(tree: Tree, mode: Int, pt: Type, original: Tree = EmptyTree): Tree = {
@@ -972,8 +971,6 @@ trait Typers extends Modes with Adaptations {
                       new ApplyImplicitView(coercion, List(tree)) setPos tree.pos, mode, pt)
                   }
                 }
-                if (isCodeType(pt) && !isCodeType(tree.tpe) && !tree.tpe.isError) 
-                  return adapt(lifted(tree), mode, pt, original)
               }
               if (settings.debug.value) {
                 log("error tree = " + tree)
@@ -1171,30 +1168,25 @@ trait Typers extends Modes with Adaptations {
         treeInfo.firstConstructor(templ.body) match {
           case constr @ DefDef(_, _, _, vparamss, _, cbody @ Block(cstats, cunit)) =>
             // Convert constructor body to block in environment and typecheck it
-            val (preSuperStats, rest) = cstats span (!treeInfo.isSuperConstrCall(_))
-            val (scall, upToSuperStats) = 
-              if (rest.isEmpty) (EmptyTree, preSuperStats) 
-              else (rest.head, preSuperStats :+ rest.head)
-            val cstats1: List[Tree] = upToSuperStats map (_.duplicate)
-            val cbody1 = scall match {
-              case Apply(_, _) =>
-                treeCopy.Block(cbody, cstats1.init, 
-                           if (supertparams.isEmpty) cunit.duplicate 
-                           else transformSuperCall(scall))
-              case _ =>
-                treeCopy.Block(cbody, cstats1, cunit.duplicate)
+            val (preSuperStats, superCall) = {
+              val (stats, rest) = cstats span (x => !treeInfo.isSuperConstrCall(x))
+              (stats map (_.duplicate), if (rest.isEmpty) EmptyTree else rest.head.duplicate)
             }
-
+            val cstats1 = if (superCall == EmptyTree) preSuperStats else preSuperStats :+ superCall
+            val cbody1 = treeCopy.Block(cbody, preSuperStats, superCall match {
+              case Apply(_, _) if supertparams.nonEmpty => transformSuperCall(superCall)
+              case _                                    => cunit.duplicate
+            })
             val outercontext = context.outer 
+
             assert(clazz != NoSymbol)
             val cscope = outercontext.makeNewScope(constr, outercontext.owner)
             val cbody2 = newTyper(cscope) // called both during completion AND typing.
                 .typePrimaryConstrBody(clazz,  
                   cbody1, supertparams, clazz.unsafeTypeParams, vparamss map (_.map(_.duplicate)))
-
-            scall match {
+            superCall match {
               case Apply(_, _) =>
-                val sarg = treeInfo.firstArgument(scall)
+                val sarg = treeInfo.firstArgument(superCall)
                 if (sarg != EmptyTree && supertpe.typeSymbol != firstParent) 
                   error(sarg.pos, firstParent+" is a trait; does not take constructor arguments")
                 if (!supertparams.isEmpty) supertpt = TypeTree(cbody2.tpe) setPos supertpt.pos.focus
@@ -1202,9 +1194,12 @@ trait Typers extends Modes with Adaptations {
                 if (!supertparams.isEmpty) error(supertpt.pos, "missing type arguments")
             }
 
-            (cstats1, treeInfo.preSuperFields(templ.body)).zipped map {
-              (ldef, gdef) => gdef.tpt.tpe = ldef.symbol.tpe
-            }
+            val preSuperVals = treeInfo.preSuperFields(templ.body)
+            if (preSuperVals.isEmpty && preSuperStats.nonEmpty)
+              debugwarn("Wanted to zip empty presuper val list with " + preSuperStats)
+            else
+              (preSuperStats, preSuperVals).zipped map { case (ldef, gdef) => gdef.tpt.tpe = ldef.symbol.tpe }
+
           case _ =>
             if (!supertparams.isEmpty) error(supertpt.pos, "missing type arguments")
         }
@@ -1218,8 +1213,26 @@ trait Typers extends Modes with Adaptations {
 */
 
         //Console.println("parents("+clazz") = "+supertpt :: mixins);//DEBUG
-        supertpt :: mixins mapConserve (tpt => checkNoEscaping.privates(clazz, tpt))
-      } catch {
+
+        // Certain parents are added in the parser before it is known whether
+        // that class also declared them as parents.  For instance, this is an
+        // error unless we take corrective action here:
+        //
+        //   case class Foo() extends Serializable
+        //
+        // So we strip the duplicates before typer.
+        def fixDuplicates(remaining: List[Tree]): List[Tree] = remaining match {
+          case Nil      => Nil
+          case x :: xs  =>
+            val sym = x.symbol
+            x :: fixDuplicates(
+              if (isPossibleSyntheticParent(sym)) xs filterNot (_.symbol == sym)
+              else xs
+            )
+        }
+        fixDuplicates(supertpt :: mixins) mapConserve (tpt => checkNoEscaping.privates(clazz, tpt))
+      }
+      catch {
         case ex: TypeError =>
           templ.tpe = null
           reportTypeError(templ.pos, ex)
@@ -1445,7 +1458,7 @@ trait Typers extends Modes with Adaptations {
           }
           if (!forMSIL && (value.hasAnnotation(BeanPropertyAttr) ||
               value.hasAnnotation(BooleanBeanPropertyAttr))) {
-            val nameSuffix = name.toString().capitalize
+            val nameSuffix = name.toString.capitalize
             val beanGetterName =
               (if (value.hasAnnotation(BooleanBeanPropertyAttr)) "is" else "get") +
               nameSuffix
@@ -2134,6 +2147,18 @@ trait Typers extends Modes with Adaptations {
       case Some(imp1: Import) => imp1
       case None => log("unhandled import: "+imp+" in "+unit); imp
     }
+    
+    private def isWarnablePureExpression(tree: Tree) = tree match {
+      case EmptyTree | Literal(Constant(())) => false
+      case _                                 =>
+        (treeInfo isPureExpr tree) && {
+          val sym = tree.symbol
+          (sym == null) || !(sym.isModule || sym.isLazy) || {
+            debuglog("'Pure' but side-effecting expression in statement position: " + tree)
+            false
+          }
+        }
+    }
 
     def typedStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       val inBlock = exprOwner == context.owner
@@ -2165,6 +2190,10 @@ trait Typers extends Modes with Adaptations {
                   if (treeInfo.isSelfConstrCall(result) && result.symbol.pos.pointOrElse(0) >= exprOwner.enclMethod.pos.pointOrElse(0))
                     error(stat.pos, "called constructor's definition must precede calling constructor's definition")
                 }
+                if (isWarnablePureExpression(result)) context.warning(stat.pos,
+                  "a pure expression does nothing in statement position; " +
+                  "you may be omitting necessary parentheses"
+                )
                 result
               }
           }
@@ -3668,9 +3697,14 @@ trait Typers extends Modes with Adaptations {
           if (name == nme.ERROR && forInteractive)
             return makeErrorTree
             
-          if (!qual.tpe.widen.isErroneous)
+          if (!qual.tpe.widen.isErroneous) {
+            if ((mode & QUALmode) != 0) {
+              val lastTry = missingHook(qual.tpe.typeSymbol, name)
+              if (lastTry != NoSymbol) return typed1(tree setSymbol lastTry, mode, pt)
+            }
             notAMemberError(tree.pos, qual, name)
-            
+          }
+          
           if (forInteractive) makeErrorTree else setError(tree) 
         } else {
           val tree1 = tree match {
@@ -3689,7 +3723,7 @@ trait Typers extends Modes with Adaptations {
           // unit is null here sometimes; how are we to know when unit might be null? (See bug #2467.)
           if (settings.warnSelectNullable.value && isPotentialNullDeference && unit != null)
             unit.warning(tree.pos, "potential null pointer dereference: "+tree)
-
+          
           val selection = result match {
             // could checkAccessible (called by makeAccessible) potentially have skipped checking a type application in qual?
             case SelectFromTypeTree(qual@TypeTree(), name) if qual.tpe.typeArgs nonEmpty => // TODO: somehow the new qual is not checked in refchecks
@@ -3863,6 +3897,10 @@ trait Typers extends Modes with Adaptations {
             else if (settings.exposeEmptyPackage.value && checkEmptyPackage())
               log("Allowing empty package member " + name + " due to settings.")
             else {
+              if ((mode & QUALmode) != 0) {
+                val lastTry = missingHook(RootClass, name)
+                if (lastTry != NoSymbol) return typed1(tree setSymbol lastTry, mode, pt)
+              }
               if (settings.debug.value) {
                 log(context.imports)//debug
               }

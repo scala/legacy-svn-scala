@@ -28,7 +28,7 @@ trait ScalaSettings extends AbsScalaSettings
    *  - Otherwise, if CLASSPATH is set, it is that
    *  - If neither of those, then "." is used.
    */
-  protected def defaultClasspath = Option(sys.props("CLASSPATH")) getOrElse "."
+  protected def defaultClasspath = sys.env.getOrElse("CLASSPATH", ".")
 
   /** Disable a setting */
   def disable(s: Setting) = allSettings -= s
@@ -92,7 +92,7 @@ trait ScalaSettings extends AbsScalaSettings
 
   // Experimental Extensions
   val Xexperimental = BooleanSetting    ("-Xexperimental", "Enable experimental extensions.") .
-                          withPostSetHook(set => List(YdepMethTpes, YmethodInfer) foreach (_.value = set.value)) //YvirtClasses, 
+                          withPostSetHook(set => List(YdepMethTpes, YmethodInfer, overrideObjects) foreach (_.value = set.value)) //YvirtClasses, 
 
   /** Compatibility stubs for options whose value name did
    *  not previously match the option name.
@@ -107,6 +107,7 @@ trait ScalaSettings extends AbsScalaSettings
   /**
    * -Y "Private" settings
    */
+  val overrideObjects = BooleanSetting ("-Yoverride-objects", "Allow member objects to be overridden.")
   val Yhelp         = BooleanSetting    ("-Y", "Print a synopsis of private options.")
   val browse        = PhasesSetting     ("-Ybrowse", "Browse the abstract syntax tree after")
   val check         = PhasesSetting     ("-Ycheck", "Check the tree at the end of")
@@ -145,6 +146,7 @@ trait ScalaSettings extends AbsScalaSettings
   val refinementMethodDispatch =
                       ChoiceSetting     ("-Ystruct-dispatch", "policy", "structural method dispatch policy",
                         List("no-cache", "mono-cache", "poly-cache", "invoke-dynamic"), "poly-cache")
+  val globalClass   = StringSetting     ("-Yglobal-class", "class", "subclass of scala.tools.nsc.Global to use for compiler", "")
   val Yrangepos     = BooleanSetting    ("-Yrangepos", "Use range positions for syntax trees.")
   val YrichExes     = BooleanSetting    ("-Yrich-exceptions", 
                                             "Fancier exceptions.  Set source search path with -D" +
@@ -156,6 +158,7 @@ trait ScalaSettings extends AbsScalaSettings
   val Ytyperdebug   = BooleanSetting    ("-Ytyper-debug", "Trace all type assignments.")
   val Yinferdebug   = BooleanSetting    ("-Yinfer-debug", "Trace type inference and implicit search.")
   val Ypmatdebug    = BooleanSetting    ("-Ypmat-debug", "Trace all pattern matcher activity.")
+  val Yreifydebug    = BooleanSetting   ("-Yreify-debug", "Trace reification actions.")
   val Yreplsync     = BooleanSetting    ("-Yrepl-sync", "Do not use asynchronous code for repl startup")
   val Yrepldebug    = BooleanSetting    ("-Yrepl-debug", "Trace all repl activity.") .
                                           withPostSetHook(_ => interpreter.replProps.debug setValue true)
@@ -177,6 +180,7 @@ trait ScalaSettings extends AbsScalaSettings
    */
   val YpresentationVerbose = BooleanSetting("-Ypresentation-verbose", "Print information about presentation compiler tasks.")
   val YpresentationDebug   = BooleanSetting("-Ypresentation-debug",  "Enable debugging output for the presentation compiler.")
+  val YpresentationStrict  = BooleanSetting("-Ypresentation-strict", "Do not report type errors in sources with syntax errors.")
   
   val YpresentationLog     = StringSetting("-Ypresentation-log", "file", "Log presentation compiler events into file", "")
   val YpresentationReplay  = StringSetting("-Ypresentation-replay", "file", "Replay presentation compiler events from file", "")

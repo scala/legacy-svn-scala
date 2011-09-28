@@ -131,10 +131,13 @@ trait Definitions extends reflect.api.StandardDefinitions {
       RootClass.sourceModule = rp
       rp
     }
+    
     // This is the actual root of everything, including the package _root_.
-    lazy val RootClass: ModuleClassSymbol = NoSymbol.newModuleClass(NoPosition, tpnme.ROOT)
-          .setFlag(FINAL | MODULE | PACKAGE | JAVA).setInfo(rootLoader) 
-
+    lazy val RootClass: ModuleClassSymbol = (
+      NoSymbol.newModuleClass(NoPosition, tpnme.ROOT)
+        setFlag (FINAL | MODULE | PACKAGE | JAVA)
+        setInfo rootLoader
+    )
     // The empty package, which holds all top level types without given packages.
     lazy val EmptyPackage       = RootClass.newPackage(NoPosition, nme.EMPTY_PACKAGE_NAME).setFlag(FINAL)
     lazy val EmptyPackageClass  = EmptyPackage.moduleClass
@@ -289,6 +292,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def isJavaRepeatedParamType(tp: Type)  = tp.typeSymbol == JavaRepeatedParamClass
     def isRepeatedParamType(tp: Type)      = isScalaRepeatedParamType(tp) || isJavaRepeatedParamType(tp)
     
+    def isJavaVarArgs(params: List[Symbol])  = params.nonEmpty && isJavaRepeatedParamType(params.last.tpe)
     def isScalaVarArgs(params: List[Symbol]) = params.nonEmpty && isScalaRepeatedParamType(params.last.tpe)
     def isVarArgsList(params: List[Symbol])  = params.nonEmpty && isRepeatedParamType(params.last.tpe)
     def isVarArgTypes(formals: List[Type])   = formals.nonEmpty && isRepeatedParamType(formals.last)
@@ -416,6 +420,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val ProductClass   = mkArityArray("Product", MaxProductArity)
     lazy val FunctionClass  = mkArityArray("Function", MaxFunctionArity, 0)
     lazy val AbstractFunctionClass = mkArityArray("runtime.AbstractFunction", MaxFunctionArity, 0)
+    lazy val isProductNClass = ProductClass.toSet
     
       def tupleField(n: Int, j: Int) = getMember(TupleClass(n), "_" + j)
       def isTupleType(tp: Type): Boolean = isTupleType(tp, false)
@@ -450,11 +455,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       def productProj(n: Int,   j: Int): Symbol = productProj(ProductClass(n), j)
       
       /** returns true if this type is exactly ProductN[T1,...,Tn], not some subclass */
-      def isExactProductType(tp: Type): Boolean = cond(tp.normalize) {
-        case TypeRef(_, sym, elems) =>
-          val len = elems.length
-          len <= MaxProductArity && sym == ProductClass(len)
-      }
+      def isExactProductType(tp: Type): Boolean = isProductNClass(tp.typeSymbol)
 
       def productType(elems: List[Type]) = {
         if (elems.isEmpty) UnitClass.tpe
@@ -468,15 +469,16 @@ trait Definitions extends reflect.api.StandardDefinitions {
         }
       }
 
-    /** if tpe <: ProductN[T1,...,TN], returns Some((T1,...,TN)) else None */
-    def getProductArgs(tpe: Type): Option[List[Type]] = 
-      tpe.baseClasses collectFirst { case x if isExactProductType(x.tpe) => tpe.baseType(x).typeArgs }
+    /** if tpe <: ProductN[T1,...,TN], returns List(T1,...,TN) else Nil */
+    def getProductArgs(tpe: Type): List[Type] = tpe.baseClasses find isProductNClass match {
+      case Some(x)  => tpe.baseType(x).typeArgs
+      case _        => Nil
+    }
 
-    def unapplyUnwrap(tpe:Type) = (tpe match {
-      case PolyType(_,MethodType(_, res)) => res
-      case MethodType(_, res)             => res
-      case tpe                            => tpe
-    }).normalize
+    def unapplyUnwrap(tpe:Type) = tpe.finalResultType.normalize match {
+      case RefinedType(p :: _, _) => p.normalize
+      case tp                     => tp
+    }
     
     def functionApply(n: Int) = getMember(FunctionClass(n), nme.apply)
     def functionType(formals: List[Type], restpe: Type) = {
@@ -659,37 +661,28 @@ trait Definitions extends reflect.api.StandardDefinitions {
     }
     def packageExists(packageName: String): Boolean =
       getModuleIfDefined(packageName).isPackage
-    
+      
+    private def getModuleOrClass(path: Name, len: Int): Symbol = {
+      val point = path lastPos('.', len - 1)
+      val owner = 
+        if (point > 0) getModuleOrClass(path.toTermName, point) 
+        else RootClass
+      val name = path subName (point + 1, len)
+      val sym = owner.info member name
+      val result = if (path.isTermName) sym.suchThat(_ hasFlag MODULE) else sym
+      if (result != NoSymbol) result
+      else {
+        if (settings.debug.value) { log(sym.info); log(sym.info.members) }//debug
+        missingHook(owner, name) orElse {
+          MissingRequirementError.notFound((if (path.isTermName) "object " else "class ")+path)
+        }
+      }
+    }
+        
     /** If you're looking for a class, pass a type name.
      *  If a module, a term name.
      */
-    private def getModuleOrClass(path: Name): Symbol = {
-      val module   = path.isTermName
-      val fullname = path.toTermName
-      if (fullname == nme.NO_NAME)
-        return NoSymbol
-        
-      var sym: Symbol = RootClass
-      var i = 0
-      var j = fullname.pos('.', i)
-      while (j < fullname.length) {
-        sym = sym.info.member(fullname.subName(i, j))
-        // if (sym == NoSymbol)
-        //   println("no member "+fullname.subName(i, j)+" found in "+sym0+sym0.info.getClass+" "+sym0.info.typeSymbol.info.getClass)
-        i = j + 1
-        j = fullname.pos('.', i)
-      }
-      val result =
-        if (module) sym.info.member(fullname.subName(i, j)).suchThat(_ hasFlag MODULE)
-        else sym.info.member(fullname.subName(i, j).toTypeName)
-      if (result == NoSymbol) {
-      //   println("no member "+fullname.subName(i, j)+" found in "+sym+" "+module)
-        if (settings.debug.value)
-          { log(sym.info); log(sym.info.members) }//debug
-        throw new MissingRequirementError((if (module) "object " else "class ") + fullname)
-      }
-      result
-    }
+    private def getModuleOrClass(path: Name): Symbol = getModuleOrClass(path, path.length)
 
     private def newClass(owner: Symbol, name: TypeName, parents: List[Type]): Symbol = {
       val clazz = owner.newClass(NoPosition, name)
@@ -756,6 +749,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     /** Is symbol a phantom class for which no runtime representation exists? */
     lazy val isPhantomClass = Set[Symbol](AnyClass, AnyValClass, NullClass, NothingClass)
+    
+    /** Is the symbol that of a parent which is added during parsing? */
+    lazy val isPossibleSyntheticParent = ProductClass.toSet[Symbol] + ProductRootClass + SerializableClass 
 
     private lazy val scalaValueClassesSet = ScalaValueClasses.toSet
     private lazy val boxedValueClassesSet = boxedClass.values.toSet + BoxedUnitClass
@@ -838,7 +834,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def init() {
       if (isInitialized) return
 
-      EmptyPackageClass setInfo ClassInfoType(Nil, new Scope, EmptyPackageClass)
+      EmptyPackageClass setInfo ClassInfoType(Nil, newPackageScope(EmptyPackageClass), EmptyPackageClass)
       EmptyPackage setInfo EmptyPackageClass.tpe
 
       RootClass.info.decls enter EmptyPackage
@@ -935,5 +931,5 @@ trait Definitions extends reflect.api.StandardDefinitions {
       assert(Delegate_scalaCallers contains scalaCaller)
       Delegate_scalaCallerTargets += (scalaCaller -> methSym)
     }
-  }
+  } 
 }

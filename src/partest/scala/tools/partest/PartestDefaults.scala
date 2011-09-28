@@ -14,6 +14,7 @@ object PartestDefaults {
   def srcDirName    = propOrElse("partest.srcdir", "files")
   def testRootDir   = testRootName map (x => Directory(x))
 
+  // def classPath   = propOrElse("partest.classpath", "")
   def classPath   = PathResolver.Environment.javaUserClassPath    // XXX
 
   def javaCmd     = propOrElse("partest.javacmd", "java")

@@ -1862,7 +1862,7 @@ trait Infer {
       override def hasSymbol = forwardTo.hasSymbol
       override def symbol    = forwardTo.symbol
       override def symbol_=(x: Symbol) = forwardTo.symbol = x
-    }
+    } 
 
     case class AccessError(tree: Tree, sym: Symbol, pre: Type, explanation: String) extends TreeForwarder(tree) {
       setError(this)

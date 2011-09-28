@@ -74,11 +74,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     }
 
     /** Returns a new scope with the same content as this one. */
-    def cloneScope: Scope = {
-      val clone = new Scope()
-      this.toList foreach (clone enter _)
-      clone
-    }
+    def cloneScope: Scope = new Scope(this.toList)
 
     /** is the scope empty? */
     override def isEmpty: Boolean = elems eq null
@@ -98,15 +94,18 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
      *
      *  @param e ...
      */
-    def enter(e: ScopeEntry) {
+    protected def enter(e: ScopeEntry) {
       elemsCache = null
-      if (hashtable ne null) {
-        val i = e.sym.name.start & HASHMASK
-        elems.tail = hashtable(i)
-        hashtable(i) = elems
-      } else if (size >= MIN_HASH) {
+      if (hashtable ne null) 
+        enterInHash(e)
+      else if (size >= MIN_HASH)
         createHash()
-      }
+    }
+
+    private def enterInHash(e: ScopeEntry): Unit = {
+      val i = e.sym.name.start & HASHMASK
+      e.tail = hashtable(i)
+      hashtable(i) = e   
     }
 
     /** enter a symbol
@@ -126,15 +125,23 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
     private def createHash() {
       hashtable = new Array[ScopeEntry](HASHSIZE)
-      enterInHash(elems)
+      enterAllInHash(elems)
     }
-
-    private def enterInHash(e: ScopeEntry) {
+    
+    private def enterAllInHash(e: ScopeEntry, n: Int = 0) {
       if (e ne null) {
-        enterInHash(e.next)
-        val i = e.sym.name.start & HASHMASK
-        e.tail = hashtable(i)
-        hashtable(i) = e
+        if (n < maxRecursions) {
+          enterAllInHash(e.next, n + 1)
+          enterInHash(e)
+        } else {
+          var entries: List[ScopeEntry] = List()
+          var ee = e
+          while (ee ne null) {
+            entries = ee :: entries
+            ee = ee.next
+          }
+          entries foreach enterInHash
+        }
       }
     }
 
@@ -212,7 +219,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     def lookupAll(name: Name): Iterator[Symbol] = new Iterator[Symbol] {
       var e = lookupEntry(name)
       def hasNext: Boolean = e ne null
-      def next: Symbol = { val r = e.sym; e = lookupNextEntry(e); r }
+      def next(): Symbol = { val r = e.sym; e = lookupNextEntry(e); r }
     }
 
     /** lookup a symbol entry matching given name.
@@ -309,7 +316,16 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
   }
 
+  /** Create a new scope */
   def newScope: Scope = new Scope
+
+  /** Create new scope for the members of package `pkg` */
+  def newPackageScope(pkgClass: Symbol): Scope = new Scope
+  
+  /** Transform scope of members of `owner` using operation `op`
+   *  This is overridden by the reflective compiler to avoid creating new scopes for packages
+   */
+  def scopeTransform(owner: Symbol)(op: => Scope): Scope = op
   
   def newScopeWith(elems: Symbol*) = {
     val scope = newScope
@@ -329,5 +345,8 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
   /** The error scope.
    */
   class ErrorScope(owner: Symbol) extends Scope(null: ScopeEntry)
+  
+  private final val maxRecursions = 1000
+
 }
 

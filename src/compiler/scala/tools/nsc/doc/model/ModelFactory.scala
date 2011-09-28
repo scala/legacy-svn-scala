@@ -11,6 +11,8 @@ import scala.util.matching.Regex
 
 import symtab.Flags
 
+import io._
+
 import model.{ RootPackage => RootPackageEntity }
 
 /** This trait extracts all required information for documentation from compilation units */
@@ -199,12 +201,12 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
           val tplOwner = this.inTemplate.qualifiedName
           val tplName = this.name
           val patches = new Regex("""€\{(FILE_PATH|TPL_OWNER|TPL_NAME)\}""")
-          val patchedString = patches.replaceAllIn(settings.docsourceurl.value, { m => m.group(1) match {
-              case "FILE_PATH" => filePath
-              case "TPL_OWNER" => tplOwner
-              case "TPL_NAME" => tplName
-            }
-          })
+          def substitute(name: String): String = name match {
+            case "FILE_PATH" => filePath
+            case "TPL_OWNER" => tplOwner
+            case "TPL_NAME" => tplName
+          }
+          val patchedString = patches.replaceAllIn(settings.docsourceurl.value, m => java.util.regex.Matcher.quoteReplacement(substitute(m.group(1))) )
           new java.net.URL(patchedString)
         }
       else None
@@ -272,6 +274,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     override def qualifiedName = optimize(inTemplate.qualifiedName + "#" + name)
     lazy val definitionName = optimize(inDefinitionTemplates.head.qualifiedName + "#" + name)
     def isUseCase = sym.isSynthetic
+    def isBridge = sym.isBridge
   }
   
   abstract class NonTemplateParamMemberImpl(sym: Symbol, inTpl: => DocTemplateImpl) extends NonTemplateMemberImpl(sym, inTpl) {
@@ -332,6 +335,18 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       val pack =
         if (bSym == RootPackage)
           new RootPackageImpl(bSym) {
+            override lazy val comment = 
+              if(settings.docRootContent.isDefault) None
+              else {
+                import Streamable._
+                Path(settings.docRootContent.value) match {
+                  case f : File => {
+                    val rootComment = closing(f.inputStream)(is => parse(slurp(is), "", NoPosition))
+                    Some(rootComment)
+                  }
+                  case _ => None
+                }
+              }
             override val name = "root"
             override def inTemplate = this
             override def toRoot = this :: Nil

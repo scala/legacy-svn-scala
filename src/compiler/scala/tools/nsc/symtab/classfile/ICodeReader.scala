@@ -45,7 +45,7 @@ abstract class ICodeReader extends ClassfileParser {
 
     classPath.findSourceFile(name) match {
       case Some(classFile) => parse(classFile, cls)
-      case _               => throw new MissingRequirementError("Could not find bytecode for " + cls)
+      case _               => MissingRequirementError.notFound("Could not find bytecode for " + cls)
     }
 
     (staticCode, instanceCode)
@@ -105,7 +105,7 @@ abstract class ICodeReader extends ClassfileParser {
         if (sym == NoSymbol) {
           log("Could not find symbol for " + name + ": " + tpe)
           log(owner.info.member(name).tpe + " : " + tpe)
-          if (name.toString() == "toMap")
+          if (name.toString == "toMap")
             tpe = pool.getType(dummySym, ch)
           if (field)
             sym = owner.newValue(owner.pos, name).setInfo(tpe).setFlag(MUTABLE | javaToScalaFlags(jflags))

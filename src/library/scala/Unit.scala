@@ -11,9 +11,10 @@
 package scala
 
 
-/** Unit is a member of the value classes, those whose instances are
- *  not represented as objects by the underlying host system.  There is
- *  only one value of type Unit: `()`.
+/** `Unit` is a subtype of [[scala.AnyVal]]. There is only one value of type
+ *  `Unit`, `()`, and it is not represented by any object in the underlying
+ *  runtime system. A method with return type `Unit` is analogous to a Java
+ *  method which is declared `void`.
  */
 final class Unit extends AnyVal {
   def getClass(): Class[Unit] = sys.error("stub")

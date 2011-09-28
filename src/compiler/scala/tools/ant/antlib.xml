@@ -1,6 +1,8 @@
 <antlib>
     <!--<taskdef name="scala"
              classname="scala.tools.ant.Scala"/>-->
+    <taskdef name="classloadVerify"
+             classname="scala.tools.ant.ClassloadVerify"/>
     <taskdef name="fsc"
              classname="scala.tools.ant.FastScalac"/>
     <taskdef name="scalac"
@@ -9,8 +11,10 @@
              classname="scala.tools.ant.ScalaTool"/>
     <taskdef name="sbaz"
              classname="scala.tools.ant.ScalaBazaar"/>
+    <!--@XML-->
     <taskdef name="scaladoc"
              classname="scala.tools.ant.Scaladoc"/>
+    <!--XML@-->
     <taskdef name="scalatool"
              classname="scala.tools.ant.ScalaTool"/>
     <taskdef name="same"

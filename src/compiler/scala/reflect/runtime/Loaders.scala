@@ -2,15 +2,15 @@ package scala.reflect
 package runtime
 
 import internal.Flags
-
 import java.lang.{Class => jClass, Package => jPackage}
+import collection.mutable
 
-trait Loaders { self: Universe => 
+trait Loaders { self: SymbolTable => 
   
   /** The lazy type for root.
    */
   override val rootLoader = new LazyType {
-    override def complete(sym: Symbol) = sym setInfo new PackageType(definitions.RootClass)
+    override def complete(sym: Symbol) = sym setInfo new LazyPackageType
   }
   
   /** The standard completer for top-level classes 
@@ -20,34 +20,39 @@ trait Loaders { self: Universe =>
    *  by unpickling information from the corresponding Java class. If no Java class
    *  is found, a package is created instead.
    */
-  class TopClassCompleter(clazz: Symbol, module: Symbol) extends LazyType {
-    def makePackage() {
-      val ptpe = new PackageType(module.moduleClass)
-      for (sym <- List(clazz, module, module.moduleClass)) {
-        sym setFlag Flags.PACKAGE
-        sym setInfo ptpe
-      }
-    }
+  class TopClassCompleter(clazz: Symbol, module: Symbol) extends SymLoader {
+//    def makePackage() {
+//      println("wrong guess; making package "+clazz)
+//      val ptpe = newPackageType(module.moduleClass)
+//      for (sym <- List(clazz, module, module.moduleClass)) {
+//        sym setFlag Flags.PACKAGE
+//        sym setInfo ptpe
+//      }
+//    }
+    
     override def complete(sym: Symbol) = {
-      //println("completing "+sym+"/"+clazz.fullName) //debug
+      debugInfo("completing "+sym+"/"+clazz.fullName)
       assert(sym == clazz || sym == module || sym == module.moduleClass)
-      try {
-        unpickleClass(clazz, module, jClass.forName(clazz.fullName))
-      } catch {
-        case ex: ClassNotFoundException => makePackage()
-        case ex: NoClassDefFoundError => makePackage()
+//      try {
+      atPhaseNotLaterThan(picklerPhase) {
+        unpickleClass(clazz, module, javaClass(clazz.fullName))
+//      } catch {
+//        case ex: ClassNotFoundException => makePackage()
+//        case ex: NoClassDefFoundError => makePackage()
           // Note: We catch NoClassDefFoundError because there are situations
           // where a package and a class have the same name except for capitalization.
           // It seems in this case the class is loaded even if capitalization differs
           // but then a NoClassDefFound error is issued with a ("wrong name: ...")
           // reason. (I guess this is a concession to Windows).
           // The present behavior is a bit too forgiving, in that it masks
-          // all class loade errors, not just wrong name errors. We should try
+          // all class load errors, not just wrong name errors. We should try
           // to be more discriminating. To get on the right track simply delete
           // the clause above and load a collection class such as collection.Iterable.
           // You'll see an error that class `parallel` has the wrong name.
+//      }
       }
     }
+    override def load(sym: Symbol) = complete(sym)
   }
   
   /** Create a class and a companion object, enter in enclosing scope, 
@@ -72,24 +77,50 @@ trait Loaders { self: Universe =>
     module.moduleClass.setInfo(completer)
   }
   
-  /** The type for packages.
-   *  Since we cannot search the file system for classes in directories to populate
-   *  a package, we do the following instead: For every member that is looked up in
-   *  the package, create a class and companion object optimistically, giving it
-   *  a TopClassCompleter type. When any of the two symbols is forced via info,
-   *  the TopClassCompleter will sort things out.
+  /** The type completer for packages.
    */
-  class PackageType(pkg: Symbol) extends ClassInfoType(List(), newScope, pkg) {
-    override def decl(name: Name): Symbol = 
-      (decls lookup name) orElse {
-        assert(this eq pkg.info, this+" "+pkg.info)
-        assert(decls eq pkg.info.decls)
-        //println("creating "+name+" in "+pkg) //debug
-        val (clazz, module) = createClassModule(pkg, name.toTypeName, new TopClassCompleter(_, _))
-        if (name.isTypeName) clazz else module
-      }
-    override def member(name: Name): Symbol = decl(name)
-    override def findMember(name: Name, excludedFlags: Long, requiredFlags: Long, stableOnly: Boolean) = 
-      member(name).filter (m => m.hasAllFlags(requiredFlags) && !m.hasFlag(excludedFlags))
+  class LazyPackageType extends LazyType {
+    override def complete(sym: Symbol) {
+      assert(sym.isPackageClass)
+      sym setInfo new ClassInfoType(List(), new PackageScope(sym), sym)
+        // override def safeToString = pkgClass.toString
+      openPackageModule(sym)
+    }
   }
+  
+  def invalidClassName(name: Name) = {
+    val dp = name pos '$'
+    0 < dp && dp < (name.length - 1)
+  }
+  
+  class PackageScope(pkgClass: Symbol) extends Scope {
+    assert(pkgClass.isType)
+    private var negatives = mutable.Set[Name]()
+    override def lookupEntry(name: Name): ScopeEntry = {
+      val e = super.lookupEntry(name)
+      if (e != null)
+        e
+      else if (invalidClassName(name) || (negatives contains name))
+        null
+      else {
+        val path = 
+          if (pkgClass.isEmptyPackageClass) name.toString 
+          else pkgClass.fullName + "." + name
+        if (isJavaClass(path)) {
+          val (clazz, module) = createClassModule(pkgClass, name.toTypeName, new TopClassCompleter(_, _))
+          debugInfo("created "+module+"/"+module.moduleClass+" in "+pkgClass)
+          lookupEntry(name)
+        } else {
+          debugInfo("*** not found : "+path)
+          negatives += name
+          null
+        }
+      }
+    }
+  }
+  
+  override def newPackageScope(pkgClass: Symbol) = new PackageScope(pkgClass)
+  
+  override def scopeTransform(owner: Symbol)(op: => Scope): Scope = 
+    if (owner.isPackageClass) owner.info.decls else op
 }

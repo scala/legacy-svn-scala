@@ -110,7 +110,7 @@ abstract class Erasure extends AddInterfaces
   }
 
   override protected def verifyJavaErasure = settings.Xverify.value || settings.debug.value
-  private def needsJavaSig(tp: Type) = !settings.Ynogenericsig.value && NeedsSigCollector.collect(tp)
+  def needsJavaSig(tp: Type) = !settings.Ynogenericsig.value && NeedsSigCollector.collect(tp)
 
   // only refer to type params that will actually make it into the sig, this excludes:
   // * higher-order type parameters
@@ -604,7 +604,8 @@ abstract class Erasure extends AddInterfaces
           abort()
         case ex: Exception =>
           //if (settings.debug.value) 
-          Console.println("exception when typing " + tree);
+          try Console.println("exception when typing " + tree)
+          finally throw ex
           throw ex
       }
       def adaptCase(cdef: CaseDef): CaseDef = {

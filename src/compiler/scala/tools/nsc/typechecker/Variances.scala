@@ -71,6 +71,8 @@ trait Variances {
       varianceInType(pre)(tparam)
     case TypeRef(pre, sym, args) =>
       if (sym == tparam) COVARIANT
+      // tparam cannot occur in tp's args if tp is a type constructor (those don't have args)
+      else if (tp.isHigherKinded) varianceInType(pre)(tparam)
       else varianceInType(pre)(tparam) & varianceInArgs(args, sym.typeParams)(tparam)
     case TypeBounds(lo, hi) =>
       flip(varianceInType(lo)(tparam)) & varianceInType(hi)(tparam)

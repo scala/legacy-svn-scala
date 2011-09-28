@@ -7,7 +7,7 @@ package scala.tools
 package nsc
 package util
 
-import java.io.{File, FileInputStream, PrintStream, IOException}
+import java.io.{File, FileInputStream, PrintStream}
 import java.lang.Long.toHexString
 import java.lang.Float.intBitsToFloat
 import java.lang.Double.longBitsToDouble
@@ -197,7 +197,7 @@ object ShowPickled extends Names {
       tag match {
         case TERMname =>
           out.print(" ")
-          out.print(newTermName(buf.bytes, buf.readIndex, len).toString())
+          out.print(newTermName(buf.bytes, buf.readIndex, len).toString)
           buf.readIndex = end
         case TYPEname =>
           out.print(" ")

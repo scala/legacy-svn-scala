@@ -36,7 +36,9 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
     try {
       new Scan(bytes, offset, classRoot, moduleRoot, filename).run()
     } catch {
-      case ex: IOException =>
+      case ex: IOException => 
+        throw ex
+      case ex: MissingRequirementError =>
         throw ex
       case ex: Throwable =>
         /*if (settings.debug.value)*/ ex.printStackTrace()
@@ -193,12 +195,12 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
         val name  = readNameRef()
         val owner = if (atEnd) definitions.RootClass else readSymbolRef()
         
+        def adjust(sym: Symbol) = if (tag == EXTref) sym else sym.moduleClass
+        
         def fromName(name: Name) = name.toTermName match {
           case nme.ROOT     => definitions.RootClass
           case nme.ROOTPKG  => definitions.RootPackage
-          case _            =>
-            val s = owner.info.decl(name)
-            if (tag == EXTref) s else s.moduleClass
+          case _            => adjust(owner.info.decl(name))
         }
         def nestedObjectSymbol: Symbol = {
           // If the owner is overloaded (i.e. a method), it's not possible to select the
@@ -225,7 +227,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
             // (3) Try as a nested object symbol.
             nestedObjectSymbol orElse {
               // (4) Otherwise, fail.
-              errorMissingRequirement(name, owner)                
+              adjust(errorMissingRequirement(name, owner))                
             }
           }
         }
@@ -411,7 +413,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
         case LITERALlong    => Constant(readLong(len))
         case LITERALfloat   => Constant(intBitsToFloat(readLong(len).toInt))
         case LITERALdouble  => Constant(longBitsToDouble(readLong(len)))
-        case LITERALstring  => Constant(readNameRef().toString())
+        case LITERALstring  => Constant(readNameRef().toString)
         case LITERALnull    => Constant(null)
         case LITERALclass   => Constant(readTypeRef())
         case LITERALenum    => Constant(readSymbolRef())
@@ -815,14 +817,12 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
     protected def errorBadSignature(msg: String) =
       throw new RuntimeException("malformed Scala signature of " + classRoot.name + " at " + readIndex + "; " + msg)
 
-    protected def errorMissingRequirement(msg: String): Nothing =
-      if (debug) errorBadSignature(msg)
-      else throw new IOException("class file needed by "+classRoot.name+" is missing.\n"+msg) 
-
-    protected def errorMissingRequirement(name: Name, owner: Symbol): Nothing = 
-      errorMissingRequirement(
-        "reference " + (if (name.isTypeName) "type " else "value ") +
-        name.decode + " of " + owner.tpe.widen + " refers to nonexisting symbol.")
+    protected def errorMissingRequirement(name: Name, owner: Symbol): Symbol = 
+      missingHook(owner, name) orElse {
+        MissingRequirementError.notFound(
+            "reference " + (if (name.isTypeName) "type " else "value ") +
+            name.decode + " of " + owner.tpe.widen + "/" +owner.tpe.typeSymbol.ownerChain + "/" + owner.info.members)
+    }
 
     def inferMethodAlternative(fun: Tree, argtpes: List[Type], restpe: Type) {} // can't do it; need a compiler for that.
 
