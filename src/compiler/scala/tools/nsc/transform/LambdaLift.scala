@@ -154,7 +154,7 @@ abstract class LambdaLift extends InfoTransform {
           case DefDef(_, _, _, _, _, _) =>
             if (sym.isLocal) {
               renamable addEntry sym
-              sym setFlag (PRIVATE | LOCAL | FINAL)
+              sym setFlag (PrivateLocal | FINAL)
             } else if (sym.isPrimaryConstructor) {
               symSet(called, sym) addEntry sym.owner
             }
@@ -216,7 +216,7 @@ abstract class LambdaLift extends InfoTransform {
             proxies(owner) =
               for (fv <- freeValues.toList) yield {
                 val proxy = owner.newValue(owner.pos, fv.name)
-                  .setFlag(if (owner.isClass) PARAMACCESSOR | PRIVATE | LOCAL else PARAM)
+                  .setFlag(if (owner.isClass) PARAMACCESSOR | PrivateLocal else PARAM)
                   .setFlag(SYNTHETIC)
                   .setInfo(fv.info);
                 if (owner.isClass) owner.info.decls enter proxy;
@@ -229,7 +229,7 @@ abstract class LambdaLift extends InfoTransform {
     private def proxy(sym: Symbol) = {
       def searchIn(enclosure: Symbol): Symbol = {
         debuglog("searching for " + sym + "(" + sym.owner + ") in " + enclosure + " " + enclosure.logicallyEnclosingMember)
-              
+        
         val ps = (proxies get enclosure.logicallyEnclosingMember).toList.flatten filter (_.name == sym.name)
         if (ps.isEmpty) searchIn(enclosure.skipConstructor.owner)
         else ps.head

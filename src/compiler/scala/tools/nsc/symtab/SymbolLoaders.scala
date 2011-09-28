@@ -30,7 +30,7 @@ abstract class SymbolLoaders {
     assert(owner.info.decls.lookup(member.name) == NoSymbol, owner.fullName + "." + member.name)
     owner.info.decls enter member
     member
-  }    
+  }
 
   private def realOwner(root: Symbol): Symbol = {
     if (root.isRoot) definitions.EmptyPackageClass else root
@@ -108,7 +108,7 @@ abstract class SymbolLoaders {
       })
     }
     
-    override def complete(root: Symbol) : Unit = {
+    override def complete(root: Symbol) {
       def signalError(ex: Exception) {
         ok = false
         if (settings.debug.value) ex.printStackTrace()
@@ -140,7 +140,7 @@ abstract class SymbolLoaders {
 
     private def markAbsent(sym: Symbol): Unit = {
       val tpe: Type = if (ok) NoType else ErrorType
-      
+
       if (sym != NoSymbol) 
         sym setInfo tpe
     }

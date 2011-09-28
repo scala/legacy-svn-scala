@@ -98,8 +98,9 @@ abstract class ReplTokens {
       SUBTYPE    -> Subtype,
       SUPERTYPE  -> Supertype,
       TRUE       -> True,
-      VIEWBOUND  -> ViewBound,
+      VIEWBOUND  -> ViewBound/*@XML*/,
       XMLSTART   -> "<xmlstart>"
+/*XML@*/
     )
   }
   def isAlphaId(t: ReplToken) = t match {
@@ -248,9 +249,8 @@ abstract class ReplTokens {
 
     def prettyPrint(tokens: TraversableOnce[ReplToken]) {
       val it = Iterator(Newline) ++ tokens.toIterator ++ Iterator(Newline) sliding 3 map { x =>
-        (x: @unchecked) match {
-          case List(x1, x2, x3) => ((x1, x2, x3))
-        }
+        val List(x1, x2, x3) = x
+        ((x1, x2, x3))
       }
       prettyPrint(it)
     }

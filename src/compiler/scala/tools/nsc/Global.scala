@@ -171,6 +171,13 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     if (settings.debug.value && (settings.log containsPhase globalPhase))
       inform("[log " + phase + "] " + msg)
   }
+  // Warnings issued only under -Ydebug.  For messages which should reach
+  // developer ears, but are not adequately actionable by users.
+  @inline final override def debugwarn(msg: => String) {
+    if (settings.debug.value)
+      warning(msg)
+  }
+
   private def elapsedMessage(msg: String, start: Long) =
     msg + " in " + (currentTime - start) + "ms"
     
@@ -333,8 +340,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     override def erasedTypes: Boolean = isErased
     private val isFlat = prev.name == "flatten" || prev.flatClasses
     override def flatClasses: Boolean = isFlat
-    // private val isDevirtualized = prev.name == "devirtualize" || prev.devirtualized
-    // override def devirtualized: Boolean = isDevirtualized  // (part of DEVIRTUALIZE)
     private val isSpecialized = prev.name == "specialize" || prev.specialized
     override def specialized: Boolean = isSpecialized
     private val isRefChecked = prev.name == "refchecks" || prev.refChecked

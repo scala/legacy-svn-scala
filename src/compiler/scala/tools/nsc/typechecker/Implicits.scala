@@ -521,9 +521,6 @@ trait Implicits {
           }
           else
             typed1(itree, EXPRmode, wildPt)
-        
-        if (itree1.containsError())
-          return SearchFailure
 
         incCounter(typedImplicits)
 
@@ -544,7 +541,7 @@ trait Implicits {
           }
         }
 
-        if (itree2.containsErrorOrIsErrorTyped())
+        if (itree2.tpe.isError)
           SearchFailure
         else if (!hasMatchingSymbol(itree1))
           fail("candidate implicit %s is shadowed by other implicit %s".format(
@@ -568,11 +565,7 @@ trait Implicits {
                                     false, lubDepth(List(itree2.tpe, pt)))
 
             // #2421: check that we correctly instantiated type parameters outside of the implicit tree:
-            // TODO: refactoring needed, shouldn't emit it here
-            checkBounds(itree2.pos, NoPrefix, NoSymbol, undetParams, targs, "inferred ") match {
-              case Some(err) => err.emit(context)
-              case _ => 
-            }
+            checkBounds(itree2.pos, NoPrefix, NoSymbol, undetParams, targs, "inferred ")
 
             // filter out failures from type inference, don't want to remove them from undetParams!
             // we must be conservative in leaving type params in undetparams
@@ -597,21 +590,12 @@ trait Implicits {
             // re-typecheck)
             // TODO: the return tree is ignored.  This seems to make
             // no difference, but it's bad practice regardless.
-            
-            // we call typedTypeApply which can return an error tree,
-            // so we cannot ignore the tree
-            // TODO check if that is enough
-            val checked = itree2 match {
+            itree2 match {
               case TypeApply(fun, args)           => typedTypeApply(itree2, EXPRmode, fun, args)
               case Apply(TypeApply(fun, args), _) => typedTypeApply(itree2, EXPRmode, fun, args) // t2421c
               case t                              => t
             }
-            if (checked.containsError()) {
-              // TODO: for the moment workaround for situations where we get errortrees
-              val res = errorTreesFinder(checked)
-              res.foreach(t => t.emit(context))
-            } 
-            val result = new SearchResult(checked, subst)
+            val result = new SearchResult(itree2, subst)
             incCounter(foundImplicits)
             printInference("[typedImplicit1] SearchResult: " + result)
             result
@@ -621,8 +605,6 @@ trait Implicits {
         }
       }
       catch {
-        // TODO: once refactoring of type errors is done we should only
-        // catch here cyclic references.
         case ex: TypeError => fail(ex.getMessage())
       }
     }

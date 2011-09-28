@@ -28,14 +28,14 @@ class XMLEventReader(src: Source) extends ProducerConsumerIterator[XMLEvent] {
   // a stream (e.g. XML over a network) there may be arbitrarily long periods when
   // the queue is empty.  Fortunately the ProducerConsumerIterator is ideally
   // suited to this task, possibly because it was written for use by this class.
-    
+
   // to override as necessary
   val preserveWS = true
-  
+
   override val MaxQueueSize = 1000
   protected case object POISON extends XMLEvent
   val EndOfStream = POISON
-  
+
   // thread machinery
   private[this] val parser = new Parser(src)
   private[this] val parserThread = new Thread(parser, "XMLEventReader")
@@ -52,7 +52,7 @@ class XMLEventReader(src: Source) extends ProducerConsumerIterator[XMLEvent] {
     produce(POISON)
     parserThread.interrupt()
   }
-  
+
   private class Parser(val input: Source) extends MarkupHandler with MarkupParser with ExternalSources with Runnable {
     val preserveWS = XMLEventReader.this.preserveWS
     // track level for elem memory usage optimization
@@ -75,7 +75,8 @@ class XMLEventReader(src: Source) extends ProducerConsumerIterator[XMLEvent] {
     }
 
     // this is a dummy to satisfy MarkupHandler's API
-    // memory usage optimization return one <ignore/> for top level to satisfy MarkupParser.document() otherwise NodeSeq.Empty
+    // memory usage optimization return one <ignore/> for top level to satisfy
+    // MarkupParser.document() otherwise NodeSeq.Empty
     private var ignoreWritten = false
     final def elem(pos: Int, pre: String, label: String, attrs: MetaData, pscope: NamespaceBinding, nodes: NodeSeq): NodeSeq = 
       if (level == 1 && !ignoreWritten) {ignoreWritten = true; <ignore/> } else NodeSeq.Empty
@@ -106,15 +107,15 @@ class XMLEventReader(src: Source) extends ProducerConsumerIterator[XMLEvent] {
 trait ProducerConsumerIterator[T >: Null] extends Iterator[T] {
   // abstract - iterator-specific distinguished object for marking eos
   val EndOfStream: T
-  
+
   // defaults to unbounded - override to positive Int if desired
   val MaxQueueSize = -1
-  
+
   def interruptibly[T](body: => T): Option[T] = try Some(body) catch {
-    case _: InterruptedException    => Thread.currentThread.interrupt() ; None
+    case _: InterruptedException    => Thread.currentThread.interrupt(); None
     case _: ClosedChannelException  => None
-  }    
-  
+  }
+
   private[this] lazy val queue =
     if (MaxQueueSize < 0) new LinkedBlockingQueue[T]()
     else new LinkedBlockingQueue[T](MaxQueueSize)
@@ -125,7 +126,7 @@ trait ProducerConsumerIterator[T >: Null] extends Iterator[T] {
   }
   private def isElement(x: T) = x != null && x != EndOfStream  
   private def eos() = buffer == EndOfStream
-  
+
   // public producer interface - this is the only method producers call, so
   // LinkedBlockingQueue's synchronization is all we need.
   def produce(x: T): Unit = if (!eos) interruptibly(queue put x)
@@ -133,12 +134,14 @@ trait ProducerConsumerIterator[T >: Null] extends Iterator[T] {
   // consumer/iterator interface - we need not synchronize access to buffer
   // because we required there to be only one consumer.
   def hasNext = !eos && (buffer != null || fillBuffer)
+
   def next() = {
     if (eos) throw new NoSuchElementException("ProducerConsumerIterator")
     if (buffer == null) fillBuffer
-    
+
     drainBuffer
   }
+
   def available() = isElement(buffer) || isElement(queue.peek)
   
   private def drainBuffer() = {

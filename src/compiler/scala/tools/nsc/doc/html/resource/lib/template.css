@@ -535,6 +535,10 @@ div.fullcomment .comment:last-child {
   margin-bottom: 0;
 }
 
+div.fullcommenttop dl.paramcmts {
+  margin-bottom: 0.8em;
+  padding-bottom: 0.8em;
+}
 
 div.fullcommenttop dl.paramcmts > dt,
 div.fullcomment dl.paramcmts > dt {
@@ -548,8 +552,8 @@ div.fullcommenttop dl.paramcmts > dd,
 div.fullcomment dl.paramcmts > dd {
   display: block;
   padding-left: 10px;
-  float: left;
   margin-bottom: 5px;
+  margin-left: 70px;
 }
 
 /* Members filter tool */

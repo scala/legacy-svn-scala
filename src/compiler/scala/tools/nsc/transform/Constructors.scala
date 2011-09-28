@@ -215,7 +215,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       //   the symbol is an outer accessor of a final class which does not override another outer accessor. )
       def maybeOmittable(sym: Symbol) = sym.owner == clazz && (
         sym.isParamAccessor && sym.isPrivateLocal ||
-        sym.isOuterAccessor && sym.owner.isFinal && !sym.isOverridingSymbol &&
+        sym.isOuterAccessor && sym.owner.isEffectivelyFinal && !sym.isOverridingSymbol &&
         !(clazz isSubClass DelayedInitClass)
       )
 
@@ -228,7 +228,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         override def traverse(tree: Tree) = {
           tree match {
             case DefDef(_, _, _, _, _, body) 
-            if (tree.symbol.isOuterAccessor && tree.symbol.owner == clazz && clazz.isFinal) =>
+            if (tree.symbol.isOuterAccessor && tree.symbol.owner == clazz && clazz.isEffectivelyFinal) =>
               log("outerAccessors += " + tree.symbol.fullName)
               outerAccessors ::= ((tree.symbol, body))
             case Select(_, _) =>
@@ -466,7 +466,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
             closureClass.setInfo(new ClassInfoType(closureParents, new Scope, closureClass))
 
             val outerField = closureClass.newValue(impl.pos, nme.OUTER)
-              .setFlag(PRIVATE | LOCAL | PARAMACCESSOR)
+              .setFlag(PrivateLocal | PARAMACCESSOR)
               .setInfo(clazz.tpe)
 
             val applyMethod = closureClass.newMethod(impl.pos, nme.apply)

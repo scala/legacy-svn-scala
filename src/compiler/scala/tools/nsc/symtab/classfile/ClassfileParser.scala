@@ -342,7 +342,7 @@ abstract class ClassfileParser {
         val start = starts(index)
         value = (in.buf(start).toInt: @switch) match {
           case CONSTANT_STRING =>
-            Constant(getName(in.getChar(start + 1).toInt).toString())
+            Constant(getName(in.getChar(start + 1).toInt).toString)
           case CONSTANT_INTEGER =>
             Constant(in.getInt(start + 1))
           case CONSTANT_FLOAT =>
@@ -494,7 +494,7 @@ abstract class ClassfileParser {
   def parseClass() {
     val jflags = in.nextChar
     val isAnnotation = hasAnnotation(jflags)
-    var sflags = toScalaFlags(jflags, true)
+    var sflags = toScalaFlags(jflags, isClass = true)
     var nameIdx = in.nextChar
     externalName = pool.getClassName(nameIdx)
     val c = if (externalName.toString.indexOf('$') < 0) pool.getClassSymbol(nameIdx) else clazz
@@ -602,8 +602,7 @@ abstract class ClassfileParser {
 
   def parseField() {
     val jflags = in.nextChar
-    var sflags = toScalaFlags(jflags, false)
-    if ((sflags & FINAL) == 0L) sflags = sflags | MUTABLE
+    var sflags = toScalaFlags(jflags, isField = true)
     if ((sflags & PRIVATE) != 0L && !global.settings.XO.value) {
       in.skip(4); skipAttributes()
     } else {
@@ -634,7 +633,7 @@ abstract class ClassfileParser {
 
   def parseMethod() {
     val jflags = in.nextChar.toInt
-    var sflags = toScalaFlags(jflags, false)
+    var sflags = toScalaFlags(jflags)
     if (isPrivate(jflags) && !global.settings.XO.value) {
       val name = pool.getName(in.nextChar)
       if (name == nme.CONSTRUCTOR)
@@ -882,13 +881,13 @@ abstract class ClassfileParser {
         case tpnme.ScalaSignatureATTR =>
           if (!isScalaAnnot) {
             debuglog("warning: symbol " + sym.fullName + " has pickled signature in attribute")
-            unpickler.unpickle(in.buf, in.bp, clazz, staticModule, in.file.toString())
+            unpickler.unpickle(in.buf, in.bp, clazz, staticModule, in.file.toString)
           }
           in.skip(attrLen)
         case tpnme.ScalaATTR =>
           isScalaRaw = true
         case tpnme.JacoMetaATTR =>
-          val meta = pool.getName(in.nextChar).toString().trim()
+          val meta = pool.getName(in.nextChar).toString.trim()
           metaParser.parse(meta, sym, symtype)
           this.hasMeta = true
          // Attribute on methods of java annotation classes when that method has a default
@@ -904,7 +903,7 @@ abstract class ClassfileParser {
                 case Some(san: AnnotationInfo) =>
                   val bytes =
                     san.assocs.find({ _._1 == nme.bytes }).get._2.asInstanceOf[ScalaSigBytes].bytes
-                  unpickler.unpickle(bytes, 0, clazz, staticModule, in.file.toString())
+                  unpickler.unpickle(bytes, 0, clazz, staticModule, in.file.toString)
                 case None =>
                   throw new RuntimeException("Scala class file does not contain Scala annotation")
               }
@@ -939,7 +938,7 @@ abstract class ClassfileParser {
       val index = in.nextChar
       tag match {
         case STRING_TAG =>
-          Some(LiteralAnnotArg(Constant(pool.getName(index).toString())))
+          Some(LiteralAnnotArg(Constant(pool.getName(index).toString)))
         case BOOL_TAG | BYTE_TAG | CHAR_TAG | SHORT_TAG | INT_TAG |
              LONG_TAG | FLOAT_TAG | DOUBLE_TAG =>
           Some(LiteralAnnotArg(pool.getConstant(index)))
@@ -1076,7 +1075,7 @@ abstract class ClassfileParser {
     
     def enterClassAndModule(entry: InnerClassEntry, completer: global.loaders.SymbolLoader, jflags: Int) {
       val name = entry.originalName
-      var sflags = toScalaFlags(jflags, true)
+      var sflags = toScalaFlags(jflags, isClass = true)
 
       val innerClass = getOwner(jflags).newClass(NoPosition, name.toTypeName).setInfo(completer).setFlag(sflags)
       val innerModule = getOwner(jflags).newModule(NoPosition, name.toTermName).setInfo(completer).setFlag(sflags)
