@@ -9,9 +9,9 @@ gitignore="$(dirname $0)/.gitignore"
 bootdir="$(dirname $0)/.boot"
 sbtjar="${bootdir}/sbt-launch.jar"
 launchversionfile="${bootdir}/.launchversion"
-sbtversion=0.11.0-RC1
-sbturl="http://typesafe.artifactoryonline.com/typesafe/ivy-snapshots/org.scala-tools.sbt/sbt-launch/$sbtversion/sbt-launch.jar"
-# For later.. sbturl="http://typesafe.artifactoryonline.com/typesafe/ivy-releases/org.scala-tools.sbt/sbt-launch/$sbtversion/sbt-launch.jar"
+sbtversion=0.11.0
+#  sbturl="http://typesafe.artifactoryonline.com/typesafe/ivy-snapshots/org.scala-tools.sbt/sbt-launch/$sbtversion/sbt-launch.jar"
+sbturl="http://typesafe.artifactoryonline.com/typesafe/ivy-releases/org.scala-tools.sbt/sbt-launch/$sbtversion/sbt-launch.jar"
 
 # Check the current stored launch version.
 if [[ -f "$launchversionfile" ]]; then
