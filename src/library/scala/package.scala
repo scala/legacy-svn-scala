@@ -75,12 +75,10 @@ package object scala {
   @deprecated("Use Thread.currentThread instead", "2.9.0")
   def currentThread = java.lang.Thread.currentThread()
 
-  /*@XML*/
   // Moved back into Predef to avoid unnecessary indirection by
   // way of the scala package object within the standard library,
   // but bridged for compatibility.
   @bridge def $scope = scala.xml.TopScope
-  /*XML@*/
 
   // Numeric types which were moved into scala.math.*
 
@@ -89,7 +87,7 @@ package object scala {
 
   type BigInt = scala.math.BigInt
   val BigInt = scala.math.BigInt
-  
+
   type Equiv[T] = scala.math.Equiv[T]
   val Equiv = scala.math.Equiv
 
