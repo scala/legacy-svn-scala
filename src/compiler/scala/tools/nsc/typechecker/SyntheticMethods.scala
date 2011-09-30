@@ -39,6 +39,14 @@ trait SyntheticMethods extends ast.TreeDSL {
   private object util {
     private type CM[T] = ClassManifest[T]
 
+    lazy val IteratorModule = getModule("scala.collection.Iterator")
+    lazy val Iterator_apply = getMember(IteratorModule, nme.apply)
+    def iteratorOfType(tp: Type) = appliedType(IteratorClass.typeConstructor, List(tp))
+
+    def ValOrDefDef(sym: Symbol, body: Tree) =
+      if (sym.isLazy) ValDef(sym, body)
+      else DefDef(sym, body)
+
     /** To avoid unchecked warnings on polymorphic classes.
      */
     def clazzTypeToTest(clazz: Symbol) = clazz.tpe.normalize match {
@@ -103,7 +111,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     private def finishMethod(method: Symbol, f: Symbol => Tree): Tree = {
       setMethodFlags(method)
       clazz.info.decls enter method
-      logResult("finishMethod")(localTyper typed DefDef(method, f(method)))
+      logResult("finishMethod")(localTyper typed ValOrDefDef(method, f(method)))
     }
 
     private def createInternal(name: Name, f: Symbol => Tree, info: Type): Tree = {
@@ -116,7 +124,6 @@ trait SyntheticMethods extends ast.TreeDSL {
       m setInfo infoFn(m)
       finishMethod(m, f)
     }
-
     private def cloneInternal(original: Symbol, f: Symbol => Tree, name: Name): Tree = {
       val m = original.cloneSymbol(clazz) setPos clazz.pos.focus
       m.name = name
@@ -190,9 +197,33 @@ trait SyntheticMethods extends ast.TreeDSL {
       newTyper( if (reporter.hasErrors) context makeSilent false else context )
     )
     import synthesizer._
-
-    def accessors = clazz.caseFieldAccessors
-    def arity     = accessors.size
+    
+    val originalAccessors = clazz.caseFieldAccessors
+    // private ones will have been renamed -- make sure they are entered
+    // in the original order.
+    def accessors = clazz.caseFieldAccessors sortBy { acc =>
+      originalAccessors indexWhere { orig => 
+        (acc.name == orig.name) || (acc.name startsWith (orig.name + "$").toTermName)
+      }
+    }
+    val arity = accessors.size
+    // If this is ProductN[T1, T2, ...], accessorLub is the lub of T1, T2, ..., .
+    // !!! Hidden behind -Xexperimental due to bummer type inference bugs.
+    // Refining from Iterator[Any] leads to types like
+    //
+    //    Option[Int] { def productIterator: Iterator[String] }
+    //
+    // appearing legitimately, but this breaks invariant places
+    // like Manifests and Arrays which are not robust and infer things
+    // which they shouldn't.
+    val accessorLub  = (
+      if (opt.experimental)
+        global.weakLub(accessors map (_.tpe.finalResultType))._1 match {
+          case RefinedType(parents, decls) if !decls.isEmpty => intersectionType(parents)
+          case tp                                            => tp
+        }
+      else AnyClass.tpe
+    )
 
     def forwardToRuntime(method: Symbol): Tree =
       forwardMethod(method, getMember(ScalaRunTimeModule, "_" + method.name toTermName))(This(clazz) :: _)
@@ -207,28 +238,14 @@ trait SyntheticMethods extends ast.TreeDSL {
         !m0.isDeferred && !m0.isSynthetic && (typeInClazz(m0) matches typeInClazz(meth))
       }
     }
-
+    def readConstantValue[T](name: String, default: T = null.asInstanceOf[T]): T = {
+      clazzMember(name.toTermName).info match {
+        case NullaryMethodType(ConstantType(Constant(value))) => value.asInstanceOf[T]
+        case _                                                => default
+      }
+    }
     def productIteratorMethod = {
-      // If this is ProductN[T1, T2, ...], accessorLub is the lub of T1, T2, ..., .
-      val accessorLub  = (
-        if (opt.experimental)
-          global.weakLub(accessors map (_.tpe.finalResultType))._1 match {
-            case RefinedType(parents, decls) if !decls.isEmpty => RefinedType(parents, EmptyScope)
-            case tp                                            => tp
-          }
-        else AnyClass.tpe
-      )
-      // !!! Hidden behind -Xexperimental due to bummer type inference bugs.
-      // Refining from Iterator[Any] leads to types like
-      //
-      //    Option[Int] { def productIterator: Iterator[String] }
-      //
-      // appearing legitimately, but this breaks invariant places
-      // like Manifests and Arrays which are not robust and infer things
-      // which they shouldn't.
-      val iteratorType = typeRef(NoPrefix, IteratorClass, List(accessorLub))
-
-      createMethod(nme.productIterator, iteratorType)(_ =>
+      createMethod(nme.productIterator, iteratorOfType(accessorLub))(_ =>
         gen.mkMethodCall(ScalaRunTimeModule, "typedProductIterator", List(accessorLub), List(This(clazz)))
       )
     }
@@ -241,13 +258,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     def perElementMethod(name: Name, returnType: Type)(caseFn: Symbol => Tree): Tree =
       createSwitchMethod(name, accessors.indices, returnType)(idx => caseFn(accessors(idx)))
 
-    def productElementNameMethod = perElementMethod(nme.productElement, StringClass.tpe)(x => LIT(x.name.toString))
-
-    /** The equality method for case modules:
-     *    def equals(that: Any) = this eq that
-     */
-    def equalsModuleMethod: Tree =
-      createMethod(Object_equals)(m => This(clazz) ANY_EQ methodArg(m, 0))
+    // def productElementNameMethod = perElementMethod(nme.productElementName, StringClass.tpe)(x => LIT(x.name.toString))
 
     /** The canEqual method for case classes.
      *    def canEqual(that: Any) = that.isInstanceOf[This]
@@ -294,28 +305,6 @@ trait SyntheticMethods extends ast.TreeDSL {
         argsBody
     }
 
-    def newAccessorMethod(ddef: DefDef): Tree = {
-      deriveMethod(ddef.symbol, name => context.unit.freshTermName(name + "$")) { newAcc =>
-        makeMethodPublic(newAcc)
-        newAcc resetFlag (ACCESSOR | PARAMACCESSOR)
-        ddef.rhs.duplicate
-      }
-    }
-
-    // A buffer collecting additional methods for the template body
-    val ts = new ListBuffer[Tree]
-
-    def makeAccessorsPublic() {
-      // If this case class has fields with less than public visibility, their getter at this
-      // point also has those permissions.  In that case we create a new, public accessor method
-      // with a new name and remove the CASEACCESSOR flag from the existing getter.  This complicates
-      // the retrieval of the case field accessors (see def caseFieldAccessors in Symbols.)
-      def needsService(s: Symbol) = s.isMethod && s.isCaseAccessor && !s.isPublic
-      for (ddef @ DefDef(_, _, _, _, _, _) <- templ.body; if needsService(ddef.symbol)) {
-        ts += newAccessorMethod(ddef)
-        ddef.symbol resetFlag CASEACCESSOR
-      }
-    }
     /** The _1, _2, etc. methods to implement ProductN.
      */
     def productNMethods = {
@@ -328,7 +317,7 @@ trait SyntheticMethods extends ast.TreeDSL {
       List(
         Product_productPrefix   -> (() => constantNullary(nme.productPrefix, clazz.name.decode)),
         Product_productArity    -> (() => constantNullary(nme.productArity, arity)),
-        Product_productElement  -> (() => perElementMethod(nme.productElement, AnyClass.tpe)(Ident)),
+        Product_productElement  -> (() => perElementMethod(nme.productElement, accessorLub)(Ident)),
         Product_iterator        -> (() => productIteratorMethod),
         Product_canEqual        -> (() => canEqualMethod)
         // This is disabled pending a reimplementation which doesn't add any
@@ -346,51 +335,80 @@ trait SyntheticMethods extends ast.TreeDSL {
     def caseObjectMethods = productMethods ++ Seq(
       Object_hashCode -> (() => constantMethod(nme.hashCode_, clazz.name.decode.hashCode)),
       Object_toString -> (() => constantMethod(nme.toString_, clazz.name.decode))
+      // Not needed, as reference equality is the default.
+      // Object_equals   -> (() => createMethod(Object_equals)(m => This(clazz) ANY_EQ methodArg(m, 0)))
     )
 
-    def synthesize() = {
-      if (clazz.isCase) {
-        makeAccessorsPublic()
-        val methods = if (clazz.isModuleClass) caseObjectMethods else caseClassMethods
+    /** If you serialize a singleton and then deserialize it twice,
+     *  you will have two instances of your singleton, unless you implement
+     *  the readResolve() method (see http://www.javaworld.com/javaworld/
+     *  jw-04-2003/jw-0425-designpatterns_p.html)
+     */
 
-        for ((m, impl) <- methods ; if !hasOverridingImplementation(m))
-          ts += impl()
-      }
+    // Only nested objects inside objects should get readResolve automatically.
+    // Otherwise, after de-serialization we get null references for lazy accessors
+    // (nested object -> lazy val + class def) since the bitmap gets serialized but
+    // the moduleVar not.
+    def needsReadResolve = (
+         clazz.isModuleClass
+      && clazz.owner.isModuleClass
+      && clazz.isSerializable
+      && !hasConcreteImpl(nme.readResolve)
+    )
 
-      /** If you serialize a singleton and then deserialize it twice,
-       *  you will have two instances of your singleton, unless you implement
-       *  the readResolve() method (see http://www.javaworld.com/javaworld/
-       *  jw-04-2003/jw-0425-designpatterns_p.html)
-       */
-      if (clazz.isModuleClass) {
-        // Only nested objects inside objects should get readResolve automatically.
-        // Otherwise, after de-serialization we get null references for lazy accessors
-        // (nested object -> lazy val + class def) since the bitmap gets serialized but
-        // the moduleVar not.
-        def needsReadResolve =
-          !hasConcreteImpl(nme.readResolve) && clazz.isSerializable && clazz.owner.isModuleClass
-
-        if (needsReadResolve) {
-          // PP: To this day I really can't figure out what this next comment is getting at:
-          // the !!! normally means there is something broken, but if so, what is it?
-          //
-          // !!! the synthetic method "readResolve" should be private, but then it is renamed !!!
-          ts += createMethod(nme.readResolve, Nil, ObjectClass.tpe) { m =>
-            m setFlag PROTECTED
-            REF(clazz.sourceModule)
-          }
-        }
-      }
-    }
-
-    try synthesize()
-    catch { case _: TypeError if reporter.hasErrors => () }
-
-    if (phase.id <= currentRun.typerPhase.id) {
-      treeCopy.Template(templ, templ.parents, templ.self,
-        if (ts.isEmpty) templ.body else templ.body ++ ts // avoid copying templ.body if empty
+    def synthesize(): List[Tree] = {
+      val methods = (
+        if (!clazz.isCase) Nil
+        else if (clazz.isModuleClass) caseObjectMethods
+        else caseClassMethods
       )
+      def impls = for ((m, impl) <- methods ; if !hasOverridingImplementation(m)) yield impl()
+      def extras = (
+        if (needsReadResolve) {
+          // Aha, I finally decoded the original comment.
+          // This method should be generated as private, but apparently if it is, then
+          // it is name mangled afterward.  (Wonder why that is.) So it's only protected.
+          // For sure special methods like "readResolve" should not be mangled.
+          List(createMethod(nme.readResolve, Nil, ObjectClass.tpe)(m => { m setFlag PRIVATE ; REF(clazz.sourceModule) }))
+        }
+        else Nil
+      )
+
+      try impls ++ extras
+      catch { case _: TypeError if reporter.hasErrors => Nil }
     }
-    else templ
+
+    /** If this case class has any less than public accessors,
+     *  adds new accessors at the correct locations to preserve ordering.
+     *  Note that this must be done before the other method synthesis
+     *  because synthesized methods need refer to the new symbols.
+     *  Care must also be taken to preserve the case accessor order.
+     */
+    def caseTemplateBody(): List[Tree] = {
+      val lb = ListBuffer[Tree]()
+      def isRewrite(sym: Symbol) = sym.isCaseAccessorMethod && !sym.isPublic
+      
+      for (ddef @ DefDef(_, _, _, _, _, _) <- templ.body ; if isRewrite(ddef.symbol)) {
+        val original = ddef.symbol
+        val newAcc = deriveMethod(ddef.symbol, name => context.unit.freshTermName(name + "$")) { newAcc =>
+          makeMethodPublic(newAcc)
+          newAcc resetFlag (ACCESSOR | PARAMACCESSOR)
+          ddef.rhs.duplicate
+        }
+        ddef.symbol resetFlag CASEACCESSOR
+        lb += logResult("case accessor new")(newAcc)
+      }
+
+      lb ++= templ.body ++= synthesize() toList
+    }
+
+    if (phase.id > currentRun.typerPhase.id) templ
+    else treeCopy.Template(templ, templ.parents, templ.self, 
+      if (clazz.isCase) caseTemplateBody()
+      else synthesize() match {
+        case Nil  => templ.body // avoiding unnecessary copy
+        case ms   => templ.body ++ ms
+      }
+    )
   }
 }

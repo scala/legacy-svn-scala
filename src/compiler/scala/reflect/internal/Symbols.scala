@@ -486,6 +486,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // def isVirtualTrait = hasFlag(DEFERRED) && isTrait
     def isLiftedMethod = isMethod && hasFlag(LIFTED)
     def isCaseClass    = isClass && isCase
+    
+    // unfortunately having the CASEACCESSOR flag does not actually mean you
+    // are a case accessor (you can also be a field.)
+    def isCaseAccessorMethod = isMethod && isCaseAccessor
 
     /** Does this symbol denote the primary constructor of its enclosing class? */
     final def isPrimaryConstructor =
@@ -999,7 +1003,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     protected def doCookJavaRawInfo(): Unit
 
-
     /** The type constructor of a symbol is:
      *  For a type symbol, the type corresponding to the symbol itself,
      *  excluding parameters.
@@ -1008,43 +1011,38 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def typeConstructor: Type =
       abort("typeConstructor inapplicable for " + this)
 
+    /** The logic approximately boils down to finding the most recent phase
+     *  which immediately follows any of namer, typer, or erasure.
+     */
+    private def unsafeTypeParamPhase = {
+      var ph = phase
+      while (ph.prev.keepsTypeParams)
+        ph = ph.prev
+
+      if (ph ne phase)
+        debuglog("checking unsafeTypeParams(" + this + ") at: " + phase + " reading at: " + ph)
+
+      ph
+    }
     /** The type parameters of this symbol, without ensuring type completion.
      *  assumption: if a type starts out as monomorphic, it will not acquire 
      *  type parameters later.
      */
     def unsafeTypeParams: List[Symbol] = 
-      if (isMonomorphicType) List() 
-      else {
-        val current = phase
-        try {
-          while ((phase.prev ne NoPhase) && phase.prev.keepsTypeParams) phase = phase.prev
-          if (phase ne current) phase = phase.next
-          if (settings.debug.value && settings.verbose.value && (phase ne current))
-            log("checking unsafeTypeParams(" + this + ") at: " + current + " reading at: " + phase)
-          rawInfo.typeParams
-        } finally {
-          phase = current
-        }
-      }
+      if (isMonomorphicType) Nil
+      else atPhase(unsafeTypeParamPhase)(rawInfo.typeParams)
 
     /** The type parameters of this symbol.
      *  assumption: if a type starts out as monomorphic, it will not acquire 
      *  type parameters later.
      */
     def typeParams: List[Symbol] =
-      if (isMonomorphicType) 
-        List() 
-      else { 
-        if (validTo == NoPeriod) {
-          val current = phase
-          try {
-            phase = phaseOf(infos.validFrom)
-            rawInfo.load(this)
-          } finally {
-            phase = current
-          }
-        }
-        rawInfo.typeParams 
+      if (isMonomorphicType) Nil
+      else {
+        if (validTo == NoPeriod)
+          atPhase(phaseOf(infos.validFrom))(rawInfo load this)
+        
+        rawInfo.typeParams
       }
     
     /** The value parameter sections of this symbol.
@@ -1281,39 +1279,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def thisType: Type = NoPrefix
 
-    /** Return every accessor of a primary constructor parameter in this case class.
-     *  The scope declarations may be out of order because fields with less than private
-     *  access are first given a regular getter, then a new renamed getter which comes
-     *  later in the declaration list.  For this reason we have to pinpoint the
-     *  right accessors by starting with the original fields (which will be in the right
-     *  order) and looking for getters with applicable names.  The getters may have the
-     *  standard name "foo" or may have been renamed to "foo$\d+" in SyntheticMethods.
-     *  See ticket #1373.
+    /** For a case class, the symbols of the accessor methods, one for each
+     *  argument in the first parameter list of the primary constructor.
+     *  The empty list for all other classes.
      */
-    final def caseFieldAccessors: List[Symbol] = {
-      val allWithFlag = info.decls.toList filter (_.isCaseAccessor)
-      val (accessors, fields) = allWithFlag partition (_.isMethod)
-      
-      def findAccessor(field: Symbol): Symbol = {
-        // There is another renaming the field may have undergone, for instance as in
-        // ticket #2175: case class Property[T](private var t: T), t becomes Property$$t.
-        // So we use the original name everywhere.
-        val getterName    = nme.getterName(field.originalName)
-        
-        // Note this is done in two passes intentionally, to ensure we pick up the original
-        // getter if present before looking for the renamed getter.
-        def origGetter    = accessors find (_.originalName == getterName)
-        def renamedGetter = accessors find (_.originalName startsWith (getterName + "$"))
-        val accessorName  = origGetter orElse renamedGetter
-        
-        // This fails more gracefully rather than throw an Error as it used to because
-        // as seen in #2625, we can reach this point with an already erroneous tree.
-        accessorName getOrElse NoSymbol
-        // throw new Error("Could not find case accessor for %s in %s".format(field, this))
-      }
-      
-      fields map findAccessor
-    }
+    final def caseFieldAccessors: List[Symbol] =
+      info.decls filter (_.isCaseAccessorMethod) toList
 
     final def constrParamAccessors: List[Symbol] =
       info.decls.toList filter (sym => !sym.isMethod && sym.isParamAccessor)

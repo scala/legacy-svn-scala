@@ -1116,14 +1116,14 @@ trait Typers extends Modes with Adaptations {
       namer.enterValueParams(context.owner, vparamss)
       typed(cbody)
     }
-    
+
     private def validateNoCaseAncestor(clazz: Symbol) = {
       if (!phase.erasedTypes) {
         for (ancestor <- clazz.ancestors find (_.isCase)) {
           unit.error(clazz.pos, ( 
-            "case class `%s' has case ancestor `%s'. Case-to-case inheritance is prohibited."+
-            " To overcome this limitation use extractors to pattern match on non-leaf nodes."
-          ).format(clazz, ancestor))
+            "case %s has case ancestor %s, but case-to-case inheritance is prohibited."+
+            " To overcome this limitation, use extractors to pattern match on non-leaf nodes."
+          ).format(clazz, ancestor.fullName))
         }
       }
     }
