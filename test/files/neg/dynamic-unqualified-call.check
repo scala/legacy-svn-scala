@@ -1,0 +1,12 @@
+dynamic-unqualified-call.scala:3: error: not found: value nonExistingMethod
+  nonExistingMethod()
+  ^
+one error found
+dynamic-unqualified-call.scala:3: error: not found: value nonExistingMethod
+  nonExistingMethod()
+  ^
+one error found
+dynamic-unqualified-call.scala:3: error: not found: value nonExistingMethod
+  nonExistingMethod()
+  ^
+one error found
