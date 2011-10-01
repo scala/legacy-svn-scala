@@ -15,6 +15,10 @@ package scala
  *  to `x.applyDynamic("meth")(args)`.
  *
  *  Calls `x.meth()` and `x.meth` are both rewritten to `x("meth")()`.
+ *  Unqualified calls (`meth(args)`) are never rewritten.
+ *
+ *  At least one applyDynamic method must be defined as soon as this
+ *  trait is mixed in -- even into abstract classes or traits.
  *
  *  As of scala 2.9, `scalac` must receive the `-Xexperimental` option for
  *  `Dynamic` to receive this treatment.

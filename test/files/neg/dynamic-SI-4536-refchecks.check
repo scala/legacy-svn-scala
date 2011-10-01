@@ -1,3 +1,16 @@
+dynamic-SI-4536-refchecks.scala:1: error: object DynamicObject does not define member `applyDynamic' as required by trait scala.Dynamic
+object DynamicObject extends Dynamic
+       ^
+dynamic-SI-4536-refchecks.scala:2: error: class DynamicClass does not define member `applyDynamic' as required by trait scala.Dynamic
+class DynamicClass extends Dynamic
+      ^
+dynamic-SI-4536-refchecks.scala:3: error: class DynamicAbstractClass does not define member `applyDynamic' as required by trait scala.Dynamic
+abstract class DynamicAbstractClass extends Dynamic
+               ^
+dynamic-SI-4536-refchecks.scala:4: error: trait DynamicTrait does not define member `applyDynamic' as required by trait scala.Dynamic
+trait DynamicTrait extends Dynamic
+      ^
+four errors found
 dynamic-SI-4536-refchecks.scala:1: error: object dynamicObject does not define member `applyDynamic' as required by trait scala.Dynamic
 object dynamicObject extends Dynamic
        ^

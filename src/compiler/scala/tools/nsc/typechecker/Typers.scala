@@ -3658,7 +3658,27 @@ trait Typers extends Modes with Adaptations {
           if (qual1 ne qual) return typed(treeCopy.Select(tree, qual1, name), mode, pt)
         }
         
-        if (!reallyExists(sym)) {          
+        def applyDynamicInvocation: Option[Tree] = {
+          if (settings.Xexperimental.value && (qual.tpe.widen.typeSymbol isNonBottomSubClass DynamicClass)) {
+            if (name == nme.applyDynamic) {
+              // Prevents bug SI-4536
+              dynamicCallNotPossibleError(tree.pos, qual, name)
+            }
+            else {
+              var dynInvoke = Apply(Select(qual, nme.applyDynamic), List(Literal(Constant(name.decode))))
+
+              context.tree match {
+                case Apply(tree1, args) if tree1 eq tree =>;
+                case _ =>
+                  dynInvoke = Apply(dynInvoke, List())
+              }
+              return Some(typed1(util.trace("dynatype: ")(atPos(tree.pos)(dynInvoke)), mode, pt))
+            }
+          }
+          None
+        }
+        
+        if (!reallyExists(sym)) {
           if (context.owner.toplevelClass.isJavaDefined && name.isTypeName) {
             val tree1 = atPos(tree.pos) { gen.convertToSelectFromType(qual, name)  }
             if (tree1 != EmptyTree) return typed1(tree1, mode, pt)
@@ -3666,21 +3686,9 @@ trait Typers extends Modes with Adaptations {
 
           // try to expand according to Dynamic rules.
 
-          if (settings.Xexperimental.value && (qual.tpe.widen.typeSymbol isNonBottomSubClass DynamicClass)) {
-            if (name == nme.applyDynamic) { // Prevents bug SI-4536
-              dynamicCallNotPossibleError(tree.pos, qual, name)
-            }
-            else {
-              var dynInvoke = Apply(Select(qual, nme.applyDynamic), List(Literal(Constant(name.decode))))
-
-              context.tree match {
-                case Apply(tree1, args) if tree1 eq tree =>
-                  ;
-                case _ =>
-                  dynInvoke = Apply(dynInvoke, List())
-              }
-              return typed1(util.trace("dynatype: ")(atPos(tree.pos)(dynInvoke)), mode, pt)
-            }
+          applyDynamicInvocation match {
+            case Some(invocation) => return invocation
+            case None =>
           }
 
           if (settings.debug.value) {
@@ -3746,7 +3754,10 @@ trait Typers extends Modes with Adaptations {
                 try adaptToMemberWithArgs(tree, qual, name, mode)
                 catch { case _: TypeError => qual }
               if (qual1 ne qual) typed(Select(qual1, name) setPos tree.pos, mode, pt)
-              else accErr.emit()
+              else applyDynamicInvocation match {
+                case Some(invocation) => return invocation
+                case None => accErr.emit()
+              }
             case _ =>
               result
           }

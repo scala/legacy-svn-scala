@@ -1,3 +1,25 @@
+object DynamicObject extends Dynamic {
+  def applyDynamic(m: String)() = ()
+  this.foo()
+}
+class DynamicClass extends Dynamic {
+  def applyDynamic(m: String)() = ()
+  this.bar
+  dynamicObject.bar()
+}
+abstract class DynamicAbstractClass extends Dynamic {
+  def applyDynamic(m: String)(args: Any*): Int
+  this.pili(1, new dynamicClass, "hello");
+}
+trait DynamicTrait extends Dynamic {
+  def applyDynamic(m: String)(args: Any*) = 1
+  def two = 2
+  this.mili(1,2,3)
+  two
+}
+object DynamicMixin extends DynamicAbstractClass with dynamicTrait {
+  this.foo(None)
+}
 object dynamicObject extends Dynamic {
   def applyDynamic(m: String)() = ()
   this.foo()
