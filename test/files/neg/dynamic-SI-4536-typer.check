@@ -1,0 +1,4 @@
+dynamic-SI-4536-typer.scala:3: error: dynamic method invocation is not possible, as value applyDynamic is not a member of Dynamic
+  x.meth
+    ^
+one error found

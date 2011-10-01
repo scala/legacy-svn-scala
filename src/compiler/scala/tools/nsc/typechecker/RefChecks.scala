@@ -630,7 +630,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           if (!parents.isEmpty && parents.head.typeSymbol.hasFlag(ABSTRACT)) 
             checkNoAbstractDecls(parents.head.typeSymbol)
         }
-        
+
         checkNoAbstractMembers()
         if (abstractErrors.isEmpty)
           checkNoAbstractDecls(clazz)
@@ -644,6 +644,13 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           if (overridden.isFinal)
             unit.error(decl.pos, "trait cannot redefine final method from class AnyRef")
         }
+      }
+
+      // Check that all classes extending Dynamic define applyDynamic, even if abstract
+      if (settings.Xexperimental.value &&
+          (clazz.tpe.widen.typeSymbol isNonBottomSubClass DynamicClass) &&
+          ! clazz.tpe.nonPrivateMembersAdmitting(VBRIDGE).exists(_.name == nme.applyDynamic)) {
+        unit.error(clazz.pos, clazz+" does not define member `applyDynamic' as required by trait scala.Dynamic")
       }
 
       /** Returns whether there is a symbol declared in class `inclazz`
