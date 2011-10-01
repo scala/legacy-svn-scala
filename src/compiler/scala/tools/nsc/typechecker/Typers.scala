@@ -3667,16 +3667,22 @@ trait Typers extends Modes with Adaptations {
           // try to expand according to Dynamic rules.
 
           if (settings.Xexperimental.value && (qual.tpe.widen.typeSymbol isNonBottomSubClass DynamicClass)) {
-            var dynInvoke = Apply(Select(qual, nme.applyDynamic), List(Literal(Constant(name.decode))))
-            context.tree match {
-              case Apply(tree1, args) if tree1 eq tree => 
-                ;
-              case _ => 
-                dynInvoke = Apply(dynInvoke, List())
+            if (name == nme.applyDynamic) { // Prevents bug SI-4536
+              dynamicCallNotPossibleError(tree.pos, qual, name)
             }
-            return typed1(util.trace("dynatype: ")(dynInvoke), mode, pt)
+            else {
+              var dynInvoke = Apply(Select(qual, nme.applyDynamic), List(Literal(Constant(name.decode))))
+
+              context.tree match {
+                case Apply(tree1, args) if tree1 eq tree =>
+                  ;
+                case _ =>
+                  dynInvoke = Apply(dynInvoke, List())
+              }
+              return typed1(util.trace("dynatype: ")(atPos(tree.pos)(dynInvoke)), mode, pt)
+            }
           }
-                  
+
           if (settings.debug.value) {
             log(
               "qual = "+qual+":"+qual.tpe+

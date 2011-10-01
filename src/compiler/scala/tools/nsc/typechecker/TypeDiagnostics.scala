@@ -114,7 +114,11 @@ trait TypeDiagnostics {
   }
   def notAMemberError(pos: Position, qual: Tree, name: Name) =
     context.error(pos, notAMemberMessage(pos, qual, name))
-  
+
+  def dynamicCallNotPossibleError(pos: Position, qual: Tree, name: Name) =
+    context.error(pos, withAddendum(qual.pos)(
+      "dynamic method invocation is not possible, as "+notAMemberMessage(pos, qual, name)))
+
   /** Only prints the parameter names if they're not synthetic,
    *  since "x$1: Int" does not offer any more information than "Int".
    */
