@@ -5,14 +5,9 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
+package scala.beans.meta
 
-
-package scala.reflect
-
-/** This annotation indicates that bean information should
- *  <strong>not</strong> be generated for the val, var, or def that it is
- *  attached to.  
- *
- *  @author Ross Judson (rjudson@managedobjects.com)
+/**
+ * Consult the documentation in package [[scala.beans.meta]].
  */
-class BeanInfoSkip extends annotation.Annotation
+final class getter extends annotation.StaticAnnotation

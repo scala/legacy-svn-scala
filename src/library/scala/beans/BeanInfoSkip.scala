@@ -5,9 +5,14 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
-package scala.annotation.target
 
-/**
- * Consult the documentation in package [[scala.annotation.target]].
+
+package scala.beans
+
+/** This annotation indicates that bean information should
+ *  <strong>not</strong> be generated for the val, var, or def that it is
+ *  attached to.  
+ *
+ *  @author Ross Judson (rjudson@managedobjects.com)
  */
-final class beanGetter extends annotation.StaticAnnotation
+class BeanInfoSkip extends annotation.Annotation
