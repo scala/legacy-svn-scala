@@ -151,12 +151,6 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
 
 // Override checking ------------------------------------------------------------
 
-    def hasRepeatedParam(tp: Type): Boolean = tp match {
-      case MethodType(formals, restpe) => isScalaVarArgs(formals) || hasRepeatedParam(restpe)
-      case PolyType(_, restpe)         => hasRepeatedParam(restpe)
-      case _                           => false
-    }
-
     /** Add bridges for vararg methods that extend Java vararg methods
      */
     def addVarargBridges(clazz: Symbol): List[Tree] = {
@@ -768,6 +762,9 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
 
       /** Validate variance of info of symbol `base` */
       private def validateVariance(base: Symbol) {
+        // A flag for when we're in a refinement, meaning method parameter types
+        // need to be checked.
+        var inRefinement = false
 
         def varianceString(variance: Int): String =
           if (variance == 1) "covariant"
@@ -851,12 +848,17 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             validateVariances(parents, variance)
           case RefinedType(parents, decls) =>
             validateVariances(parents, variance)
+            val saved = inRefinement
+            inRefinement = true
             for (sym <- decls)
               validateVariance(sym.info, if (sym.isAliasType) NoVariance else variance)
+            inRefinement = saved
           case TypeBounds(lo, hi) =>
             validateVariance(lo, -variance)
             validateVariance(hi, variance)
           case MethodType(formals, result) =>
+            if (inRefinement)
+              validateVariances(formals map (_.tpe), -variance)
             validateVariance(result, variance)
           case NullaryMethodType(result) =>
             validateVariance(result, variance)
@@ -893,9 +895,10 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           // ModuleDefs need not be considered because they have been eliminated already
           case ValDef(_, _, _, _) =>
             validateVariance(tree.symbol)
-          case DefDef(_, _, tparams, vparamss, tpt, rhs) =>
+          case DefDef(_, _, tparams, vparamss, _, _) =>
             validateVariance(tree.symbol)
-            traverseTrees(tparams); traverseTreess(vparamss)
+            traverseTrees(tparams)
+            traverseTreess(vparamss)
           case Template(_, _, _) =>
             super.traverse(tree)
           case _ =>
@@ -1100,14 +1103,13 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
      */
     private def eliminateModuleDefs(tree: Tree): List[Tree] = {
       val ModuleDef(mods, name, impl) = tree
-      val sym = tree.symbol
-
-      val classSym        = sym.moduleClass
-      val cdef            = ClassDef(mods | MODULE, name.toTypeName, Nil, impl) setSymbol classSym setType NoType
+      val sym      = tree.symbol
+      val classSym = sym.moduleClass
+      val cdef     = ClassDef(mods | MODULE, name.toTypeName, Nil, impl) setSymbol classSym setType NoType
 
       def findOrCreateModuleVar() = localTyper.typedPos(tree.pos) {
         lazy val createModuleVar = gen.mkModuleVarDef(sym)
-        sym.owner.info.decl(nme.moduleVarName(sym.name.toTermName)) match {
+        sym.enclClass.info.decl(nme.moduleVarName(sym.name.toTermName)) match {
           // In case we are dealing with local symbol then we already have
           // to correct error with forward reference
           case NoSymbol => createModuleVar
@@ -1117,7 +1119,9 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
       def createStaticModuleAccessor() = atPhase(phase.next) {
         val method = (
           sym.owner.newMethod(sym.pos, sym.name.toTermName)
-          setFlag (sym.flags | STABLE) resetFlag MODULE setInfo NullaryMethodType(sym.moduleClass.tpe)
+            setFlag (sym.flags | STABLE)
+            resetFlag MODULE
+            setInfo NullaryMethodType(sym.moduleClass.tpe)
         )
         sym.owner.info.decls enter method
         localTyper.typedPos(tree.pos)(gen.mkModuleAccessDef(method, sym))
@@ -1180,8 +1184,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         else {
           val lazySym = tree.symbol.lazyAccessorOrSelf
           if (lazySym.isLocal && index <= currentLevel.maxindex) {
-            if (settings.debug.value)
-              Console.println(currentLevel.refsym)
+            debuglog("refsym = " + currentLevel.refsym)
             unit.error(currentLevel.refpos, "forward reference extends over definition of " + lazySym)
           }
           List(tree1)

@@ -5,15 +5,9 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
+package scala.beans.meta
 
-
-package scala.reflect
-
-/** Provides a short description that will be included when generating
- *  bean information. This annotation can be attached to the bean itself,
- *  or to any member. 
- *
- *  @author Ross Judson (rjudson@managedobjects.com)
+/**
+ * Consult the documentation in package [[scala.beans.meta]].
  */
-class BeanDescription(val description: String) extends annotation.Annotation
-
+final class field extends annotation.StaticAnnotation

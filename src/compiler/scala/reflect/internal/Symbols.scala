@@ -395,21 +395,25 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isAnonymousFunction = isSynthetic && (name containsName tpnme.ANON_FUN_NAME)
     final def isAnonOrRefinementClass = isAnonymousClass || isRefinementClass
 
-    final def isPackageObject = isModule && name == nme.PACKAGEkw && owner.isPackageClass
-    final def isPackageObjectClass = isModuleClass && name.toTermName == nme.PACKAGEkw && owner.isPackageClass
-    final def definedInPackage  = owner.isPackageClass || owner.isPackageObjectClass
+    // A package object or its module class
+    final def isPackageObjectOrClass = name == nme.PACKAGE || name == tpnme.PACKAGE
+    final def isPackageObject        = name == nme.PACKAGE && owner.isPackageClass
+    final def isPackageObjectClass   = name == tpnme.PACKAGE && owner.isPackageClass
+
+    final def isDefinedInPackage  = effectiveOwner.isPackageClass
     final def isJavaInterface = isJavaDefined && isTrait
     final def needsFlatClasses: Boolean = phase.flatClasses && rawowner != NoSymbol && !rawowner.isPackageClass
 
-    // not printed as prefixes
-    final def isPredefModule      = this == PredefModule
-    final def isScalaPackage      = (this == ScalaPackage) || (isPackageObject && owner == ScalaPackageClass)
-    final def isScalaPackageClass = skipPackageObject == ScalaPackageClass
-    def inDefaultNamespace        = owner.isPredefModule || owner.isScalaPackageClass
-    
-    /** If this is a package object or package object class, its owner: otherwise this.
+    // In java.lang, Predef, or scala package/package object
+    def isInDefaultNamespace = UnqualifiedOwners(effectiveOwner)
+
+    /** The owner, skipping package objects.
      */
-    final def skipPackageObject: Symbol = if (isPackageObjectClass) owner else this
+    def effectiveOwner = owner.skipPackageObject
+
+    /** If this is a package object or its implementing class, its owner: otherwise this.
+     */
+    final def skipPackageObject: Symbol = if (isPackageObjectOrClass) owner else this
     
     /** If this is a constructor, its owner: otherwise this.
      */
@@ -418,11 +422,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Conditions where we omit the prefix when printing a symbol, to avoid
      *  unpleasantries like Predef.String, $iw.$iw.Foo and <empty>.Bippy.
      */
-    final def printWithoutPrefix = !settings.debug.value && (
-      isScalaPackageClass || isPredefModule || isEffectiveRoot || isAnonOrRefinementClass ||
-      nme.isReplWrapperName(name) // not isInterpreterWrapper due to nesting
+    final def isOmittablePrefix = !settings.debug.value && (
+         UnqualifiedOwners(skipPackageObject)
+      || isEmptyPrefix
     )
-    
+    def isEmptyPrefix = (
+         isEffectiveRoot                      // has no prefix for real, <empty> or <root>
+      || isAnonOrRefinementClass              // has uninteresting <anon> or <refinement> prefix
+      || nme.isReplWrapperName(name)          // has ugly $iw. prefix (doesn't call isInterpreterWrapper due to nesting)
+    )
     def isFBounded = info.baseTypeSeq exists (_ contains this)
     
     /** Is symbol a monomorphic type?
@@ -445,8 +453,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
          info.baseClasses.exists(p => p == SerializableClass || p == JavaSerializableClass)
       || hasAnnotation(SerializableAttr) // last part can be removed, @serializable annotation is deprecated
     )
-    def isDeprecated        = hasAnnotation(DeprecatedAttr)
     def hasBridgeAnnotation = hasAnnotation(BridgeClass)
+    def isDeprecated        = hasAnnotation(DeprecatedAttr)
     def deprecationMessage  = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 0)
     def deprecationVersion  = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 1)
     def deprecatedParamName = getAnnotation(DeprecatedNameAttr) flatMap (_ symbolArg 0)
@@ -486,6 +494,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // def isVirtualTrait = hasFlag(DEFERRED) && isTrait
     def isLiftedMethod = isMethod && hasFlag(LIFTED)
     def isCaseClass    = isClass && isCase
+    
+    // unfortunately having the CASEACCESSOR flag does not actually mean you
+    // are a case accessor (you can also be a field.)
+    def isCaseAccessorMethod = isMethod && isCaseAccessor
 
     /** Does this symbol denote the primary constructor of its enclosing class? */
     final def isPrimaryConstructor =
@@ -719,8 +731,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** The decoded name of the symbol, e.g. `==` instead of `\$eq\$eq`.
      */
-    def decodedName: String = stripLocalSuffix(NameTransformer.decode(encodedName))
+    def decodedName: String = stripNameString(NameTransformer.decode(encodedName))
     
+    /** Either "$" or "" depending on whether this is a module class.
+     */
     def moduleSuffix: String = (
       if (hasModuleFlag && !isMethod && !isImplClass && !isJavaDefined) nme.MODULE_SUFFIX_STRING
       else ""
@@ -728,22 +742,32 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** These should be moved somewhere like JavaPlatform.
      */
-    def javaSimpleName = stripLocalSuffix("" + simpleName) + moduleSuffix
-    def javaBinaryName = fullName('/') + moduleSuffix
-    def javaClassName  = fullName('.') + moduleSuffix
+    def javaSimpleName = ("" + simpleName).trim + moduleSuffix
+    def javaBinaryName = fullNameInternal('/') + moduleSuffix
+    def javaClassName  = fullNameInternal('.') + moduleSuffix
 
     /** The encoded full path name of this symbol, where outer names and inner names
      *  are separated by `separator` characters.
      *  Never translates expansions of operators back to operator symbol.
      *  Never adds id.
+     *  Drops package objects.
      */
-    final def fullName(separator: Char): String = stripLocalSuffix {
+    final def fullName(separator: Char): String = stripNameString(fullNameInternal(separator))
+
+    /** Doesn't drop package objects, for those situations (e.g. classloading)
+     *  where the true path is needed.
+     */
+    private def fullNameInternal(separator: Char): String = (
       if (isRoot || isRootPackage || this == NoSymbol) this.toString
       else if (owner.isEffectiveRoot) encodedName
-      else owner.enclClass.fullName(separator) + separator + encodedName
-    }
+      else effectiveOwner.enclClass.fullName(separator) + separator + encodedName
+    )
 
-    private def stripLocalSuffix(s: String) = s stripSuffix nme.LOCAL_SUFFIX_STRING
+    /** Strip package objects and any local suffix.
+     */
+    private def stripNameString(s: String) = 
+      if (settings.debug.value) s
+      else s stripSuffix nme.LOCAL_SUFFIX_STRING
 
     /** The encoded full path name of this symbol, where outer names and inner names
      *  are separated by periods.
@@ -999,7 +1023,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     protected def doCookJavaRawInfo(): Unit
 
-
     /** The type constructor of a symbol is:
      *  For a type symbol, the type corresponding to the symbol itself,
      *  excluding parameters.
@@ -1008,43 +1031,38 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def typeConstructor: Type =
       abort("typeConstructor inapplicable for " + this)
 
+    /** The logic approximately boils down to finding the most recent phase
+     *  which immediately follows any of namer, typer, or erasure.
+     */
+    private def unsafeTypeParamPhase = {
+      var ph = phase
+      while (ph.prev.keepsTypeParams)
+        ph = ph.prev
+
+      if (ph ne phase)
+        debuglog("checking unsafeTypeParams(" + this + ") at: " + phase + " reading at: " + ph)
+
+      ph
+    }
     /** The type parameters of this symbol, without ensuring type completion.
      *  assumption: if a type starts out as monomorphic, it will not acquire 
      *  type parameters later.
      */
     def unsafeTypeParams: List[Symbol] = 
-      if (isMonomorphicType) List() 
-      else {
-        val current = phase
-        try {
-          while ((phase.prev ne NoPhase) && phase.prev.keepsTypeParams) phase = phase.prev
-          if (phase ne current) phase = phase.next
-          if (settings.debug.value && settings.verbose.value && (phase ne current))
-            log("checking unsafeTypeParams(" + this + ") at: " + current + " reading at: " + phase)
-          rawInfo.typeParams
-        } finally {
-          phase = current
-        }
-      }
+      if (isMonomorphicType) Nil
+      else atPhase(unsafeTypeParamPhase)(rawInfo.typeParams)
 
     /** The type parameters of this symbol.
      *  assumption: if a type starts out as monomorphic, it will not acquire 
      *  type parameters later.
      */
     def typeParams: List[Symbol] =
-      if (isMonomorphicType) 
-        List() 
-      else { 
-        if (validTo == NoPeriod) {
-          val current = phase
-          try {
-            phase = phaseOf(infos.validFrom)
-            rawInfo.load(this)
-          } finally {
-            phase = current
-          }
-        }
-        rawInfo.typeParams 
+      if (isMonomorphicType) Nil
+      else {
+        if (validTo == NoPeriod)
+          atPhase(phaseOf(infos.validFrom))(rawInfo load this)
+        
+        rawInfo.typeParams
       }
     
     /** The value parameter sections of this symbol.
@@ -1281,39 +1299,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def thisType: Type = NoPrefix
 
-    /** Return every accessor of a primary constructor parameter in this case class.
-     *  The scope declarations may be out of order because fields with less than private
-     *  access are first given a regular getter, then a new renamed getter which comes
-     *  later in the declaration list.  For this reason we have to pinpoint the
-     *  right accessors by starting with the original fields (which will be in the right
-     *  order) and looking for getters with applicable names.  The getters may have the
-     *  standard name "foo" or may have been renamed to "foo$\d+" in SyntheticMethods.
-     *  See ticket #1373.
+    /** For a case class, the symbols of the accessor methods, one for each
+     *  argument in the first parameter list of the primary constructor.
+     *  The empty list for all other classes.
      */
-    final def caseFieldAccessors: List[Symbol] = {
-      val allWithFlag = info.decls.toList filter (_.isCaseAccessor)
-      val (accessors, fields) = allWithFlag partition (_.isMethod)
-      
-      def findAccessor(field: Symbol): Symbol = {
-        // There is another renaming the field may have undergone, for instance as in
-        // ticket #2175: case class Property[T](private var t: T), t becomes Property$$t.
-        // So we use the original name everywhere.
-        val getterName    = nme.getterName(field.originalName)
-        
-        // Note this is done in two passes intentionally, to ensure we pick up the original
-        // getter if present before looking for the renamed getter.
-        def origGetter    = accessors find (_.originalName == getterName)
-        def renamedGetter = accessors find (_.originalName startsWith (getterName + "$"))
-        val accessorName  = origGetter orElse renamedGetter
-        
-        // This fails more gracefully rather than throw an Error as it used to because
-        // as seen in #2625, we can reach this point with an already erroneous tree.
-        accessorName getOrElse NoSymbol
-        // throw new Error("Could not find case accessor for %s in %s".format(field, this))
-      }
-      
-      fields map findAccessor
-    }
+    final def caseFieldAccessors: List[Symbol] =
+      info.decls filter (_.isCaseAccessorMethod) toList
 
     final def constrParamAccessors: List[Symbol] =
       info.decls.toList filter (sym => !sym.isMethod && sym.isParamAccessor)
@@ -1387,11 +1378,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** The package containing this symbol, or NoSymbol if there
      *  is not one. */
-    def enclosingPackage: Symbol = {
-      val packSym = enclosingPackageClass
-      if (packSym != NoSymbol) packSym.companionModule
-      else packSym
-    }
+    def enclosingPackage: Symbol = enclosingPackageClass.companionModule
 
     /** Return the original enclosing method of this symbol. It should return
      *  the same thing as enclMethod when called before lambda lift,
@@ -1449,8 +1436,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Is this symbol defined in the same scope and compilation unit as `that` symbol? */
     def isCoDefinedWith(that: Symbol) = (
       (this.rawInfo ne NoType) &&
-      (this.owner == that.owner) && {
-        !this.owner.isPackageClass ||
+      (this.effectiveOwner == that.effectiveOwner) && {
+        !this.effectiveOwner.isPackageClass ||
         (this.sourceFile eq null) ||
         (that.sourceFile eq null) ||
         (this.sourceFile == that.sourceFile) || {
@@ -1813,11 +1800,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  to the name of the owner.
      */
     def hasMeaninglessName = (
-         isSetterParameter          // x$1
-      || isClassConstructor         // this
-      || isPackageObject            // package
-      || isPackageObjectClass       // package$
-      || isRefinementClass          // <refinement>
+         isSetterParameter        // x$1
+      || isClassConstructor       // this
+      || isRefinementClass        // <refinement>
+      || (name == nme.PACKAGE)    // package
     )
 
     /** String representation of symbol's simple name.
@@ -1841,9 +1827,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** String representation of location.
      */
     def ownsString = {
-      val owns = owner.skipPackageObject
-      if (owns.isClass && !owns.printWithoutPrefix && !isScalaPackageClass) "" + owns
-      else ""
+      val owns = effectiveOwner
+      if (owns.isClass && !owns.isEmptyPrefix) "" + owns else ""
     }
       
     /** String representation of location, plus a preposition.  Doesn't do much,
@@ -1992,7 +1977,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     protected def doCookJavaRawInfo() {
       def cook(sym: Symbol) {
-        require(sym hasFlag JAVA)
+        require(sym.isJavaDefined, sym)
         // @M: I think this is more desirable, but Martin prefers to leave raw-types as-is as much as possible
         // object rawToExistentialInJava extends TypeMap {
         //   def apply(tp: Type): Type = tp match {
@@ -2014,9 +1999,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
       if (isJavaDefined)
         cook(this)
-      else if (hasFlag(OVERLOADED))
+      else if (isOverloaded)
         for (sym2 <- alternatives)
-          if (sym2 hasFlag JAVA)
+          if (sym2.isJavaDefined)
             cook(sym2)
     }    
   }
