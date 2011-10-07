@@ -19,10 +19,11 @@ object partest {
   lazy val partestDirs      = SettingKey[Map[String,File]]("partest-dirs", "The map of partest test type to directory associated with that test type")
 
   lazy val partestTaskSettings: Seq[Setting[_]] = Seq(
+    javaOptions in partestRunner := Seq("-Xmx512M -Xms256M"),
     partestDirs <<= baseDirectory apply { bd =>
       partestTestTypes map (kind => kind -> (bd / "test" / "files" / kind)) toMap
     },
-    partestRunner <<= partestRunnerTask(fullClasspath in Runtime),
+    partestRunner <<= partestRunnerTask(fullClasspath in Runtime, javaOptions in partestRunner),
     partestTests <<= partestTestsTask(partestDirs),
     runPartest <<= runPartestTask(partestRunner, partestTests, scalacOptions in Test),
     runPartestSingle <<= runSingleTestTask(partestRunner, partestDirs, scalacOptions in Test),
@@ -114,11 +115,11 @@ object partest {
     }
   }
 
-  def partestRunnerTask(classpath: ScopedTask[Classpath]): Project.Initialize[Task[PartestRunner]] =
-   classpath map (cp => new PartestRunner(Build.data(cp)))
+  def partestRunnerTask(classpath: ScopedTask[Classpath], javacOptions: ScopedSetting[Seq[String]]): Project.Initialize[Task[PartestRunner]] =
+   (classpath, javacOptions) map ((cp, opts) => new PartestRunner(Build.data(cp), opts mkString " "))
 }
 
-class PartestRunner(classpath: Seq[File]) {
+class PartestRunner(classpath: Seq[File], javaOpts: String) {
   // Classloader that does *not* have this as parent, for differing Scala version.
   lazy val classLoader = new java.net.URLClassLoader(classpath.map(_.toURI.toURL).toArray, null)
   lazy val (mainClass, mainMethod) = try {
@@ -128,6 +129,8 @@ class PartestRunner(classpath: Seq[File]) {
   }
   lazy val classPathArgs = Seq("-cp", classpath.map(_.getAbsoluteFile).mkString(java.io.File.pathSeparator))
   def run(args: Array[String]): java.util.Map[String,Int] = try {
+    // TODO - undo this settings after running.  Also globals are bad.
+    System.setProperty("partest.java_opts", javaOpts)
     val allArgs = (classPathArgs ++ args).toArray
     mainMethod.invoke(null, allArgs).asInstanceOf[java.util.Map[String,Int]]
   } catch {
