@@ -503,7 +503,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         val extraSpecializedMixins = specializedParents(clazz.info.parents.map(applyContext))
         if (extraSpecializedMixins.nonEmpty)
           debuglog("specializeClass on " + clazz + " founds extra specialized mixins: " + extraSpecializedMixins.mkString(", "))
-
+        // If the class being specialized has a self-type, we have to propagate
+        // that information to the specialized subclasses or it vanishes.
+        if (clazz.thisSym ne clazz) {
+          cls.typeOfThis = applyContext(clazz.typeOfThis)
+          log("Rewriting self-type in specialized class: " + clazz.typeOfThis + " => " + cls.typeOfThis)
+        }
         val infoType = ClassInfoType(parents ::: extraSpecializedMixins, decls1, cls)
         if (newClassTParams.isEmpty) infoType else PolyType(newClassTParams, infoType)
       }
@@ -987,7 +992,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    */
   private def subst(env: TypeEnv, tpe: Type): Type = {
     class FullTypeMap(from: List[Symbol], to: List[Type]) extends SubstTypeMap(from, to) with AnnotationFilter {
-      def keepAnnotation(annot: AnnotationInfo) = annot.atp.typeSymbol != uncheckedVarianceClass
+      def keepAnnotation(annot: AnnotationInfo) = !(annot matches uncheckedVarianceClass)
 
       override def mapOver(tp: Type): Type = tp match {
         case ClassInfoType(parents, decls, clazz) =>

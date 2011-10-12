@@ -515,15 +515,15 @@ trait Typers extends Modes with Adaptations {
           // fails to notice exhaustiveness and to generate good code when
           // List extractors are mixed with :: patterns. See Test5 in lists.scala.
           def dealias(sym: Symbol) =
-            ({ val t = gen.mkAttributedRef(sym) ; t.setPos(tree.pos) ; t }, sym.owner.thisType)
+            (atPos(tree.pos) {gen.mkAttributedRef(sym)}, sym.owner.thisType)
           sym.name match {
             case nme.List => return dealias(ListModule)
-            case nme.Seq => return dealias(SeqModule)
-            case nme.Nil => return dealias(NilModule)
+            case nme.Seq  => return dealias(SeqModule)
+            case nme.Nil  => return dealias(NilModule)
             case _ =>
           }
         }
-        val qual = typedQualifier { atPos(tree.pos.focusStart) {
+        val qual = typedQualifier { atPos(tree.pos.makeTransparent) {
           tree match {
             case Ident(_) => Ident(nme.PACKAGEkw)
             case Select(qual, _) => Select(qual, nme.PACKAGEkw)
@@ -810,7 +810,7 @@ trait Typers extends Modes with Adaptations {
           tree setType tree.tpe
         } else tree match { // (6)
           case TypeTree() => tree
-          case _          => TypeTree(tree.tpe) setOriginal (tree)
+          case _          => TypeTree(tree.tpe) setOriginal (tree) setPos (tree.pos)
         }
       }
       
@@ -1380,7 +1380,7 @@ trait Typers extends Modes with Adaptations {
         if (linkedClass == NoSymbol || !linkedClass.isSerializable || clazz.isSerializable) l
         else {
           clazz.makeSerializable()
-          l :+ TypeTree(SerializableClass.tpe)
+          l :+ (TypeTree(SerializableClass.tpe) setPos clazz.pos.focus)
         }
       val typedMods = removeAnnotations(mdef.mods)
       assert(clazz != NoSymbol)
@@ -1490,36 +1490,21 @@ trait Typers extends Modes with Adaptations {
 
     /**
      * The annotations amongst `annots` that should go on a member of class
-     * `memberClass` (field, getter, setter, beanGetter, beanSetter, param)
-     * If 'keepClean' is true, annotations without any meta-annotation are kept
+     * `annotKind` (one of: field, getter, setter, beanGetter, beanSetter, param)
+     * If 'keepClean' is true, annotations without any meta-annotations are kept.
      */
-    protected def memberAnnots(annots: List[AnnotationInfo], memberClass: Symbol, keepClean: Boolean = false) = {
-
-      def hasMatching(metaAnnots: List[AnnotationInfo], orElse: => Boolean) = {
-        // either one of the meta-annotations matches the `memberClass`
-        metaAnnots.exists(_.atp.typeSymbol == memberClass) ||
-        // else, if there is no `target` meta-annotation at all, use the default case
-        (metaAnnots.forall(ann => {
-          val annClass = ann.atp.typeSymbol
-          annClass != FieldTargetClass && annClass != GetterTargetClass &&
-          annClass != SetterTargetClass && annClass != BeanGetterTargetClass &&
-          annClass != BeanSetterTargetClass && annClass != ParamTargetClass
-        }) && orElse)
+    protected def memberAnnots(annots: List[AnnotationInfo], annotKind: Symbol, keepClean: Boolean = false) = {
+      annots filter { ann =>
+        // There are no meta-annotation arguments attached to `ann`
+        if (ann.metaAnnotations.isEmpty) {
+          // A meta-annotation matching `annotKind` exists on `ann`'s definition.
+          (ann.defaultTargets contains annotKind) ||
+          // `ann`'s definition has no meta-annotations, and `keepClean` is true.
+          (ann.defaultTargets.isEmpty && keepClean)
+        }
+        // There are meta-annotation arguments, and one of them matches `annotKind`
+        else ann.metaAnnotations exists (_ matches annotKind)
       }
-
-      // there was no meta-annotation on `ann`. Look if the class annotations of
-      // `ann` has a `target` annotation, otherwise put `ann` only on fields.
-      def noMetaAnnot(ann: AnnotationInfo) = {
-        hasMatching(ann.atp.typeSymbol.annotations, keepClean)
-      }
-
-      annots.filter(ann => ann.atp match {
-        // the annotation type has meta-annotations, e.g. @(foo @getter)
-        case AnnotatedType(metaAnnots, _, _) =>
-          hasMatching(metaAnnots, noMetaAnnot(ann))
-        // there are no meta-annotations, e.g. @foo
-        case _ => noMetaAnnot(ann)
-      })
     }
 
     protected def enterSyms(txt: Context, trees: List[Tree]) = {
@@ -3733,7 +3718,7 @@ trait Typers extends Modes with Adaptations {
                   // will execute during refchecks -- TODO: make private checkTypeRef in refchecks public and call that one?
                   checkBounds(qual.pos, tp.prefix, sym.owner, sym.typeParams, tp.typeArgs, "")
                   qual // you only get to see the wrapped tree after running this check :-p
-                }) setType qual.tpe,
+                }) setType qual.tpe setPos qual.pos,
                 name)
             case accErr: Inferencer#AccessError => 
               val qual1 =
@@ -3848,7 +3833,7 @@ trait Typers extends Modes with Adaptations {
           if (defSym.exists && impSym.exists) {
             // imported symbols take precedence over package-owned symbols in different
             // compilation units. Defined symbols take precedence over erroneous imports.
-            if (defSym.definedInPackage && 
+            if (defSym.isDefinedInPackage &&
                 (!currentRun.compiles(defSym) ||
                  context.unit.exists && defSym.sourceFile != context.unit.source.file))
               defSym = NoSymbol
@@ -3979,13 +3964,13 @@ trait Typers extends Modes with Adaptations {
             val original = treeCopy.AppliedTypeTree(tree, tpt1, args1)
             val result = TypeTree(appliedType(tpt1.tpe, argtypes)) setOriginal  original
             if(tpt1.tpe.isInstanceOf[PolyType]) // did the type application (performed by appliedType) involve an unchecked beta-reduction?
-              (TypeTreeWithDeferredRefCheck(){ () =>
+              TypeTreeWithDeferredRefCheck(){ () =>
                 // wrap the tree and include the bounds check -- refchecks will perform this check (that the beta reduction was indeed allowed) and unwrap
                 // we can't simply use original in refchecks because it does not contains types
                 // (and the only typed trees we have have been mangled so they're not quite the original tree anymore)
                 checkBounds(result.pos, tpt1.tpe.prefix, tpt1.symbol.owner, tpt1.symbol.typeParams, argtypes, "")
                 result // you only get to see the wrapped tree after running this check :-p
-              }).setType(result.tpe)
+              } setType (result.tpe) setPos(result.pos)
             else result
           } else if (tparams.isEmpty) {
             errorTree(tree, tpt1.tpe+" does not take type parameters")

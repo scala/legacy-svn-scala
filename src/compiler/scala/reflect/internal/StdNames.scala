@@ -7,6 +7,7 @@ package scala.reflect
 package internal
 
 import scala.collection.immutable
+import NameTransformer.MODULE_SUFFIX_STRING
 
 trait StdNames extends /*reflect.generic.StdNames with*/ NameManglers { self: SymbolTable =>
     
@@ -94,8 +95,10 @@ trait StdNames extends /*reflect.generic.StdNames with*/ NameManglers { self: Sy
     val IMPORT: NameType             = "<import>"
     val MODULE_VAR_SUFFIX: NameType  = "$module"
     val ROOT: NameType               = "<root>"
-      
-    // value types are all used as terms as well
+    val PACKAGE: NameType            = "package"
+
+    // value types (and AnyRef) are all used as terms as well
+    // as (at least) arguments to the @specialize annotation.
     final val Boolean: NameType = "Boolean"
     final val Byte: NameType    = "Byte"
     final val Char: NameType    = "Char"
@@ -109,7 +112,8 @@ trait StdNames extends /*reflect.generic.StdNames with*/ NameManglers { self: Sy
     final val ScalaValueNames: scala.List[NameType] =
       scala.List(Byte, Char, Short, Int, Long, Float, Double, Boolean, Unit)
     
-    // types whose companions we utilize
+    // some types whose companions we utilize
+    final val AnyRef: NameType = "AnyRef"
     final val Array: NameType  = "Array"
     final val List: NameType   = "List"
     final val Seq: NameType    = "Seq"
@@ -130,7 +134,6 @@ trait StdNames extends /*reflect.generic.StdNames with*/ NameManglers { self: Sy
     final val WILDCARD_STAR: NameType                  = "_*"
     
     final val Any: NameType             = "Any"
-    final val AnyRef: NameType          = "AnyRef"
     final val AnyVal: NameType          = "AnyVal"
     final val Nothing: NameType         = "Nothing"
     final val Null: NameType            = "Null"
@@ -143,7 +146,12 @@ trait StdNames extends /*reflect.generic.StdNames with*/ NameManglers { self: Sy
     final val String: NameType          = "String"
     final val Throwable: NameType       = "Throwable"
 
-    // Annotation types
+    // Annotation simple names, used in Namer
+    final val BeanPropertyAnnot: NameType = "BeanProperty"
+    final val BooleanBeanPropertyAnnot: NameType = "BooleanBeanProperty"
+    final val bridgeAnnot: NameType = "bridge"
+
+    // Classfile Attributes
     final val AnnotationDefaultATTR: NameType      = "AnnotationDefault"
     final val BridgeATTR: NameType                 = "Bridge"
     final val ClassfileAnnotationATTR: NameType    = "RuntimeInvisibleAnnotations" // RetentionPolicy.CLASS. Currently not used (Apr 2009).
@@ -190,6 +198,7 @@ trait StdNames extends /*reflect.generic.StdNames with*/ NameManglers { self: Sy
     val TYPE_ : NameType           = "TYPE"
     val add_ : NameType            = "add"
     val anyValClass: NameType      = "anyValClass"
+    val append: NameType           = "append"
     val apply: NameType            = "apply"
     val arrayValue: NameType       = "arrayValue"
     val arraycopy: NameType        = "arraycopy"
@@ -218,6 +227,7 @@ trait StdNames extends /*reflect.generic.StdNames with*/ NameManglers { self: Sy
     val find_ : NameType           = "find"
     val flatMap: NameType          = "flatMap"
     val foreach: NameType          = "foreach"
+    val formatted: NameType        = "formatted"
     val genericArrayOps: NameType  = "genericArrayOps"
     val get: NameType              = "get"
     val hasNext: NameType          = "hasNext"
@@ -606,8 +616,8 @@ trait StdNames extends /*reflect.generic.StdNames with*/ NameManglers { self: Sy
   }
 
   private class J2SENames extends JavaNames {
-    final val BeanProperty: TypeName        = "scala.reflect.BeanProperty"
-    final val BooleanBeanProperty: TypeName = "scala.reflect.BooleanBeanProperty"
+    final val BeanProperty: TypeName        = "scala.beans.BeanProperty"
+    final val BooleanBeanProperty: TypeName = "scala.beans.BooleanBeanProperty"
     final val Code: TypeName                = "scala.reflect.Code"
     final val JavaSerializable: TypeName    = "java.io.Serializable"
   }

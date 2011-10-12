@@ -39,7 +39,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       "memberSym " + memberSym + " templateSym " + templateSym + " encls = " + 
       closestPackage(memberSym) + ", " + closestPackage(templateSym)
     )
-    memberSym.inDefaultNamespace || (closestPackage(memberSym) == closestPackage(templateSym))
+    memberSym.isOmittablePrefix || (closestPackage(memberSym) == closestPackage(templateSym))
   }
   
   private lazy val noSubclassCache = Set(AnyClass, AnyRefClass, ObjectClass, ScalaObjectClass)
@@ -421,10 +421,10 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
 
   /** */
   def makeAnnotation(annot: AnnotationInfo): Annotation = {
-    val aSym = annot.atp.typeSymbol
+    val aSym = annot.symbol
     new EntityImpl(aSym, makeTemplate(aSym.owner)) with Annotation {
       lazy val annotationClass =
-        makeTemplate(annot.atp.typeSymbol)
+        makeTemplate(annot.symbol)
       val arguments = { // lazy
         def noParams = annot.args map { _ => None }
         val params: List[Option[ValueParam]] = annotationClass match {

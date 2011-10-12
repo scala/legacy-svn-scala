@@ -300,6 +300,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     def lubDebug      = (sys.props contains "scalac.debug.lub")
   }
 
+  // The current division between scala.reflect.* and scala.tools.nsc.* is pretty
+  // clunky.  It is often difficult to have a setting influence something without having
+  // to create it on that side.  For this one my strategy is a constant def at the file
+  // where I need it, and then an override in Global with the setting.
+  override protected val etaExpandKeepsStar = settings.etaExpandKeepsStar.value
+
   // True if -Xscript has been set, indicating a script run.
   def isScriptRun = opt.script.isDefined
 
@@ -997,24 +1003,24 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
         return
       }
 
-      val startTime = currentTime
-      reporter.reset();
-      {
-        val first :: rest = sources
-        val unit = new CompilationUnit(first)
-        addUnit(unit)
-        checkDeprecatedSettings(unit)
-        
-        for (source <- rest)
-          addUnit(new CompilationUnit(source))
-      }
-      globalPhase = firstPhase
-
+      compileUnits(sources map (new CompilationUnit(_)), firstPhase)
+    }
+      
+    /** Compile list of units, starting with phase `fromPhase`
+     */
+    def compileUnits(units: List[CompilationUnit], fromPhase: Phase) {
+      units foreach addUnit
       if (opt.profileAll) {
         inform("starting CPU profiling on compilation run")
         profiler.startProfiling()
       }
-      while (globalPhase != terminalPhase && !reporter.hasErrors) {
+      val startTime = currentTime
+
+      reporter.reset()
+      checkDeprecatedSettings(unitbuf.head)    
+      globalPhase = firstPhase
+
+     while (globalPhase != terminalPhase && !reporter.hasErrors) {
         val startTime = currentTime
         phase = globalPhase
         

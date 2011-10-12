@@ -142,12 +142,13 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val EmptyPackage       = RootClass.newPackage(NoPosition, nme.EMPTY_PACKAGE_NAME).setFlag(FINAL)
     lazy val EmptyPackageClass  = EmptyPackage.moduleClass
 
-    lazy val JavaLangPackage    = getModule(sn.JavaLang)
-    lazy val ScalaPackage       = getModule("scala")
-    lazy val ScalaPackageClass  = ScalaPackage.tpe.typeSymbol
+    lazy val JavaLangPackage      = getModule(sn.JavaLang)
+    lazy val JavaLangPackageClass = JavaLangPackage.moduleClass
+    lazy val ScalaPackage         = getModule(nme.scala_)
+    lazy val ScalaPackageClass    = ScalaPackage.moduleClass
     
     lazy val RuntimePackage       = getModule("scala.runtime")
-    lazy val RuntimePackageClass  = RuntimePackage.tpe.typeSymbol
+    lazy val RuntimePackageClass  = RuntimePackage.moduleClass
 
     // convenient one-argument parameter lists
     lazy val anyparam     = List(AnyClass.typeConstructor)
@@ -156,21 +157,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     
     // private parameter conveniences
     private def booltype    = BooleanClass.typeConstructor
-    private def boolparam   = List(booltype)
-    private def bytetype    = ByteClass.typeConstructor
-    private def byteparam   = List(bytetype)
-    private def shorttype   = ShortClass.typeConstructor
-    private def shortparam  = List(shorttype)
     private def inttype     = IntClass.typeConstructor
-    private def intparam    = List(inttype)
-    private def longtype    = LongClass.typeConstructor
-    private def longparam   = List(longtype)
-    private def floattype   = FloatClass.typeConstructor
-    private def floatparam  = List(floattype)
-    private def doubletype  = DoubleClass.typeConstructor
-    private def doubleparam = List(doubletype)
-    private def chartype    = CharClass.typeConstructor
-    private def charparam   = List(chartype)
     private def stringtype  = StringClass.typeConstructor
     
     // top types
@@ -195,33 +182,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val NullPointerExceptionClass      = getClass(sn.NPException)
     lazy val ThrowableClass                 = getClass(sn.Throwable)
     lazy val UninitializedErrorClass        = getClass("scala.UninitializedFieldError")
-    
-    // annotations
-    lazy val AnnotationClass            = getClass("scala.annotation.Annotation")
-    lazy val ClassfileAnnotationClass   = getClass("scala.annotation.ClassfileAnnotation")
-    lazy val StaticAnnotationClass      = getClass("scala.annotation.StaticAnnotation")
-    lazy val uncheckedStableClass       = getClass("scala.annotation.unchecked.uncheckedStable") 
-    lazy val uncheckedVarianceClass     = getClass("scala.annotation.unchecked.uncheckedVariance")
-    lazy val UncheckedClass             = getClass("scala.unchecked")
-    lazy val ThrowsClass                = getClass("scala.throws")
-    lazy val TailrecClass               = getClass("scala.annotation.tailrec")
-    lazy val SwitchClass                = getClass("scala.annotation.switch")
-    lazy val ElidableMethodClass        = getClass("scala.annotation.elidable")
-    lazy val ImplicitNotFoundClass      = getClass("scala.annotation.implicitNotFound")
-    lazy val VarargsClass               = getClass("scala.annotation.varargs")
-    lazy val FieldTargetClass           = getClass("scala.annotation.target.field")
-    lazy val GetterTargetClass          = getClass("scala.annotation.target.getter")
-    lazy val SetterTargetClass          = getClass("scala.annotation.target.setter")
-    lazy val BeanGetterTargetClass      = getClass("scala.annotation.target.beanGetter")
-    lazy val BeanSetterTargetClass      = getClass("scala.annotation.target.beanSetter")
-    lazy val ParamTargetClass           = getClass("scala.annotation.target.param")
-    lazy val ScalaInlineClass           = getClass("scala.inline")
-    lazy val ScalaNoInlineClass         = getClass("scala.noinline")
-    lazy val SpecializedClass           = getClass("scala.specialized")
-    lazy val BridgeClass                = getClass("scala.annotation.bridge") 
 
     // fundamental reference classes
-    lazy val ScalaObjectClass           = getClass("scala.ScalaObject")
+    lazy val ScalaObjectClass           = getMember(ScalaPackageClass, tpnme.ScalaObject)
     lazy val PartialFunctionClass       = getClass("scala.PartialFunction")
     lazy val SymbolClass                = getClass("scala.Symbol")
     lazy val StringClass                = getClass(sn.String)
@@ -233,9 +196,17 @@ trait Definitions extends reflect.api.StandardDefinitions {
     // fundamental modules
     lazy val SysPackage = getPackageObject("scala.sys")
       def Sys_error    = getMember(SysPackage, nme.error)
+    
+    // Modules whose members are in the default namespace
+    lazy val UnqualifiedModules = List(PredefModule, ScalaPackage, JavaLangPackage)
+    // Those modules and their module classes
+    lazy val UnqualifiedOwners  = UnqualifiedModules.toSet ++ UnqualifiedModules.map(_.moduleClass)
+
     lazy val PredefModule: Symbol = getModule("scala.Predef")
-    lazy val PredefModuleClass = PredefModule.tpe.typeSymbol
-      def Predef_AnyRef = getMember(PredefModule, "AnyRef") // used by the specialization annotation
+    lazy val PredefModuleClass = PredefModule.moduleClass
+      // Note: this is not the type alias AnyRef, it's a val defined in Predef
+      // used by the @specialize annotation.
+      def Predef_AnyRef = getMember(PredefModule, nme.AnyRef)
       def Predef_classOf = getMember(PredefModule, nme.classOf)
       def Predef_identity = getMember(PredefModule, nme.identity)
       def Predef_conforms = getMember(PredefModule, nme.conforms)
@@ -261,6 +232,8 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val ArrowAssocClass  = getClass("scala.Predef.ArrowAssoc")
     lazy val StringAdd_+      = getMember(StringAddClass, nme.PLUS)
     lazy val NotNullClass     = getClass("scala.NotNull")
+    lazy val ScalaNumberClass           = getClass("scala.math.ScalaNumber")
+    lazy val TraitSetterAnnotationClass = getClass("scala.runtime.TraitSetter")
     lazy val DelayedInitClass = getClass("scala.DelayedInit")
       def delayedInitMethod = getMember(DelayedInitClass, nme.delayedInit)
       // a dummy value that communicates that a delayedInit call is compiler-generated
@@ -274,6 +247,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val SerializableClass     = getClass("scala.Serializable")
     lazy val JavaSerializableClass = getClass(sn.JavaSerializable)
     lazy val ComparableClass       = getClass("java.lang.Comparable")
+    lazy val JavaCloneableClass    = getClass("java.lang.Cloneable")
+    lazy val RemoteInterfaceClass  = getClass("java.rmi.Remote")
+    lazy val RemoteExceptionClass  = getClass("java.rmi.RemoteException")
     
     lazy val RepeatedParamClass = newCovariantPolyClass(
       ScalaPackageClass,
@@ -518,8 +494,8 @@ trait Definitions extends reflect.api.StandardDefinitions {
       case _                                    => NoType
     }
     
-    def seqType(arg: Type)    = typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(arg))
-    def arrayType(arg: Type)  = typeRef(ArrayClass.typeConstructor.prefix, ArrayClass, List(arg))
+    def seqType(arg: Type)    = appliedType(SeqClass.typeConstructor, List(arg))
+    def arrayType(arg: Type)  = appliedType(ArrayClass.typeConstructor, List(arg))
     def byNameType(arg: Type) = appliedType(ByNameParamClass.typeConstructor, List(arg))
 
     def ClassType(arg: Type) = 
@@ -611,23 +587,61 @@ trait Definitions extends reflect.api.StandardDefinitions {
       def BoxedUnit_UNIT = getMember(BoxedUnitModule, "UNIT")
       def BoxedUnit_TYPE = getMember(BoxedUnitModule, "TYPE")
 
-    // special attributes
-    lazy val BeanPropertyAttr: Symbol           = getClass(sn.BeanProperty)
-    lazy val BooleanBeanPropertyAttr: Symbol    = getClass(sn.BooleanBeanProperty)
-    lazy val CloneableAttr: Symbol              = getClass("scala.cloneable")
-    lazy val DeprecatedAttr: Symbol             = getClass("scala.deprecated")
-    lazy val DeprecatedNameAttr: Symbol         = getClass("scala.deprecatedName")
-    lazy val MigrationAnnotationClass: Symbol   = getClass("scala.annotation.migration")
-    lazy val NativeAttr: Symbol                 = getClass("scala.native")
-    lazy val RemoteAttr: Symbol                 = getClass("scala.remote")
-    lazy val ScalaNumberClass: Symbol           = getClass("scala.math.ScalaNumber")
-    lazy val ScalaStrictFPAttr: Symbol          = getClass("scala.annotation.strictfp")
-    lazy val SerialVersionUIDAttr: Symbol       = getClass("scala.SerialVersionUID")
-    lazy val SerializableAttr: Symbol           = getClass("scala.annotation.serializable") // @serializable is deprecated
-    lazy val TraitSetterAnnotationClass: Symbol = getClass("scala.runtime.TraitSetter")
-    lazy val TransientAttr: Symbol              = getClass("scala.transient")
-    lazy val VolatileAttr: Symbol               = getClass("scala.volatile")
-    
+    // Annotation base classes
+    lazy val AnnotationClass            = getClass("scala.annotation.Annotation")
+    lazy val ClassfileAnnotationClass   = getClass("scala.annotation.ClassfileAnnotation")
+    lazy val StaticAnnotationClass      = getClass("scala.annotation.StaticAnnotation")
+
+    // Annotations
+    lazy val BridgeClass                = getClass("scala.annotation.bridge")
+    lazy val ElidableMethodClass        = getClass("scala.annotation.elidable")
+    lazy val ImplicitNotFoundClass      = getClass("scala.annotation.implicitNotFound")
+    lazy val MigrationAnnotationClass   = getClass("scala.annotation.migration")
+    lazy val ScalaStrictFPAttr          = getClass("scala.annotation.strictfp")
+    lazy val SerializableAttr           = getClass("scala.annotation.serializable") // @serializable is deprecated
+    lazy val SwitchClass                = getClass("scala.annotation.switch")
+    lazy val TailrecClass               = getClass("scala.annotation.tailrec")
+    lazy val VarargsClass               = getClass("scala.annotation.varargs")
+    lazy val uncheckedStableClass       = getClass("scala.annotation.unchecked.uncheckedStable")
+    lazy val uncheckedVarianceClass     = getClass("scala.annotation.unchecked.uncheckedVariance")
+
+    lazy val BeanPropertyAttr           = getClass(sn.BeanProperty)
+    lazy val BooleanBeanPropertyAttr    = getClass(sn.BooleanBeanProperty)
+    lazy val CloneableAttr              = getClass("scala.cloneable")
+    lazy val DeprecatedAttr             = getClass("scala.deprecated")
+    lazy val DeprecatedNameAttr         = getClass("scala.deprecatedName")
+    lazy val NativeAttr                 = getClass("scala.native")
+    lazy val RemoteAttr                 = getClass("scala.remote")
+    lazy val ScalaInlineClass           = getClass("scala.inline")
+    lazy val ScalaNoInlineClass         = getClass("scala.noinline")
+    lazy val SerialVersionUIDAttr       = getClass("scala.SerialVersionUID")
+    lazy val SpecializedClass           = getClass("scala.specialized")
+    lazy val ThrowsClass                = getClass("scala.throws")
+    lazy val TransientAttr              = getClass("scala.transient")
+    lazy val UncheckedClass             = getClass("scala.unchecked")
+    lazy val VolatileAttr               = getClass("scala.volatile")
+
+    // Meta-annotations
+    lazy val BeanGetterTargetClass      = getMetaAnnotation("beanGetter")
+    lazy val BeanSetterTargetClass      = getMetaAnnotation("beanSetter")
+    lazy val FieldTargetClass           = getMetaAnnotation("field")
+    lazy val GetterTargetClass          = getMetaAnnotation("getter")
+    lazy val ParamTargetClass           = getMetaAnnotation("param")
+    lazy val SetterTargetClass          = getMetaAnnotation("setter")
+
+
+    private def getMetaAnnotation(name: String) = getClass("scala.annotation.meta." + name)
+    def isMetaAnnotation(sym: Symbol): Boolean = metaAnnotations(sym) || (
+      // Trying to allow for deprecated locations
+      sym.isAliasType && isMetaAnnotation(sym.info.typeSymbol)
+    )
+
+    lazy val metaAnnotations = Set(
+      FieldTargetClass, ParamTargetClass,
+      GetterTargetClass, SetterTargetClass,
+      BeanGetterTargetClass, BeanSetterTargetClass
+    )
+
     lazy val AnnotationDefaultAttr: Symbol = {
       val attr = newClass(RuntimePackageClass, tpnme.AnnotationDefaultATTR, List(AnnotationClass.typeConstructor))
       // This attribute needs a constructor so that modifiers in parsed Java code make sense
@@ -639,7 +653,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       getPackageObject(fullname).companionClass
     
     def getPackageObject(fullname: Name): Symbol =
-      getModuleOrClass(fullname.toTermName).info.member(newTermName("package"))
+      getModule(fullname).info member nme.PACKAGE
 
     def getModule(fullname: Name): Symbol =
       getModuleOrClass(fullname.toTermName)

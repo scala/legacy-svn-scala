@@ -141,8 +141,8 @@ object Test extends Properties("HtmlFactory") {
     createTemplate("Trac4372.scala") match {
       case node: scala.xml.Node => {
         val html = node.toString
-        html.contains("<span class=\"name\">+:</span>\n") &&
-          html.contains("<span class=\"name\">-:</span>\n") &&
+        html.contains("<span class=\"name\" title=\"gt4s: $plus$colon\">+:</span>\n") &&
+          html.contains("<span class=\"name\" title=\"gt4s: $minus$colon\">-:</span>\n") &&
             html.contains("""<span class="params">(<span name="n">n: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>""")
       }
       case _ => false
@@ -369,6 +369,43 @@ object Test extends Properties("HtmlFactory") {
     createTemplate("SI_4507.scala") match {
       case node: scala.xml.Node =>
         ! node.toString.contains("<li>returns silently when evaluating true and true</li>")
+      case _ => false
+    }
+  }
+
+  {
+    val files = createTemplates("basic.scala")
+    println(files)
+
+    property("class") = files.get("com/example/p1/Clazz.html") match {
+      case Some(node: scala.xml.Node) => {
+        property("implicit convertion") =
+          node.toString contains "<span class=\"modifier\">implicit </span>"
+
+        property("gt4s") =
+          node.toString contains "title=\"gt4s: $colon$colon\""
+
+        property("gt4s of a deprecated method") =
+          node.toString contains "title=\"gt4s: $colon$colon$colon$colon. Deprecated: "
+        true
+      }
+      case _ => false
+    }
+    property("package") = files.get("com/example/p1/package.html") != None
+
+    property("package object") = files("com/example/p1/package.html") match {
+      case node: scala.xml.Node =>
+        node.toString contains "com.example.p1.package#packageObjectMethod"
+      case _ => false
+    }
+
+    property("lower bound") = files("com/example/p1/LowerBound.html") match {
+      case node: scala.xml.Node => true
+      case _ => false
+    }
+
+    property("upper bound") = files("com/example/p1/UpperBound.html") match {
+      case node: scala.xml.Node => true
       case _ => false
     }
   }

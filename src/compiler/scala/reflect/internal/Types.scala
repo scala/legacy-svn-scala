@@ -234,11 +234,9 @@ trait Types extends api.Types { self: SymbolTable =>
     super.tpe_=(NoType)
     override def tpe_=(t: Type) = if (t != NoType) throw new UnsupportedOperationException("tpe_=("+t+") inapplicable for <empty>")
   }
-  object UnmappableAnnotation extends AnnotationInfo(NoType, Nil, Nil)
 
   /** The base class for all types */
-  abstract class Type extends AbsType {
-    
+  abstract class Type extends AbsType with Annotatable[Type] {
     /** Types for which asSeenFrom always is the identity, no matter what
      *  prefix or owner.
      */
@@ -796,7 +794,6 @@ trait Types extends api.Types { self: SymbolTable =>
 
     protected def objectPrefix = "object "
     protected def packagePrefix = "package "
-
     def trimPrefix(str: String) = str stripPrefix objectPrefix stripPrefix packagePrefix
 
     /** The string representation of this type used as a prefix */
@@ -1001,24 +998,14 @@ trait Types extends api.Types { self: SymbolTable =>
       skolems
     }
 
-    /** Return the annotations on this type. */
+    // Implementation of Annotatable for all types but AnnotatedType, which
+    // overrides these.
     def annotations: List[AnnotationInfo] = Nil
+    def withoutAnnotations: Type = this
+    def setAnnotations(annots: List[AnnotationInfo]): Type  = annotatedType(annots, this)
+    def withAnnotations(annots: List[AnnotationInfo]): Type = annotatedType(annots, this)
 
-    /** Test for the presence of an annotation */
-    def hasAnnotation(clazz: Symbol) = annotations exists { _.atp.typeSymbol == clazz }
-
-    /** Add an annotation to this type */
-    def withAnnotation(annot: AnnotationInfo) = withAnnotations(List(annot))
-    
-    /** Add a number of annotations to this type */
-    def withAnnotations(annots: List[AnnotationInfo]): Type =
-      annots match {
-        case Nil => this
-        case _ => AnnotatedType(annots, this, NoSymbol)
-      }
-      
-    /** Remove any annotations from this type */
-    def withoutAnnotations = this
+    final def withAnnotation(annot: AnnotationInfo): Type = withAnnotations(List(annot))
 
     /** Remove any annotations from this type and from any
      *  types embedded in this type. */
@@ -1157,7 +1144,7 @@ trait Types extends api.Types { self: SymbolTable =>
     override def prefixString =
       if (settings.debug.value) sym.nameString + ".this."
       else if (sym.isAnonOrRefinementClass) "this."
-      else if (sym.printWithoutPrefix) ""
+      else if (sym.isOmittablePrefix) ""
       else if (sym.isModuleClass) sym.fullName + "."
       else sym.nameString + ".this."
     override def safeToString: String =
@@ -1220,9 +1207,11 @@ trait Types extends api.Types { self: SymbolTable =>
 
     override def termSymbol = sym
     override def prefix: Type = pre
-    override def prefixString: String = 
-      if ((sym.isEmptyPackage || sym.isInterpreterWrapper || sym.isPredefModule || sym.isScalaPackage) && !settings.debug.value) ""
+    override def prefixString = (
+      if (sym.skipPackageObject.isOmittablePrefix) ""
+      else if (sym.isPackageObjectOrClass) pre.prefixString
       else pre.prefixString + sym.nameString + "."
+    )
     override def kind = "SingleType"
   }
 
@@ -1240,7 +1229,7 @@ trait Types extends api.Types { self: SymbolTable =>
     override def typeSymbol = thistpe.typeSymbol
     override def underlying = supertpe
     override def prefix: Type = supertpe.prefix
-    override def prefixString = thistpe.prefixString.replaceAll("""this\.$""", "super.")
+    override def prefixString = thistpe.prefixString.replaceAll("""\bthis\.$""", "super.")
     override def narrow: Type = thistpe.narrow
     override def kind = "SuperType"
   }
@@ -1998,62 +1987,65 @@ A type's typeSymbol should never be inspected directly.
     override def baseClasses: List[Symbol] = thisInfo.baseClasses
 
     // override def isNullable: Boolean = sym.info.isNullable
+    private def preString = (
+      // ensure that symbol is not a local copy with a name coincidence
+      if (!settings.debug.value && shorthands(sym.fullName) && sym.ownerChain.forall(_.isClass)) ""
+      else pre.prefixString
+    )
+    private def argsString = if (args.isEmpty) "" else args.mkString("[", ",", "]")
+    private def refinementString = (
+      if (sym.isStructuralRefinement) (
+        decls filter (sym => sym.isPossibleInRefinement && sym.isPublic)
+          map (_.defString)
+          mkString(" {", "; ", "}")
+      )
+      else ""
+    )
 
-    override def safeToString: String = {
-      if (!settings.debug.value) {
-        this match {
-          case TypeRef(_, RepeatedParamClass, arg :: _) => return arg + "*"
-          case TypeRef(_, ByNameParamClass, arg :: _)   => return "=> " + arg
-          case _ =>
-            if (isFunctionType(this)) {
-              val targs = normalize.typeArgs
-              // Aesthetics: printing Function1 as T => R rather than (T) => R
-              val paramlist = targs.init match {
-                case Nil      => "()"
-                case x :: Nil => "" + x
-                case xs       => xs.mkString("(", ", ", ")")
-              }
-              return paramlist + " => " + targs.last
-            }
-            else if (isTupleTypeOrSubtype(this)) 
-              return normalize.typeArgs.mkString("(", ", ", if (hasLength(normalize.typeArgs, 1)) ",)" else ")")
-            else if (sym.isAliasType && prefixChain.exists(_.termSymbol.isSynthetic)) {
-              val normed = normalize;
-              if (normed ne this) return normed.toString
-            }
+    private def finishPrefix(rest: String) = (
+      if (sym.isPackageClass) packagePrefix + rest
+      else if (sym.isModuleClass) objectPrefix + rest
+      else if (!sym.isInitialized) rest
+      else if (sym.isAnonymousClass && !phase.erasedTypes)
+        thisInfo.parents.mkString("", " with ", refinementString)
+      else if (sym.isRefinementClass) "" + thisInfo
+      else rest
+    )
+    private def customToString = this match {
+      case TypeRef(_, RepeatedParamClass, arg :: _) => arg + "*"
+      case TypeRef(_, ByNameParamClass, arg :: _)   => "=> " + arg
+      case _ =>
+        if (isFunctionType(this)) {
+          val targs = normalize.typeArgs
+          // Aesthetics: printing Function1 as T => R rather than (T) => R
+          // ...but only if it's not a tuple, so ((T1, T2)) => R is distinguishable
+          // from (T1, T2) => R.
+          targs match {
+            case in :: out :: Nil if !isTupleTypeOrSubtype(in)  =>
+              "" + in + " => " + out
+            case xs =>
+              xs.init.mkString("(", ", ", ")") + " => " + xs.last
+          }
         }
-      }
-      val monopart = 
-        if (!settings.debug.value && 
-            (shorthands contains sym.fullName) &&
-            (sym.ownerChain forall (_.isClass))) // ensure that symbol is not a local copy with a name coincidence 
-          sym.name.toString
-        else 
-          pre.prefixString + sym.nameString
-      
-      var str = monopart + (if (args.isEmpty) "" else args.mkString("[", ",", "]"))
-      if (sym.isPackageClass)
-        packagePrefix + str
-      else if (sym.isModuleClass)
-        objectPrefix + str
-      else if (sym.isAnonymousClass && sym.isInitialized && !settings.debug.value && !phase.erasedTypes)
-        thisInfo.parents.mkString(" with ") + {
-          if (sym.isStructuralRefinement)
-            decls filter (sym => sym.isPossibleInRefinement && sym.isPublic) map (_.defString) mkString("{", "; ", "}")
-          else ""
-        }
-      else if (sym.isRefinementClass && sym.isInitialized)
-        thisInfo.toString
-      else str
+        else if (isTupleTypeOrSubtype(this))
+          normalize.typeArgs.mkString("(", ", ", if (hasLength(normalize.typeArgs, 1)) ",)" else ")")
+        else if (sym.isAliasType && prefixChain.exists(_.termSymbol.isSynthetic) && (normalize ne this))
+          "" + normalize
+        else
+          ""
     }
-
+    override def safeToString = {
+      val custom = if (settings.debug.value) "" else customToString
+      if (custom != "") custom
+      else finishPrefix(preString + sym.nameString + argsString)
+    }
     override def prefixString = "" + (
-      if (settings.debug.value) 
+      if (settings.debug.value)
         super.prefixString
-      else if (sym.printWithoutPrefix) 
+      else if (sym.isOmittablePrefix)
         ""
-      else if (sym.isPackageClass) 
-        sym.fullName + "."
+      else if (sym.isPackageClass || sym.isPackageObjectOrClass)
+        sym.skipPackageObject.fullName + "."
       else if (isStable && nme.isSingletonName(sym.name))
         nme.dropSingletonName(sym.name) + "."
       else 
@@ -2649,35 +2641,31 @@ A type's typeSymbol should never be inspected directly.
                            override val selfsym: Symbol) 
   extends RewrappingTypeProxy {
 
-    assert(!annotations.isEmpty)
+    assert(!annotations.isEmpty, "" + underlying)
 
-    override protected def rewrap(tp: Type) = AnnotatedType(annotations, tp, selfsym)
+    override protected def rewrap(tp: Type) = copy(underlying = tp)
 
     override def isTrivial: Boolean = isTrivial0
-    private lazy val isTrivial0 = underlying.isTrivial && (annotations forall (_.isTrivial))
+    private lazy val isTrivial0 = underlying.isTrivial && annotations.forall(_.isTrivial)
 
-    override def safeToString: String = {
-      val attString =
-        if (annotations.isEmpty)
-          ""
-        else
-          annotations.mkString(" @", " @", "")
+    override def safeToString = annotations.mkString(underlying + " @", " @", "")
 
-      underlying + attString
-    }
-    
+    override def setAnnotations(annots: List[AnnotationInfo]): Type =
+      if (annots.isEmpty) withoutAnnotations
+      else copy(annotations = annots)
+
     /** Add a number of annotations to this type */
     override def withAnnotations(annots: List[AnnotationInfo]): Type =
-      copy(annots:::this.annotations)
+      if (annots.isEmpty) this
+      else copy(annots ::: this.annotations)
 
     /** Remove any annotations from this type */
     override def withoutAnnotations = underlying.withoutAnnotations
 
     /** Set the self symbol */
-    override def withSelfsym(sym: Symbol) = 
-      AnnotatedType(annotations, underlying, sym)
+    override def withSelfsym(sym: Symbol) = copy(selfsym = sym)
 
-    /** Drop the annotations on the bounds, unless but the low and high
+    /** Drop the annotations on the bounds, unless the low and high
      *  bounds are exactly tp.
      */
     override def bounds: TypeBounds = underlying.bounds match {
@@ -2707,7 +2695,14 @@ A type's typeSymbol should never be inspected directly.
     override def kind = "AnnotatedType"
   }
   
-  object AnnotatedType extends AnnotatedTypeExtractor
+  /** Creator for AnnotatedTypes.  It returns the underlying type if annotations.isEmpty
+   *  rather than walking into the assertion.
+   */
+  def annotatedType(annots: List[AnnotationInfo], underlying: Type, selfsym: Symbol = NoSymbol): Type =
+    if (annots.isEmpty) underlying
+    else AnnotatedType(annots, underlying, selfsym)
+
+  object AnnotatedType extends AnnotatedTypeExtractor { }
 
   /** A class representing types with a name. When an application uses
    *  named arguments, the named argument types for calling isApplicable
@@ -3088,7 +3083,7 @@ A type's typeSymbol should never be inspected directly.
   // Or false for Seq[A] => Seq[A]
   //   (It will rewrite A* everywhere but method parameters.)
   //   This is the specified behavior.
-  private final val etaExpandKeepsStar = true
+  protected def etaExpandKeepsStar = false
   
   object dropRepeatedParamType extends TypeMap {
     def apply(tp: Type): Type = tp match {
@@ -3237,7 +3232,7 @@ A type's typeSymbol should never be inspected directly.
 
   trait KeepOnlyTypeConstraints extends AnnotationFilter {
     // filter keeps only type constraint annotations
-    def keepAnnotation(annot: AnnotationInfo) = annot.atp.typeSymbol isNonBottomSubClass TypeConstraintClass
+    def keepAnnotation(annot: AnnotationInfo) = annot matches TypeConstraintClass
   }
 
   /** A prototype for mapping a function over all possible types
@@ -3640,17 +3635,42 @@ A type's typeSymbol should never be inspected directly.
             else {
               def throwError = abort("" + tp + sym.locationString + " cannot be instantiated from " + pre.widen)
                                     
-              def instParam(ps: List[Symbol], as: List[Type]): Type = 
-                if (ps.isEmpty) throwError
-                else if (sym eq ps.head)  
-                  // @M! don't just replace the whole thing, might be followed by type application
-                  appliedType(as.head, args mapConserve (this)) // @M: was as.head   
-                else instParam(ps.tail, as.tail);
               val symclazz = sym.owner
               if (symclazz == clazz && !pre.isInstanceOf[TypeVar] && (pre.widen.typeSymbol isNonBottomSubClass symclazz)) {
                 // have to deconst because it may be a Class[T].
                 pre.baseType(symclazz).deconst match {
                   case TypeRef(_, basesym, baseargs) =>
+
+                   def instParam(ps: List[Symbol], as: List[Type]): Type =
+                      if (ps.isEmpty) {
+                        if (forInteractive) {
+                          val saved = settings.uniqid.value
+                          try {
+                            settings.uniqid.value = true
+                            println("*** stale type parameter: " + tp + sym.locationString + " cannot be instantiated from " + pre.widen)
+                            println("*** confused with params: " + sym + " in " + sym.owner + " not in " + ps + " of " + basesym)
+                            println("*** stacktrace = ")
+                            new Error().printStackTrace()
+                          } finally settings.uniqid.value = saved
+                          instParamRelaxed(basesym.typeParams, baseargs)
+                        } else throwError
+                      } else if (sym eq ps.head)
+                        // @M! don't just replace the whole thing, might be followed by type application
+                        appliedType(as.head, args mapConserve (this)) // @M: was as.head   
+                      else instParam(ps.tail, as.tail)
+                      
+                    /** Relaxed version of instParams which matches on names not symbols.
+                     *  This is a last fallback in interactive mode because races in calls 
+                     *  from the IDE to the compiler may in rare cases lead to symbols referring
+                     *  to type parameters that are no longer current.
+                     */
+                    def instParamRelaxed(ps: List[Symbol], as: List[Type]): Type =
+                      if (ps.isEmpty) throwError
+                      else if (sym.name == ps.head.name)
+                        // @M! don't just replace the whole thing, might be followed by type application
+                        appliedType(as.head, args mapConserve (this)) // @M: was as.head   
+                      else instParamRelaxed(ps.tail, as.tail)
+                      
                     //Console.println("instantiating " + sym + " from " + basesym + " with " + basesym.typeParams + " and " + baseargs+", pre = "+pre+", symclazz = "+symclazz);//DEBUG
                     if (sameLength(basesym.typeParams, baseargs)) {
                       instParam(basesym.typeParams, baseargs)
@@ -3664,7 +3684,7 @@ A type's typeSymbol should never be inspected directly.
                   case ExistentialType(tparams, qtpe) =>
                     capturedParams = capturedParams union tparams
                     toInstance(qtpe, clazz)
-                  case _ =>
+                  case t =>
                     throwError
                 }
               } else toInstance(base(pre, clazz).prefix, clazz.owner)
@@ -4080,7 +4100,7 @@ A type's typeSymbol should never be inspected directly.
         def corresponds(sym1: Symbol, sym2: Symbol): Boolean =
           sym1.name == sym2.name && (sym1.isPackageClass || corresponds(sym1.owner, sym2.owner))
         if (!corresponds(sym.owner, rebind0.owner)) {
-          debuglog("ADAPT1 pre = "+pre+", sym = "+sym+sym.locationString+", rebind = "+rebind0+rebind0.locationString)
+          debuglog("ADAPT1 pre = "+pre+", sym = "+sym.fullLocationString+", rebind = "+rebind0.fullLocationString)
           val bcs = pre.baseClasses.dropWhile(bc => !corresponds(bc, sym.owner));
           if (bcs.isEmpty)
             assert(pre.typeSymbol.isRefinementClass, pre) // if pre is a refinementclass it might be a structural type => OK to leave it in.
@@ -4089,11 +4109,8 @@ A type's typeSymbol should never be inspected directly.
           debuglog(
             "ADAPT2 pre = " + pre +
             ", bcs.head = " + bcs.head +
-            ", sym = " + sym+sym.locationString +
-            ", rebind = " + rebind0 + (
-              if (rebind0 == NoSymbol) ""
-              else rebind0.locationString
-            )
+            ", sym = " + sym.fullLocationString +
+            ", rebind = " + rebind0.fullLocationString 
           )
         }
         val rebind = rebind0.suchThat(sym => sym.isType || sym.isStable)
