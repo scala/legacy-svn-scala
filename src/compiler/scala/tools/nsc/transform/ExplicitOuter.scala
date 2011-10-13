@@ -406,8 +406,10 @@ abstract class ExplicitOuter extends InfoTransform
           val unchecked = isUncheckedAnnotation(tpt.tpe)
           if (unchecked)
             nselector = nselector1
-            
-          (!unchecked, isSwitchAnnotation(tpt.tpe))
+
+          // Don't require a tableswitch if there are 1-2 casedefs
+          // since the matcher intentionally emits an if-then-else.
+          (!unchecked, isSwitchAnnotation(tpt.tpe) && ncases.size > 2)
         case _  =>
           (true, false)
       }
