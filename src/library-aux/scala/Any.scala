@@ -56,7 +56,7 @@ abstract class Any {
   
   /** Returns the runtime class representation of the object.
    *
-   *  @return a class object corresponding to the static type of the receiver
+   *  @return a class object corresponding to the runtime type of the receiver
    */
   def getClass(): Class[_]
   
