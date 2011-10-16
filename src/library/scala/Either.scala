@@ -145,7 +145,7 @@ sealed abstract class Either[+A, +B] {
    * {{{
    * Right[Either[Int, String], String](Right(12)).joinRight: Either[Int, String] // Right(12)
    * Right[Either[Int, String], String](Left("scala")).joinRight: Either[Int, String] // Left("scala")
-   * Left[Either[Int, String], String]("haskell).joinRight: Either[Int, String] = // Left("haskell")
+   * Left[Either[Int, String], String]("haskell").joinRight: Either[Int, String] = // Left("haskell")
    * }}}
    *
    * This method, and `joinLeft`, are analogous to `Option#flatten`
@@ -169,7 +169,7 @@ sealed abstract class Either[+A, +B] {
    * {{{
    * Left[String, Either[String, Int]](Right("scala")).joinLeft: Either[Int, String] // Right("scala")
    * Left[String, Either[String, Int]](Left(12)).joinLeft: Either[Int, String] // Left(12)
-   * Right[String, Either[String, Int]]("haskell).joinLeft: Either[Int, String] = // Left("haskell")
+   * Right[String, Either[String, Int]]("haskell").joinLeft: Either[Int, String] = // Left("haskell")
    * }}}
    *
    * This method, and `joinRight`, are analogous to `Option#flatten`
