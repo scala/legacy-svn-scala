@@ -24,7 +24,7 @@ trait AnyRef extends Any {
    *
    *  @return   the hash code value for this object.
    */
-  def hashCode: Int = sys.error("hashCode")
+  def hashCode(): Int = sys.error("hashCode")
   
   /** Creates a String representation of this object.  The default
    *  representation is platform dependent.  On the java platform it
@@ -33,7 +33,7 @@ trait AnyRef extends Any {
    *
    *  @return     a String representation of the object.
    */
-  def toString: String = sys.error("toString")
+  def toString(): String = sys.error("toString")
   
   /** Executes the code in `body` with an exclusive lock on `this`.
    *
