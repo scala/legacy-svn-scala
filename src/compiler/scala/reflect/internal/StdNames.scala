@@ -187,7 +187,8 @@ trait StdNames extends /*reflect.generic.StdNames with*/ NameManglers { self: Sy
     val SPECIALIZED_INSTANCE: NameType  = "specInstance$"
     val STAR: NameType                  = "*"
     val THIS: NameType                  = "_$this"
-    
+    val SELECTOR_DUMMY: NameType        = "<unapply-selector>"
+
     final val Nil: NameType             = "Nil"
     final val Predef: NameType          = "Predef"
     final val ScalaRunTime: NameType    = "ScalaRunTime"
