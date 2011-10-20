@@ -266,23 +266,24 @@ abstract class UnCurry extends InfoTransform
           val m = anonClass.newMethod(fun.pos, nme.isDefinedAt) setFlag FINAL
           m setInfo MethodType(m newSyntheticValueParams formals, BooleanClass.tpe)
           anonClass.info.decls enter m
-          
-          val Match(selector, cases) = fun.body
           val vparam = fun.vparams.head.symbol
           val idparam = m.paramss.head.head
           val substParam = new TreeSymSubstituter(List(vparam), List(idparam))
           def substTree[T <: Tree](t: T): T = substParam(resetLocalAttrs(t))
-          
-          def transformCase(cdef: CaseDef): CaseDef =
-            substTree(CaseDef(cdef.pat.duplicate, cdef.guard.duplicate, Literal(Constant(true))))
-          def defaultCase = CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(Constant(false)))
-          
-          DefDef(m, gen.mkUncheckedMatch(
-            if (cases exists treeInfo.isDefaultCase) Literal(Constant(true))
-            else Match(substTree(selector.duplicate), (cases map transformCase) :+ defaultCase)
-          ))
+
+          DefDef(m, (fun.body: @unchecked) match {
+            case Match(selector, cases) =>
+              def transformCase(cdef: CaseDef): CaseDef =
+                substTree(CaseDef(cdef.pat.duplicate, cdef.guard.duplicate, Literal(Constant(true))))
+              def defaultCase = CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(Constant(false)))
+
+              gen.mkUncheckedMatch(
+                if (cases exists treeInfo.isDefaultCase) Literal(Constant(true))
+                else Match(substTree(selector.duplicate), (cases map transformCase) :+ defaultCase)
+              )
+          })
         }
-          
+
         val members =
           if (isPartial) List(applyMethodDef, isDefinedAtMethodDef)
           else List(applyMethodDef)
