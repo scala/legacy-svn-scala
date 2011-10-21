@@ -2788,11 +2788,16 @@ A type's typeSymbol should never be inspected directly.
     override def safeToString = "<?>"    
     override def kind = "LazyType"
   }
-  
+
   abstract class LazyPolyType(override val typeParams: List[Symbol]) extends LazyType {
     override def safeToString = 
       (if (typeParams.isEmpty) "" else typeParamsString(this)) + super.safeToString
   } 
+
+  // def mkLazyType(tparams: Symbol*)(f: Symbol => Unit): LazyType = (
+  //   if (tparams.isEmpty) new LazyType { override def complete(sym: Symbol) = f(sym) }
+  //   else new LazyPolyType(tparams.toList) { override def complete(sym: Symbol) = f(sym) }
+  // )
 
 // Creators ---------------------------------------------------------------
 
