@@ -186,6 +186,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     // fundamental reference classes
     lazy val ScalaObjectClass           = getMember(ScalaPackageClass, tpnme.ScalaObject)
     lazy val PartialFunctionClass       = getClass("scala.PartialFunction")
+    lazy val AbstractPartialFunctionClass = getClass("scala.runtime.AbstractPartialFunction")
     lazy val SymbolClass                = getClass("scala.Symbol")
     lazy val StringClass                = getClass(sn.String)
     lazy val StringModule               = StringClass.linkedClassOfClass
@@ -267,6 +268,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def isScalaRepeatedParamType(tp: Type) = tp.typeSymbol == RepeatedParamClass
     def isJavaRepeatedParamType(tp: Type)  = tp.typeSymbol == JavaRepeatedParamClass
     def isRepeatedParamType(tp: Type)      = isScalaRepeatedParamType(tp) || isJavaRepeatedParamType(tp)
+    def isCastSymbol(sym: Symbol)          = sym == Any_asInstanceOf || sym == Object_asInstanceOf
     
     def isJavaVarArgs(params: List[Symbol])  = params.nonEmpty && isJavaRepeatedParamType(params.last.tpe)
     def isScalaVarArgs(params: List[Symbol]) = params.nonEmpty && isScalaRepeatedParamType(params.last.tpe)
@@ -635,7 +637,10 @@ trait Definitions extends reflect.api.StandardDefinitions {
       // Trying to allow for deprecated locations
       sym.isAliasType && isMetaAnnotation(sym.info.typeSymbol)
     )
-
+    def hasBeanAnnotation(sym: Symbol) = (
+         (sym hasAnnotation BeanPropertyAttr)
+      || (sym hasAnnotation BooleanBeanPropertyAttr)
+    )
     lazy val metaAnnotations = Set(
       FieldTargetClass, ParamTargetClass,
       GetterTargetClass, SetterTargetClass,
@@ -645,8 +650,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val AnnotationDefaultAttr: Symbol = {
       val attr = newClass(RuntimePackageClass, tpnme.AnnotationDefaultATTR, List(AnnotationClass.typeConstructor))
       // This attribute needs a constructor so that modifiers in parsed Java code make sense
-      attr.info.decls enter (attr newConstructor NoPosition setInfo MethodType(Nil, attr.tpe))
-      attr
+      attr.info.decls enter attr.newClassConstructor(NoPosition)
     }
     
     def getPackageObjectClass(fullname: Name): Symbol =
@@ -784,12 +788,12 @@ trait Definitions extends reflect.api.StandardDefinitions {
     /** Is symbol a boxed value class, e.g. java.lang.Integer? */
     def isBoxedValueClass(sym: Symbol) = boxedValueClassesSet(sym)
     
-    /** If symbol is a value class, return the value class, with the exception
-     *  that BoxedUnit remains BoxedUnit.  If not a value class, NoSymbol.
+    /** If symbol is a value class (boxed or not), return the unboxed
+     *  value class.  Otherwise, NoSymbol.
      */    
     def unboxedValueClass(sym: Symbol): Symbol =
       if (isValueClass(sym)) sym
-      else if (sym == BoxedUnitClass) sym
+      else if (sym == BoxedUnitClass) UnitClass
       else boxedClass.map(_.swap).getOrElse(sym, NoSymbol)
 
     /** Is type's symbol a numeric value class? */

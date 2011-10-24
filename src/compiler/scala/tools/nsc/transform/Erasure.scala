@@ -433,7 +433,7 @@ abstract class Erasure extends AddInterfaces
       case _ =>
         typedPos(tree.pos)(tree.tpe.typeSymbol match {
           case UnitClass  =>
-            if (treeInfo isPureExpr tree) REF(BoxedUnit_UNIT)
+            if (treeInfo isExprSafeToInline tree) REF(BoxedUnit_UNIT)
             else BLOCK(tree, REF(BoxedUnit_UNIT))
           case NothingClass => tree // a non-terminating expression doesn't need boxing
           case x          =>
@@ -472,11 +472,12 @@ abstract class Erasure extends AddInterfaces
       case _ =>
         typedPos(tree.pos)(pt.typeSymbol match {
           case UnitClass  =>
-            if (treeInfo isPureExpr tree) UNIT
+            if (treeInfo isExprSafeToInline tree) UNIT
             else BLOCK(tree, UNIT)
           case x          =>
             assert(x != ArrayClass)
-            Apply(unboxMethod(pt.typeSymbol), tree) setType pt
+            // don't `setType pt` the Apply tree, as the Apply's fun won't be typechecked if the Apply tree already has a type
+            Apply(unboxMethod(pt.typeSymbol), tree)
         })
     }
 

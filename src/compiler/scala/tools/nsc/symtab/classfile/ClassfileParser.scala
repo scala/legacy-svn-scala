@@ -54,6 +54,8 @@ abstract class ClassfileParser {
   }
 
   def parse(file: AbstractFile, root: Symbol) = try {
+    debuglog("[class] >> " + root.fullName)
+
     def handleMissing(e: MissingRequirementError) = {
       if (settings.debug.value) e.printStackTrace
       throw new IOException("Missing dependency '" + e.req + "', required by " + in.file)
@@ -82,7 +84,6 @@ abstract class ClassfileParser {
         println("Skipping class: " + root + ": " + root.getClass)
     }
 */
-    debuglog("parsing " + file.name)
     this.in = new AbstractFileReader(file)
     if (root.isModule) {
       this.clazz = root.companionClass
@@ -569,10 +570,7 @@ abstract class ClassfileParser {
              (sflags & INTERFACE) == 0L))
           {
             //Console.println("adding constructor to " + clazz);//DEBUG
-            instanceDefs.enter(
-              clazz.newConstructor(NoPosition)
-              .setFlag(clazz.flags & ConstrFlags)
-              .setInfo(MethodType(List(), clazz.tpe)))
+            instanceDefs enter clazz.newClassConstructor(NoPosition)
           }
         ()
       } :: loaders.pendingLoadActions
@@ -907,8 +905,12 @@ abstract class ClassfileParser {
                 case None =>
                   throw new RuntimeException("Scala class file does not contain Scala annotation")
               }
-            debuglog("" + sym + "; annotations = " + sym.rawAnnotations)
-          } else
+            debuglog("[class] << " + sym.fullName + (
+              if (sym.rawAnnotations.isEmpty) ""
+              else sym.rawAnnotations.mkString("(", ", ", ")"))
+            )
+          }
+          else
             in.skip(attrLen)
 
         // TODO 1: parse runtime visible annotations on parameters

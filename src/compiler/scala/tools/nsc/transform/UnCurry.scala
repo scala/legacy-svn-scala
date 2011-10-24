@@ -195,7 +195,7 @@ abstract class UnCurry extends InfoTransform
 
     /** Undo eta expansion for parameterless and nullary methods */
     def deEta(fun: Function): Tree = fun match {
-      case Function(List(), Apply(expr, List())) if treeInfo.isPureExpr(expr) => 
+      case Function(List(), Apply(expr, List())) if treeInfo.isExprSafeToInline(expr) => 
         if (expr hasSymbolWhich (_.isLazy))
           fun
         else
@@ -247,6 +247,7 @@ abstract class UnCurry extends InfoTransform
         val anonClass = owner newAnonymousFunctionClass fun.pos setFlag (FINAL | SYNTHETIC | inConstructorFlag)
         def parents =
           if (isFunctionType(fun.tpe)) List(abstractFunctionForFunctionType(fun.tpe), SerializableClass.tpe)
+          else if (isPartial) List(appliedType(AbstractPartialFunctionClass.typeConstructor, targs), SerializableClass.tpe)
           else List(ObjectClass.tpe, fun.tpe, SerializableClass.tpe)
           
         anonClass setInfo ClassInfoType(parents, new Scope, anonClass)
@@ -265,23 +266,49 @@ abstract class UnCurry extends InfoTransform
           val m = anonClass.newMethod(fun.pos, nme.isDefinedAt) setFlag FINAL
           m setInfo MethodType(m newSyntheticValueParams formals, BooleanClass.tpe)
           anonClass.info.decls enter m
-          
-          val Match(selector, cases) = fun.body
           val vparam = fun.vparams.head.symbol
           val idparam = m.paramss.head.head
           val substParam = new TreeSymSubstituter(List(vparam), List(idparam))
           def substTree[T <: Tree](t: T): T = substParam(resetLocalAttrs(t))
-          
-          def transformCase(cdef: CaseDef): CaseDef =
-            substTree(CaseDef(cdef.pat.duplicate, cdef.guard.duplicate, Literal(Constant(true))))
-          def defaultCase = CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(Constant(false)))
-          
-          DefDef(m, gen.mkUncheckedMatch(
-            if (cases exists treeInfo.isDefaultCase) Literal(Constant(true))
-            else Match(substTree(selector.duplicate), (cases map transformCase) :+ defaultCase)
-          ))
+
+          DefDef(m, (fun.body: @unchecked) match {
+            case Match(selector, cases) =>
+              def transformCase(cdef: CaseDef): CaseDef =
+                substTree(CaseDef(cdef.pat.duplicate, cdef.guard.duplicate, Literal(Constant(true))))
+              def defaultCase = CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(Constant(false)))
+
+              gen.mkUncheckedMatch(
+                if (cases exists treeInfo.isDefaultCase) Literal(Constant(true))
+                else Match(substTree(selector.duplicate), (cases map transformCase) :+ defaultCase)
+              )
+            case Apply(Apply(TypeApply(Select(tgt, n), targs), args_scrut), args_pm) if opt.virtPatmat && (n == nme.runOrElse) => // TODO: check tgt.tpe.typeSymbol isNonBottomSubclass MatchingStrategyClass
+              object noOne extends Transformer {
+                override val treeCopy = newStrictTreeCopier // must duplicate everything
+                val one = tgt.tpe member "caseResult".toTermName
+                override def transform(tree: Tree): Tree = tree match {
+                  case Apply(fun, List(a)) if fun.symbol == one =>
+                    // blow one's argument away since all we want to know is whether the match succeeds or not
+                    // (the alternative, making `one` CBN, would entail moving away from Option)
+                    val zero = // must use subtyping (no need for equality thanks to covariance), as otherwise we miss types like `Any with Int`
+                      if (UnitClass.tpe <:< a.tpe)         Literal(Constant())
+                      else if (BooleanClass.tpe <:< a.tpe) Literal(Constant(false))
+                      else if (FloatClass.tpe <:< a.tpe)   Literal(Constant(0.0f))
+                      else if (DoubleClass.tpe <:< a.tpe)  Literal(Constant(0.0d))
+                      else if (ByteClass.tpe <:< a.tpe)    Literal(Constant(0.toByte))
+                      else if (ShortClass.tpe <:< a.tpe)   Literal(Constant(0.toShort))
+                      else if (IntClass.tpe <:< a.tpe)     Literal(Constant(0))
+                      else if (LongClass.tpe <:< a.tpe)    Literal(Constant(0L))
+                      else if (CharClass.tpe <:< a.tpe)    Literal(Constant(0.toChar))
+                      else NULL AS a.tpe // must cast, at least when a.tpe <:< NothingClass.tpe
+                    Apply(fun.duplicate, List(zero))
+                  case _ =>
+                    super.transform(tree)
+                }
+              }
+              substTree(Apply(Apply(TypeApply(Select(tgt.duplicate, tgt.tpe.member("isSuccess".toTermName)), targs map (_.duplicate)), args_scrut map (_.duplicate)), args_pm map (noOne.transform)))
+          })
         }
-          
+
         val members =
           if (isPartial) List(applyMethodDef, isDefinedAtMethodDef)
           else List(applyMethodDef)
@@ -477,7 +504,7 @@ abstract class UnCurry extends InfoTransform
 
         case Apply(Select(Function(vparams, body), nme.apply), args) =>
 //        if (List.forall2(vparams, args)((vparam, arg) => treeInfo.isAffineIn(body) || 
-//                                        treeInfo.isPureExpr(arg))) =>
+//                                        treeInfo.isExprSafeToInline(arg))) =>
           // perform beta-reduction; this helps keep view applications small
           println("beta-reduce2: "+tree)
           withNeedLift(true) {

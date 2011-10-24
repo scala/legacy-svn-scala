@@ -189,15 +189,35 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           
         case TypeApply(sel @ Select(This(_), name), args) =>
           mayNeedProtectedAccessor(sel, args, false)
-      
-        case sel @ Select(qual @ This(_), name) => 
-           // direct calls to aliases of param accessors to the superclass in order to avoid
-           // duplicating fields.
-           if (sym.isParamAccessor && sym.alias != NoSymbol) {
+
+        case sel @ Select(qual @ This(_), name) =>
+          // warn if they are selecting a private[this] member which
+          // also exists in a superclass, because they may be surprised
+          // to find out that a constructor parameter will shadow a
+          // field. See SI-4762.
+          if (settings.lint.value) {
+            if (sym.isPrivateLocal && sym.paramss.isEmpty) {
+              qual.symbol.ancestors foreach { parent =>
+                parent.info.decls filterNot (x => x.isPrivate || x.hasLocalFlag) foreach { m2 =>
+                  if (sym.name == m2.name && m2.isGetter && m2.accessed.isMutable) {
+                    unit.warning(sel.pos,
+                        sym.accessString + " " + sym.fullLocationString + " shadows mutable " + m2.name 
+                      + " inherited from " + m2.owner + ".  Changes to " + m2.name + " will not be visible within "
+                      + sym.owner + " - you may want to give them distinct names."
+                    )
+                  }
+                }
+              }
+            }
+          }
+
+          // direct calls to aliases of param accessors to the superclass in order to avoid
+          // duplicating fields.
+          if (sym.isParamAccessor && sym.alias != NoSymbol) {
             val result = localTyper.typed {
-                Select(
-                  Super(qual, tpnme.EMPTY/*qual.symbol.info.parents.head.symbol.name*/) setPos qual.pos,
-                  sym.alias) setPos tree.pos
+              Select(
+              Super(qual, tpnme.EMPTY/*qual.symbol.info.parents.head.symbol.name*/) setPos qual.pos,
+              sym.alias) setPos tree.pos
             }
             debuglog("alias replacement: " + tree + " ==> " + result);//debug
             localTyper.typed(gen.maybeMkAsInstanceOf(transformSuperSelect(result), sym.tpe, sym.alias.tpe, true))
@@ -206,8 +226,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
         case Select(Super(_, mix), name) =>
           if (sym.isValue && !sym.isMethod || sym.hasAccessorFlag) {
-            unit.error(tree.pos, "super may be not be used on "+
-                       (if (sym.hasAccessorFlag) sym.accessed else sym))
+            unit.error(tree.pos, "super may be not be used on "+ sym.accessedOrSelf)
           }
           else if (isDisallowed(sym)) {
             unit.error(tree.pos, "super not allowed here: use this." + name.decode + " instead")

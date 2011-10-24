@@ -111,7 +111,7 @@ object Predef extends LowPriorityImplicits {
 
   // Minor variations on identity functions
   def identity[A](x: A): A         = x    // @see `conforms` for the implicit version
-  def implicitly[T](implicit e: T) = e    // for summoning implicit values from the nether world
+  @inline def implicitly[T](implicit e: T) = e    // for summoning implicit values from the nether world -- TODO: when dependent method types are on by default, give this result type `e.type`, so that inliner has better chance of knowing which method to inline in calls like `implicitly[MatchingStrategy[Option]].zero`
   @inline def locally[T](x: T): T  = x    // to communicate intent and avoid unmoored statements
 
   // Apparently needed for the xml library
@@ -214,11 +214,14 @@ object Predef extends LowPriorityImplicits {
       throw new IllegalArgumentException("requirement failed: "+ message)
   }
 
-  final class Ensuring[A](val x: A) {
-    def ensuring(cond: Boolean): A = { assert(cond); x }
-    def ensuring(cond: Boolean, msg: => Any): A = { assert(cond, msg); x }
-    def ensuring(cond: A => Boolean): A = { assert(cond(x)); x }
-    def ensuring(cond: A => Boolean, msg: => Any): A = { assert(cond(x), msg); x }
+  final class Ensuring[A](val __resultOfEnsuring: A) { // `__resultOfEnsuring` must be a public val to allow inlining
+    // the val used to be called `x`, but now goes by `__resultOfEnsuring`, as that reduces the chances of a user's writing
+    // `foo.__resultOfEnsuring` and being confused why they get an ambiguous implicit conversion error
+    // (`foo.x` used to produce this error since both any2Ensuring and any2ArrowAssoc pimped an `x` onto everything)
+    def ensuring(cond: Boolean): A = { assert(cond); __resultOfEnsuring }
+    def ensuring(cond: Boolean, msg: => Any): A = { assert(cond, msg); __resultOfEnsuring }
+    def ensuring(cond: A => Boolean): A = { assert(cond(__resultOfEnsuring)); __resultOfEnsuring }
+    def ensuring(cond: A => Boolean, msg: => Any): A = { assert(cond(__resultOfEnsuring), msg); __resultOfEnsuring }
   }
   implicit def any2Ensuring[A](x: A): Ensuring[A] = new Ensuring(x)
 
@@ -241,8 +244,11 @@ object Predef extends LowPriorityImplicits {
     def unapply[A, B, C](x: Tuple3[A, B, C]): Option[Tuple3[A, B, C]] = Some(x)
   }
 
-  final class ArrowAssoc[A](val x: A) {
-    @inline def -> [B](y: B): Tuple2[A, B] = Tuple2(x, y)
+  final class ArrowAssoc[A](val __leftOfArrow: A) {  // `__leftOfArrow` must be a public val to allow inlining
+    // the val used to be called `x`, but now goes by `__leftOfArrow`, as that reduces the chances of a user's writing
+    // `foo.__leftOfArrow` and being confused why they get an ambiguous implicit conversion error
+    // (`foo.x` used to produce this error since both any2Ensuring and any2ArrowAssoc pimped an `x` onto everything)
+    @inline def -> [B](y: B): Tuple2[A, B] = Tuple2(__leftOfArrow, y)
     def →[B](y: B): Tuple2[A, B] = ->(y)
   }
   implicit def any2ArrowAssoc[A](x: A): ArrowAssoc[A] = new ArrowAssoc(x)
