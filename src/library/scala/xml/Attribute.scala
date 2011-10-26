@@ -80,8 +80,8 @@ abstract trait Attribute extends MetaData {
   }
 
   override def size: Int = {
-    if (value == null) next.length
-    else 1 + next.length
+    if (value == null) next.size
+    else 1 + next.size
   }
 
   /** Appends string representation of only this attribute to stringbuffer.
