@@ -3,6 +3,8 @@
  * @author Philipp Haller
  */
 
+// $Id$
+
 package scala.tools.partest
 package nest
 
@@ -21,7 +23,7 @@ class ExtConsoleReporter(settings: Settings, val writer: PrintWriter) extends Co
 
 class TestSettings(cp: String, error: String => Unit) extends Settings(error) {
   def this(cp: String) = this(cp, _ => ())
-
+  
   deprecation.value = true
   nowarnings.value  = false
   encoding.value    = "ISO-8859-1"
@@ -57,11 +59,11 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
       case x if x.isAbsolute  => x.path
       case x                  => (fileManager.testRootDir / x).toAbsolute.path
     }
-
+    
     val (opt1, opt2) = (options split "\\s").toList partition (_ startsWith "-Xplugin:")
     val plugins = opt1 map (_ stripPrefix "-Xplugin:") flatMap (_ split pathSeparator) map absolutize
     val pluginOption = if (opt1.isEmpty) Nil else List("-Xplugin:" + (plugins mkString pathSeparator))
-
+    
     (opt2 ::: pluginOption) mkString " "
   }
 
@@ -77,13 +79,13 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
     val argString = (io.File(log).parent / flagsFileName) ifFile (x => updatePluginPath(x.slurp())) getOrElse ""
     val allOpts = fileManager.SCALAC_OPTS+" "+argString
     val args = (allOpts split "\\s").toList
-
+    
     NestUI.verbose("scalac options: "+allOpts)
-
+    
     val command = new CompilerCommand(args, testSettings)
     val global = newGlobal(command.settings, logWriter)
     val testRep: ExtConsoleReporter = global.reporter.asInstanceOf[ExtConsoleReporter]
-
+    
     val testFileFn: (File, FileManager) => TestFile = kind match {
       case "pos"          => PosTestFile.apply
       case "neg"          => NegTestFile.apply
@@ -104,20 +106,20 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
     }
  
     val toCompile = files map (_.getPath)
-
+    
     try {
-      NestUI.verbose("compiling "+toCompile.mkString(" "))
+      NestUI.verbose("compiling "+toCompile)
       try new global.Run compile toCompile
       catch {
         case FatalError(msg) =>
           testRep.error(null, "fatal error: " + msg)
       }
-
+      
       testRep.printSummary()
       testRep.writer.close()
     }
     finally logWriter.close()
-
+    
     !testRep.hasErrors
   }
 }
