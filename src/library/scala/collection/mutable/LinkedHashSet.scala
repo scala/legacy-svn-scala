@@ -39,9 +39,10 @@ import generic._
  *  @define orderDependentFold
  */
 @SerialVersionUID(1L)
-class LinkedHashSet[A] extends Set[A] 
+class LinkedHashSet[A] extends AbstractSet[A]
+                          with Set[A]
                           with GenericSetTemplate[A, LinkedHashSet]
-                          with SetLike[A, LinkedHashSet[A]] 
+                          with SetLike[A, LinkedHashSet[A]]
                           with FlatHashTable[A]
                           with Serializable
 {
