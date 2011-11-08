@@ -18,10 +18,14 @@ abstract class ReplTest extends DirectTest {
   // final because we need to enforce the existence of a couple settings.
   final override def settings: Settings = {
     val s = super.settings
-    s.Yreplsync.value = true
+    // s.Yreplsync.value = true
     s.Xnojline.value = true
     transformSettings(s)
   }
-  def eval() = ILoop.runForTranscript(code, settings).lines drop 1
+  def eval() = {
+    val s = settings
+    log("eval(): settings = " + s)
+    ILoop.runForTranscript(code, s).lines drop 1
+  }
   def show() = eval() foreach println
 }

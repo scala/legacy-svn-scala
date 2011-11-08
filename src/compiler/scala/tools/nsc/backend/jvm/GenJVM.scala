@@ -12,7 +12,6 @@ import java.nio.ByteBuffer
 import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.pickling.{ PickleFormat, PickleBuffer }
 import scala.tools.reflect.SigParser
-import scala.tools.nsc.util.ScalaClassLoader
 import scala.tools.nsc.symtab._
 import scala.reflect.internal.ClassfileConstants._
 import ch.epfl.lamp.fjbg._
@@ -1015,13 +1014,17 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       val methodInfo     = module.thisType.memberInfo(m)
       val paramJavaTypes = methodInfo.paramTypes map javaType
       val paramNames     = 0 until paramJavaTypes.length map ("x_" + _)
+      // TODO: evaluate the other flags we might be dropping on the floor here.
+      val flags = PublicStatic | (
+        if (m.isVarargsMethod) ACC_VARARGS else 0
+      )
       
       /** Forwarders must not be marked final, as the JVM will not allow
        *  redefinition of a final static method, and we don't know what classes
        *  might be subclassing the companion class.  See SI-4827.
        */
       val mirrorMethod = jclass.addNewMethod(
-        PublicStatic,
+        flags,
         javaName(m),
         javaType(methodInfo.resultType),
         mkArray(paramJavaTypes),

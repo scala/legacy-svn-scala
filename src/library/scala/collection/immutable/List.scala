@@ -74,8 +74,9 @@ import annotation.tailrec
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-sealed abstract class List[+A] extends LinearSeq[A] 
-                                  with Product 
+sealed abstract class List[+A] extends AbstractSeq[A]
+                                  with LinearSeq[A]
+                                  with Product
                                   with GenericTraversableTemplate[A, List]
                                   with LinearSeqOptimized[A, List[A]] {
   override def companion: GenericCompanion[List] = List

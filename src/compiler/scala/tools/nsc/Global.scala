@@ -58,17 +58,17 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
   def mkAttributedQualifier(tpe: Type, termSym: Symbol): Tree = gen.mkAttributedQualifier(tpe, termSym)
   
-  def picklerPhase: Phase = currentRun.picklerPhase
+  def picklerPhase: Phase = if (currentRun.isDefined) currentRun.picklerPhase else NoPhase
     
   // platform specific elements
 
-  type ThisPlatform = Platform[_] { val global: Global.this.type }
+  type ThisPlatform = Platform { val global: Global.this.type }
   
   lazy val platform: ThisPlatform =
     if (forMSIL) new { val global: Global.this.type = Global.this } with MSILPlatform
     else new { val global: Global.this.type = Global.this } with JavaPlatform
 
-  def classPath: ClassPath[_] = platform.classPath
+  def classPath: ClassPath[platform.BinaryRepr] = platform.classPath
   def rootLoader: LazyType = platform.rootLoader
 
   // sub-components --------------------------------------------------
@@ -1325,10 +1325,11 @@ object Global {
     // !!! The classpath isn't known until the Global is created, which is too
     // late, so we have to duplicate it here.  Classpath is too tightly coupled,
     // it is a construct external to the compiler and should be treated as such.
-    val loader = ScalaClassLoader.fromURLs(new PathResolver(settings).result.asURLs)
-    val name   = settings.globalClass.value
-    val clazz  = Class.forName(name, true, loader)
-    val cons   = clazz.getConstructor(classOf[Settings], classOf[Reporter])
+    val parentLoader = settings.explicitParentLoader getOrElse getClass.getClassLoader
+    val loader       = ScalaClassLoader.fromURLs(new PathResolver(settings).result.asURLs, parentLoader)
+    val name         = settings.globalClass.value
+    val clazz        = Class.forName(name, true, loader)
+    val cons         = clazz.getConstructor(classOf[Settings], classOf[Reporter])
 
     cons.newInstance(settings, reporter).asInstanceOf[Global]
   }

@@ -3,6 +3,8 @@
  * @author Philipp Haller
  */
 
+// $Id$
+
 package scala.tools.partest
 package nest
 
@@ -13,14 +15,16 @@ import scala.tools.util.PathResolver
 import scala.tools.nsc.{ io, util }
 import util.{ ClassPath }
 import io.{ Path, Directory }
+import File.pathSeparator
 import ClassPath.{ join }
 import PathResolver.{ Environment, Defaults }
 import RunnerUtils._
 
+
 class ConsoleFileManager extends FileManager {  
   var testBuild: Option[String] = PartestDefaults.testBuild
   def testBuildFile = testBuild map (testParent / _)
-
+  
   var testClasses: Option[String] = None
 
   def this(buildPath: String, rawClasses: Boolean) = {
@@ -51,19 +55,21 @@ class ConsoleFileManager extends FileManager {
   var CLASSPATH   = PartestDefaults.classPath
   var JAVACMD     = PartestDefaults.javaCmd
   var JAVAC_CMD   = PartestDefaults.javacCmd
+  
 
+  NestUI.verbose("CLASSPATH: "+CLASSPATH)
+  
   if (!srcDir.isDirectory) {
     NestUI.failure("Source directory \"" + srcDir.path + "\" not found")
     sys.exit(1)
   }
-
+  
   CLASSPATH = {
     val libs = (srcDir / Directory("lib")).files filter (_ hasExtension "jar") map (_.toCanonical.path)
-
+    
     // add all jars in libs
-    (CLASSPATH :: libs.toList) mkString File.pathSeparator
+    (CLASSPATH :: libs.toList) mkString pathSeparator
   }
-  NestUI.verbose("CLASSPATH: "+CLASSPATH)
 
   def findLatest() {
     NestUI.verbose("test parent: "+testParent)
@@ -74,7 +80,7 @@ class ConsoleFileManager extends FileManager {
     if (!testClasses.isEmpty) {
       testClassesDir = Path(testClasses.get).toCanonical.toDirectory
       NestUI.verbose("Running with classes in "+testClassesDir)
-
+      
       latestFile        = testClassesDir.parent / "bin"
       latestLibFile     = testClassesDir / "library"
       latestCompFile    = testClassesDir / "compiler"
@@ -127,7 +133,7 @@ class ConsoleFileManager extends FileManager {
       val build = testParent / "build"
       // in case of an installed dist, testRootDir is one level deeper
       val bin = testParent.parent / "bin"
-
+      
       def mostRecentOf(base: String, names: String*) =
         names map (x => prefixFile(base + "/" + x).lastModified) reduceLeft (_ max _)
 
@@ -136,23 +142,23 @@ class ConsoleFileManager extends FileManager {
       val packTime  = mostRecentOf("build/pack/lib", "scala-compiler.jar", "scala-library.jar")
       val distTime  = mostRecentOf("dists/latest/lib", "scala-compiler.jar", "scala-library.jar")
       val instTime  = mostRecentOf("lib", "scala-compiler.jar", "scala-library.jar")
-
+      
       val pairs = Map(
         (quickTime, () => setupQuick()),
         (packTime,  () => setupPack()),
         (distTime,  () => setupDist()),
         (instTime,  () => setupInst())
       )
-
+      
       // run setup based on most recent time
       pairs(pairs.keys max)()
-
+      
       latestFjbgFile = prefixFile("lib/fjbg.jar")
     }
-
+    
     LATEST_LIB = latestLibFile.getAbsolutePath
   }
-
+  
   var LATEST_LIB: String = ""
 
   var latestFile: File = _
@@ -160,8 +166,6 @@ class ConsoleFileManager extends FileManager {
   var latestCompFile: File = _
   var latestPartestFile: File = _
   var latestFjbgFile: File = _
-  // NB. Needed by partest when actors library is put in separate jar file.
-  def latestActorsFile: File = (latestLibFile.parent / "scala-actors.jar").jfile
   def latestScalapFile: File = (latestLibFile.parent / "scalap.jar").jfile
   var testClassesDir: Directory = _
   // initialize above fields
@@ -176,7 +180,7 @@ class ConsoleFileManager extends FileManager {
 
     if (dir.isDirectory) NestUI.verbose("look in %s for tests" format dir)
     else NestUI.failure("Directory '%s' not found" format dir)      
-
+    
     val files =
       if (testFiles.nonEmpty) testFiles filter (_.parent isSame dir)
       else dir.list filterNot ignoreDir filter cond toList

@@ -153,6 +153,7 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
   protected[interactive] def getUnit(s: SourceFile): Option[RichCompilationUnit] = {
     toBeRemoved.synchronized {
       for (f <- toBeRemoved) {
+        informIDE("removed: "+s)
         unitOfFile -= f
         allSources = allSources filter (_.file != f)
       }
@@ -730,7 +731,7 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
       val originalTypeParams = sym.owner.typeParams
       parseAndEnter(unit)
       val pre = adaptToNewRunMap(ThisType(sym.owner))
-      val newsym = pre.decl(sym.name) filter { alt =>
+      val newsym = pre.typeSymbol.info.decl(sym.name) filter { alt =>
         sym.isType || {
           try {
             val tp1 = pre.memberType(alt) onTypeError NoType
@@ -832,6 +833,11 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
       }
     }
     
+    def addNonShadowed(other: Members[M]) = {
+      for ((name, ms) <- other)
+        if (ms.nonEmpty && this(name).isEmpty) this(name) = ms
+    }
+   
     def allMembers: List[M] = values.toList.flatten
   }
   
@@ -840,31 +846,38 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
     typedTreeAt(pos) // to make sure context is entered
     val context = doLocateContext(pos)
     val locals = new Members[ScopeMember]
+    val enclosing = new Members[ScopeMember]
     def addScopeMember(sym: Symbol, pre: Type, viaImport: Tree) =
       locals.add(sym, pre, false) { (s, st) =>
         new ScopeMember(s, st, context.isAccessible(s, pre, false), viaImport)
       }
+    def localsToEnclosing() = {
+      enclosing.addNonShadowed(locals)
+      locals.clear()
+    }
     //print("add scope members")
     var cx = context
     while (cx != NoContext) {
       for (sym <- cx.scope)
         addScopeMember(sym, NoPrefix, EmptyTree)
+      localsToEnclosing()
       if (cx == cx.enclClass) {
         val pre = cx.prefix
         for (sym <- pre.members) 
           addScopeMember(sym, pre, EmptyTree)
+        localsToEnclosing()
       }
       cx = cx.outer
     }
     //print("\nadd imported members")
     for (imp <- context.imports) {
       val pre = imp.qual.tpe
-      for (sym <- imp.allImportedSymbols) {
+      for (sym <- imp.allImportedSymbols)
         addScopeMember(sym, pre, imp.qual)
-      }
+      localsToEnclosing()
     }
     // println()
-    val result = locals.allMembers
+    val result = enclosing.allMembers
 //    if (debugIDE) for (m <- result) println(m)
     result
   }

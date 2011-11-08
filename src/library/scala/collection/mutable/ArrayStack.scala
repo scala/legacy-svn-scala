@@ -28,7 +28,7 @@ object ArrayStack extends SeqFactory[ArrayStack] {
   }
 
   private[mutable] def growArray(x: Array[AnyRef]) = {
-    val y = new Array[AnyRef](x.length * 2)
+    val y = new Array[AnyRef](math.max(x.length * 2, 1))
     Array.copy(x, 0, y, 0, x.length)
     y
   }
@@ -59,7 +59,8 @@ object ArrayStack extends SeqFactory[ArrayStack] {
 @cloneable @SerialVersionUID(8565219180626620510L)
 class ArrayStack[T] private(private var table : Array[AnyRef],
                             private var index : Int)
-extends Seq[T]
+extends AbstractSeq[T]
+   with Seq[T]
    with SeqLike[T, ArrayStack[T]]
    with GenericTraversableTemplate[T, ArrayStack]
    with Cloneable[ArrayStack[T]]
@@ -219,7 +220,7 @@ extends Seq[T]
   /** Creates and iterator over the stack in LIFO order.
    *  @return an iterator over the elements of the stack.
    */
-  def iterator: Iterator[T] = new Iterator[T] {
+  def iterator: Iterator[T] = new AbstractIterator[T] {
     var currentIndex = index
     def hasNext = currentIndex > 0
     def next() = {

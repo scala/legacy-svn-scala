@@ -10,14 +10,13 @@ package scala.xml
 
 import Utility.sbToString
 import annotation.tailrec
-import scala.collection.Iterator
+import scala.collection.{ AbstractIterable, Iterator }
 
 /**
  * Copyright 2008 Google Inc. All Rights Reserved.
  * @author Burak Emir <bqe@google.com>
  */
 object MetaData {
-
   /** 
    * appends all attributes from new_tail to attribs, without attempting to
    * detect or remove duplicates. The method guarantees that all attributes
@@ -26,8 +25,8 @@ object MetaData {
    *
    * Duplicates can be removed with `normalize`.
    */
-  @tailrec
-  def concatenate(attribs: MetaData, new_tail: MetaData): MetaData =
+  @tailrec  // temporarily marked final so it will compile under -Xexperimental
+  final def concatenate(attribs: MetaData, new_tail: MetaData): MetaData =
     if (attribs eq Null) new_tail
     else concatenate(attribs.next, attribs copy new_tail)
 
@@ -73,7 +72,12 @@ object MetaData {
  *  Copyright 2008 Google Inc. All Rights Reserved.
  *  @author Burak Emir <bqe@google.com>
  */
-abstract class MetaData extends Iterable[MetaData] with Equality with Serializable {
+abstract class MetaData
+extends AbstractIterable[MetaData]
+   with Iterable[MetaData]
+   with Equality
+   with Serializable {
+
   /** Updates this MetaData with the MetaData given as argument. All attributes that occur in updates
    *  are part of the resulting MetaData. If an attribute occurs in both this instance and 
    *  updates, only the one in updates is part of the result (avoiding duplicates). For prefixed
@@ -140,10 +144,6 @@ abstract class MetaData extends Iterable[MetaData] with Equality with Serializab
     case _            => false
   }
   protected def basisForHashCode: Seq[Any] = List(this.asAttrMap)
-
-  /** Returns an iterator on attributes */
-  def iterator: Iterator[MetaData] = Iterator.single(this) ++ next.iterator
-  override def size: Int = 1 + iterator.length
 
   /** filters this sequence of meta data */
   override def filter(f: MetaData => Boolean): MetaData =
