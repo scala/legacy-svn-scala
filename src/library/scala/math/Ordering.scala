@@ -263,11 +263,15 @@ object Ordering extends LowPriorityOrderingImplicits {
 
   trait FloatOrdering extends Ordering[Float] {
     def compare(x: Float, y: Float) = java.lang.Float.compare(x, y)
+    def min(x: Float, y:Float) = java.lang.Math.min(x, y)
+    def max(x: Float, y:Float) = java.lang.Math.max(x, y)
   }
   implicit object Float extends FloatOrdering
 
   trait DoubleOrdering extends Ordering[Double] {
     def compare(x: Double, y: Double) = java.lang.Double.compare(x, y)
+    def min(x: Float, y:Float) = java.lang.Math.min(x, y)
+    def max(x: Float, y:Float) = java.lang.Math.max(x, y)
   }
   implicit object Double extends DoubleOrdering
 
