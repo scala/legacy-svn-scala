@@ -114,12 +114,15 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         /* ### CREATING THE METHOD CACHE ### */
         
         def addStaticVariableToClass(forName: String, forType: Type, forInit: Tree, isFinal: Boolean): Symbol = {
-          val varSym = currentClass.newVariable(ad.pos, mkTerm(forName))
-            .setFlag(PRIVATE | STATIC | SYNTHETIC)
-            .setInfo(forType)
-          if (isFinal) varSym setFlag FINAL else varSym addAnnotation AnnotationInfo(VolatileAttr.tpe, Nil, Nil)
-          currentClass.info.decls enter varSym
+          val varSym = (
+            currentClass.newVariable(ad.pos, mkTerm(forName))
+              setFlag (PRIVATE | STATIC | SYNTHETIC)
+              setInfo (forType)
+          )
+          if (isFinal) varSym setFlag FINAL
+          else varSym.addAnnotation(VolatileAttr)
           
+          currentClass.info.decls enter varSym
           val varDef = typedPos( VAL(varSym) === forInit )
           newStaticMembers append transform(varDef)
           
@@ -267,56 +270,74 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         }
         
         /* ### HANDLING METHODS NORMALLY COMPILED TO OPERATORS ### */
+
+        val testForNumber: Tree => Tree = {
+          qual1 => (qual1 IS_OBJ BoxedNumberClass.tpe) OR (qual1 IS_OBJ BoxedCharacterClass.tpe)
+        }
+        val testForBoolean: Tree => Tree = {
+          qual1 => (qual1 IS_OBJ BoxedBooleanClass.tpe)
+        }
+        val testForNumberOrBoolean: Tree => Tree = {
+          qual1 => testForNumber(qual1) OR testForBoolean(qual1)
+        }
         
-        val testForNumber: Tree     = (qual IS_OBJ BoxedNumberClass.tpe) OR (qual IS_OBJ BoxedCharacterClass.tpe)
-        val testForBoolean: Tree    = (qual IS_OBJ BoxedBooleanClass.tpe)
-        val testForNumberOrBoolean  = testForNumber OR testForBoolean
-        
-        val getPrimitiveReplacementForStructuralCall: PartialFunction[Name, (Symbol, Tree)] = {
-          val testsForNumber = Map() ++ List(
-            nme.UNARY_+ -> "positive",
-            nme.UNARY_- -> "negate",
-            nme.UNARY_~ -> "complement",
-            nme.ADD     -> "add",
-            nme.SUB     -> "subtract",
-            nme.MUL     -> "multiply",
-            nme.DIV     -> "divide",
-            nme.MOD     -> "takeModulo",
-            nme.LSL     -> "shiftSignedLeft",
-            nme.LSR     -> "shiftLogicalRight",
-            nme.ASR     -> "shiftSignedRight",
-            nme.LT      -> "testLessThan",
-            nme.LE      -> "testLessOrEqualThan",
-            nme.GE      -> "testGreaterOrEqualThan",
-            nme.GT      -> "testGreaterThan",
-            nme.toByte  -> "toByte",
-            nme.toShort -> "toShort",
-            nme.toChar  -> "toCharacter",
-            nme.toInt   -> "toInteger",
-            nme.toLong  -> "toLong",
-            nme.toFloat -> "toFloat",
-            nme.toDouble-> "toDouble"
-          )
-          val testsForBoolean = Map() ++ List(
-            nme.UNARY_! -> "takeNot",
-            nme.ZOR     -> "takeConditionalOr",
-            nme.ZAND    -> "takeConditionalAnd"
-          )
-          val testsForNumberOrBoolean = Map() ++ List(
-            nme.OR      -> "takeOr",
-            nme.XOR     -> "takeXor",
-            nme.AND     -> "takeAnd",
-            nme.EQ      -> "testEqual",
-            nme.NE      -> "testNotEqual"
-          )
-          def get(name: String) = getMember(BoxesRunTimeClass, name)
-          
-          /** Begin partial function. */
-          {
-            case x if testsForNumber contains x           => (get(testsForNumber(x)), testForNumber)
-            case x if testsForBoolean contains x          => (get(testsForBoolean(x)), testForBoolean)
-            case x if testsForNumberOrBoolean contains x  => (get(testsForNumberOrBoolean(x)), testForNumberOrBoolean)
+        def postfixTest(name: Name): Option[(String, Tree => Tree)] = {
+          var runtimeTest: Tree => Tree = testForNumber
+          val newName = name match {
+            case nme.UNARY_!  => runtimeTest = testForBoolean ; "takeNot"
+            case nme.UNARY_+  => "positive"
+            case nme.UNARY_-  => "negate"
+            case nme.UNARY_~  => "complement"
+            case nme.toByte   => "toByte"
+            case nme.toShort  => "toShort"
+            case nme.toChar   => "toCharacter"
+            case nme.toInt    => "toInteger"
+            case nme.toLong   => "toLong"
+            case nme.toFloat  => "toFloat"
+            case nme.toDouble => "toDouble"
+            case _            => return None
           }
+          Some(newName, runtimeTest)
+        }
+        def infixTest(name: Name): Option[(String, Tree => Tree)] = {
+          val (newName, runtimeTest) = name match {
+            case nme.OR   => ("takeOr", testForNumberOrBoolean)
+            case nme.XOR  => ("takeXor", testForNumberOrBoolean)
+            case nme.AND  => ("takeAnd", testForNumberOrBoolean)
+            case nme.EQ   => ("testEqual", testForNumberOrBoolean)
+            case nme.NE   => ("testNotEqual", testForNumberOrBoolean)
+            case nme.ADD  => ("add", testForNumber)
+            case nme.SUB  => ("subtract", testForNumber)
+            case nme.MUL  => ("multiply", testForNumber)
+            case nme.DIV  => ("divide", testForNumber)
+            case nme.MOD  => ("takeModulo", testForNumber)
+            case nme.LSL  => ("shiftSignedLeft", testForNumber)
+            case nme.LSR  => ("shiftLogicalRight", testForNumber)
+            case nme.ASR  => ("shiftSignedRight", testForNumber)
+            case nme.LT   => ("testLessThan", testForNumber)
+            case nme.LE   => ("testLessOrEqualThan", testForNumber)
+            case nme.GE   => ("testGreaterOrEqualThan", testForNumber)
+            case nme.GT   => ("testGreaterThan", testForNumber)
+            case nme.ZOR  => ("takeConditionalOr", testForBoolean)
+            case nme.ZAND => ("takeConditionalAnd", testForBoolean)
+            case _        => return None
+          }
+          Some(newName, runtimeTest)
+        }
+        
+        /** The Tree => Tree function in the return is necessary to prevent the original qual
+         *  from being duplicated in the resulting code.  It may be a side-effecting expression,
+         *  so all the test logic is routed through gen.evalOnce, which creates a block like
+         *    { val x$1 = qual; if (x$1.foo || x$1.bar) f1(x$1) else f2(x$1) }
+         *  (If the compiler can verify qual is safe to inline, it will not create the block.)
+         */
+        def getPrimitiveReplacementForStructuralCall(name: Name): Option[(Symbol, Tree => Tree)] = {
+          val opt = (
+            if (params.isEmpty) postfixTest(name)
+            else if (params.tail.isEmpty) infixTest(name)
+            else None
+          )
+          opt map { case (name, fn) => (getMember(BoxesRunTimeClass, name), fn) }
         }
         
         /* ### BOXING PARAMS & UNBOXING RESULTS ### */
@@ -332,108 +353,114 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         
         /* ### CALLING THE APPLY ### */
         def callAsReflective(paramTypes: List[Type], resType: Type): Tree = {
-          /* Some info about the type of the method being called. */
-          val methSym       = ad.symbol
-          val boxedResType  = toBoxedType(resType)      // Int -> Integer
-          val resultSym     = boxedResType.typeSymbol
-          // If this is a primitive method type (like '+' in 5+5=10) then the
-          // parameter types and the (unboxed) result type should all be primitive types,
-          // and the method name should be in the primitive->structural map.
-          def isJavaValueMethod = (
-            (resType :: paramTypes forall isJavaValueType) && // issue #1110
-            (getPrimitiveReplacementForStructuralCall isDefinedAt methSym.name)
-          )
-          // Erasure lets Unit through as Unit, but a method returning Any will have an
-          // erased return type of Object and should also allow Unit.
-          def isDefinitelyUnit  = (resultSym == UnitClass)
-          def isMaybeUnit       = (resultSym == ObjectClass) || isDefinitelyUnit
-          // If there's any chance this signature could be met by an Array.
-          val isArrayMethodSignature = {
-            def typesMatchApply = paramTypes match {
-              case List(tp) => tp <:< IntClass.tpe
-              case _        => false
-            }
-            def typesMatchUpdate = paramTypes match {
-              case List(tp1, tp2) => (tp1 <:< IntClass.tpe) && isMaybeUnit
-              case _              => false
-            }
+          gen.evalOnce(qual, currentOwner, unit) { qual1 =>
+            /* Some info about the type of the method being called. */
+            val methSym       = ad.symbol
+            val boxedResType  = toBoxedType(resType)      // Int -> Integer
+            val resultSym     = boxedResType.typeSymbol
+            // If this is a primitive method type (like '+' in 5+5=10) then the
+            // parameter types and the (unboxed) result type should all be primitive types,
+            // and the method name should be in the primitive->structural map.
+            def isJavaValueMethod = (
+              (resType :: paramTypes forall isJavaValueType) && // issue #1110
+              (getPrimitiveReplacementForStructuralCall(methSym.name).isDefined)
+            )
+            // Erasure lets Unit through as Unit, but a method returning Any will have an
+            // erased return type of Object and should also allow Unit.
+            def isDefinitelyUnit  = (resultSym == UnitClass)
+            def isMaybeUnit       = (resultSym == ObjectClass) || isDefinitelyUnit
+            // If there's any chance this signature could be met by an Array.
+            val isArrayMethodSignature = {
+              def typesMatchApply = paramTypes match {
+                case List(tp) => tp <:< IntClass.tpe
+                case _        => false
+              }
+              def typesMatchUpdate = paramTypes match {
+                case List(tp1, tp2) => (tp1 <:< IntClass.tpe) && isMaybeUnit
+                case _              => false
+              }
                         
-            (methSym.name == nme.length && params.isEmpty) ||
-            (methSym.name == nme.clone_ && params.isEmpty) ||
-            (methSym.name == nme.apply  && typesMatchApply) ||
-            (methSym.name == nme.update && typesMatchUpdate)
-          }
+              (methSym.name == nme.length && params.isEmpty) ||
+              (methSym.name == nme.clone_ && params.isEmpty) ||
+              (methSym.name == nme.apply  && typesMatchApply) ||
+              (methSym.name == nme.update && typesMatchUpdate)
+            }
 
-          /* Some info about the argument at the call site. */
-          val qualSym           = qual.tpe.typeSymbol
-          val args              = qual :: params
-          def isDefinitelyArray = (qualSym == ArrayClass)
-          def isMaybeArray      = (qualSym == ObjectClass) || isDefinitelyArray
-          def isMaybeBoxed      = platform isMaybeBoxed qualSym
+            /* Some info about the argument at the call site. */
+            val qualSym           = qual.tpe.typeSymbol
+            val args              = qual1() :: params
+            def isDefinitelyArray = (qualSym == ArrayClass)
+            def isMaybeArray      = (qualSym == ObjectClass) || isDefinitelyArray
+            def isMaybeBoxed      = platform isMaybeBoxed qualSym
           
-          // This is complicated a bit by trying to handle Arrays correctly.
-          // Under normal circumstances if the erased return type is Object then
-          // we're not going to box it to Unit, but that is the situation with
-          // a signature like def f(x: { def update(x: Int, y: Long): Any })
-          //
-          // However we only want to do that boxing if it has been determined
-          // to be an Array and a method returning Unit.  But for this fixResult
-          // could be called in one place: instead it is called separately from the
-          // unconditional outcomes (genValueCall, genArrayCall, genDefaultCall.)
-          def fixResult(tree: Tree, mustBeUnit: Boolean = false) =
-            if (mustBeUnit || resultSym == UnitClass) BLOCK(tree, REF(BoxedUnit_UNIT))  // boxed unit
-            else if (resultSym == ObjectClass) tree                                     // no cast necessary
-            else tree AS_ATTR boxedResType                                              // cast to expected type
+            // This is complicated a bit by trying to handle Arrays correctly.
+            // Under normal circumstances if the erased return type is Object then
+            // we're not going to box it to Unit, but that is the situation with
+            // a signature like def f(x: { def update(x: Int, y: Long): Any })
+            //
+            // However we only want to do that boxing if it has been determined
+            // to be an Array and a method returning Unit.  But for this fixResult
+            // could be called in one place: instead it is called separately from the
+            // unconditional outcomes (genValueCall, genArrayCall, genDefaultCall.)
+            def fixResult(tree: Tree, mustBeUnit: Boolean = false) =
+              if (mustBeUnit || resultSym == UnitClass) BLOCK(tree, REF(BoxedUnit_UNIT))  // boxed unit
+              else if (resultSym == ObjectClass) tree                                     // no cast necessary
+              else tree AS_ATTR boxedResType                                              // cast to expected type
           
-          /** Normal non-Array call */
-          def genDefaultCall = {
-            // reflective method call machinery
-            val invokeName  = MethodClass.tpe member nme.invoke_                                // reflect.Method.invoke(...)
-            def cache       = safeREF(reflectiveMethodCache(ad.symbol.name.toString, paramTypes))   // cache Symbol
-            def lookup      = Apply(cache, List(qual GETCLASS))                                 // get Method object from cache
-            def invokeArgs  = ArrayValue(TypeTree(ObjectClass.tpe), params)                     // args for invocation
-            def invocation  = (lookup DOT invokeName)(qual, invokeArgs)                         // .invoke(qual, ...)
+            /** Normal non-Array call */
+            def genDefaultCall = {
+              // reflective method call machinery
+              val invokeName  = MethodClass.tpe member nme.invoke_                                  // reflect.Method.invoke(...)
+              def cache       = safeREF(reflectiveMethodCache(ad.symbol.name.toString, paramTypes)) // cache Symbol
+              def lookup      = Apply(cache, List(qual1() GETCLASS))                                // get Method object from cache
+              def invokeArgs  = ArrayValue(TypeTree(ObjectClass.tpe), params)                       // args for invocation
+              def invocation  = (lookup DOT invokeName)(qual1(), invokeArgs)                        // .invoke(qual1, ...)
             
-            // exception catching machinery
-            val invokeExc   = currentOwner.newValue(ad.pos, mkTerm("")) setInfo InvocationTargetExceptionClass.tpe
-            def catchVar    = Bind(invokeExc, Typed(Ident(nme.WILDCARD), TypeTree(InvocationTargetExceptionClass.tpe)))
-            def catchBody   = Throw(Apply(Select(Ident(invokeExc), nme.getCause), Nil))
+              // exception catching machinery
+              val invokeExc   = currentOwner.newValue(ad.pos, mkTerm("")) setInfo InvocationTargetExceptionClass.tpe
+              def catchVar    = Bind(invokeExc, Typed(Ident(nme.WILDCARD), TypeTree(InvocationTargetExceptionClass.tpe)))
+              def catchBody   = Throw(Apply(Select(Ident(invokeExc), nme.getCause), Nil))
           
-            // try { method.invoke } catch { case e: InvocationTargetExceptionClass => throw e.getCause() }
-            fixResult(TRY (invocation) CATCH { CASE (catchVar) ==> catchBody } ENDTRY)
-          }
+              // try { method.invoke } catch { case e: InvocationTargetExceptionClass => throw e.getCause() }
+              fixResult(TRY (invocation) CATCH { CASE (catchVar) ==> catchBody } ENDTRY)
+            }
           
-          /** A possible primitive method call, represented by methods in BoxesRunTime. */
-          def genValueCall(operator: Symbol) = fixResult(REF(operator) APPLY args)
-          def genValueCallWithTest = {
-            val (operator, test)  = getPrimitiveReplacementForStructuralCall(methSym.name)
-            IF (test) THEN genValueCall(operator) ELSE genDefaultCall
+            /** A possible primitive method call, represented by methods in BoxesRunTime. */
+            def genValueCall(operator: Symbol) = fixResult(REF(operator) APPLY args)
+            def genValueCallWithTest = {
+              getPrimitiveReplacementForStructuralCall(methSym.name) match {
+                case Some((operator, test)) =>
+                  IF (test(qual1())) THEN genValueCall(operator) ELSE genDefaultCall
+                case _ =>
+                  genDefaultCall
+              }
+            }
+
+            /** A native Array call. */
+            def genArrayCall = fixResult(
+              methSym.name match {
+                case nme.length => REF(boxMethod(IntClass)) APPLY (REF(arrayLengthMethod) APPLY args)
+                case nme.update => REF(arrayUpdateMethod) APPLY List(args(0), (REF(unboxMethod(IntClass)) APPLY args(1)), args(2))
+                case nme.apply  => REF(arrayApplyMethod) APPLY List(args(0), (REF(unboxMethod(IntClass)) APPLY args(1)))
+                case nme.clone_ => REF(arrayCloneMethod) APPLY List(args(0))
+              },
+              mustBeUnit = methSym.name == nme.update
+            )
+
+            /** A conditional Array call, when we can't determine statically if the argument is
+             *  an Array, but the structural type method signature is consistent with an Array method
+             *  so we have to generate both kinds of code.
+             */
+            def genArrayCallWithTest =
+              IF ((qual1() GETCLASS()) DOT nme.isArray) THEN genArrayCall ELSE genDefaultCall
+
+            localTyper typed (
+              if (isMaybeBoxed && isJavaValueMethod) genValueCallWithTest
+              else if (isArrayMethodSignature && isDefinitelyArray) genArrayCall
+              else if (isArrayMethodSignature && isMaybeArray) genArrayCallWithTest
+              else genDefaultCall
+            )
           }
-
-          /** A native Array call. */
-          def genArrayCall = fixResult(
-            methSym.name match {
-              case nme.length => REF(boxMethod(IntClass)) APPLY (REF(arrayLengthMethod) APPLY args)
-              case nme.update => REF(arrayUpdateMethod) APPLY List(args(0), (REF(unboxMethod(IntClass)) APPLY args(1)), args(2))
-              case nme.apply  => REF(arrayApplyMethod) APPLY List(args(0), (REF(unboxMethod(IntClass)) APPLY args(1)))
-              case nme.clone_ => REF(arrayCloneMethod) APPLY List(args(0))
-            },
-            mustBeUnit = methSym.name == nme.update
-          )
-
-          /** A conditional Array call, when we can't determine statically if the argument is
-           *  an Array, but the structural type method signature is consistent with an Array method
-           *  so we have to generate both kinds of code.
-           */
-          def genArrayCallWithTest =
-            IF ((qual GETCLASS()) DOT nme.isArray) THEN genArrayCall ELSE genDefaultCall
-
-          localTyper typed (
-            if (isMaybeBoxed && isJavaValueMethod) genValueCallWithTest
-            else if (isArrayMethodSignature && isDefinitelyArray) genArrayCall
-            else if (isArrayMethodSignature && isMaybeArray) genArrayCallWithTest
-            else genDefaultCall
-          )
         }
         
         if (settings.refinementMethodDispatch.value == "invoke-dynamic") {
@@ -693,10 +720,8 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             treeCopy.DefDef(ctor, mods, name, tparams, vparamss, tpt, newBlock)
           case None =>
             // create new static ctor
-            val staticCtorSym = currentClass.newConstructor(template.pos)
-                                  .setFlag(STATIC)
-                                  .setInfo(UnitClass.tpe)
-            val rhs = Block(newStaticInits.toList, Literal(Constant()))
+            val staticCtorSym  = currentClass.newStaticConstructor(template.pos)
+            val rhs            = Block(newStaticInits.toList, Literal(Constant()))
             val staticCtorTree = DefDef(staticCtorSym, rhs)
             localTyper.typed { atPos(template.pos)(staticCtorTree) }
         }

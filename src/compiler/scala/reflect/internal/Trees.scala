@@ -35,6 +35,14 @@ trait Trees extends api.Trees { self: SymbolTable =>
     type AccessBoundaryType = Name
     type AnnotationType     = Tree
 
+    def hasAnnotationNamed(name: TypeName) = {
+      annotations exists {
+        case Apply(Select(New(Ident(`name`)), _), _)     => true
+        case Apply(Select(New(Select(_, `name`)), _), _) => true
+        case _                                           => false
+      }
+    }
+
     def hasAccessBoundary = privateWithin != tpnme.EMPTY
     def hasAllFlags(mask: Long): Boolean = (flags & mask) == mask
     def hasFlag(flag: Long) = (flag & flags) != 0L
@@ -42,6 +50,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
       flags & mask,
       if (hasAccessBoundary) privateWithin.toString else ""
     )
+    def defaultFlagString = hasFlagsToString(-1L)
     def & (flag: Long): Modifiers = {
       val flags1 = flags & flag
       if (flags1 == flags) this
@@ -71,7 +80,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     override def mapAnnotations(f: List[Tree] => List[Tree]): Modifiers = 
       Modifiers(flags, privateWithin, f(annotations)) setPositions positions
     
-    override def toString = "Modifiers(%s, %s, %s)".format(hasFlagsToString(-1L), annotations mkString ", ", positions)
+    override def toString = "Modifiers(%s, %s, %s)".format(defaultFlagString, annotations mkString ", ", positions)
   }
 
   def Modifiers(flags: Long, privateWithin: Name): Modifiers = Modifiers(flags, privateWithin, List())
@@ -121,11 +130,16 @@ trait Trees extends api.Trees { self: SymbolTable =>
      *  less than the whole tree.
      */
     def summaryString: String = tree match {
-      case Select(qual, name) => qual.summaryString + "." + name
+      case Select(qual, name) => qual.summaryString + "." + name.decode
       case Ident(name)        => name.longString
-      case t: DefTree         => t.shortClass + " " + t.name
-      case t: RefTree         => t.shortClass + " " + t.name.longString
-      case t                  => t.shortClass
+      case Literal(const)     => "Literal(" + const + ")"
+      case t: DefTree         => t.shortClass + " `" + t.name.decode + "`"
+      case t: RefTree         => t.shortClass + " `" + t.name.longString + "`"
+      case t                  => 
+        t.shortClass + (
+          if (t.symbol != null && t.symbol != NoSymbol) " " + t.symbol
+          else ""
+        )
     }
   }
 
@@ -234,12 +248,6 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   def This(sym: Symbol): Tree = This(sym.name.toTypeName) setSymbol sym
 
-  def Select(qualifier: Tree, sym: Symbol): Select =
-    Select(qualifier, sym.name) setSymbol sym
-
-  def Ident(sym: Symbol): Ident =
-    Ident(sym.name) setSymbol sym
-
   /** Block factory that flattens directly nested blocks. 
    */
   def Block(stats: Tree*): Block = stats match {
@@ -266,7 +274,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     override def traverse(t: Tree) {
       if (t != EmptyTree && t.pos == NoPosition) {
         t.setPos(pos)
-        super.traverse(t)
+        super.traverse(t) // TODO: bug? shouldn't the traverse be outside of the if?
       }
     }
   }
@@ -307,12 +315,15 @@ trait Trees extends api.Trees { self: SymbolTable =>
     "subst[%s, %s](%s)".format(fromStr, toStr, (from, to).zipped map (_ + " -> " + _) mkString ", ")
   }
 
+  // NOTE: if symbols in `from` occur multiple times in the `tree` passed to `transform`, 
+  // the resulting Tree will be a graph, not a tree... this breaks all sorts of stuff,
+  // notably concerning the mutable aspects of Trees (such as setting their .tpe)
   class TreeSubstituter(from: List[Symbol], to: List[Tree]) extends Transformer {
     override def transform(tree: Tree): Tree = tree match {
       case Ident(_) =>
         def subst(from: List[Symbol], to: List[Tree]): Tree =
           if (from.isEmpty) tree
-          else if (tree.symbol == from.head) to.head
+          else if (tree.symbol == from.head) to.head.shallowDuplicate // TODO: does it ever make sense *not* to perform a shallowDuplicate on `to.head`?
           else subst(from.tail, to.tail);
         subst(from, to)
       case _ =>
@@ -323,7 +334,6 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   class TreeTypeSubstituter(val from: List[Symbol], val to: List[Type]) extends Traverser {
     val typeSubst = new SubstTypeMap(from, to)
-    def fromContains = typeSubst.fromContains
     def isEmpty = from.isEmpty && to.isEmpty
     
     override def traverse(tree: Tree) {

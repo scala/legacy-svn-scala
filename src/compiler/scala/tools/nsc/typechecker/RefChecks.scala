@@ -247,7 +247,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
       def infoStringWithLocation(sym: Symbol) = infoString0(sym, true)
 
       def infoString0(sym: Symbol, showLocation: Boolean) = {
-        val sym1 = analyzer.underlying(sym)
+        val sym1 = analyzer.underlyingSymbol(sym)
         sym1.toString() + 
         (if (showLocation) 
           sym1.locationString + 
@@ -364,7 +364,8 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             overrideError("cannot be used here - classes can only override abstract types");
           } else if (other.isFinal) { // (1.2)
             overrideError("cannot override final member");
-          } else if (!other.isDeferred && !member.isAnyOverride) {
+            // synthetic exclusion needed for (at least) default getters.
+          } else if (!other.isDeferred && !member.isAnyOverride && !member.isSynthetic) { 
             overrideError("needs `override' modifier");
           } else if (other.isAbstractOverride && other.isIncompleteIn(clazz) && !member.isAbstractOverride) {
             overrideError("needs `abstract override' modifiers")
@@ -516,32 +517,64 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         )
 
         // 2. Check that only abstract classes have deferred members
-        def checkNoAbstractMembers() = {
+        def checkNoAbstractMembers(): Unit = {
           // Avoid spurious duplicates: first gather any missing members.
-          def memberList = clazz.tpe.nonPrivateMembersAdmitting(VBRIDGE)
+          def memberList = clazz.info.nonPrivateMembersAdmitting(VBRIDGE)
           val (missing, rest) = memberList partition (m => m.isDeferred && !ignoreDeferred(m))
-          // Group missing members by the underlying symbol.
-          val grouped = missing groupBy (analyzer underlying _ name)
+          // Group missing members by the name of the underlying symbol,
+          // to consolidate getters and setters.
+          val grouped = missing groupBy (sym => analyzer.underlyingSymbol(sym).name)
+          val missingMethods = grouped.toList flatMap {
+            case (name, syms) =>
+              if (syms exists (_.isSetter)) syms filterNot (_.isGetter)
+              else syms
+          }
+
+          def stubImplementations: List[String] = {
+            // Grouping missing methods by the declaring class
+            val regrouped = missingMethods.groupBy(_.owner).toList
+            def membersStrings(members: List[Symbol]) =
+              members.sortBy("" + _.name) map (m => m.defStringSeenAs(clazz.tpe memberType m) + " = ???")
+
+            if (regrouped.tail.isEmpty)
+              membersStrings(regrouped.head._2)
+            else (regrouped.sortBy("" + _._1.name) flatMap {
+              case (owner, members) =>
+                ("// Members declared in " + owner.fullName) +: membersStrings(members) :+ ""
+            }).init
+          }
+
+          // If there are numerous missing methods, we presume they are aware of it and
+          // give them a nicely formatted set of method signatures for implementing.
+          if (missingMethods.size > 1) {
+            abstractClassError(false, "it has " + missingMethods.size + " unimplemented members.")
+            val preface =
+              """|/** As seen from %s, the missing signatures are as follows.
+                 | *  For convenience, these are usable as stub implementations.
+                 | */
+                 |""".stripMargin.format(clazz)
+            abstractErrors += stubImplementations.map("  " + _ + "\n").mkString(preface, "", "")
+            return
+          }
 
           for (member <- missing) {
             def undefined(msg: String) = abstractClassError(false, infoString(member) + " is not defined" + msg)
-            val underlying = analyzer.underlying(member)
+            val underlying = analyzer.underlyingSymbol(member)
 
             // Give a specific error message for abstract vars based on why it fails:
             // It could be unimplemented, have only one accessor, or be uninitialized.
             if (underlying.isVariable) {
+              val isMultiple = grouped.getOrElse(underlying.name, Nil).size > 1
+
               // If both getter and setter are missing, squelch the setter error.
-              val isMultiple = grouped(underlying.name).size > 1
-              // TODO: messages shouldn't be spread over two files, and varNotice is not a clear name
               if (member.isSetter && isMultiple) ()
               else undefined(
                 if (member.isSetter) "\n(Note that an abstract var requires a setter in addition to the getter)"
                 else if (member.isGetter && !isMultiple) "\n(Note that an abstract var requires a getter in addition to the setter)"
-                else analyzer.varNotice(member)
+                else analyzer.abstractVarMessage(member)
               )
             }
             else if (underlying.isMethod) {
-
               // If there is a concrete method whose name matches the unimplemented
               // abstract method, and a cursory examination of the difference reveals
               // something obvious to us, let's make it more obvious to them.
@@ -622,7 +655,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
               val impl = decl.matchingSymbol(clazz.thisType, admit = VBRIDGE)
               if (impl == NoSymbol || (decl.owner isSubClass impl.owner)) {
                 abstractClassError(false, "there is a deferred declaration of "+infoString(decl)+
-                                   " which is not implemented in a subclass"+analyzer.varNotice(decl))
+                                   " which is not implemented in a subclass"+analyzer.abstractVarMessage(decl))
               }
             }
           }
@@ -869,7 +902,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             validateVariances(tparams map (_.info), variance)
             validateVariance(result, variance)
           case AnnotatedType(annots, tp, selfsym) =>
-            if (!(annots exists (_.atp.typeSymbol.isNonBottomSubClass(uncheckedVarianceClass))))
+            if (!annots.exists(_ matches uncheckedVarianceClass))
               validateVariance(tp, variance)
         }
 
@@ -986,7 +1019,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         def typesString = normalizeAll(qual.tpe.widen)+" and "+normalizeAll(args.head.tpe.widen)
         
         /** Symbols which limit the warnings we can issue since they may be value types */
-        val isMaybeValue = Set(AnyClass, AnyRefClass, AnyValClass, ObjectClass, ComparableClass, SerializableClass)
+        val isMaybeValue = Set(AnyClass, AnyRefClass, AnyValClass, ObjectClass, ComparableClass, JavaSerializableClass)
 
         // Whether def equals(other: Any) is overridden
         def isUsingDefaultEquals      = {
@@ -1004,6 +1037,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         def isBoolean(s: Symbol) = unboxedValueClass(s) == BooleanClass
         def isUnit(s: Symbol)    = unboxedValueClass(s) == UnitClass
         def isNumeric(s: Symbol) = isNumericValueClass(unboxedValueClass(s)) || (s isSubClass ScalaNumberClass)
+        def isSpecial(s: Symbol) = isValueClass(unboxedValueClass(s)) || (s isSubClass ScalaNumberClass) || isMaybeValue(s)
         def possibleNumericCount = onSyms(_ filter (x => isNumeric(x) || isMaybeValue(x)) size)
         val nullCount            = onSyms(_ filter (_ == NullClass) size)
         
@@ -1057,7 +1091,8 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           }
         }
 
-        if (nullCount == 0 && possibleNumericCount < 2) {
+        // possibleNumericCount is insufficient or this will warn on e.g. Boolean == j.l.Boolean
+        if (nullCount == 0 && !(isSpecial(receiver) && isSpecial(actual))) {
           if (actual isSubClass receiver) ()
           else if (receiver isSubClass actual) ()
           // warn only if they have no common supertype below Object

@@ -12,7 +12,6 @@ import java.nio.ByteBuffer
 import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.pickling.{ PickleFormat, PickleBuffer }
 import scala.tools.reflect.SigParser
-import scala.tools.nsc.util.ScalaClassLoader
 import scala.tools.nsc.symtab._
 import scala.reflect.internal.ClassfileConstants._
 import ch.epfl.lamp.fjbg._
@@ -36,8 +35,8 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     AnyClass, ObjectClass, ThrowsClass, ThrowableClass, ClassfileAnnotationClass,
     SerializableClass, StringClass, ClassClass, FunctionClass,
     DeprecatedAttr, SerializableAttr, SerialVersionUIDAttr, VolatileAttr,
-    TransientAttr, CloneableAttr, RemoteAttr,
-    hasJavaMainMethod
+    TransientAttr, CloneableAttr, RemoteAttr, JavaCloneableClass,
+    RemoteInterfaceClass, RemoteExceptionClass, hasJavaMainMethod
   }
 
   val phaseName = "jvm"
@@ -185,9 +184,13 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     val BeanDisplayNameAttr = definitions.getClass("scala.beans.BeanDisplayName")
     val BeanDescriptionAttr = definitions.getClass("scala.beans.BeanDescription")
 
-    lazy val CloneableClass  = definitions.getClass("java.lang.Cloneable")
-    lazy val RemoteInterface = definitions.getClass("java.rmi.Remote")
-    lazy val RemoteException = definitions.getClass("java.rmi.RemoteException").tpe
+    // Additional interface parents based on annotations and other cues
+    def newParentForAttr(attr: Symbol): Option[Type] = attr match {
+      case SerializableAttr => Some(SerializableClass.tpe)
+      case CloneableAttr    => Some(JavaCloneableClass.tpe)
+      case RemoteAttr       => Some(RemoteInterfaceClass.tpe)
+      case _                => None
+    }
 
     val versionPickle = {
       val vp = new PickleBuffer(new Array[Byte](16), -1, 0)
@@ -203,6 +206,12 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     var jclass: JClass = _
     var jmethod: JMethod = _
 //    var jcode: JExtendedCode = _
+
+    def isParcelableClass = isAndroidParcelableClass(clasz.symbol)
+    def isRemoteClass = clasz.symbol hasAnnotation RemoteAttr
+    def serialVUID = clasz.symbol getAnnotation SerialVersionUIDAttr collect {
+      case AnnotationInfo(_, Literal(const) :: _, _) => const.longValue
+    }
 
     val fjbgContext = new FJBGContext(49, 0)
 
@@ -298,47 +307,28 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
           None
       }
 
-    var serialVUID: Option[Long] = None
-    var isRemoteClass: Boolean = false
-    var isParcelableClass = false
-
     private var innerClassBuffer = mutable.LinkedHashSet[Symbol]()
 
     def genClass(c: IClass) {
       clasz = c
       innerClassBuffer.clear()
 
-      var parents = c.symbol.info.parents
-      var ifaces  = JClass.NO_INTERFACES
       val name    = javaName(c.symbol)
-      serialVUID  = None
-      isRemoteClass = false
-      isParcelableClass = isAndroidParcelableClass(c.symbol)
-
-      if (parents.isEmpty)
-        parents = List(ObjectClass.tpe)
-
-      for (annot <- c.symbol.annotations) annot match {
-        case AnnotationInfo(tp, _, _) if tp.typeSymbol == SerializableAttr =>
-          parents :+= SerializableClass.tpe
-        case AnnotationInfo(tp, _, _) if tp.typeSymbol == CloneableAttr =>
-          parents :+= CloneableClass.tpe
-        case AnnotationInfo(tp, Literal(const) :: _, _) if tp.typeSymbol == SerialVersionUIDAttr =>
-          serialVUID = Some(const.longValue)
-        case AnnotationInfo(tp, _, _) if tp.typeSymbol == RemoteAttr =>
-          parents :+= RemoteInterface.tpe
-          isRemoteClass = true
-        case _ =>
+      val superClass :: superInterfaces = {
+        val parents0 = c.symbol.info.parents match {
+          case Nil  => List(ObjectClass.tpe)
+          case ps   => ps
+        }
+        parents0 ++ c.symbol.annotations.flatMap(ann => newParentForAttr(ann.symbol)) distinct
       }
-
-      parents = parents.distinct
-
-      if (parents.tail.nonEmpty)
-        ifaces = mkArray(parents drop 1 map (x => javaName(x.typeSymbol)))
+      val ifaces = superInterfaces match {
+        case Nil => JClass.NO_INTERFACES
+        case _   => mkArray(superInterfaces map (x => javaName(x.typeSymbol)))
+      }
 
       jclass = fjbgContext.JClass(javaFlags(c.symbol),
                                   name,
-                                  javaName(parents(0).typeSymbol),
+                                  javaName(superClass.typeSymbol),
                                   ifaces,
                                   c.cunit.source.toString)
 
@@ -394,7 +384,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       val ssa = scalaSignatureAddingMarker(jclass, c.symbol)
       addGenericSignature(jclass, c.symbol, c.symbol.owner)
       addAnnotations(jclass, c.symbol.annotations ++ ssa)
-
       addEnclosingMethodAttribute(jclass, c.symbol)
       emitClass(jclass, c.symbol)
       
@@ -438,7 +427,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
      * @author Ross Judson (ross.judson@soletta.com)
      */
     def genBeanInfoClass(c: IClass) {
-      val description = c.symbol.annotations.find(_.atp.typeSymbol == BeanDescriptionAttr)
+      val description = c.symbol getAnnotation BeanDescriptionAttr
       // informProgress(description.toString)
 
       val beanInfoClass = fjbgContext.JClass(javaFlags(c.symbol),
@@ -532,8 +521,8 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
      *   .initialize: if 'annot' is read from pickle, atp might be un-initialized
      */
     private def shouldEmitAnnotation(annot: AnnotationInfo) =
-      annot.atp.typeSymbol.initialize.isJavaDefined &&
-      annot.atp.typeSymbol.isNonBottomSubClass(ClassfileAnnotationClass) &&
+      annot.symbol.initialize.isJavaDefined &&
+      annot.matches(ClassfileAnnotationClass) &&
       annot.args.isEmpty
 
     private def emitJavaAnnotations(cpool: JConstantPool, buf: ByteBuffer, annotations: List[AnnotationInfo]): Int = {
@@ -699,7 +688,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     }
 
     def addAnnotations(jmember: JMember, annotations: List[AnnotationInfo]) {
-      if (annotations.exists(_.atp.typeSymbol == definitions.DeprecatedAttr)) {
+      if (annotations exists (_ matches definitions.DeprecatedAttr)) {
         val attr = jmember.getContext().JOtherAttribute(
           jmember.getJClass(), jmember, tpnme.DeprecatedATTR.toString,
           new Array[Byte](0), 0)
@@ -798,29 +787,18 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
     def genField(f: IField) {
       debuglog("Adding field: " + f.symbol.fullName)
-
-      val attributes = f.symbol.annotations.map(_.atp.typeSymbol).foldLeft(0) {
-        case (res, TransientAttr) => res | ACC_TRANSIENT
-        case (res, VolatileAttr)  => res | ACC_VOLATILE
-        case (res, _)             => res
-      }
-
-      var flags = javaFlags(f.symbol)
-      if (!f.symbol.isMutable)
-        flags |= ACC_FINAL
-
-      val jfield =
-        jclass.addNewField(flags | attributes,
-                           javaName(f.symbol),
-                           javaType(f.symbol.tpe))
+      val jfield = jclass.addNewField(
+        javaFlags(f.symbol) | javaFieldFlags(f.symbol),
+        javaName(f.symbol),
+        javaType(f.symbol.tpe)
+      )
 
       addGenericSignature(jfield, f.symbol, clasz.symbol)
       addAnnotations(jfield, f.symbol.annotations)
     }
 
     def genMethod(m: IMethod) {
-      if (m.symbol.isStaticConstructor) return
-      if ((m.symbol.name == nme.getClass_) && m.params.isEmpty) return
+      if (m.symbol.isStaticConstructor || definitions.isGetClass(m.symbol)) return
 
       debuglog("Generating method " + m.symbol.fullName)
       method = m
@@ -896,26 +874,19 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       }
     }
 
+    /** Adds a @remote annotation, actual use unknown.
+     */
     private def addRemoteException(jmethod: JMethod, meth: Symbol) {
-      def isRemoteThrows(ainfo: AnnotationInfo) = ainfo match {
-        case AnnotationInfo(tp, List(arg), _) if tp.typeSymbol == ThrowsClass =>
-          arg match {
-            case Literal(Constant(tpe: Type)) if tpe.typeSymbol == RemoteException.typeSymbol => true
-            case _ => false
-          }
-        case _ => false
-      }
-
-      if (isRemoteClass ||
-          (meth.hasAnnotation(RemoteAttr) && jmethod.isPublic)) {
-        val c = Constant(RemoteException)
-        val ainfo = AnnotationInfo(ThrowsClass.tpe, List(Literal(c).setType(c.tpe)), List())
-        if (!meth.annotations.exists(isRemoteThrows)) {
-          meth addAnnotation ainfo
-        }      
+      val needsAnnotation = (
+        (isRemoteClass || (meth hasAnnotation RemoteAttr) && jmethod.isPublic)
+          && !(meth.throwsAnnotations contains RemoteExceptionClass)
+      )
+      if (needsAnnotation) {
+        val c   = Constant(RemoteExceptionClass.tpe)
+        val arg = Literal(c) setType c.tpe
+        meth.addAnnotation(ThrowsClass, arg)
       }
     }
-
 
     /** Return a pair of lists of annotations, first one containing all 
      *  annotations for the given symbol, and the rest.
@@ -1042,13 +1013,17 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       val methodInfo     = module.thisType.memberInfo(m)
       val paramJavaTypes = methodInfo.paramTypes map javaType
       val paramNames     = 0 until paramJavaTypes.length map ("x_" + _)
+      // TODO: evaluate the other flags we might be dropping on the floor here.
+      val flags = PublicStatic | (
+        if (m.isVarargsMethod) ACC_VARARGS else 0
+      )
       
       /** Forwarders must not be marked final, as the JVM will not allow
        *  redefinition of a final static method, and we don't know what classes
        *  might be subclassing the companion class.  See SI-4827.
        */
       val mirrorMethod = jclass.addNewMethod(
-        PublicStatic,
+        flags,
         javaName(m),
         javaType(methodInfo.resultType),
         mkArray(paramJavaTypes),
@@ -1897,6 +1872,8 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       }}).reverse
   }
 
+  private def mkFlags(args: Int*) = args.foldLeft(0)(_ | _)
+
   /**
    * Return the Java modifiers for the given symbol.
    * Java modifiers for classes:
@@ -1914,7 +1891,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
    *      and they would fail verification after lifted.
    */
   def javaFlags(sym: Symbol): Int = {
-    def mkFlags(args: Int*) = args.foldLeft(0)(_ | _)
     // constructors of module classes should be private
     // PP: why are they only being marked private at this stage and not earlier?
     val privateFlag =
@@ -1940,6 +1916,13 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       if (sym.isBridge || sym.hasFlag(Flags.MIXEDIN) && sym.isMethod) ACC_BRIDGE else 0,
       if (sym.isClass && !sym.isInterface) ACC_SUPER else 0,
       if (sym.isVarargsMethod) ACC_VARARGS else 0
+    )
+  }
+  def javaFieldFlags(sym: Symbol) = {
+    mkFlags(
+      if (sym hasAnnotation TransientAttr) ACC_TRANSIENT else 0,
+      if (sym hasAnnotation VolatileAttr) ACC_VOLATILE else 0,
+      if (sym.isMutable) 0 else ACC_FINAL
     )
   }
 

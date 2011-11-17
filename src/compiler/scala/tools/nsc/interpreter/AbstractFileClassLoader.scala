@@ -8,6 +8,7 @@ package interpreter
 import scala.tools.nsc.io.{ File, AbstractFile }
 import util.ScalaClassLoader
 import java.net.URL
+import scala.collection.{ mutable, immutable }
 
 /**
  * A class loader that loads files from a {@link scala.tools.nsc.io.AbstractFile}.
@@ -18,6 +19,10 @@ class AbstractFileClassLoader(root: AbstractFile, parent: ClassLoader)
     extends ClassLoader(parent)
     with ScalaClassLoader
 {
+  // private val defined = mutable.Map[String, Class[_]]()
+  override protected def trace =
+    sys.props contains "scala.debug.classloader"
+  
   protected def classNameToPath(name: String): String =
     if (name endsWith ".class") name
     else name.replace('.', '/') + ".class"
@@ -46,10 +51,23 @@ class AbstractFileClassLoader(root: AbstractFile, parent: ClassLoader)
     case null => super.classBytes(name)
     case file => file.toByteArray
   }
+  override def loadClass(name: String, resolve: Boolean) = {
+    classLoaderLog("load " + name + ".")
+    super.loadClass(name, resolve)
+  }
   override def findClass(name: String): JClass = {
     val bytes = classBytes(name)
-    if (bytes.isEmpty) throw new ClassNotFoundException(name)
-    else defineClass(name, bytes, 0, bytes.length)
+    classLoaderLog("find %s: %s".format(name,
+      if (bytes.isEmpty) "failed."
+      else bytes.size + " bytes."
+    ))
+    if (bytes.isEmpty)
+      throw new ClassNotFoundException(name)
+    else {
+      val clazz = defineClass(name, bytes, 0, bytes.length)
+      // defined(name) = clazz
+      clazz
+    }
   }
   // Don't know how to construct an URL for something which exists only in memory
   // override def getResource(name: String): URL = findAbstractFile(name) match {

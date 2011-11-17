@@ -23,12 +23,14 @@ trait AestheticSettings {
   def deprecation     = settings.deprecation.value
   def experimental    = settings.Xexperimental.value
   def fatalWarnings   = settings.fatalWarnings.value
+  def future          = settings.future.value
   def logClasspath    = settings.Ylogcp.value
   def printStats      = settings.Ystatistics.value
   def richExes        = settings.YrichExes.value || sys.props.traceSourcePath.isSet
   def target          = settings.target.value
   def unchecked       = settings.unchecked.value
   def verbose         = settings.verbose.value
+  def virtPatmat      = settings.YvirtPatmat.value
 
   /** Derived values */
   def jvm           = target startsWith "jvm"

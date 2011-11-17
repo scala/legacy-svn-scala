@@ -9,7 +9,7 @@
 package scala.tools.nsc
 package ast.parser
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ListBuffer, StringBuilder}
 import util.{ SourceFile, OffsetPosition, FreshNameCreator }
 import scala.reflect.internal.{ ModifierFlags => Flags }
 import Tokens._
@@ -616,8 +616,8 @@ self =>
 
     def isLiteralToken(token: Int) = token match {
       case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT |
-           STRINGLIT | SYMBOLLIT | TRUE | FALSE | NULL          => true
-      case _                                                    => false
+           STRINGLIT | STRINGPART | SYMBOLLIT | TRUE | FALSE | NULL => true
+      case _                                                        => false
     }
     def isLiteral = isLiteralToken(in.token)
 
@@ -1109,6 +1109,8 @@ self =>
       }
       if (in.token == SYMBOLLIT)
         Apply(scalaDot(nme.Symbol), List(finish(in.strVal)))
+      else if (in.token == STRINGPART)
+        interpolatedString()
       else finish(in.token match {
         case CHARLIT               => in.charVal
         case INTLIT                => in.intVal(isNegated).toInt
@@ -1123,6 +1125,27 @@ self =>
           syntaxErrorOrIncomplete("illegal literal", true)
           null
       })
+    }
+    
+    private def stringOp(t: Tree, op: TermName) = {
+      val str = in.strVal
+      in.nextToken()
+      if (str.length == 0) t
+      else atPos(t.pos.startOrPoint) {
+        Apply(Select(t, op), List(Literal(Constant(str))))
+      }
+    }
+    
+    private def interpolatedString(): Tree = {
+      var t = atPos(o2p(in.offset))(New(TypeTree(definitions.StringBuilderClass.tpe), List(List())))
+      while (in.token == STRINGPART) {
+        t = stringOp(t, nme.append)
+        var e = expr()
+        if (in.token == STRINGFMT) e = stringOp(e, nme.formatted)
+        t = atPos(t.pos.startOrPoint)(Apply(Select(t, nme.append), List(e)))
+      }
+      if (in.token == STRINGLIT) t = stringOp(t, nme.append)
+      atPos(t.pos)(Select(t, nme.toString_))
     }
 
 /* ------------- NEW LINES ------------------------------------------------- */
@@ -1812,7 +1835,7 @@ self =>
             in.nextToken()
             atPos(start, start) { Ident(nme.WILDCARD) }
           case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT |
-               STRINGLIT | SYMBOLLIT | TRUE | FALSE | NULL =>
+               STRINGLIT | STRINGPART | SYMBOLLIT | TRUE | FALSE | NULL =>
             atPos(start) { literal(false) }
           case LPAREN =>
             atPos(start)(makeParens(noSeq.patterns()))
@@ -2659,17 +2682,20 @@ self =>
      *  }}}
      */
     def templateOpt(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]], tstart: Int): Template = {
-      /** A synthetic ProductN parent for case classes. */
-      def extraCaseParents = (
+      /** Extra parents for case classes. */
+      def caseParents() = (
         if (mods.isCase) {
           val arity = if (vparamss.isEmpty || vparamss.head.isEmpty) 0 else vparamss.head.size
-          if (arity == 0) Nil
-          else List(
-            AppliedTypeTree(
-              productConstrN(arity),
-              vparamss.head map (vd => vd.tpt.duplicate setPos vd.tpt.pos.focus)
-            )
-          )
+          productConstr :: serializableConstr :: {
+            Nil
+            // if (arity == 0 || settings.YnoProductN.value) Nil
+            // else List(
+            //   AppliedTypeTree(
+            //     productConstrN(arity),
+            //     vparamss.head map (vd => vd.tpt.duplicate setPos vd.tpt.pos.focus)
+            //   )
+            // )
+          }
         }
         else Nil
       )
@@ -2696,10 +2722,7 @@ self =>
             if (!isInterface(mods, body) && !isScalaArray(name)) parents0 :+ scalaScalaObjectConstr
             else if (parents0.isEmpty) List(scalaAnyRefConstr)
             else parents0
-          ) ++ (
-            if (mods.isCase) List(productConstr, serializableConstr) ++ extraCaseParents
-            else Nil
-          )
+          ) ++ caseParents()
           Template(parents, self, constrMods, vparamss, argss, body, o2p(tstart))
         }
       }

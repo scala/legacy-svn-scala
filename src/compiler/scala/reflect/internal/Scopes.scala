@@ -33,6 +33,10 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     e
   }
 
+  object Scope {
+    def unapplySeq(decls: Scope): Some[Seq[Symbol]] = Some(decls.toList)
+  }
+
   class Scope(initElems: ScopeEntry) extends Iterable[Symbol] {
 
     var elems: ScopeEntry = initElems
@@ -327,12 +331,11 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
    */
   def scopeTransform(owner: Symbol)(op: => Scope): Scope = op
   
-  def newScopeWith(elems: Symbol*) = {
+  def newScopeWith(elems: Symbol*): Scope = {
     val scope = newScope
     elems foreach scope.enter
     scope
   }
-    
 
   /** The empty scope (immutable).
    */

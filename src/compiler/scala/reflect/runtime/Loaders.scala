@@ -88,6 +88,9 @@ trait Loaders { self: SymbolTable =>
     }
   }
   
+  /** Is the given name valid for a top-level class? We exclude names with embedded $-signs, because
+   *  these are nested classes or anonymous classes,
+   */
   def invalidClassName(name: Name) = {
     val dp = name pos '$'
     0 < dp && dp < (name.length - 1)

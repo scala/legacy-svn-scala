@@ -18,12 +18,12 @@ import Line._
  *  waits on a condition indicating that either the line has
  *  completed or failed.
  */
-class Line[+T](val code: String, body: => T) {
-  private var _state: State      = Running
-  private var _result: Any       = null
-  private var _caught: Throwable = null
-  private val lock               = new ReentrantLock()
-  private val finished           = lock.newCondition()
+class Line[+T](val code: String, classLoader: ClassLoader, body: => T) {
+  private var _state: State              = Running
+  private var _result: Option[Any]       = None
+  private var _caught: Option[Throwable] = None
+  private val lock                       = new ReentrantLock()
+  private val finished                   = lock.newCondition()
 
   private def withLock[T](body: => T) = {
     lock.lock()
@@ -36,20 +36,16 @@ class Line[+T](val code: String, body: => T) {
   }
   // private because it should be called by the manager.
   private def cancel() = if (running) setState(Cancelled)
+    
+  private def runAndSetState[T](body: => T) {
+    try     {           _result = Some(body) ; setState(Done)  }
+    catch   { case t => _caught = Some(t)    ; setState(Threw) }
+  }
 
   // This is where the line thread is created and started.
-  private val _thread = io.daemonize {
-    try {
-      _result = body
-      setState(Done)
-    } 
-    catch {
-      case x =>
-        _caught = x
-        setState(Threw)
-    }
-  }
-  
+  private val _thread: Thread =
+    io.newThread(_ setContextClassLoader classLoader)(runAndSetState(body))
+
   def state     = _state
   def thread    = _thread
   def alive     = thread.isAlive
@@ -57,8 +53,11 @@ class Line[+T](val code: String, body: => T) {
   def success   = _state == Done
   def running   = _state == Running
 
-  def caught() = { await() ; _caught }
-  def get()    = { await() ; _result }
+  def caught() = { await() ; _caught.orNull }
+  def get()    = {
+    await()
+    _result getOrElse sys.error("Called get with no result.  Code: " + code)
+  }
   def await()  = withLock { while (running) finished.await() }
 }
 
@@ -76,7 +75,7 @@ object Line {
   case object Cancelled extends State
   case object Done extends State
   
-  class Manager {
+  class Manager(classLoader: ClassLoader) {
     /** Override to add behavior for runaway lines.  This method will
      *  be called if a line thread is still running five seconds after
      *  it has been cancelled.
@@ -91,7 +90,7 @@ object Line {
       _current = None
     }
     def set[T](code: String)(body: => T) = {
-      val line = new Line(code, body)
+      val line = new Line(code, classLoader, body)
       _current = Some(line)
       line
     }

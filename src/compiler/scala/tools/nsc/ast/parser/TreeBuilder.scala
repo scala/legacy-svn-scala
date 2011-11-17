@@ -120,11 +120,6 @@ abstract class TreeBuilder {
   private def getVariables(tree: Tree): List[(Name, Tree, Position)] =
     new GetVarTraverser apply tree
 
-  private def makeTuple(trees: List[Tree], isType: Boolean): Tree = {
-    val tupString = "Tuple" + trees.length
-    Apply(scalaDot(if (isType) newTypeName(tupString) else newTermName(tupString)), trees)
-  }
-
   def byNameApplication(tpe: Tree): Tree =
     AppliedTypeTree(rootScalaDot(tpnme.BYNAME_PARAM_CLASS_NAME), List(tpe))
   def repeatedApplication(tpe: Tree): Tree =
@@ -132,6 +127,11 @@ abstract class TreeBuilder {
 
   def makeImportSelector(name: Name, nameOffset: Int): ImportSelector =
     ImportSelector(name, nameOffset, name, nameOffset)
+
+  private def makeTuple(trees: List[Tree], isType: Boolean): Tree = {
+    val tupString = "Tuple" + trees.length
+    Apply(scalaDot(if (isType) newTypeName(tupString) else newTermName(tupString)), trees)
+  }
 
   def makeTupleTerm(trees: List[Tree], flattenUnary: Boolean): Tree = trees match {
     case Nil => Literal(Constant())
@@ -596,22 +596,18 @@ abstract class TreeBuilder {
     AppliedTypeTree(rootScalaDot(newTypeName("Function" + argtpes.length)), argtpes ::: List(restpe))
 
   /** Append implicit parameter section if `contextBounds` nonempty */
-  def addEvidenceParams(owner: Name, vparamss: List[List[ValDef]], contextBounds: List[Tree]): List[List[ValDef]] =
+  def addEvidenceParams(owner: Name, vparamss: List[List[ValDef]], contextBounds: List[Tree]): List[List[ValDef]] = {
     if (contextBounds.isEmpty) vparamss
     else {
       val mods = Modifiers(if (owner.isTypeName) PARAMACCESSOR | LOCAL | PRIVATE else PARAM)
       def makeEvidenceParam(tpt: Tree) = ValDef(mods | IMPLICIT, freshTermName(nme.EVIDENCE_PARAM_PREFIX), tpt, EmptyTree)
       val evidenceParams = contextBounds map makeEvidenceParam
-      if (vparamss.isEmpty)
-        List(evidenceParams)
-      else {
-        val lastParams = vparamss(vparamss.size - 1)
-        if (!lastParams.isEmpty && (lastParams(0).mods hasFlag IMPLICIT))
-          // append lastParams to evidenceParams
-          (vparamss take (vparamss.size - 1)) ::: List(evidenceParams ::: lastParams)
-        else
-          vparamss ::: List(evidenceParams)
-      }
-  }
 
+      val vparamssLast = if(vparamss.nonEmpty) vparamss.last else Nil
+      if(vparamssLast.nonEmpty && vparamssLast.head.mods.hasFlag(IMPLICIT))
+        vparamss.init ::: List(evidenceParams ::: vparamssLast)
+      else
+        vparamss ::: List(evidenceParams)
+    }
+  }
 }

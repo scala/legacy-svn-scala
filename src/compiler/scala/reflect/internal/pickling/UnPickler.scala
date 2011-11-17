@@ -819,25 +819,40 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
 
     protected def errorMissingRequirement(name: Name, owner: Symbol): Symbol = 
       missingHook(owner, name) orElse {
+        val what = if (name.isTypeName) "type" else "value"
         MissingRequirementError.notFound(
-            "reference " + (if (name.isTypeName) "type " else "value ") +
-            name.decode + " of " + owner.tpe.widen + "/" +owner.tpe.typeSymbol.ownerChain + "/" + owner.info.members)
-    }
+          "while unpickling %s, reference %s %s of %s/%s/%s".format(
+            filename,
+            what, name.decode, owner.tpe.widen,
+            owner.tpe.typeSymbol.ownerChain,
+            owner.info.members.mkString("\n  ", "\n  ", ""))
+        )
+      }
 
     def inferMethodAlternative(fun: Tree, argtpes: List[Type], restpe: Type) {} // can't do it; need a compiler for that.
 
     def newLazyTypeRef(i: Int): LazyType = new LazyTypeRef(i)
     def newLazyTypeRefAndAlias(i: Int, j: Int): LazyType = new LazyTypeRefAndAlias(i, j)
+    
+    /** Convert to a type error, that is printed gracefully instead of crashing.
+     *
+     *  Similar in intent to what SymbolLoader does (but here we don't have access to
+     *  error reporting, so we rely on the typechecker to report the error).
+     */
+    def toTypeError(e: MissingRequirementError) =
+      new TypeError(e.msg)
 
     /** A lazy type which when completed returns type at index `i`. */
     private class LazyTypeRef(i: Int) extends LazyType {
       private val definedAtRunId = currentRunId
       private val p = phase
-      override def complete(sym: Symbol) : Unit = {
+      override def complete(sym: Symbol) : Unit = try {
         val tp = at(i, () => readType(sym.isTerm)) // after NMT_TRANSITION, revert `() => readType(sym.isTerm)` to `readType`
         if (p != phase) atPhase(p) (sym setInfo tp) 
         else sym setInfo tp
         if (currentRunId != definedAtRunId) sym.setInfo(adaptToNewRunMap(tp))
+      } catch {
+        case e: MissingRequirementError => throw toTypeError(e)
       }
       override def load(sym: Symbol) { complete(sym) }
     }
@@ -846,7 +861,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
      *  of completed symbol to symbol at index `j`.
      */
     private class LazyTypeRefAndAlias(i: Int, j: Int) extends LazyTypeRef(i) {
-      override def complete(sym: Symbol) {
+      override def complete(sym: Symbol) = try {
         super.complete(sym)
         var alias = at(j, readSymbol)
         if (alias.isOverloaded) {
@@ -855,6 +870,8 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
           }
         }
         sym.asInstanceOf[TermSymbol].setAlias(alias)
+      } catch {
+        case e: MissingRequirementError => throw toTypeError(e)
       }
     }
   }

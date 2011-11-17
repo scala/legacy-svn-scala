@@ -12,6 +12,7 @@ import java.io._
 import java.net.URL
 import java.util.{ Timer, TimerTask }
 
+import scala.tools.nsc.Properties.{ jdkHome, javaHome, propOrElse }
 import scala.util.Properties.{ isWin }
 import scala.tools.nsc.{ Settings, CompilerCommand, Global }
 import scala.tools.nsc.io.{ AbstractFile, PlainFile, Path, Directory, File => SFile }
@@ -105,14 +106,9 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
   
   val scalaCheckFileManager = new ScalaCheckFileManager(fileManager)
   var reporter: ConsoleReporter = _
-  val timer = new Timer
-
-  val javacCmd = if ((fileManager.JAVAC_CMD.indexOf("${env.JAVA_HOME}") != -1) ||
-                     fileManager.JAVAC_CMD.equals("/bin/javac") ||
-                     fileManager.JAVAC_CMD.equals("\\bin\\javac")) "javac"
-                 else
-                   fileManager.JAVAC_CMD
-
+  val timer    = new Timer  
+  val javaCmd  = propOrElse("partest.javacmd", Path(javaHome) / "bin" / "java" path)
+  val javacCmd = propOrElse("partest.javac_cmd", Path(jdkHome) / "bin" / "javac" path)
 
   def cancelTimerTask() = if (currentTimerTask != null) currentTimerTask.cancel()
   def updateTimerTask(body: => Unit) = {
@@ -272,15 +268,16 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
 
   def javac(outDir: File, files: List[File], output: File): Boolean = {
     // compile using command-line javac compiler
-    val cmd = "%s -d %s -classpath %s %s".format(
+    val args = Seq(
       javacCmd,
+      "-d",
       outDir.getAbsolutePath,
-      join(outDir.toString, CLASSPATH),
-      files mkString " "
-    )
-    
-    try runCommand(cmd, output)
-    catch exHandler(output, "javac command '" + cmd + "' failed:\n")
+      "-classpath",
+      join(outDir.toString, CLASSPATH)
+    ) ++ files.map("" + _)
+
+    try runCommand(args, output)
+    catch exHandler(output, "javac command failed:\n" + args.map("  " + _ + "\n").mkString + "\n")
   }
 
   /** Runs command redirecting standard out and
@@ -290,7 +287,15 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
     NestUI.verbose("running command:\n"+command)
     (command #> outFile !) == 0
   }
+  def runCommand(args: Seq[String], outFile: File): Boolean = {
+    NestUI.verbose("running command:\n"+args.map("  " + _ + "\n").mkString)
+    (Process(args) #> outFile !) == 0
+  }
 
+  private def q(s: String) = {
+    val quot = "\""
+    if ((s == "") || (s.head == '"')) s else quot + s + quot
+  }
   def execTest(outDir: File, logFile: File, classpathPrefix: String = ""): Boolean = {
     // check whether there is a ".javaopts" file
     val argsFile  = new File(logFile.getParentFile, fileBase + ".javaopts")
@@ -325,7 +330,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
       "-Dpartest.cwd="+outDir.getParent,
       "-Dpartest.test-path="+testFullPath,
       "-Dpartest.testname="+fileBase,
-      "-Djavacmd="+JAVACMD,
+      "-Djavacmd="+javaCmd,
       "-Djavaccmd="+javacCmd,
       "-Duser.language=en -Duser.country=US"
     ) ++ extras
@@ -333,10 +338,11 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
     val classpath = if (classpathPrefix != "") join(classpathPrefix, CLASSPATH) else CLASSPATH
     val cmd = ( 
       List(
-        JAVACMD,
+        javaCmd,
         JAVA_OPTS,
         argString,
-        "-classpath " + join(outDir.toString, classpath)
+        "-classpath",
+        join(outDir.toString, classpath)
       ) ++ propertyOptions ++ List(
         "scala.tools.nsc.MainGenericRunner",
         "-usejavacp",
@@ -400,8 +406,8 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
    */
   def runTests(files: List[File])(topcont: Map[String, Int] => Unit) {
     val compileMgr = new CompileManager(fileManager)
-    if (kind == "scalacheck") fileManager.CLASSPATH += File.pathSeparator + PathSettings.scalaCheck
-
+    // if (kind == "scalacheck") 
+    fileManager.CLASSPATH += File.pathSeparator + PathSettings.scalaCheck
     filesRemaining = files
 
     // You don't default "succeeded" to true.
@@ -539,15 +545,15 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
       case "scalacheck" =>
         val succFn: (File, File) => Boolean = { (logFile, outDir) =>
           NestUI.verbose("compilation of "+file+" succeeded\n")
-
+          
           val outURL    = outDir.getAbsoluteFile.toURI.toURL
           val logWriter = new PrintStream(new FileOutputStream(logFile), true)
-
+          
           Output.withRedirected(logWriter) {
             // this classloader is test specific: its parent contains library classes and others
             ScalaClassLoader.fromURLs(List(outURL), params.scalaCheckParentClassLoader).run("Test", Nil)
           }
-
+          
           NestUI.verbose(file2String(logFile))
           // obviously this must be improved upon
           val lines = SFile(logFile).lines map (_.trim) filterNot (_ == "") toBuffer;
@@ -578,6 +584,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
           val dir      = file.getParentFile
 
           // diff is contents of logFile
+          fileManager.mapFile(logFile, replaceSlashes(dir, _))
           diffCheck(compareOutput(dir, logFile))
         })
 

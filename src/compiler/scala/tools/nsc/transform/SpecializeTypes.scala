@@ -6,10 +6,48 @@
 package scala.tools.nsc
 package transform
 
+
 import scala.tools.nsc.symtab.Flags
 import scala.collection.{ mutable, immutable }
 
+
+
 /** Specialize code on types.
+ *
+ *  Make sure you've read the thesis:
+ *  
+ *    Iulian Dragos: Compiling Scala for Performance (chapter 4)
+ *  
+ *  There are some things worth noting, (possibly) not mentioned there:
+ *  0) Make sure you understand the meaning of various `SpecializedInfo` descriptors
+ *     defined below.
+ *     
+ *  1) Specializing traits by introducing bridges in specialized methods
+ *     of the specialized trait may introduce problems during mixin composition.
+ *     Concretely, it may cause cyclic calls and result in a stack overflow.
+ *     See ticket #4351.
+ *     This was solved by introducing an `Abstract` specialized info descriptor.
+ *     Instead of generating a bridge in the trait, an abstract method is generated.
+ *     
+ *  2) Specialized private members sometimes have to be switched to protected.
+ *     In some cases, even this is not enough. Example:
+ *     
+ *     {{{
+ *       class A[@specialized T](protected val d: T) {
+ *         def foo(that: A[T]) = that.d
+ *       }
+ *     }}}
+ *     
+ *     Specialization will generate a specialized class and a specialized method:
+ *
+ *     {{{
+ *       class A$mcI$sp(protected val d: Int) extends A[Int] {
+ *         def foo(that: A[Int]) = foo$mcI$sp(that)
+ *         def foo(that: A[Int]) = that.d
+ *       }
+ *     }}}
+ *
+ *     Above, `A$mcI$sp` cannot access `d`, so the method cannot be typechecked.
  */
 abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   import global._
@@ -503,7 +541,18 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         val extraSpecializedMixins = specializedParents(clazz.info.parents.map(applyContext))
         if (extraSpecializedMixins.nonEmpty)
           debuglog("specializeClass on " + clazz + " founds extra specialized mixins: " + extraSpecializedMixins.mkString(", "))
-
+        // If the class being specialized has a self-type, the self type may
+        // require specialization.  First exclude classes whose self types have
+        // the same type constructor as the class itself, since they will
+        // already be covered.  Then apply the current context to the self-type
+        // as with the parents and assign it to typeOfThis.
+        if (clazz.typeOfThis.typeConstructor ne clazz.typeConstructor) {
+          cls.typeOfThis = applyContext(clazz.typeOfThis)
+          log("Rewriting self-type for specialized class:\n" +
+              "    " + clazz.defStringSeenAs(clazz.typeOfThis) + "\n" +
+              " => " + cls.defStringSeenAs(cls.typeOfThis)
+          )
+        }
         val infoType = ClassInfoType(parents ::: extraSpecializedMixins, decls1, cls)
         if (newClassTParams.isEmpty) infoType else PolyType(newClassTParams, infoType)
       }
@@ -775,9 +824,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     def specializeOn(tparams: List[Symbol]): List[Symbol] =
       for (spec0 <- specializations(tparams)) yield {
         val spec = mapAnyRefsInOrigCls(spec0, owner)
-        if (sym.isPrivate)
+        if (sym.isPrivate/* || sym.isProtected*/) {
+          //sym.privateWithin = sym.enclosingPackage
           sym.resetFlag(PRIVATE).setFlag(PROTECTED)
-          
+          log("-->d SETTING PRIVATE WITHIN TO " + sym.enclosingPackage + " for " + sym)
+        }
+        
         sym.resetFlag(FINAL)
         val specMember = subst(outerEnv)(specializedOverload(owner, sym, spec))
         typeEnv(specMember) = typeEnv(sym) ++ outerEnv ++ spec
@@ -922,26 +974,26 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    */
   private def unify(tp1: Type, tp2: Type, env: TypeEnv, strict: Boolean): TypeEnv = (tp1, tp2) match {
     case (TypeRef(_, sym1, _), _) if isSpecialized(sym1) =>
-      log("Unify - basic case: " + tp1 + ", " + tp2)
+      debuglog("Unify - basic case: " + tp1 + ", " + tp2)
       if (isValueClass(tp2.typeSymbol) || isSpecializedAnyRefSubtype(tp2, sym1))
         env + ((sym1, tp2))
       else 
         if (strict) throw UnifyError else env
     case (TypeRef(_, sym1, args1), TypeRef(_, sym2, args2)) =>
-      log("Unify TypeRefs: " + tp1 + " and " + tp2 + " with args " + (args1, args2) + " - ")
+      debuglog("Unify TypeRefs: " + tp1 + " and " + tp2 + " with args " + (args1, args2) + " - ")
       if (strict && args1.length != args2.length) throw UnifyError
       val e = unify(args1, args2, env, strict)
-      log("unified to: " + e)
+      debuglog("unified to: " + e)
       e
     case (TypeRef(_, sym1, _), _) if sym1.isTypeParameterOrSkolem =>
       env
     case (MethodType(params1, res1), MethodType(params2, res2)) =>
       if (strict && params1.length != params2.length) throw UnifyError
-      log("Unify MethodTypes: " + tp1 + " and " + tp2)
+      debuglog("Unify MethodTypes: " + tp1 + " and " + tp2)
       unify(res1 :: (params1 map (_.tpe)), res2 :: (params2 map (_.tpe)), env, strict)
     case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
       if (strict && tparams1.length != tparams2.length) throw UnifyError
-      log("Unify PolyTypes: " + tp1 + " and " + tp2)
+      debuglog("Unify PolyTypes: " + tp1 + " and " + tp2)
       unify(res1, res2, env, strict)
     case (PolyType(_, res), other) =>
       unify(res, other, env, strict)
@@ -954,7 +1006,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     case (AnnotatedType(_, tp1, _), tp2)        => unify(tp2, tp1, env, strict)
     case (ExistentialType(_, res1), _)          => unify(tp2, res1, env, strict)
     case _ =>
-      log("don't know how to unify %s [%s] with %s [%s]".format(tp1, tp1.getClass, tp2, tp2.getClass))
+      debuglog("don't know how to unify %s [%s] with %s [%s]".format(tp1, tp1.getClass, tp2, tp2.getClass))
       env
   }
   
@@ -966,7 +1018,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         val nenv = unify(args._1, args._2, emptyEnv, strict)
         if (env.keySet intersect nenv.keySet isEmpty) env ++ nenv
         else {
-          log("could not unify: u(" + args._1 + ", " + args._2 + ") yields " + nenv + ", env: " + env)
+          debuglog("could not unify: u(" + args._1 + ", " + args._2 + ") yields " + nenv + ", env: " + env)
           throw UnifyError
         }
       }
@@ -987,7 +1039,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    */
   private def subst(env: TypeEnv, tpe: Type): Type = {
     class FullTypeMap(from: List[Symbol], to: List[Type]) extends SubstTypeMap(from, to) with AnnotationFilter {
-      def keepAnnotation(annot: AnnotationInfo) = annot.atp.typeSymbol != uncheckedVarianceClass
+      def keepAnnotation(annot: AnnotationInfo) = !(annot matches uncheckedVarianceClass)
 
       override def mapOver(tp: Type): Type = tp match {
         case ClassInfoType(parents, decls, clazz) =>
@@ -1205,14 +1257,14 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       (treeType =:= memberType) || { // anyref specialization
         memberType match {
           case PolyType(_, resTpe) =>
-            log("Conformance for anyref - polytype with result type: " + resTpe + " and " + treeType + "\nOrig. sym.: " + origSymbol)
+            debuglog("Conformance for anyref - polytype with result type: " + resTpe + " and " + treeType + "\nOrig. sym.: " + origSymbol)
             try {
               val e = unify(origSymbol.tpe, memberType, emptyEnv, true)
-              log("obtained env: " + e)
+              debuglog("obtained env: " + e)
               e.keySet == env.keySet
             } catch {
               case _ =>
-                log("Could not unify.")
+                debuglog("Could not unify.")
                 false
             }
           case _ => false
@@ -1298,7 +1350,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
         case Select(qual, name) =>
           debuglog("[%s] looking at Select: %s sym: %s: %s [tree.tpe: %s]".format(
-            tree.pos.line, tree, symbol, symbol.info, tree.tpe))
+            tree.pos.safeLine, tree, symbol, symbol.info, tree.tpe))
 
           //log("!!! select " + tree + " -> " + symbol.info + " specTypeVars: " + specializedTypeVars(symbol.info))
           if (specializedTypeVars(symbol.info).nonEmpty && name != nme.CONSTRUCTOR) {
@@ -1426,7 +1478,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             case fwd @ Forward(_) =>
               log("forward: " + fwd + ", " + ddef)
               val rhs1 = forwardCall(tree.pos, gen.mkAttributedRef(symbol.owner.thisType, fwd.target), vparamss)
-              debuglog("completed forwarder to specialized overload: " + fwd.target + ": " + rhs1)
+              log("-->d completed forwarder to specialized overload: " + fwd.target + ": " + rhs1)
               localTyper.typed(treeCopy.DefDef(tree, mods, name, tparams, vparamss, tpt, rhs1))
               
             case SpecializedAccessor(target) =>
@@ -1485,17 +1537,17 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
     
     private def reskolemize(tparams: List[TypeDef]): (List[Symbol], List[Symbol]) = {
-      val tparams1 = tparams map (_.symbol)
-      localTyper.namer.skolemize(tparams)
-      (tparams1, tparams map (_.symbol))
+      val saved = tparams map (_.symbol)
+      localTyper skolemizeTypeParams tparams
+      (saved, tparams map (_.symbol))
     }
-
 
     private def duplicateBody(tree: DefDef, source: Symbol) = {
       val symbol = tree.symbol
       val meth   = addBody(tree, source)
 
       val d = new Duplicator
+      log("-->d DUPLICATING: " + meth)
       d.retyped(
         localTyper.context1.asInstanceOf[d.Context],
         meth,

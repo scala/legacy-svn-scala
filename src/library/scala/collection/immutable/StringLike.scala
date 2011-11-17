@@ -106,7 +106,7 @@ self =>
    *  - `LF` - line feed   (`0x0A` hex)
    *  - `FF` - form feed   (`0x0C` hex)
    */
-  def linesWithSeparators: Iterator[String] = new Iterator[String] {
+  def linesWithSeparators: Iterator[String] = new AbstractIterator[String] {
     val str = self.toString
     private val len = str.length
     private var index = 0
@@ -223,10 +223,10 @@ self =>
     if (s != null) s.toLowerCase match {
       case "true" => true
       case "false" => false
-      case _ => throw new NumberFormatException("For input string: \""+s+"\"")
+      case _ => throw new IllegalArgumentException("For input string: \""+s+"\"")
     }
     else
-      throw new NumberFormatException("For input string: \"null\"")
+      throw new IllegalArgumentException("For input string: \"null\"")
 
   override def toArray[B >: Char : ClassManifest]: Array[B] =
     toString.toCharArray.asInstanceOf[Array[B]]

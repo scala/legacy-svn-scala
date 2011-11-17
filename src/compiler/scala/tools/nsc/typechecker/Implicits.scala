@@ -66,7 +66,7 @@ trait Implicits {
 
     val result = new ImplicitSearch(tree, pt, isView, context.makeImplicit(reportAmbiguous)).bestImplicit
     printInference("[inferImplicit] result: " + result)
-    context.undetparams = context.undetparams filterNot result.subst.fromContains
+    context.undetparams = context.undetparams filterNot result.subst.from.contains
 
     stopTimer(implicitNanos, start)
     stopCounter(rawTypeImpl, rawTypeStart)
@@ -178,13 +178,8 @@ trait Implicits {
     private val hasMemberCache = perRunCaches.newMap[Name, Type]()
     def apply(name: Name): Type = hasMemberCache.getOrElseUpdate(name, memberWildcardType(name, WildcardType))
     def unapply(pt: Type): Option[Name] = pt match {
-      case RefinedType(List(WildcardType), decls) =>
-        decls.toList match {
-          case List(sym) if sym.tpe == WildcardType => Some(sym.name)
-          case _ => None
-        }
-      case _ =>
-        None
+      case RefinedType(List(WildcardType), Scope(sym)) if sym.tpe == WildcardType => Some(sym.name)
+      case _ => None
     }
   }
 
@@ -310,7 +305,7 @@ trait Implicits {
         case NoPrefix =>
           0
         case SingleType(pre, sym) => 
-          if (sym.isPackage) 0 else complexity(tp.widen)
+          if (sym.isPackage) 0 else complexity(tp.normalize.widen)
         case TypeRef(pre, sym, args) => 
           complexity(pre) + sum(args map complexity) + 1
         case RefinedType(parents, _) => 
@@ -570,7 +565,7 @@ trait Implicits {
             // filter out failures from type inference, don't want to remove them from undetParams!
             // we must be conservative in leaving type params in undetparams
             // prototype == WildcardType: want to remove all inferred Nothings
-            val AdjustedTypeArgs(okParams, okArgs) = adjustTypeArgs(undetParams, targs)
+            val AdjustedTypeArgs(okParams, okArgs) = adjustTypeArgs(undetParams, tvars, targs)
             val subst: TreeTypeSubstituter =
               if (okParams.isEmpty) EmptyTreeTypeSubstituter
               else {
@@ -1115,7 +1110,7 @@ trait Implicits {
               // a manifest should have been found by normal searchImplicit
               EmptyTree
             }
-          case RefinedType(parents, decls) =>
+          case RefinedType(parents, decls) => // !!! not yet: if !full || decls.isEmpty =>
             // refinement is not generated yet
             if (hasLength(parents, 1)) findManifest(parents.head)
             else if (full) manifestFactoryCall("intersectionType", tp, parents map findSubManifest: _*)
@@ -1124,7 +1119,14 @@ trait Implicits {
             mot(tp1.skolemizeExistential, from, to)
           case _ =>
             EmptyTree
-        }
+/*          !!! the following is almost right, but we have to splice nested manifest
+ *          !!! types into this type. This requires a substantial extension of 
+ *          !!! reifiers.
+            val reifier = new liftcode.Reifier()
+            val rtree = reifier.reifyTopLevel(tp1)
+            manifestFactoryCall("apply", tp, rtree)
+*/
+          }
       }
 
       mot(tp, Nil, Nil)
