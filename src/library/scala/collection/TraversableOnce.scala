@@ -193,14 +193,14 @@ trait TraversableOnce[+A] extends GenTraversableOnce[A] {
     if (isEmpty)
       throw new UnsupportedOperationException("empty.min")
     
-    reduceLeft((x, y) => if (cmp.lteq(x, y)) x else y)
+    reduce(cmp.min)
   }
 
   def max[B >: A](implicit cmp: Ordering[B]): A = {
     if (isEmpty)
       throw new UnsupportedOperationException("empty.max")
     
-    reduceLeft((x, y) => if (cmp.gteq(x, y)) x else y)
+    reduce(cmp.max)
   }
 
   def maxBy[B](f: A => B)(implicit cmp: Ordering[B]): A = {
