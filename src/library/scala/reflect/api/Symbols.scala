@@ -35,6 +35,9 @@ trait Symbols { self: Universe =>
      *  are separated by periods.
      */
     def fullName: String
+    
+    /** An id number which is unique for all symbols in this universe */
+    def id: Int
 
     /**
      * Set when symbol has a modifier of the form private[X], NoSymbol otherwise.
