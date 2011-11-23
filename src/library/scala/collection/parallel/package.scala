@@ -42,14 +42,14 @@ package object parallel {
   private[parallel] def getTaskSupport: TaskSupport =
     if (util.Properties.isJavaAtLeast("1.6")) {
       val vendor = util.Properties.javaVmVendor
-      if ((vendor contains "Sun") || (vendor contains "Apple")) new ForkJoinTaskSupport
+      if ((vendor contains "Oracle") || (vendor contains "Sun") || (vendor contains "Apple")) new ForkJoinTaskSupport
       else new ThreadPoolTaskSupport
     } else new ThreadPoolTaskSupport
-
+  
   val tasksupport = getTaskSupport
-
+  
   /* implicit conversions */
-
+  
   implicit def factory2ops[From, Elem, To](bf: CanBuildFrom[From, Elem, To]) = new FactoryOps[From, Elem, To] {
     def isParallel = bf.isInstanceOf[Parallel]
     def asParallel = bf.asInstanceOf[CanCombineFrom[From, Elem, To]]

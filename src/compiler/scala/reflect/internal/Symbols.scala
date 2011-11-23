@@ -40,10 +40,25 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    *  EnclosingMethod attributes.
    */
   val originalOwner = perRunCaches.newMap[Symbol, Symbol]()
+  
+  abstract class AbsSymbolImpl extends AbsSymbol { this: Symbol =>
+    def newNestedSymbol(pos: Position, name: Name) = name match {
+      case n: TermName => newValue(pos, n)
+      case n: TypeName => newAliasType(pos, n)
+    }
+    def typeSig: Type = info
+    def typeSigIn(site: Type): Type = site.memberInfo(this)
+    def asType: Type = tpe
+    def asTypeIn(site: Type): Type = site.memberType(this)
+    def asTypeConstructor: Type = typeConstructor
+    def setInternalFlags(flag: Long): this.type = { setFlag(flag); this }
+    def setTypeSig(tpe: Type): this.type = { setInfo(tpe); this }
+    def setAnnotations(annots: AnnotationInfo*): this.type = { setAnnotations(annots.toList); this }
+  }
 
   /** The class for all symbols */
   abstract class Symbol(initOwner: Symbol, initPos: Position, initName: Name)
-          extends AbsSymbol
+          extends AbsSymbolImpl
              with HasFlags
              with Annotatable[Symbol] {
 
@@ -248,16 +263,19 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Create a new getter for current symbol (which must be a field)
      */
-    final def newGetter: Symbol = {
-      val getter = owner.newMethod(focusPos(pos), nme.getterName(name)).setFlag(getterFlags(flags))
-      getter.privateWithin = privateWithin
-      getter.setInfo(MethodType(List(), tpe))
-    }
+    final def newGetter: Symbol = (
+      owner.newMethod(focusPos(pos), nme.getterName(name))
+        setFlag getterFlags(flags)
+        setPrivateWithin privateWithin
+        setInfo MethodType(Nil, tpe)
+    )
 
     final def newErrorClass(name: TypeName) = {
-      val clazz = newClass(pos, name).setFlag(SYNTHETIC | IS_ERROR)
-      clazz.setInfo(ClassInfoType(List(), new ErrorScope(this), clazz))
-      clazz
+      val clazz = newClass(pos, name)
+      ( clazz
+          setFlag (SYNTHETIC | IS_ERROR)
+          setInfo ClassInfoType(Nil, new ErrorScope(this), clazz)
+      )
     }
 
     final def newErrorSymbol(name: Name): Symbol = name match {
@@ -338,6 +356,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isModuleClass        = isClass && hasFlag(MODULE)
     final def isNumericValueClass  = definitions.isNumericValueClass(this)
     final def isOverloaded         = hasFlag(OVERLOADED)
+    final def isOverridableMember  = !(isClass || isEffectivelyFinal) && owner.isClass
     final def isRefinementClass    = isClass && name == tpnme.REFINE_CLASS_NAME
     final def isSourceMethod       = isMethod && !hasFlag(STABLE) // exclude all accessors!!!
     final def isTypeParameter      = isType && isParameter && !isSkolem
@@ -361,9 +380,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Is this symbol an effective root for fullname string?
      */
     def isEffectiveRoot = isRoot || isEmptyPackageClass
-    
-    final def isPossibleInRefinement       = !isConstructor && !isOverridingSymbol
-    final def isStructuralRefinementMember = owner.isStructuralRefinement && isPossibleInRefinement && isPublic
     
     /** Term symbols with the exception of static parts of Java classes and packages.
      */
@@ -402,9 +418,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // class C extends D( { class E { ... } ... } ). Here, E is a class local to a constructor
     final def isClassLocalToConstructor = isClass && hasFlag(INCONSTRUCTOR)
 
-    final def isAnonymousClass    = isClass && (name containsName tpnme.ANON_CLASS_NAME)
-    final def isAnonymousFunction = isSynthetic && (name containsName tpnme.ANON_FUN_NAME)
-    final def isAnonOrRefinementClass = isAnonymousClass || isRefinementClass
+    final def isAnonymousClass             = isClass && (name containsName tpnme.ANON_CLASS_NAME)
+    final def isAnonymousFunction          = isSynthetic && (name containsName tpnme.ANON_FUN_NAME)
+    final def isAnonOrRefinementClass      = isAnonymousClass || isRefinementClass
 
     // A package object or its module class
     final def isPackageObjectOrClass = name == nme.PACKAGE || name == tpnme.PACKAGE
@@ -594,6 +610,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     final def isStructuralRefinement: Boolean =
       (isClass || isType || isModule) && info.normalize/*.underlying*/.isStructuralRefinement
+
+    final def isStructuralRefinementMember = owner.isStructuralRefinement && isPossibleInRefinement && isPublic
+    final def isPossibleInRefinement       = !isConstructor && !isOverridingSymbol
 
     /** Is this symbol a member of class `clazz`? */
     def isMemberOf(clazz: Symbol) =
@@ -843,6 +862,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private[this] var _privateWithin: Symbol = _  
     def privateWithin = _privateWithin
     def privateWithin_=(sym: Symbol) { _privateWithin = sym }
+    def setPrivateWithin(sym: Symbol): this.type = { privateWithin_=(sym) ; this }
     
     /** Does symbol have a private or protected qualifier set? */
     final def hasAccessBoundary = (privateWithin != null) && (privateWithin != NoSymbol)
@@ -914,9 +934,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     /** Set initial info. */
-    def setInfo(info: Type): this.type = { info_=(info); this }
-
-    def setInfoOwnerAdjusted(info: Type): this.type = setInfo(info.atOwner(this))
+    def setInfo(info: Type): this.type                      = { info_=(info); this }
+    /** Modifies this symbol's info in place. */
+    def modifyInfo(f: Type => Type): this.type              = setInfo(f(info))
+    /** Substitute second list of symbols for first in current info. */
+    def substInfo(syms0: List[Symbol], syms1: List[Symbol]) = modifyInfo(_.substSym(syms0, syms1))
+    def setInfoOwnerAdjusted(info: Type): this.type         = setInfo(info atOwner this)
 
     /** Set new info valid from start of this phase. */
     final def updateInfo(info: Type): Symbol = {
@@ -1107,7 +1130,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       val oldsyms = oldsymbuf.toList
       val newsyms = newsymbuf.toList
       for (sym <- newsyms) {
-        addMember(thistp, tp, sym.setInfo(sym.info.substThis(this, thistp).substSym(oldsyms, newsyms)))
+        addMember(thistp, tp, sym modifyInfo (_ substThisAndSym(this, thistp, oldsyms, newsyms)))
       }
       tp
     }
@@ -1118,12 +1141,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def existentialBound: Type = 
       if (this.isClass) 
-         polyType(this.typeParams, TypeBounds.upper(this.classBound))
+        polyType(this.typeParams, TypeBounds.upper(this.classBound))
       else if (this.isAbstractType) 
-         this.info
+        this.info
       else if (this.isTerm) 
-         TypeBounds.upper(intersectionType(List(this.tpe, SingletonClass.tpe)))
-      else 
+        singletonBounds(this.tpe)
+      else
         abort("unexpected alias type: "+this)
 
     /** Reset symbol to initial state
@@ -1157,41 +1180,31 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
 // ----- annotations ------------------------------------------------------------
 
-    private var rawannots: List[AnnotationInfoBase] = Nil
-    def rawAnnotations = rawannots
+    // null is a marker that they still need to be obtained.
+    private var _annotations: List[AnnotationInfo] = Nil
 
-    /* Used in namer to check whether annotations were already assigned or not */
-    def hasAssignedAnnotations = rawannots.nonEmpty
+    def annotationsString = if (annotations.isEmpty) "" else annotations.mkString("(", ", ", ")")
 
     /** After the typer phase (before, look at the definition's Modifiers), contains
      *  the annotations attached to member a definition (class, method, type, field).
      */
-    def annotations: List[AnnotationInfo] = {
-      // .initialize: the type completer of the symbol parses the annotations,
-      // see "def typeSig" in Namers
-      val annots1 = initialize.rawannots map {
-        case x: LazyAnnotationInfo  => x.annot()
-        case x: AnnotationInfo      => x
-      } filterNot (_.atp.isError)
-      rawannots = annots1
-      annots1
-    }
-
-    def setRawAnnotations(annots: List[AnnotationInfoBase]): this.type = {
-      this.rawannots = annots
+    def annotations: List[AnnotationInfo] = _annotations
+    def setAnnotations(annots: List[AnnotationInfo]): this.type = {
+      _annotations = annots
       this
     }
-    def setAnnotations(annots: List[AnnotationInfo]): this.type =
-      setRawAnnotations(annots)
 
     def withAnnotations(annots: List[AnnotationInfo]): this.type =
-      setRawAnnotations(annots ::: rawannots)
+      setAnnotations(annots ::: annotations)
 
     def withoutAnnotations: this.type =
-      setRawAnnotations(Nil)
+      setAnnotations(Nil)
+    
+    def filterAnnotations(p: AnnotationInfo => Boolean): this.type =
+      setAnnotations(annotations filter p)
 
     def addAnnotation(annot: AnnotationInfo): this.type =
-      setRawAnnotations(annot :: rawannots)
+      setAnnotations(annot :: annotations)
 
     // Convenience for the overwhelmingly common case
     def addAnnotation(sym: Symbol, args: Tree*): this.type =
@@ -1270,9 +1283,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** A clone of this symbol, but with given owner. */
     final def cloneSymbol(owner: Symbol): Symbol = {
       val newSym = cloneSymbolImpl(owner)
-      newSym.privateWithin = privateWithin
-      newSym.setInfo(info.cloneInfo(newSym))
-        .setFlag(this.rawflags).setAnnotations(this.annotations)
+      ( newSym
+          setPrivateWithin privateWithin
+          setInfo (info cloneInfo newSym)
+          setFlag this.rawflags
+          setAnnotations this.annotations
+      )
     }
 
     /** Internal method to clone a symbol's implementation without flags or type. */
@@ -2218,7 +2234,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
     
     def cloneSymbolImpl(owner: Symbol): Symbol =
-      new TypeSymbol(owner, pos, name)  //.toTypeName)
+      new TypeSymbol(owner, pos, name)
 
     incCounter(typeSymbolCount)
   }
@@ -2426,16 +2442,80 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def originalEnclosingMethod = this
   }
 
-  private def cloneAndSubstInfos[T <: Symbol](syms: List[T])(f: T => Symbol): List[T] = {
-    val syms1 = syms map (s => f(s).asInstanceOf[T])
-    syms1 map (sym1 => sym1 setInfo sym1.info.substSym(syms, syms1))
+  /** Derives a new list of symbols from the given list by mapping the given
+   *  list across the given function.  Then fixes the info of all the new symbols
+   *  by substituting the new symbols for the original symbols.
+   *
+   *  @param    syms    the prototypical symbols
+   *  @param    symFn   the function to create new symbols
+   *  @return           the new list of info-adjusted symbols
+   */
+  def deriveSymbols(syms: List[Symbol], symFn: Symbol => Symbol): List[Symbol] = {
+    val syms1 = syms map symFn
+    syms1 map (_ substInfo (syms, syms1))
+  }
+  
+  /** Derives a new Type by first deriving new symbols as in deriveSymbols,
+   *  then performing the same oldSyms => newSyms substitution on `tpe` as is
+   *  performed on the symbol infos in deriveSymbols.
+   *
+   *  @param    syms    the prototypical symbols
+   *  @param    symFn   the function to create new symbols
+   *  @param    tpe     the prototypical type
+   *  @return           the new symbol-subsituted type
+   */
+  def deriveType(syms: List[Symbol], symFn: Symbol => Symbol)(tpe: Type): Type = {
+    val syms1 = deriveSymbols(syms, symFn)
+    tpe.substSym(syms, syms1)
+  }
+  /** Derives a new Type by instantiating the given list of symbols as
+   *  WildcardTypes.
+   *
+   *  @param    syms    the symbols to replace
+   *  @return           the new type with WildcardType replacing those syms
+   */
+  def deriveTypeWithWildcards(syms: List[Symbol])(tpe: Type): Type = {
+    if (syms.isEmpty) tpe
+    else tpe.instantiateTypeParams(syms, syms map (_ => WildcardType))
+  }
+  /** Convenience functions which derive symbols by cloning.
+   */
+  def cloneSymbols(syms: List[Symbol]): List[Symbol] =
+    deriveSymbols(syms, _.cloneSymbol)
+  def cloneSymbolsAtOwner(syms: List[Symbol], owner: Symbol): List[Symbol] =
+    deriveSymbols(syms, _ cloneSymbol owner)
+  
+  /** Clone symbols and apply the given function to each new symbol's info.
+   * 
+   *  @param    syms    the prototypical symbols
+   *  @param    infoFn  the function to apply to the infos
+   *  @return           the newly created, info-adjusted symbols
+   */
+  def cloneSymbolsAndModify(syms: List[Symbol], infoFn: Type => Type): List[Symbol] =
+    cloneSymbols(syms) map (_ modifyInfo infoFn)
+
+  /** Functions which perform the standard clone/substituting on the given symbols and type,
+   *  then call the creator function with the new symbols and type as arguments.
+   */
+  def createFromClonedSymbols[T](syms: List[Symbol], tpe: Type)(creator: (List[Symbol], Type) => T): T = {
+    val syms1 = cloneSymbols(syms)
+    creator(syms1, tpe.substSym(syms, syms1))
+  }
+  def createFromClonedSymbolsAtOwner[T](syms: List[Symbol], owner: Symbol, tpe: Type)(creator: (List[Symbol], Type) => T): T = {
+    val syms1 = cloneSymbolsAtOwner(syms, owner)
+    creator(syms1, tpe.substSym(syms, syms1))
   }
 
-  def cloneSymbols[T <: Symbol](syms: List[T]): List[T] =
-    cloneAndSubstInfos(syms)(_.cloneSymbol)
-
-  def cloneSymbols[T <: Symbol](syms: List[T], owner: Symbol): List[T] =
-    cloneAndSubstInfos(syms)(_ cloneSymbol owner)
+  /** Create a new existential type skolem with the given owner and origin.
+   */
+  def newExistentialSkolem(sym: Symbol, owner: Symbol, origin: AnyRef): TypeSkolem = {
+    val skolem = new TypeSkolem(owner, sym.pos, sym.name.toTypeName, origin)
+    ( skolem
+        setInfo (sym.info cloneInfo skolem)
+        setFlag (sym.flags | EXISTENTIAL)
+        resetFlag PARAM
+    )
+  }
 
   /** An exception for cyclic references of symbol definitions */
   case class CyclicReference(sym: Symbol, info: Type)

@@ -6,7 +6,6 @@
 package scala.reflect
 package internal
 
-import java.io.{ PrintWriter, StringWriter }
 import Flags._
 import api.Modifier
 
@@ -96,20 +95,19 @@ trait Trees extends api.Trees { self: SymbolTable =>
   lazy val NoMods = Modifiers(0)
  
   // --- extension methods --------------------------------------------------------
-  
-  override def show(tree: Tree): String = {
-    val buffer = new StringWriter()
-    val printer = newTreePrinter(new PrintWriter(buffer))
-    printer.print(tree)
-    printer.flush()
-    buffer.toString     
-  }
-  
+    
   implicit def treeOps(tree: Tree): TreeOps = new TreeOps(tree)
    
   class TreeOps(tree: Tree) {
     def isErroneous = (tree.tpe ne null) && tree.tpe.isErroneous
     def isTyped     = (tree.tpe ne null) && !tree.tpe.isErroneous
+    
+    /** Sets the tree's type to the result of the given function.
+     *  If the type is null, it remains null - the function is not called.
+     */
+    def modifyType(f: Type => Type): Tree =
+      if (tree.tpe eq null) tree
+      else tree setType f(tree.tpe)
 
     /** If `pf` is defined for a given subtree, call super.traverse(pf(tree)),
      *  otherwise super.traverse(tree).
@@ -248,12 +246,6 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   def This(sym: Symbol): Tree = This(sym.name.toTypeName) setSymbol sym
 
-  def Select(qualifier: Tree, sym: Symbol): Select =
-    Select(qualifier, sym.name) setSymbol sym
-
-  def Ident(sym: Symbol): Ident =
-    Ident(sym.name) setSymbol sym
-
   /** Block factory that flattens directly nested blocks. 
    */
   def Block(stats: Tree*): Block = stats match {
@@ -338,37 +330,26 @@ trait Trees extends api.Trees { self: SymbolTable =>
     override def toString = substituterString("Symbol", "Tree", from, to)
   }
 
-  class TreeTypeSubstituter(val from: List[Symbol], val to: List[Type]) extends Traverser {
-    val typeSubst = new SubstTypeMap(from, to)
-    def isEmpty = from.isEmpty && to.isEmpty
-    
+  class TypeMapTreeSubstituter(val typeMap: TypeMap) extends Traverser {
     override def traverse(tree: Tree) {
-      if (tree.tpe ne null) tree.tpe = typeSubst(tree.tpe)
-      if (tree.isDef) {
-        val sym = tree.symbol
-        val info1 = typeSubst(sym.info)
-        if (info1 ne sym.info) sym.setInfo(info1)
-      }
+      if (tree.tpe ne null)
+        tree.tpe = typeMap(tree.tpe)
+      if (tree.isDef)
+        tree.symbol modifyInfo typeMap
+
       super.traverse(tree)
     }
     override def apply[T <: Tree](tree: T): T = super.apply(tree.duplicate)
+  }
+
+  class TreeTypeSubstituter(val from: List[Symbol], val to: List[Type]) extends TypeMapTreeSubstituter(new SubstTypeMap(from, to)) {
+    def isEmpty = from.isEmpty && to.isEmpty
     override def toString() = "TreeTypeSubstituter("+from+","+to+")"
   }
 
   lazy val EmptyTreeTypeSubstituter = new TreeTypeSubstituter(List(), List())
 
-  class TreeSymSubstTraverser(val from: List[Symbol], val to: List[Symbol]) extends Traverser {
-    val subst = new SubstSymMap(from, to)
-    override def traverse(tree: Tree) {
-      if (tree.tpe ne null) tree.tpe = subst(tree.tpe)
-      if (tree.isDef) {
-        val sym = tree.symbol
-        val info1 = subst(sym.info)
-        if (info1 ne sym.info) sym.setInfo(info1)
-      }
-      super.traverse(tree)
-    }
-    override def apply[T <: Tree](tree: T): T = super.apply(tree.duplicate)
+  class TreeSymSubstTraverser(val from: List[Symbol], val to: List[Symbol]) extends TypeMapTreeSubstituter(new SubstSymMap(from, to)) {
     override def toString() = "TreeSymSubstTraverser/" + substituterString("Symbol", "Symbol", from, to)
   }
 

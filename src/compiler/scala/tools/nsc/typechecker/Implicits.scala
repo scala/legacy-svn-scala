@@ -297,8 +297,7 @@ trait Implicits {
         case _ => tp
       }
       def stripped(tp: Type): Type = {
-        val tparams = freeTypeParametersNoSkolems.collect(tp)
-        tp.subst(tparams, tparams map (t => WildcardType))
+        deriveTypeWithWildcards(freeTypeParametersNoSkolems.collect(tp))(tp)
       }
       def sum(xs: List[Int]) = (0 /: xs)(_ + _)
       def complexity(tp: Type): Int = tp.normalize match {
@@ -371,11 +370,7 @@ trait Implicits {
 
     /** The type parameters to instantiate */
     val undetParams = if (isView) List() else context.outer.undetparams
-
-    def approximate(tp: Type) =
-      if (undetParams.isEmpty) tp
-      else tp.instantiateTypeParams(undetParams, undetParams map (_ => WildcardType))
-
+    def approximate(tp: Type) = deriveTypeWithWildcards(undetParams)(tp)
     val wildPt = approximate(pt)
 
     /** Try to construct a typed tree from given implicit info with given
@@ -1086,12 +1081,10 @@ trait Implicits {
               manifestFactoryCall("arrayType", args.head, findManifest(args.head))
             } else if (sym.isClass) {
               val classarg0 = gen.mkClassOf(tp1) 
-              val classarg = (
-                if (tp.isInstanceOf[ExistentialType])
-                  TypeApply(Select(classarg0, Any_asInstanceOf), List(TypeTree(ClassType(tp))))
-                else
-                  classarg0
-              )
+              val classarg = tp match {
+                case _: ExistentialType => gen.mkCast(classarg0, ClassType(tp))
+                case _                  => classarg0
+              }
               val suffix = classarg :: (args map findSubManifest)
               manifestFactoryCall(
                 "classType", tp,
@@ -1110,7 +1103,7 @@ trait Implicits {
               // a manifest should have been found by normal searchImplicit
               EmptyTree
             }
-          case RefinedType(parents, decls) =>
+          case RefinedType(parents, decls) => // !!! not yet: if !full || decls.isEmpty =>
             // refinement is not generated yet
             if (hasLength(parents, 1)) findManifest(parents.head)
             else if (full) manifestFactoryCall("intersectionType", tp, parents map findSubManifest: _*)
@@ -1119,7 +1112,14 @@ trait Implicits {
             mot(tp1.skolemizeExistential, from, to)
           case _ =>
             EmptyTree
-        }
+/*          !!! the following is almost right, but we have to splice nested manifest
+ *          !!! types into this type. This requires a substantial extension of 
+ *          !!! reifiers.
+            val reifier = new liftcode.Reifier()
+            val rtree = reifier.reifyTopLevel(tp1)
+            manifestFactoryCall("apply", tp, rtree)
+*/
+          }
       }
 
       mot(tp, Nil, Nil)

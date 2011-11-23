@@ -304,25 +304,29 @@ trait Infer {
           )
         }
         else {
-          if(sym1.isTerm)
+          if (sym1.isTerm)
             sym1.cookJavaRawInfo() // xform java rawtypes into existentials
 
-          var owntype = try{ 
-            pre.memberType(sym1)
-          } catch {
-            case ex: MalformedType =>
-              if (settings.debug.value) ex.printStackTrace
-              val sym2 = underlyingSymbol(sym1)
-              val itype = pre.memberType(sym2)
-              new AccessError(tree, sym, pre,
-                          "\n because its instance type "+itype+
-                          (if ("malformed type: "+itype.toString==ex.msg) " is malformed" 
-                           else " contains a "+ex.msg)).emit()
-              ErrorType
+          val owntype = {
+            try pre.memberType(sym1)
+            catch {
+              case ex: MalformedType =>
+                if (settings.debug.value) ex.printStackTrace
+                val sym2 = underlyingSymbol(sym1)
+                val itype = pre.memberType(sym2)
+                new AccessError(tree, sym, pre,
+                            "\n because its instance type "+itype+
+                            (if ("malformed type: "+itype.toString==ex.msg) " is malformed"
+                             else " contains a "+ex.msg)).emit()
+                ErrorType
+            }
           }
-          if (pre.isInstanceOf[SuperType])
-            owntype = owntype.substSuper(pre, site.symbol.thisType)
-          tree setSymbol sym1 setType owntype
+          tree setSymbol sym1 setType {
+            pre match {
+              case _: SuperType => owntype map (tp => if (tp eq pre) site.symbol.thisType else tp)
+              case _            => owntype
+            }
+          }
         }
       }
 
@@ -649,7 +653,8 @@ trait Infer {
           targ.baseType(SeqClass)
         else if (targ.typeSymbol == JavaRepeatedParamClass)
           targ.baseType(ArrayClass)
-        else if (targ.typeSymbol.isModuleClass || (opt.experimental && tvar.constr.avoidWiden))
+        // checks opt.virtPatmat directly so one need not run under -Xexperimental to use virtpatmat
+        else if (targ.typeSymbol.isModuleClass || ((opt.experimental || opt.virtPatmat) && tvar.constr.avoidWiden))
           targ  // this infers Foo.type instead of "object Foo" (see also widenIfNecessary)
         else
           targ.widen
@@ -904,8 +909,7 @@ trait Infer {
         case NullaryMethodType(restpe) => // strip nullary method type, which used to be done by the polytype case below
           isApplicable(undetparams, restpe, argtpes0, pt)
         case PolyType(tparams, restpe) =>
-          val tparams1 = cloneSymbols(tparams)
-          isApplicable(tparams1 ::: undetparams, restpe.substSym(tparams, tparams1), argtpes0, pt)
+          createFromClonedSymbols(tparams, restpe)((tps1, restpe1) => isApplicable(tps1 ::: undetparams, restpe1, argtpes0, pt))
         case ErrorType =>
           true
         case _ =>
@@ -1277,7 +1281,7 @@ trait Infer {
             case Nil  => Nil
             case xs   =>
               // #3890
-              val xs1 = treeSubst.typeSubst mapOver xs
+              val xs1 = treeSubst.typeMap mapOver xs
               if (xs ne xs1)
                 new TreeSymSubstTraverser(xs, xs1) traverseTrees fn :: args
               

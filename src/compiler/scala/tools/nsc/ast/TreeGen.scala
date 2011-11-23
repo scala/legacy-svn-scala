@@ -46,6 +46,18 @@ abstract class TreeGen extends reflect.internal.TreeGen {
     case Match(selector, cases) => atPos(tree.pos)(Match(mkUnchecked(selector), cases))
     case _                      => tree
   }
+  
+  def withDefaultCase(matchExpr: Tree, defaultAction: Tree/*scrutinee*/ => Tree): Tree = matchExpr match {
+    case Match(scrutinee, cases) =>
+      if (cases exists treeInfo.isDefaultCase) matchExpr
+      else {
+        val defaultCase = CaseDef(Ident(nme.WILDCARD), EmptyTree, defaultAction(scrutinee))
+        Match(scrutinee, cases :+ defaultCase)
+      }
+    case _ =>
+      matchExpr
+    // [Martin] Adriaan: please fill in virtpatmat transformation here
+  }
 
   def mkCached(cvar: Symbol, expr: Tree): Tree = {
     val cvarRef = mkUnattributedRef(cvar)

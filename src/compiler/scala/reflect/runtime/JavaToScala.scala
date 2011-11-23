@@ -64,7 +64,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    *                   ScalaSignature or ScalaLongSignature annotation.
    */
   def unpickleClass(clazz: Symbol, module: Symbol, jclazz: jClass[_]): Unit = {
-    def markAbsent(tpe: Type) = List(clazz, module, module.moduleClass) foreach (_ setInfo tpe)
+    def markAbsent(tpe: Type) = setAllInfos(clazz, module, tpe)
     def handleError(ex: Exception) = {
       markAbsent(ErrorType)
       if (settings.debug.value) ex.printStackTrace()
@@ -126,7 +126,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
   private class TypeParamCompleter(jtvar: jTypeVariable[_ <: GenericDeclaration]) extends LazyType {
     override def load(sym: Symbol) = complete(sym)
     override def complete(sym: Symbol) = {
-      sym setInfo TypeBounds(NothingClass.tpe, glb(jtvar.getBounds.toList map typeToScala map objToAny))
+      sym setInfo TypeBounds.upper(glb(jtvar.getBounds.toList map typeToScala map objToAny))
     }
   }
 
@@ -351,11 +351,12 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    *          not available, wrapped from the Java reflection info.
    */
   def classToScala(jclazz: jClass[_]): Symbol = classCache.toScala(jclazz) {
-    if (jclazz.isMemberClass) {
+    if (jclazz.isMemberClass && !nme.isImplClassName(jclazz.getName)) {
       val sym = sOwner(jclazz).info.decl(newTypeName(jclazz.getSimpleName))
       assert(sym.isType, sym+"/"+jclazz+"/"+sOwner(jclazz)+"/"+jclazz.getSimpleName)
       sym.asInstanceOf[ClassSymbol]
-    } else if (jclazz.isLocalClass) { // local classes not preserved by unpickling - treat as Java
+    } else if (jclazz.isLocalClass || invalidClassName(jclazz.getName)) {
+      // local classes and implementation classes not preserved by unpickling - treat as Java
       jclassAsScala(jclazz)
     } else if (jclazz.isArray) {
       ArrayClass
@@ -455,9 +456,11 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
   private def jclassAsScala(jclazz: jClass[_]): Symbol = jclassAsScala(jclazz, sOwner(jclazz))
   
   private def jclassAsScala(jclazz: jClass[_], owner: Symbol): Symbol = {
-    val clazz = owner.newClass(NoPosition, newTypeName(jclazz.getSimpleName))
+    val name = newTypeName(jclazz.getSimpleName)
+    val completer = (clazz: Symbol, module: Symbol) => new FromJavaClassCompleter(clazz, module, jclazz)
+    val (clazz, module) = createClassModule(owner, name, completer)
     classCache enter (jclazz, clazz)
-    clazz setInfo new FromJavaClassCompleter(clazz, NoSymbol, jclazz)
+    clazz
   }
 
   /**

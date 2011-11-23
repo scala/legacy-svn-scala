@@ -58,9 +58,9 @@ class Settings {
   def optimise = optimiseBf
   def optimise_=(b: Boolean) { optimiseBf = b }
 
-  private var moreBf: Option[String] = None
-  def more = moreBf.get
-  def more_=(s: String): this.type = { moreBf = Some(s); this }
+  private var extraParamsBf: Seq[String] = Seq()
+  def extraParams = extraParamsBf
+  def extraParams_=(s: Seq[String]): this.type = { extraParamsBf = s; this }
 
   def toArgs: List[String] =
     (if (!gBf.isEmpty) "-g:"+g :: Nil else Nil) :::
@@ -74,7 +74,7 @@ class Settings {
     (if (!encodingBf.isEmpty) "-encoding" :: encoding :: Nil else Nil) :::
     (if (!targetBf.isEmpty) "-target:"+target :: Nil else Nil) :::
     (if (optimiseBf) "-optimise" :: Nil else Nil) :::
-    (if (!moreBf.isEmpty) (more split ' ').toList else Nil)
+    extraParamsBf.toList
 
   override def equals(that: Any): Boolean = that match {
     case cs: Settings =>
@@ -89,7 +89,7 @@ class Settings {
       this.encodingBf == cs.encodingBf &&
       this.targetBf == cs.targetBf &&
       this.optimiseBf == cs.optimiseBf &&
-      this.moreBf == cs.moreBf
+      this.extraParamsBf == cs.extraParamsBf
     case _ => false
   }
 

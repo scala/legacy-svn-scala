@@ -905,10 +905,7 @@ abstract class ClassfileParser {
                 case None =>
                   throw new RuntimeException("Scala class file does not contain Scala annotation")
               }
-            debuglog("[class] << " + sym.fullName + (
-              if (sym.rawAnnotations.isEmpty) ""
-              else sym.rawAnnotations.mkString("(", ", ", ")"))
-            )
+            debuglog("[class] << " + sym.fullName + sym.annotationsString)
           }
           else
             in.skip(attrLen)
@@ -1230,9 +1227,7 @@ abstract class ClassfileParser {
 
   class LazyAliasType(alias: Symbol) extends LazyType {
     override def complete(sym: Symbol) {
-      alias.initialize
-      val tparams1 = cloneSymbols(alias.typeParams)
-      sym.setInfo(typeFun(tparams1, alias.tpe.substSym(alias.typeParams, tparams1)))
+      sym setInfo createFromClonedSymbols(alias.initialize.typeParams, alias.tpe)(typeFun)
     }
   }
 
