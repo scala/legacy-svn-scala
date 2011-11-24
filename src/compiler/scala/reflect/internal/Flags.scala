@@ -29,7 +29,7 @@ import api.Modifier
 // 12:       MUTABLE/M                          
 // 13:         PARAM/M                          
 // 14:         PACKAGE                          
-// 15:                                          
+// 15:                                        
 // 16:   BYNAMEPARAM/M      CAPTURED COVARIANT/M
 // 17: CONTRAVARIANT/M INCONSTRUCTOR       LABEL
 // 18:   ABSOVERRIDE/M                          
@@ -96,6 +96,7 @@ class ModifierFlags {
   final val INTERFACE     = 0x00000080    // symbol is an interface (i.e. a trait which defines only abstract methods)  
   final val MUTABLE       = 0x00001000    // symbol is a mutable variable.
   final val PARAM         = 0x00002000    // symbol is a (value or type) parameter to a method
+  final val MACRO         = 0x00008000    // symbol is a macro definition
   
   final val COVARIANT     = 0x00010000    // symbol is a covariant type variable
   final val BYNAMEPARAM   = 0x00010000    // parameter is by name
