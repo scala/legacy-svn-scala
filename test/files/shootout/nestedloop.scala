@@ -8,13 +8,13 @@ object nestedloop {
       val n = toPositiveInt(args);
       var count = 0;
 
-      for (a <- Iterator.range(0,n); 
-           val b <- Iterator.range(0,n); 
-           val c <- Iterator.range(0,n); 
-           val d <- Iterator.range(0,n); 
-           val e <- Iterator.range(0,n); 
-           val f <- Iterator.range(0,n)
-         ) 
+      for { a <- Iterator.range(0,n)
+           b <- Iterator.range(0,n)
+           c <- Iterator.range(0,n)
+           d <- Iterator.range(0,n)
+           e <- Iterator.range(0,n)
+           f <- Iterator.range(0,n)
+         }
          count = count + 1;
 
       Console println(count);

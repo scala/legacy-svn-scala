@@ -70,11 +70,7 @@ object knucleotide {
    def writeFrequencies(j: Int) = {
       val bag = generateFrequencies(j)
       val n = sequence.length - j + 1.0
-      val sortedValues = bag.iterator.toList.sort(
-         (a,b) => if (a.value == b.value) a.key > b.key
-                  else a.value > b.value )
-
-      for (a <- sortedValues)
+      for (a <- bag.iterator.toList.sortWith((a,b) => if (a.value == b.value) a.key > b.key else a.value > b.value))
          Console.printf("%s %.3f\n", a.key, a.value / n * 100.0)
 
       Console.println
@@ -90,7 +86,7 @@ object knucleotide {
 class HashBag[A] extends HashTable[A, Counter[A]] {
    protected type Entry = Counter[A]
    protected def entryKey(e: Entry) = e.key
-   def iterator = entries
+   def iterator = entriesIterator
 
    def +=(elem: A): Unit = {
       var bucket = table(index(elemHashCode(elem))).asInstanceOf[Entry]

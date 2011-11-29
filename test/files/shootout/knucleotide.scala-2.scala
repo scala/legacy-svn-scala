@@ -56,7 +56,7 @@ object knucleotide {
    }
 
 
-   class Counter(_value: Int) { 
+   class Counter(_value: Int) {
       var value = _value
       def ++() = { value += 1 }
    }
@@ -86,11 +86,7 @@ object knucleotide {
    def writeFrequencies(j: Int) {
       val d = generateFrequencies(j)
       val n = sequence.length - j + 1.0
-      val sortedValues = d.toList.sort(
-         (a,b) => if (a._2.value == b._2.value) a._1 > b._1 
-                  else a._2.value > b._2.value )
-
-      for (a <- sortedValues) 
+      for (a <- d.toList.sortWith((a,b) => if (a._2.value == b._2.value) a._1 > b._1 else a._2.value > b._2.value))
          Console.printf("%s %.3f\n", a._1, a._2.value / n * 100.0)
 
       Console.println
