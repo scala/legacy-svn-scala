@@ -49,7 +49,7 @@ object SBTRunner extends DirectRunner {
       case x                                        => sys.error("Unknown command line options: " + x)
     }
     val config = parseArgs(args, CommandLineOptions())
-    fileManager.SCALAC_OPTS = config.scalacOptions.mkString(" ")
+    fileManager.SCALAC_OPTS = config.scalacOptions
     fileManager.CLASSPATH = config.classpath getOrElse error("No classpath set")
     // Find scala library jar file...
     val lib: Option[String] = (fileManager.CLASSPATH split File.pathSeparator filter (_ matches ".*scala-library.*\\.jar")).headOption
