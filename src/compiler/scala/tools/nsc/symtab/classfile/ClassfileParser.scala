@@ -905,10 +905,7 @@ abstract class ClassfileParser {
                 case None =>
                   throw new RuntimeException("Scala class file does not contain Scala annotation")
               }
-            debuglog("[class] << " + sym.fullName + (
-              if (sym.rawAnnotations.isEmpty) ""
-              else sym.rawAnnotations.mkString("(", ", ", ")"))
-            )
+            debuglog("[class] << " + sym.fullName + sym.annotationsString)
           }
           else
             in.skip(attrLen)
@@ -1230,9 +1227,7 @@ abstract class ClassfileParser {
 
   class LazyAliasType(alias: Symbol) extends LazyType {
     override def complete(sym: Symbol) {
-      alias.initialize
-      val tparams1 = cloneSymbols(alias.typeParams)
-      sym.setInfo(typeFun(tparams1, alias.tpe.substSym(alias.typeParams, tparams1)))
+      sym setInfo createFromClonedSymbols(alias.initialize.typeParams, alias.tpe)(typeFun)
     }
   }
 
@@ -1262,7 +1257,7 @@ abstract class ClassfileParser {
   protected def getScope(flags: Int): Scope =
     if (isStatic(flags)) staticDefs else instanceDefs
 
-   private def setPrivateWithin(sym: Symbol, jflags: Int) {
+  private def setPrivateWithin(sym: Symbol, jflags: Int) {
     if ((jflags & (JAVA_ACC_PRIVATE | JAVA_ACC_PROTECTED | JAVA_ACC_PUBLIC)) == 0)
       // See ticket #1687 for an example of when topLevelClass is NoSymbol: it
       // apparently occurs when processing v45.3 bytecode.

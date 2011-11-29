@@ -29,7 +29,7 @@ import api.Modifier
 // 12:       MUTABLE/M                          
 // 13:         PARAM/M                          
 // 14:         PACKAGE                          
-// 15:                                          
+// 15:                                        
 // 16:   BYNAMEPARAM/M      CAPTURED COVARIANT/M
 // 17: CONTRAVARIANT/M INCONSTRUCTOR       LABEL
 // 18:   ABSOVERRIDE/M                          
@@ -96,6 +96,7 @@ class ModifierFlags {
   final val INTERFACE     = 0x00000080    // symbol is an interface (i.e. a trait which defines only abstract methods)  
   final val MUTABLE       = 0x00001000    // symbol is a mutable variable.
   final val PARAM         = 0x00002000    // symbol is a (value or type) parameter to a method
+  final val MACRO         = 0x00008000    // symbol is a macro definition
   
   final val COVARIANT     = 0x00010000    // symbol is a covariant type variable
   final val BYNAMEPARAM   = 0x00010000    // parameter is by name
@@ -219,7 +220,7 @@ class Flags extends ModifierFlags {
 
   /** These modifiers appear in TreePrinter output. */
   final val PrintableFlags: Long =
-    ExplicitFlags | LOCAL | SYNTHETIC | STABLE | CASEACCESSOR |
+    ExplicitFlags | LOCAL | SYNTHETIC | STABLE | CASEACCESSOR | MACRO |
     ACCESSOR | SUPERACCESSOR | PARAMACCESSOR | BRIDGE | STATIC | VBRIDGE | SPECIALIZED
 
   /** The two bridge flags */
@@ -351,7 +352,7 @@ class Flags extends ModifierFlags {
     case             MUTABLE => "<mutable>"                           // (1L << 12)
     case               PARAM => "<param>"                             // (1L << 13)
     case             PACKAGE => "<package>"                           // (1L << 14)
-    case             0x8000L => ""                                    // (1L << 15)
+    case               MACRO => "macro"                               // (1L << 15)
     case         BYNAMEPARAM => "<bynameparam/captured/covariant>"    // (1L << 16)
     case       CONTRAVARIANT => "<contravariant/inconstructor/label>" // (1L << 17)
     case         ABSOVERRIDE => "absoverride"                         // (1L << 18)
@@ -441,7 +442,7 @@ class Flags extends ModifierFlags {
     
     front.toList ++ (all filterNot (front contains _))
   }
-  
+
   def flagOfModifier(mod: Modifier.Value): Long = mod match {
     case Modifier.`protected` => PROTECTED
     case Modifier.`private` => PRIVATE
@@ -457,6 +458,7 @@ class Flags extends ModifierFlags {
     case Modifier.interface => INTERFACE
     case Modifier.mutable => MUTABLE
     case Modifier.parameter => PARAM
+    case Modifier.`macro` => MACRO
     case Modifier.covariant => COVARIANT
     case Modifier.contravariant => CONTRAVARIANT
     case Modifier.preSuper => PRESUPER
@@ -470,6 +472,15 @@ class Flags extends ModifierFlags {
     case Modifier.paramAccessor => PARAMACCESSOR
     case Modifier.bynameParameter => BYNAMEPARAM
   }
+
+  def flagsOfModifiers(mods: List[Modifier.Value]): Long = 
+    (mods :\ 0L) { (mod, curr) => curr | flagOfModifier(mod) }
+
+  def modifierOfFlag(flag: Long): Option[Modifier.Value] = 
+    Modifier.values find { mod => flagOfModifier(mod) == flag }
+
+  def modifiersOfFlags(flags: Long): List[Modifier.Value] = 
+    pickledListOrder map (mask => modifierOfFlag(flags & mask)) flatMap { mod => mod }
 }
 
 object Flags extends Flags { }

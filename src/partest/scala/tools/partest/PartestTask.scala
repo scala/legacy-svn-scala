@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
-
 package scala.tools
 package partest
 
@@ -23,7 +21,41 @@ import java.lang.reflect.Method
 
 import org.apache.tools.ant.Task
 import org.apache.tools.ant.types.{Path, Reference, FileSet}
+import org.apache.tools.ant.types.Commandline.Argument
 
+/** An Ant task to execute the Scala test suite (NSC).
+ *  
+ *  This task can take the following parameters as attributes:
+ *  - `srcdir`,
+ *  - `classpath`,
+ *  - `classpathref`,
+ *  - `showlog`,
+ *  - `showdiff`,
+ *  - `erroronfailed`,
+ *  - `javacmd`,
+ *  - `javaccmd`,
+ *  - `scalacopts`,
+ *  - `timeout`,
+ *  - `debug`,
+ *  - `junitreportdir`.
+ *  
+ *  It also takes the following parameters as nested elements:
+ *  - `compilationpath`.
+ *  - `postests`,
+ *  - `negtests`,
+ *  - `runtests`,
+ *  - `jvmtests`,
+ *  - `residenttests`,
+ *  - `buildmanagertests`,
+ *  - `shootouttests`,
+ *  - `scalaptests`,
+ *  - `scalachecktests`,
+ *  - `specializedtests`,
+ *  - `presentationtests`,
+ *  - `scripttests`.
+ *
+ * @author Philippe Haller
+ */
 class PartestTask extends Task with CompilationPathProperty {
 
   def addConfiguredPosTests(input: FileSet) {
@@ -65,13 +97,17 @@ class PartestTask extends Task with CompilationPathProperty {
   def addConfiguredScalapTests(input: FileSet) {
     scalapFiles = Some(input)
   }
-  
+
   def addConfiguredSpecializedTests(input: FileSet) {
     specializedFiles = Some(input)
   }
 
   def addConfiguredPresentationTests(input: FileSet) {
     presentationFiles = Some(input)
+  }
+
+  def addConfiguredAntTests(input: FileSet) {
+    antFiles = Some(input)
   }
 
   
@@ -115,8 +151,15 @@ class PartestTask extends Task with CompilationPathProperty {
     javaccmd = Some(input)
   }
 
-  def setScalacOpts(opts: String) {
-    scalacOpts = Some(opts)
+  def setScalacOpts(input: String) {
+    val s = input.split(' ').map { s => val a = new Argument; a.setValue(s); a }
+    scalacArgs = Some(scalacArgs.getOrElse(Seq()) ++ s)
+  }
+
+  def createCompilerArg(): Argument = {
+    val a = new Argument
+    scalacArgs = Some(scalacArgs.getOrElse(Seq()) :+ a)
+    a
   }
 
   def setTimeout(delay: String) {
@@ -150,8 +193,9 @@ class PartestTask extends Task with CompilationPathProperty {
   private var scalapFiles: Option[FileSet] = None
   private var specializedFiles: Option[FileSet] = None
   private var presentationFiles: Option[FileSet] = None
+  private var antFiles: Option[FileSet] = None
   private var errorOnFailed: Boolean = false
-  private var scalacOpts: Option[String] = None
+  private var scalacArgs: Option[Seq[Argument]] = None
   private var timeout: Option[String] = None
   private var jUnitReportDir: Option[File] = None
   private var debug = false
@@ -205,8 +249,19 @@ class PartestTask extends Task with CompilationPathProperty {
   private def getScalapFiles       = getFiles(scalapFiles)
   private def getSpecializedFiles  = getFiles(specializedFiles)
   private def getPresentationFiles = getDirs(presentationFiles)
+  private def getAntFiles          = getFiles(antFiles)
 
   override def execute() {
+    val opts = getProject().getProperties() get "env.PARTEST_OPTS"
+    if (opts != null && opts.toString != "")
+      opts.toString.split(" ") foreach { propDef =>
+        log("setting system property " + propDef)
+        val kv = propDef split "="
+        val key = kv(0) substring 2
+        val value = kv(1)
+        setProp(key, value)
+      }
+
     if (isPartestDebug || debug) {
       setProp("partest.debug", "true")
       nest.NestUI._verbose = true
@@ -226,6 +281,11 @@ class PartestTask extends Task with CompilationPathProperty {
       }
     } getOrElse sys.error("Provided classpath does not contain a Scala library.") 
     
+    def scalacArgsFlat: Option[Seq[String]] = scalacArgs map (_ flatMap { a =>
+      val parts = a.getParts
+      if(parts eq null) Seq[String]() else parts.toSeq
+    })
+
     val antRunner = new scala.tools.partest.nest.AntRunner
     val antFileManager = antRunner.fileManager
     
@@ -237,7 +297,7 @@ class PartestTask extends Task with CompilationPathProperty {
     
     javacmd foreach (x => antFileManager.JAVACMD = x.getAbsolutePath)
     javaccmd foreach (x => antFileManager.JAVAC_CMD = x.getAbsolutePath)
-    scalacOpts foreach (antFileManager.SCALAC_OPTS = _)
+    scalacArgsFlat foreach (antFileManager.SCALAC_OPTS = _)
     timeout foreach (antFileManager.timeout = _)
     
     type TFSet = (Array[File], String, String)
@@ -253,7 +313,8 @@ class PartestTask extends Task with CompilationPathProperty {
       (getShootoutFiles, "shootout", "Running shootout tests"),
       (getScalapFiles, "scalap", "Running scalap tests"),
       (getSpecializedFiles, "specialized", "Running specialized files"),
-      (getPresentationFiles, "presentation", "Running presentation compiler test files")
+      (getPresentationFiles, "presentation", "Running presentation compiler test files"),
+      (getAntFiles, "ant", "Running ant task tests")
     )
     
     def runSet(set: TFSet): (Int, Int, Iterable[String]) = {
@@ -297,7 +358,8 @@ class PartestTask extends Task with CompilationPathProperty {
     
     f(msg)
   }
-  def oneResult(res: (String, Int)) =
+
+  private def oneResult(res: (String, Int)) =
     <testcase name={res._1}>{
   	  res._2 match {
   	    case 0 => scala.xml.NodeSeq.Empty
@@ -306,7 +368,7 @@ class PartestTask extends Task with CompilationPathProperty {
   	  } 
   	}</testcase>
 
-  def testReport(kind: String, results: Iterable[(String, Int)], succs: Int, fails: Int) =
+  private def testReport(kind: String, results: Iterable[(String, Int)], succs: Int, fails: Int) =
     <testsuite name={kind} tests={(succs + fails).toString} failures={fails.toString}>
   	  <properties/>
   	  {

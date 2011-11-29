@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project name="scaladoc" default="run" basedir=".">
+<project name="scaladoc" default="run">
 
   <import file="${basedir}/imported.xml"/>
 
@@ -18,13 +18,8 @@ BUILD
       destdir="${build.dir}"
       classpathref="build.classpath"
     />
-    <dirname property="log.dir" file="${build.dir}"/>
-    <echo level="verbose" message="log.dir=${log.dir}"/>
-    <replace
-      file="${log.dir}/${ant.project.name}-ant.log"
-      token="${log.dir}"
-      value="[...]/files/ant"
-    />
+    <echo level="verbose" message="log.file=${log.file}"/>
+    <replace file="${log.file}" token="${log.dir}" value="[...]/files/ant"/>
   </target>
 
 </project>

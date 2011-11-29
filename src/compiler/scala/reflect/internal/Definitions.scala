@@ -72,10 +72,11 @@ trait Definitions extends reflect.api.StandardDefinitions {
       clazz
     }
 
-    def isNumericSubClass(sub: Symbol, sup: Symbol) = {
-      val cmp = for (w1 <- numericWeight get sub ; w2 <- numericWeight get sup) yield w2 % w1
-      cmp exists (_ == 0)
-    }
+    def isNumericSubClass(sub: Symbol, sup: Symbol) = (
+         (numericWeight contains sub)
+      && (numericWeight contains sup)
+      && (numericWeight(sup) % numericWeight(sub) == 0)
+    )
 
     /** Is symbol a numeric value class? */
     def isNumericValueClass(sym: Symbol): Boolean =
@@ -171,11 +172,27 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val AnyValCompanionClass = getClass("scala.AnyValCompanion") setFlag (SEALED | ABSTRACT | TRAIT)
 
     // bottom types
-    lazy val NullClass            = newClass(ScalaPackageClass, tpnme.Null, anyrefparam) setFlag (ABSTRACT | TRAIT | FINAL)
-    lazy val NothingClass         = newClass(ScalaPackageClass, tpnme.Nothing, anyparam) setFlag (ABSTRACT | TRAIT | FINAL)
     lazy val RuntimeNothingClass  = getClass(ClassfileConstants.SCALA_NOTHING)
     lazy val RuntimeNullClass     = getClass(ClassfileConstants.SCALA_NULL)
     
+    sealed abstract class BottomClassSymbol(name: TypeName, parent: Symbol) extends ClassSymbol(ScalaPackageClass, NoPosition, name) {
+      locally {
+        this setFlag ABSTRACT | TRAIT | FINAL
+        this setInfo ClassInfoType(List(parent.tpe), new Scope, this)
+        owner.info.decls enter this
+      }
+      final override def isBottomClass = true
+    }
+    final object NothingClass extends BottomClassSymbol(tpnme.Nothing, AnyClass) {
+      override def isSubClass(that: Symbol) = true
+    }
+    final object NullClass extends BottomClassSymbol(tpnme.Null, AnyRefClass) {
+      override def isSubClass(that: Symbol) = (
+           (that eq AnyClass)
+        || (that ne NothingClass) && (that isSubClass ObjectClass)
+      )
+    }
+
     // exceptions and other throwables
     lazy val ClassCastExceptionClass        = getClass("java.lang.ClassCastException")
     lazy val IndexOutOfBoundsExceptionClass = getClass(sn.IOOBException)
@@ -226,10 +243,6 @@ trait Definitions extends reflect.api.StandardDefinitions {
       def arrayCloneMethod = getMember(ScalaRunTimeModule, "array_clone")
       def ensureAccessibleMethod = getMember(ScalaRunTimeModule, "ensureAccessible")
       def scalaRuntimeSameElements = getMember(ScalaRunTimeModule, nme.sameElements)
-    lazy val ReflectRuntimeMirror = getModule("scala.reflect.runtime.Mirror")
-      def freeValueMethod = getMember(ReflectRuntimeMirror, "freeValue")
-    lazy val ReflectPackage = getPackageObject("scala.reflect")
-      def Reflect_mirror = getMember(ReflectPackage, "mirror")
     
     // classes with special meanings
     lazy val StringAddClass   = getClass("scala.runtime.StringAdd")
@@ -337,6 +350,13 @@ trait Definitions extends reflect.api.StandardDefinitions {
       def methodCache_add   = getMember(MethodCacheClass, nme.add_)
 
     // scala.reflect
+    lazy val ReflectApiUniverse = getClass("scala.reflect.api.Universe")
+    lazy val ReflectRuntimeMirror = getModule("scala.reflect.runtime.Mirror")
+      def freeValueMethod = getMember(ReflectRuntimeMirror, "freeValue")
+    lazy val ReflectPackage = getPackageObject("scala.reflect")
+      def Reflect_mirror = getMember(ReflectPackage, "mirror")
+    
+     
     lazy val PartialManifestClass  = getClass("scala.reflect.ClassManifest")
     lazy val PartialManifestModule = getModule("scala.reflect.ClassManifest")
     lazy val FullManifestClass     = getClass("scala.reflect.Manifest")
@@ -349,12 +369,6 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     lazy val ScalaSignatureAnnotation = getClass("scala.reflect.ScalaSignature")
     lazy val ScalaLongSignatureAnnotation = getClass("scala.reflect.ScalaLongSignature")
-    
-    // invoke dynamic support
-    lazy val LinkageModule = getModule("java.dyn.Linkage")
-      lazy val Linkage_invalidateCallerClass = getMember(LinkageModule, "invalidateCallerClass")
-    lazy val DynamicDispatchClass = getModule("scala.runtime.DynamicDispatch")
-      lazy val DynamicDispatch_DontSetTarget = getMember(DynamicDispatchClass, "DontSetTarget")
 
     // Option classes
     lazy val OptionClass: Symbol = getClass("scala.Option")

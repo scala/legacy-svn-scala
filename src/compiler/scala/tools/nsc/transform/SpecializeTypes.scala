@@ -447,10 +447,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     // log("producing type params: " + cloned.map(t => (t, t.tpe.bounds.hi)))
     for ((orig, cln) <- syms zip cloned) {
       cln.removeAnnotation(SpecializedClass)
-      if (env.contains(orig)) cln.setInfo(TypeBounds(cln.info.bounds.lo, AnyRefClass.tpe))
+      if (env.contains(orig))
+        cln modifyInfo (info => TypeBounds(info.bounds.lo, AnyRefClass.tpe))
     }
-    for (sym <- cloned) sym.setInfo(sym.info.substSym(syms, cloned))
-    cloned
+    cloned map (_ substInfo (syms, cloned))
   }
   
   /** Maps AnyRef bindings from a raw environment (holding AnyRefs) into type parameters from
@@ -510,7 +510,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         // log("new tparams " + newClassTParams.zip(newClassTParams map {s => (s.tpe, s.tpe.bounds.hi)}) + ", in env: " + env)
 
         def applyContext(tpe: Type) =
-          subst(env, tpe).subst(survivedParams, newClassTParams map (_.tpe))
+          subst(env, tpe).instantiateTypeParams(survivedParams, newClassTParams map (_.tpe))
 
         /** Return a list of specialized parents to be re-mixed in a specialized subclass.
          *  Assuming env = [T -> Int] and
@@ -567,8 +567,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
        */
       def enterMember(sym: Symbol): Symbol = {
         typeEnv(sym) = fullEnv ++ typeEnv(sym) // append the full environment
-        sym.setInfo(sym.info.substThis(clazz, ThisType(cls)).subst(oldClassTParams, newClassTParams map (_.tpe)))
-        
+        sym modifyInfo (_.substThis(clazz, cls).instantiateTypeParams(oldClassTParams, newClassTParams map (_.tpe)))
         // we remove any default parameters. At this point, they have been all 
         // resolved by the type checker. Later on, erasure re-typechecks everything and
         // chokes if it finds default parameters for specialized members, even though
@@ -669,7 +668,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
                 setFlag   (OVERRIDE | SPECIALIZED)
                 resetFlag (DEFERRED | CASEACCESSOR | PARAMACCESSOR | LAZY)
             )
-            sym1 setInfo sym1.info.asSeenFrom(clazz.tpe, sym1.owner)
+            sym1 modifyInfo (_ asSeenFrom (clazz.tpe, sym1.owner))
           }
           val specVal = specializedOverload(cls, m, env)
 
@@ -794,10 +793,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
           typeEnv(specMember) = outerEnv ++ env
           val tps1 = produceTypeParameters(tps, specMember, env)
-          tps1 foreach (tp => tp.setInfo(tp.info.subst(keys, vals)))
+          tps1 foreach (_ modifyInfo (_.instantiateTypeParams(keys, vals)))
 
           // the cloneInfo is necessary so that method parameter symbols are cloned at the new owner
-          val methodType = sym.info.resultType.subst(keys ++ tps, vals ++ tps1.map(_.tpe)).cloneInfo(specMember)
+          val methodType = sym.info.resultType.instantiateTypeParams(keys ++ tps, vals ++ tps1.map(_.tpe)).cloneInfo(specMember)
           specMember setInfo polyType(tps1, methodType)
 
           debuglog("expanded member: " + sym  + ": " + sym.info + 
@@ -863,9 +862,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     specMember.name = specializedName(sym, env)
 
     (specMember
-      setInfo   subst(env, specMember.info.asSeenFrom(owner.thisType, sym.owner))
-      setFlag   (SPECIALIZED)
-      resetFlag (DEFERRED | CASEACCESSOR | ACCESSOR | LAZY)
+      modifyInfo  (info => subst(env, info.asSeenFrom(owner.thisType, sym.owner)))
+      setFlag     (SPECIALIZED)
+      resetFlag   (DEFERRED | CASEACCESSOR | ACCESSOR | LAZY)
     )
   }
 
@@ -1056,12 +1055,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     (new FullTypeMap(keys, values))(tpe)
   }
 
-  private def subst(env: TypeEnv)(decl: Symbol): Symbol = {
-    decl setInfo (subst(env, decl.info) match {
-      case MethodType(args, _) if decl.isConstructor  => MethodType(args, decl.owner.tpe)
-      case tpe                                        => tpe
-    })
-  }
+  private def subst(env: TypeEnv)(decl: Symbol): Symbol =
+    decl modifyInfo (info =>
+      if (decl.isConstructor) MethodType(subst(env, info).params, decl.owner.tpe)
+      else subst(env, info)
+    )
   
   /** Checks if the type parameter symbol is not specialized
    *  and is used as type parameters when extending a class with a specialized
@@ -1085,35 +1083,32 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       }
     case _ => //log("nope")
   }
+
+  private def unspecializableClass(tp: Type) = (
+       definitions.isRepeatedParamType(tp)  // ???
+    || tp.typeSymbol.isJavaDefined
+    || tp.typeSymbol.isPackageClass
+  )
   
   /** Type transformation. It is applied to all symbols, compiled or loaded.
    *  If it is a 'no-specialization' run, it is applied only to loaded symbols.  
    */
   override def transformInfo(sym: Symbol, tpe: Type): Type = {
     if (settings.nospecialization.value && currentRun.compiles(sym)) tpe
-    else tpe match {
-      case PolyType(targs, ClassInfoType(base, decls, clazz))
-              if clazz != RepeatedParamClass
-              && clazz != JavaRepeatedParamClass
-              && !clazz.isJavaDefined =>
-        val parents = base map specializedType
-        debuglog("transformInfo (poly) " + clazz + " with parents1: " + parents + " ph: " + phase)
+    else tpe.resultType match {
+      case cinfo @ ClassInfoType(parents, decls, clazz) if !unspecializableClass(cinfo) =>
+        val tparams  = tpe.typeParams
+        if (tparams.isEmpty)
+          atPhase(phase.next)(parents map (_.typeSymbol.info))
 
-        polyType(targs, ClassInfoType(
-          parents,
-          new Scope(specializeClass(clazz, typeEnv(clazz)) ++ specialOverrides(clazz)),
-          clazz)
+        val parents1 = parents map specializedType
+        debuglog("transformInfo %s %s with parents1 %s ph: %s".format(
+          if (tparams.nonEmpty) " (poly)" else "",
+          clazz, parents1, phase)
         )
-      case ClassInfoType(base, decls, clazz) if !clazz.isPackageClass && !clazz.isJavaDefined =>
-        atPhase(phase.next)(base map (_.typeSymbol.info))
-        // side effecting? parents is not used except to log.
-        val parents = base map specializedType
-        debuglog("transformInfo " + clazz + " with parents1: " + parents + " ph: " + phase)
-        ClassInfoType(
-          base map specializedType,
-          new Scope(specializeClass(clazz, typeEnv(clazz)) ++ specialOverrides(clazz)),
-          clazz
-        )
+        val newScope = new Scope(specializeClass(clazz, typeEnv(clazz)) ++ specialOverrides(clazz))
+        // If tparams.isEmpty, this is just the ClassInfoType.
+        polyType(tparams, ClassInfoType(parents1, newScope, clazz))
       case _ =>
         tpe
     }
@@ -1294,9 +1289,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         } else None
       }
 
-      def maybeTypeApply(fun: Tree, targs: List[Tree]) = 
-        if (targs.isEmpty) fun else TypeApply(fun, targs)
-
       curTree = tree
       tree match {
         case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
@@ -1335,7 +1327,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
                 "residual: %s, tparams: %s, env: %s".format(residualTargs, symbol.info.typeParams, env))
               )
 
-              val tree1 = maybeTypeApply(Select(qual1, specMember), residualTargs)
+              val tree1 = gen.mkTypeApply(Select(qual1, specMember), residualTargs)
               log("rewrote " + tree + " to " + tree1)
               localTyper.typedOperator(atPos(tree.pos)(tree1)) // being polymorphic, it must be a method
 
@@ -1578,7 +1570,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
       // create fresh symbols for value parameters to hold the skolem types
       val vparamss1 = List(for (vdef <- vparamss.head; param = vdef.symbol) yield {
-        ValDef(param.cloneSymbol(symbol).setInfo(param.info.substSym(oldtparams, newtparams)))
+        ValDef(param cloneSymbol symbol substInfo (oldtparams, newtparams))
       })
       
       // replace value and type parameters of the old method with the new ones
