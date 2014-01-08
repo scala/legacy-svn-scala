@@ -21,7 +21,7 @@ package scala.util
  * user input. Similar facilities are used in so-called continuation-based web frameworks.
  *
  * {{{
- *   def go =
+ *   def go() =
  *     reset {
  *       println("Welcome!")
  *       val first = ask("Please give me a number")
@@ -42,10 +42,12 @@ package scala.util
  *     shift {
  *       k: (Int => Unit) => {
  *         val id = uuidGen
- *         printf("%s\nrespond with: submit(0x%x, ...)\n", prompt, id)
+ *         printf("%s\nrespond with: submit(\"%s\", ...)\n", prompt, id)
  *         sessions += id -> k
  *       }
  *     }
+ *   def submit(uuid: String, x: Int) =
+ *     sessions(UUID.fromString(uuid))(x)
  * }}}
  *
  * The type of `ask` includes a `@cps` annotation which drives the transformation.
