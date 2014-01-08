@@ -44,4 +44,11 @@ trait DefaultMap[A, +B] extends Map[A, B] { self =>
     b ++= this filter (key !=)
     b.result
   }
+
+  /** Serialize the subset of the original map (as an ordinary map)
+   *  that this instance represents, it's no longer possible to defer building this.
+   */
+  private def writeObject(out: java.io.ObjectOutputStream) {
+    out.writeObject(this.toMap)
+  }
 }

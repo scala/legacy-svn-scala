@@ -299,3 +299,6 @@ x = ParSet(two, one)
 y = ParSet(two, one)
 x equals y: true, y equals x: true
 
+x = Map(1 -> 2)
+y = Map(1 -> 2).filterKeys(identity _)
+x equals y: true, y equals x: true
