@@ -12,7 +12,48 @@ package mutable
 import generic._
 import scala.collection.parallel.mutable.ParHashMap
 
-/** This class implements mutable maps using a hashtable.
+/** This class implements mutable maps using a hashtable. It provides all of the map operations available in [[scala.collection.Map]], along with mutating operations such as put and +=.
+ *  It does not allow use of null in either the key or value.
+ *
+ *  This class makes no guarantees as to the order of the map; in particular, it does not guarantee that the order will remain constant over time.
+ *  This implementation provides constant-time performance for the basic operations (get and put), assuming the hash function disperses the elements properly among the buckets.
+ *  Iteration over collection views requires time proportional to the "capacity" of the `HashMap` instance (the number of buckets) plus its size (the number of key-value mappings).
+ *
+ *  An instance of `HashMap` has two parameters that affect its performance: initial capacity and load factor. The load factor for a `HashMap` is set to 0.75 by default
+ *  The capacity is the number of buckets in the hash table, and the initial capacity is simply the capacity at the time the hash table is created, 16 if unspecified.
+ *  As the hash table fills up, the load factor is used to decide whether to increase the capacity. When the number of entries in the hash table exceeds the product
+ *  of the load factor and the current capacity, the hash table is rehashed (that is, internal data structures are rebuilt)
+ *  so that the hash table has approximately twice the number of buckets.
+ *
+ *  As a general rule, the default load factor (.75) offers a good tradeoff between time and space costs.
+ *  Higher values decrease the space overhead but increase the lookup cost (reflected in most of the operations of the `HashMap` class, including get and put).
+ *  The expected number of entries in the map and its load factor should be taken into account when setting its initial capacity, so as to minimize the number of rehash operations.
+ *  If the initial capacity is greater than the maximum number of entries divided by the load factor, no rehash operations will ever occur.
+ *  
+ *  If many mappings are to be stored in a `HashMap` instance, creating it with a sufficiently large capacity will allow the mappings to be stored more efficiently
+ *  than letting it perform automatic rehashing as needed to grow the table.
+ *  
+ *  To use a different load factor, define the values in your implementation of `HashMap`:
+ *  
+ *  {{{
+ *  class GreedyHashMap[A,B] extends HashMap[A,B] {
+ *    _loadFactor = 500 // equivalent to 0.5
+ *  }
+ *  }}}
+ *  
+ *  Note that this implementation is not synchronized. If multiple threads access a hash map concurrently, and at least one of the threads modifies the map structurally,
+ *  it must be synchronized externally. (A structural modification is any operation that adds or deletes one or more mappings; merely changing the value
+ *  associated with a key that an instance already contains is not a structural modification.) This is typically accomplished by synchronizing
+ *  on some object that naturally encapsulates the map. If no such object exists, the map can be mixed in with [[scala.collection.mutable.SynchronizedMap]]:
+ *  
+ *  {{{
+ *  val map = new HashMap[String, Int]() with SynchronizedMap[String, Int]
+ *  }}}
+ *  
+ *  The iterators returned by all of this class's "collection view methods" are mutable, so if the map is structurally modified at any time after the iterator is created
+ *  in any way except, the iterator will behave in a non-deterministic way.
+ *
+ *  This class shares a lot of characteristics with `java.util.HashMap`. For more information, please see [[http://download.oracle.com/javase/6/docs/api/java/util/HashMap.html java.util.HashMap]].
  *  
  *  @since 1
  *  

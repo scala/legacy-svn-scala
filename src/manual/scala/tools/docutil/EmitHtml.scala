@@ -344,11 +344,15 @@ object EmitHtml {
       sys.exit(1)
     }
     try {
-      val cl = this.getClass.getClassLoader()
-      val clasz = cl loadClass args(0)
-      val meth = clasz getDeclaredMethod "manpage"
-      val doc = meth.invoke(null).asInstanceOf[Document]
-      emitDocument(doc)
+      args.toSeq match {
+        case Seq(classname,file) => emitHtml(classname, new java.io.FileOutputStream(file))
+        case Seq(classname) =>
+          val cl = this.getClass.getClassLoader()
+          val clasz = cl loadClass args(0)
+          val meth = clasz getDeclaredMethod "manpage"
+          val doc = meth.invoke(null).asInstanceOf[Document]
+          emitDocument(doc)
+      }
     } catch {
       case ex: Exception =>
         ex.printStackTrace()
