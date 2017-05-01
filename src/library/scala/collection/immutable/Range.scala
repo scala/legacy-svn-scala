@@ -210,6 +210,12 @@ extends collection.AbstractSeq[Int]
     else new Range.Inclusive(start, end, step)
 
   final def contains(x: Int) = isWithinBoundaries(x) && ((x - start) % step == 0)
+
+  final override def sum[B >: Int](implicit num: Numeric[B]): Int = {
+    val len = length
+    if (len > 0) (len.toLong * (head + last) / 2).toInt
+    else 0
+  }
   
   override def toIterable = this
   
