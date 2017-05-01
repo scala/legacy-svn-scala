@@ -2914,12 +2914,6 @@ A type's typeSymbol should never be inspected directly.
     val pre1 = pre match {
       case x: SuperType if sym1.isEffectivelyFinal || sym1.isDeferred =>
         x.thistpe
-      case _: CompoundType if sym1.isClass =>
-        // sharpen prefix so that it is maximal and still contains the class.
-        pre.parents.reverse dropWhile (_.member(sym1.name) != sym1) match {
-          case Nil         => pre
-          case parent :: _ => parent
-        }
       case _ => pre
     }
     if (pre eq pre1)                                TypeRef(pre, sym1, args)
