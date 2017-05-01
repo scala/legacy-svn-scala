@@ -131,8 +131,14 @@ abstract class HtmlPage extends Page { thisPage =>
           <a href={ relativeLinkTo(dtpl) } class="extype" name={ dtpl.qualifiedName }>{
             string.slice(inPos, inPos + width)
           }</a>
-        case tpl =>
-          <span class="extype" name={ tpl.qualifiedName }>{ string.slice(inPos, inPos + width) }</span>
+        case tpl => {
+          val externalLink = ExternalReferences.getLink(tpl.qualifiedName)
+          if (externalLink.isDefined){
+            <a href={ externalLink.get } class="extype external" name={ tpl.qualifiedName }>{ string.slice(inPos, inPos + width) }</a>
+          } else {
+            <span class="extype" name={ tpl.qualifiedName }>{ string.slice(inPos, inPos + width) }</span>
+          }
+        }
       }) ++ toLinksOut(inPos + width, starts.tail)
     }
     if (hasLinks)

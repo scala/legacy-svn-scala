@@ -191,6 +191,10 @@ text-decoration: none;
   margin-bottom: 50px;
 }
 
+.external {
+  color: #69481D !important;
+}
+
 h3 {
   color: white;
   padding: 5px 10px;
