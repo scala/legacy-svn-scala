@@ -13,7 +13,12 @@ import java.io._
 
 /** Encapsulates the output and error streams of a running process.
  *  Many of the methods of `ProcessBuilder` accept a `ProcessLogger` as
- *  an argument.
+ *  an argument. Here is an example:
+ *  {{{
+ *    val logger = ProcessLogger(
+ *      (outLine: String) => println("out: " + outLine),
+ *      (errLine: String) => println("err: " + errLine))
+ *  }}}
  *
  *  @see [[scala.sys.process.ProcessBuilder]]
  */
