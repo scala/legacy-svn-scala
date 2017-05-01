@@ -66,10 +66,12 @@ import java.util.regex.{ Pattern, Matcher }
  *  Regex, such as `findFirstIn` or `findAllIn`, or using it as an extractor in a
  *  pattern match.
  *
- *  Note, however, that when Regex is used as an extractor in a pattern match, it
- *  only succeeds if the whole text can be matched. For this reason, one usually
+ *  Note, however, that by default when Regex is used as an extractor in a pattern match, it
+ *  only succeeds if the whole text can be matched. In this case one usually
  *  calls a method to find the matching substrings, and then use it as an extractor
- *  to break match into subgroups.
+ *  to break match into subgroups.  The {{{unanchor()}}} method will turn off implicit
+ *  anchoring in pattern matching in which case your pattern will match the first occurence
+ *  (if any) in the text.
  *
  *  As an example, the above patterns can be used like this:
  *
@@ -89,6 +91,18 @@ import java.util.regex.{ Pattern, Matcher }
 
  *  def getYears(text: String): Iterator[String] = for (dateP1(year, _, _) <- dateP1 findAllIn text) yield year
  *  def getFirstDay(text: String): Option[String] = for (m <- dateP2 findFirstMatchIn text) yield m group "day"
+ *
+ *  }}}
+ *
+ *  Or like this
+ *
+ *  {{{
+ *  val dateP3 = """(\d{4}-\d\d-\d\d)""".r.unanchor
+ *
+ *  val copyrightLR: Either[String,String] = "Date of this document: 2011-07-15" match {
+ *    case dateP3(when) => Right(when)
+ *    case _ => Left("No date matched.")
+ *  }
  *  }}}
  *
  *  Regex does not provide a method that returns a [[scala.Boolean]]. One can
@@ -134,13 +148,22 @@ import java.util.regex.{ Pattern, Matcher }
  *  @param regex      A string representing a regular expression
  *  @param groupNames A mapping from names to indices in capture groups
  */
-@SerialVersionUID(-2094783597747625537L)
+@SerialVersionUID(-6253878355920898220L)
 class Regex(regex: String, groupNames: String*) extends Serializable {
 
   import Regex._
-  
+
+  private[matching] var _pattern: Option[Pattern] = None
+
   /** The compiled pattern */
-  val pattern = Pattern.compile(regex)
+  lazy val pattern = _pattern.getOrElse({
+    val rv = Pattern.compile(this.regex)
+    _pattern = Some(rv)
+    rv
+  })
+
+  /** Is pattern match implicitly anchored? */
+  val isAnchored: Boolean = true
 
   /** Tries to match target (whole match) and returns the matching subgroups.
    *  if the pattern has no subgroups, then it returns an empty list on a
@@ -172,12 +195,25 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
   def unapplySeq(target: Any): Option[List[String]] = target match {
     case s: java.lang.CharSequence =>
       val m = pattern.matcher(s)
-      if (m.matches) Some((1 to m.groupCount).toList map m.group) 
+      if (m.matches) Some((1 to m.groupCount).toList map m.group)
       else None
     case Match(s) =>
       unapplySeq(s)
     case _ =>
       None
+  }
+
+  /** Pattern match using implicit anchors.
+   *
+   * @return A [[Regex]] which will use implicit anchors.
+   */
+  def anchor(): Regex = {
+    if (isAnchored) this
+    else {
+      val re = new Regex(this.regex, this.groupNames: _*)
+      re._pattern = this._pattern
+      re
+    }
   }
 
   /** Return all matches of this regexp in given character sequence as a [[scala.util.mathcing.Regex.MatchIterator]],
@@ -192,7 +228,7 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
    *  @example      {{{for (words <- """\w+""".r findAllIn "A simple example.") yield words}}}
    */
   def findAllIn(source: java.lang.CharSequence) = new Regex.MatchIterator(source, this, groupNames)
-  
+
   /** Return optionally first matching string of this regexp in given character sequence,
    *  or None if it does not exist.
    *
@@ -220,10 +256,10 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
   def findFirstMatchIn(source: java.lang.CharSequence): Option[Match] = {
     val m = pattern.matcher(source)
     if (m.find) Some(new Match(source, m, groupNames)) else None
-  } 
+  }
 
-  /** Return optionally match of this regexp at the beginning of the 
-   *  given character sequence, or None if regexp matches no prefix 
+  /** Return optionally match of this regexp at the beginning of the
+   *  given character sequence, or None if regexp matches no prefix
    *  of the character sequence.
    *
    *  The main difference from this method to `findFirstIn` is that this
@@ -239,8 +275,8 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
     if (m.lookingAt) Some(m.group) else None
   }
 
-  /** Return optionally match of this regexp at the beginning of the 
-   *  given character sequence, or None if regexp matches no prefix 
+  /** Return optionally match of this regexp at the beginning of the
+   *  given character sequence, or None if regexp matches no prefix
    *  of the character sequence.
    *
    *  The main difference from this method to `findFirstMatchIn` is that
@@ -267,7 +303,7 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
     val m = pattern.matcher(target)
     m.replaceAll(replacement)
   }
-  
+
   /**
    * Replaces all matches using a replacer function. The replacer function takes a
    * [[scala.util.matching.Regex.Match]] so that extra information can be obtained
@@ -279,7 +315,7 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
    * val text = "From 2011-07-15 to 2011-07-17"
    * val repl = datePattern replaceAllIn (text, m => m.group("month")+"/"+m.group("day"))
    * }}}
-   * 
+   *
    * @param target      The string to match.
    * @param replacer    The function which maps a match to another string.
    * @return            The target string after replacements.
@@ -339,6 +375,65 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
 
   /** The string defining the regular expression */
   override def toString = regex
+
+  /** Pattern match without using implicit anchors.
+   *
+   * @return A [[Regex]] which will not use implicit anchors.
+   */
+  def unanchor(): Regex = {
+    if (!isAnchored) this
+    else {
+      val re = new RegexUA(this.regex, this.groupNames: _*)
+      re._pattern = this._pattern
+      re
+    }
+  }
+}
+
+@SerialVersionUID(-2898599861611963137L)
+class RegexUA(regex: String, groupNames: String*) extends Regex(regex, groupNames: _*) with Serializable {
+
+  import Regex._
+
+  override val isAnchored: Boolean = false
+
+  /** Tries to match target (first match) and returns the matching subgroups.
+   *  if the pattern has no subgroups, then it returns an empty list on a
+   *  successful match.
+   *
+   *  Note, however, that if some subgroup has not been matched, a `null` will
+   *  be returned for that subgroup.
+   *
+   *  For example:
+   *
+   *  {{{
+   *  val p1 = "ab*c".r
+   *  val p2 = "a(b*)c".r
+   *
+   *  val p1Matches = "abbbc" match {
+   *    case p1() => true
+   *    case _    => false
+   *  }
+   *
+   *  val numberOfB = "abbbc" match {
+   *    case p2(b) => Some(b.length)
+   *    case _     => None
+   *  }
+   *  }}}
+   *
+   *  @param target The string to match
+   *  @return       The matches
+   */
+  override def unapplySeq(target: Any): Option[List[String]] = target match {
+    case s: java.lang.CharSequence =>
+      val m = pattern.matcher(s)
+      if (m.find(0)) Some((1 to m.groupCount).toList map m.group)
+      else None
+    case Match(s) =>
+      unapplySeq(s)
+    case _ =>
+      None
+  }
 }
 
 /** This object defines inner classes that describe
@@ -346,7 +441,7 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
  *  is as follows:
  *
  *  {{{
- *            MatchData     
+ *            MatchData
  *            /      \
  *   MatchIterator  Match
  *  }}}
@@ -366,7 +461,7 @@ object Regex {
     val groupNames: Seq[String]
 
     /** The number of subgroups in the pattern (not all of these need to match!) */
-    def groupCount: Int     
+    def groupCount: Int
 
     /** The index of the first matched character, or -1 if nothing was matched */
     def start: Int
@@ -381,13 +476,13 @@ object Regex {
     /** The index following the last matched character in group `i`,
      *  or -1 if nothing was matched for that group */
     def end(i: Int): Int
-    
+
     /** The matched string, or `null` if nothing was matched */
-    def matched: String = 
+    def matched: String =
       if (start >= 0) source.subSequence(start, end).toString
       else null
 
-    /** The matched string in group `i`, 
+    /** The matched string in group `i`,
      *  or `null` if nothing was matched */
     def group(i: Int): String =
       if (start(i) >= 0) source.subSequence(start(i), end(i)).toString
@@ -396,27 +491,27 @@ object Regex {
     /** All matched subgroups, i.e. not including group(0) */
     def subgroups: List[String] = (1 to groupCount).toList map group
 
-    /** The char sequence before first character of match, 
+    /** The char sequence before first character of match,
      *  or `null` if nothing was matched */
-    def before: java.lang.CharSequence = 
+    def before: java.lang.CharSequence =
       if (start >= 0) source.subSequence(0, start)
       else null
 
-    /** The char sequence before first character of match in group `i`, 
+    /** The char sequence before first character of match in group `i`,
      *  or `null` if nothing was matched for that group  */
-    def before(i: Int): java.lang.CharSequence = 
+    def before(i: Int): java.lang.CharSequence =
       if (start(i) >= 0) source.subSequence(0, start(i))
       else null
 
     /** Returns char sequence after last character of match,
      *  or `null` if nothing was matched */
-    def after: java.lang.CharSequence = 
+    def after: java.lang.CharSequence =
       if (end >= 0) source.subSequence(end, source.length)
       else null
 
-    /** The char sequence after last character of match in group `i`, 
+    /** The char sequence after last character of match in group `i`,
      *  or `null` if nothing was matched for that group  */
-    def after(i: Int): java.lang.CharSequence = 
+    def after(i: Int): java.lang.CharSequence =
       if (end(i) >= 0) source.subSequence(end(i), source.length)
       else null
 
@@ -437,11 +532,11 @@ object Regex {
     override def toString = matched
 
   }
- 
+
   /** Provides information about a succesful match.
    */
-  class Match(val source: java.lang.CharSequence, 
-              matcher: Matcher, 
+  class Match(val source: java.lang.CharSequence,
+              matcher: Matcher,
               val groupNames: Seq[String]) extends MatchData {
 
     /** The index of the first matched character */
@@ -451,11 +546,11 @@ object Regex {
     val end = matcher.end
 
     /** The number of subgroups */
-    def groupCount = matcher.groupCount     
+    def groupCount = matcher.groupCount
 
-    private lazy val starts: Array[Int] = 
+    private lazy val starts: Array[Int] =
       ((0 to groupCount) map matcher.start).toArray
-    private lazy val ends: Array[Int] = 
+    private lazy val ends: Array[Int] =
       ((0 to groupCount) map matcher.end).toArray
 
     /** The index of the first matched character in group `i` */
@@ -465,9 +560,9 @@ object Regex {
     def end(i: Int) = ends(i)
 
     /** The match itself with matcher-dependent lazy vals forced,
-     *  so that match is valid even once matcher is advanced 
+     *  so that match is valid even once matcher is advanced
      */
-    def force: this.type = { starts; ends; this } 
+    def force: this.type = { starts; ends; this }
   }
 
   /** An extractor object for Matches, yielding the matched string
