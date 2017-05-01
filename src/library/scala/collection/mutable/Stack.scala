@@ -148,23 +148,24 @@ extends AbstractSeq[A]
 
   /** Returns an iterator over all elements on the stack. This iterator
    *  is stable with respect to state changes in the stack object; i.e.
-   *  such changes will not be reflected in the iterator. The iterator
-   *  issues elements in the reversed order they were inserted into the
-   *  stack (LIFO order).
+   *  such changes will not be reflected in the iterator.
+   *
+   *  The iterator issues elements in the reversed order they were
+   *  inserted into the stack (LIFO order).
    *
    *  @return an iterator over all stack elements.
    */
-  @migration(2, 8, "Stack iterator and foreach now traverse in FIFO order.")
+  @migration("`iterator` traverses in FIFO order.", "2.8")
   override def iterator: Iterator[A] = elems.iterator
 
   /** Creates a list of all stack elements in LIFO order.
    *
    *  @return the created list.
    */
-  @migration(2, 8, "Stack iterator and foreach now traverse in FIFO order.")
+  @migration("`toList` traverses in FIFO order.", "2.8")
   override def toList: List[A] = elems
 
-  @migration(2, 8, "Stack iterator and foreach now traverse in FIFO order.")
+  @migration("`foreach` traverses in FIFO order.", "2.8")
   override def foreach[U](f: A => U): Unit = super.foreach(f)
 
   /** This method clones the stack.

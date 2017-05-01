@@ -16,7 +16,7 @@ import scala.io.Source
 /** A mutable Settings object.
  */
 class MutableSettings(val errorFn: String => Unit)
-              extends scala.reflect.internal.settings.MutableSettings 
+              extends scala.reflect.internal.settings.MutableSettings
                  with AbsSettings
                  with ScalaSettings
                  with Mutable {
@@ -41,7 +41,7 @@ class MutableSettings(val errorFn: String => Unit)
 
   /** Iterates over the arguments applying them to settings where applicable.
    *  Then verifies setting dependencies are met.
-   * 
+   *
    *  This temporarily takes a boolean indicating whether to keep
    *  processing if an argument is seen which is not a command line option.
    *  This is an expedience for the moment so that you can say
@@ -49,7 +49,7 @@ class MutableSettings(val errorFn: String => Unit)
    *    scalac -d /tmp foo.scala -optimise
    *
    *  while also allowing
-   * 
+   *
    *    scala Program opt opt
    *
    *  to get their arguments. 
@@ -107,7 +107,7 @@ class MutableSettings(val errorFn: String => Unit)
    *  '*' in this list.
    */
   lazy val outputDirs = new OutputDirs
-  
+
   /** A list of settings which act based on prefix rather than an exact
    *  match.  This is basically -D and -J.
    */
@@ -179,14 +179,14 @@ class MutableSettings(val errorFn: String => Unit)
         }
     }
   }
-  
+
   /** Initializes these settings for embedded use by type `T`.
   * The class loader defining `T` should provide resources `app.class.path`
   * and `boot.class.path`.  These resources should contain the application
   * and boot classpaths in the same form as would be passed on the command line.*/
   def embeddedDefaults[T: Manifest]: Unit =
     embeddedDefaults(implicitly[Manifest[T]].erasure.getClassLoader)
-    
+
   /** Initializes these settings for embedded use by a class from the given class loader.
   * The class loader for `T` should provide resources `app.class.path`
   * and `boot.class.path`.  These resources should contain the application
@@ -196,10 +196,10 @@ class MutableSettings(val errorFn: String => Unit)
     getClasspath("app", loader) foreach { classpath.value = _ }
     getClasspath("boot", loader) foreach { bootclasspath append _ }
   }
-  
+
   /** The parent loader to use for the interpreter.*/
   private[nsc] var explicitParentLoader: Option[ClassLoader] = None
-  
+
   /** Retrieves the contents of resource "${id}.class.path" from `loader`
   * (wrapped in Some) or None if the resource does not exist.*/
   private def getClasspath(id: String, loader: ClassLoader): Option[String] =
@@ -216,7 +216,10 @@ class MutableSettings(val errorFn: String => Unit)
   def BooleanSetting(name: String, descr: String) = add(new BooleanSetting(name, descr))
   def ChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], default: String) =
     add(new ChoiceSetting(name, helpArg, descr, choices, default))
-  def IntSetting(name: String, descr: String, default: Int, range: Option[(Int, Int)], parser: String => Option[Int]) = add(new IntSetting(name, descr, default, range, parser))
+  def VersionSetting(name: String, helpArg: String, descr: String, default: Version) =
+    add(new VersionSetting(name, helpArg, descr, default))
+  def IntSetting(name: String, descr: String, default: Int, range: Option[(Int, Int)], parser: String => Option[Int]) =
+    add(new IntSetting(name, descr, default, range, parser))
   def MultiStringSetting(name: String, arg: String, descr: String) = add(new MultiStringSetting(name, arg, descr))
   def OutputSetting(outputDirs: OutputDirs, default: String) = add(new OutputSetting(outputDirs, default))
   def PhasesSetting(name: String, descr: String, default: String = "") = add(new PhasesSetting(name, descr, default))
@@ -303,20 +306,20 @@ class MutableSettings(val errorFn: String => Unit)
           }
       }
     }
-    
+
     /** Return the source file path(s) which correspond to the given
      *  classfile path and SourceFile attribute value, subject to the
      *  condition that source files are arranged in the filesystem
      *  according to Java package layout conventions.
-     *  
+     *
      *  The given classfile path must be contained in at least one of
      *  the specified output directories. If it does not then this
      *  method returns Nil.
-     *  
+     *
      *  Note that the source file is not required to exist, so assuming
      *  a valid classfile path this method will always return a list
      *  containing at least one element.
-     *  
+     *
      *  Also that if two or more source path elements target the same
      *  output directory there will be two or more candidate source file
      *  paths. 
@@ -353,7 +356,7 @@ class MutableSettings(val errorFn: String => Unit)
     private var _helpSyntax = name
     override def helpSyntax: String = _helpSyntax
     def withHelpSyntax(s: String): this.type    = { _helpSyntax = s ; this }
-    
+
     /** Abbreviations for this setting */
     private var _abbreviations: List[String] = Nil
     override def abbreviations = _abbreviations
@@ -363,7 +366,7 @@ class MutableSettings(val errorFn: String => Unit)
     private var dependency: Option[(Setting, String)] = None
     override def dependencies = dependency.toList
     def dependsOn(s: Setting, value: String): this.type = { dependency = Some((s, value)); this }
-    
+
     private var _deprecationMessage: Option[String] = None
     override def deprecationMessage = _deprecationMessage
     def withDeprecationMessage(msg: String): this.type = { _deprecationMessage = Some(msg) ; this }
@@ -445,7 +448,7 @@ class MutableSettings(val errorFn: String => Unit)
       value = s.equalsIgnoreCase("true")
     }
   }
-  
+
   /** A special setting for accumulating arguments like -Dfoo=bar. */
   class PrefixSetting private[nsc](
     name: String,
@@ -454,7 +457,7 @@ class MutableSettings(val errorFn: String => Unit)
   extends Setting(name, descr) {
     type T = List[String]
     protected var v: T = Nil
-  
+
     def tryToSet(args: List[String]) = args match {
       case x :: xs if x startsWith prefix =>
         v = v :+ x
@@ -484,7 +487,7 @@ class MutableSettings(val errorFn: String => Unit)
 
     withHelpSyntax(name + " <" + arg + ">")
   }
-  
+
   class PathSetting private[nsc](
     name: String,
     descr: String,
@@ -495,7 +498,7 @@ class MutableSettings(val errorFn: String => Unit)
     import util.ClassPath.join
     def prepend(s: String) = prependPath.value = join(s, prependPath.value)
     def append(s: String) = appendPath.value = join(appendPath.value, s)
-    
+
     override def value = join(
       prependPath.value,
       super.value,
@@ -573,6 +576,68 @@ class MutableSettings(val errorFn: String => Unit)
     withHelpSyntax(name + ":<" + helpArg + ">")
   }
 
+  class VersionSetting private[nsc] (
+    name: String,
+    helpArg: String,
+    descr: String,
+    val default: Version)
+  extends Setting(name, descr) {
+    type T = Version
+    protected var v: T = default
+
+    private def usageErrorMessage = {
+      "Usage: %s:<%s>\n  where <%s> is a version string (default: %s)\n".format(
+        name, helpArg, helpArg, default)
+    }
+    def tryToSet(args: List[String]) = args match {
+      case Nil      => value = default; Some(Nil)
+      case List(x)  => try {
+                         value = Version(x); Some(Nil)
+                       } catch {
+                         case ex: NumberFormatException =>
+                           errorAndValue("'" + x + "' is not a valid choice for '" + name + "'", None)
+                       }
+
+      case x :: xs  => try {
+                         value = Version(x); Some(xs)
+                       } catch {
+                         case ex: NumberFormatException =>
+                           errorAndValue("'" + x + "' is not a valid choice for '" + name + "'", None)
+                       }
+    }
+
+    override def tryToSetColon(args: List[String]) = tryToSet(args)
+//      args match {
+//      case Nil     => tryToSet(Nil)
+//      case List(x) => tryToSet(List(x))
+//      case xs      => errorAndValue("'" + name + "' does not accept multiple versions.", None)
+//    }
+
+    def unparse: List[String] =
+      if (value == default) Nil else List(name + ":" + value)
+    override def tryToSetFromPropertyValue(s: String) = tryToSetColon(s::Nil)
+
+    def isSetAndAtLeast(version: String) = isSetByUser && atLeast(version)
+
+    def isSetAndAtMost(version: String) = isSetByUser && atMost(version)
+
+    private def atLeast(version: String) =
+      try {
+        value >= Version(version)
+      } catch {
+        case _ => /* Print a warning ... I have no idea how I would do that. */ false
+      }
+
+    private def atMost(version: String) =
+      try {
+        value <= Version(version)
+      } catch {
+        case _ => /* Print a warning ... I have no idea how I would do that. */ false
+      }
+
+    withHelpSyntax(name + ":<" + helpArg + ">")
+  }
+
   private def mkPhasesHelp(descr: String, default: String) = {
     descr + " <phases>" + (
       if (default == "") "" else " (default: " + default + ")"
@@ -596,7 +661,7 @@ class MutableSettings(val errorFn: String => Unit)
     override def value = if (v contains "all") List("all") else super.value
     private lazy val (numericValues, stringValues) =
       value filterNot (_ == "" ) partition (_ forall (ch => ch.isDigit || ch == '-'))
-    
+
     /** A little ad-hoc parsing.  If a string is not the name of a phase, it can also be:
      *    a phase id: 5
      *    a phase id range: 5-10 (inclusive of both ends)
@@ -617,7 +682,7 @@ class MutableSettings(val errorFn: String => Unit)
         case Nil    => _ => false
         case fns    => fns.reduceLeft((f1, f2) => id => f1(id) || f2(id))
       }
-    
+
     def tryToSet(args: List[String]) =
       if (default == "") errorAndValue("missing phase", None)
       else { tryToSetColon(List(default)) ; Some(args) }

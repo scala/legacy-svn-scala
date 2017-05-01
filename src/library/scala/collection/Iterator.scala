@@ -9,7 +9,7 @@
 package scala.collection
 
 import mutable.ArrayBuffer
-import annotation.{ tailrec, migration }
+import annotation.migration
 import immutable.Stream
 
 /** The `Iterator` object provides various functions for creating specialized iterators.
@@ -410,10 +410,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
   *  which `pf` is defined the image `pf(x)`.
   *  @note     Reuse: $consumesAndProducesIterator
   */
-  @migration(2, 8,
-    "This collect implementation bears no relationship to the one before 2.8.\n"+
-    "The previous behavior can be reproduced with toSeq."
-  )
+  @migration("`collect` has changed. The previous behavior can be reproduced with `toSeq`.", "2.8")
   def collect[B](pf: PartialFunction[A, B]): Iterator[B] = {
     val self = buffered
     new AbstractIterator[B] {
